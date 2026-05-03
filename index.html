@@ -187,19 +187,46 @@ const App = {
     }
   },
 
-  // === ХРАНИЛИЩЕ ===
-  load() {
+   // === ХРАНИЛИЩЕ (С ЗАГРУЗКОЙ С СЕРВЕРА) ===
+  async load() {
     try {
-      const d = localStorage.getItem('ff_state');
-      if(d) Object.assign(this.state, JSON.parse(d));
-    } catch(e) { console.warn('Load error', e); }
+      // 1. Пытаемся загрузить с сервера
+      const res = await fetch('api.php?action=get');
+      if (res.ok) {
+        const serverData = await res.json();
+        Object.assign(this.state, serverData);
+        this.toast('✅ Данные загружены с сервера', 's');
+      } else {
+        throw new Error('Server unavailable');
+      }
+    } catch (e) {
+      // 2. Фоллбэк на localStorage
+      try {
+        const d = localStorage.getItem('ff_state');
+        if (d) Object.assign(this.state, JSON.parse(d));
+      } catch (err) { console.warn('Local load error', err); }
+    }
   },
-  save() {
+
+  async save() {
     try {
+      // 1. Сохраняем локально (мгновенно)
       localStorage.setItem('ff_state', JSON.stringify(this.state));
+      
+      // 2. Отправляем на сервер в фоне
+      await fetch('api.php?action=save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(this.state)
+      });
+      
       const s = document.getElementById('status');
-      if(s) { s.textContent='💾 Сохранено'; setTimeout(()=>s.textContent='💾 Готово',1500); }
-    } catch(e) { this.toast('Ошибка сохранения','e'); }
+      if(s) { s.textContent='💾 Сервер'; setTimeout(()=>s.textContent='💾 Готово',1500); }
+    } catch(e) {
+      const s = document.getElementById('status');
+      if(s) s.textContent='💾 Локально';
+      console.warn('Server save failed, using localStorage', e);
+    }
   },
 
   // === НАВИГАЦИЯ ===
