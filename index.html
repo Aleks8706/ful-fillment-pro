@@ -1,5 +1,6 @@
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Фулфилмент Про</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{--p:#2b6cb0;--pd:#1a4971;--pl:#ebf4ff;--s:#38a169;--w:#d69e2e;--d:#e53e3e;--g1:#f7fafc;--g2:#edf2f7;--g3:#e2e8f0;--g4:#cbd5e0;--g5:#718096;--g7:#2d3748;--g8:#1a202c;--sw:260px;--hh:56px;--r:8px;--sh:0 1px 3px rgba(0,0,0,.12)}
@@ -113,7 +114,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--g2);vertical-align:middle}tr:
 <a href="#" data-page="tasks"><span class="icon">✅</span> Задачи</a><a href="#" data-page="employees"><span class="icon">👥</span> Сотрудники</a>
 <a href="#" data-page="inventory"><span class="icon">📋</span> Инвентаризация</a><a href="#" data-page="labels"><span class="icon">🏷️</span> Этикетки</a>
 <div class="section-title">Документы</div><a href="#" data-page="documents"><span class="icon">📄</span> Документы</a></nav>
-<div class="sidebar-footer">v3.1 • <span id="currentUserDisplay"></span><br><span id="currentDateTime"></span></div></aside>
+<div class="sidebar-footer">v3.2 • <span id="currentUserDisplay"></span><br><span id="currentDateTime"></span></div></aside>
 
 <header class="header" id="mainHeader" style="display:none"><span class="page-title" id="pageTitle">Дашборд</span>
 <div class="header-actions"><button class="btn btn-outline btn-sm" onclick="exportAll()" data-requires="admin">💾</button>
@@ -201,15 +202,43 @@ td{padding:10px 14px;border-bottom:1px solid var(--g2);vertical-align:middle}tr:
 
 <script>
 // === UTILS ===
-const $=id=>document.getElementById(id),genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7),today=()=>new Date().toISOString().slice(0,10),now=()=>new Date().toLocaleString('ru-RU'),fmt=n=>Number(n||0).toLocaleString('ru-RU')+' ₽',esc=s=>{if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML},debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
-const toast=(m,t='success')=>{const c=$('toastContainer'),el=document.createElement('div');el.className='toast '+t;el.textContent=m;c.appendChild(el);setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),300)},3e3)};
+const $=id=>document.getElementById(id);
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today=()=>new Date().toISOString().slice(0,10);
+const now=()=>new Date().toLocaleString('ru-RU');
+const fmt=n=>Number(n||0).toLocaleString('ru-RU')+' ₽';
+const esc=s=>{if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+const toast=(m,t='success')=>{const c=$('toastContainer'),el=document.createElement('div');el.className='toast '+t;el.textContent=m;c.appendChild(el);setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),300)},3000)};
 
 // === DB ===
-const DB={get(k){try{return JSON.parse(localStorage.getItem('ff_'+k))||[]}catch{return[]}},set(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v));return true}catch{toast('Ошибка сохранения','error');return false}},getObj(k){try{const r=localStorage.getItem('ff_'+k);return r?JSON.parse(r):{}}catch{return{}}},setObj(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v));return true}catch{toast('Ошибка сохранения','error');return false}}};
+const DB={
+  get(k){try{return JSON.parse(localStorage.getItem('ff_'+k))||[]}catch{return[]}},
+  set(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v));return true}catch{toast('Ошибка сохранения','error');return false}},
+  getObj(k){try{const r=localStorage.getItem('ff_'+k);return r?JSON.parse(r):{}}catch{return{}}},
+  setObj(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v));return true}catch{toast('Ошибка сохранения','error');return false}}
+};
 
-// === AUTH (FIXED!) ===
+// === AUTH (FIXED) ===
 const DEF_USERS={'admin@fulfillment.pro':{password:'admin123',role:'admin',name:'Администратор'},'manager@fulfillment.pro':{password:'manager123',role:'manager',name:'Менеджер'}};
-const Auth={KEY:'ff_auth',login(e,p){const stored=DB.getObj('users');const users=Object.keys(stored).length?stored:DEF_USERS;const usr=users[e];if(!usr||usr.password!==p)throw new Error('Неверный логин/пароль');localStorage.setItem(this.KEY,btoa(JSON.stringify({email:e,role:usr.role,name:usr.name,exp:Date.now()+288e5})));return{email:e,role:usr.role,name:usr.name}},logout(){localStorage.removeItem(this.KEY);location.reload()},current(){const t=localStorage.getItem(this.KEY);if(!t)return null;try{const p=JSON.parse(atob(t));if(p.exp<Date.now()){this.logout();return null}return p}catch{return null}},requireRole(...r){const u=this.current();if(!u||!r.includes(u.role)){toast('Доступ запрещён','error');return false}return true}};
+const Auth={
+  KEY:'ff_auth',
+  login(e,p){
+    const stored=DB.getObj('users');
+    const users=Object.keys(stored).length?stored:DEF_USERS;
+    const usr=users[e];
+    if(!usr||usr.password!==p)throw new Error('Неверный логин/пароль');
+    localStorage.setItem(this.KEY,btoa(JSON.stringify({email:e,role:usr.role,name:usr.name,exp:Date.now()+28800000})));
+    return{email:e,role:usr.role,name:usr.name};
+  },
+  logout(){localStorage.removeItem(this.KEY);location.reload()},
+  current(){
+    const t=localStorage.getItem(this.KEY);
+    if(!t)return null;
+    try{const p=JSON.parse(atob(t));if(p.exp<Date.now()){this.logout();return null}return p}catch{return null}
+  },
+  requireRole(...r){const u=this.current();if(!u||!r.includes(u.role)){toast('Доступ запрещён','error');return false}return true}
+};
 
 // === NOTIFS ===
 const Notif={items:[],unread:0,init(){this.add({type:'info',text:'🎉 Добро пожаловать!',read:0});this.upd()},add({type,text,read=0}){this.items.unshift({id:genId(),type,text,read,ts:new Date().toISOString()});if(!read)this.unread++;this.upd()},upd(){const b=$('notifBadge');if(b){b.textContent=this.unread;b.style.display=this.unread>0?'block':'none'}},show(){const el=$('notifList');if(!el)return;el.innerHTML=this.items.map(n=>`<div style="padding:10px;border-bottom:1px solid var(--g3);background:${n.read?'':'var(--pl)'}"><div style="font-weight:500">${esc(n.text)}</div><div style="font-size:11px;color:var(--g5)">${new Date(n.ts).toLocaleString('ru-RU')}</div>${!n.read?`<button class="btn btn-sm btn-outline mt-1" onclick="Notif.mark('${n.id}')">✅</button>`:''}</div>`).join('')||'<p class="text-muted text-center">Нет</p>'},mark(id){const n=this.items.find(x=>x.id===id);if(n&&!n.read){n.read=1;this.unread--;this.upd();this.show()}},all(){this.items.forEach(n=>n.read=1);this.unread=0;this.upd();this.show();toast('Все прочитано')}};
@@ -290,8 +319,26 @@ const printLbl=()=>{const c=$('lblPrint');if(!c)return;const w=window.open('','_
 // === DOCUMENTS ===
 const renderDocs=()=>{const recs=DB.get('receivings'),ships=DB.get('shippings');$('docRec').innerHTML=recs.map(r=>`<div class="emp-card"><div class="emp-info"><h4>📥 ${esc(r.num)} — ${esc(r.sup||'—')}</h4><p>${esc(r.date)} • ${r.items.reduce((s,i)=>s+i.q,0)} шт.</p></div><button class="btn btn-outline btn-sm" onclick="viewRec('${r.id}')">📄</button></div>`).join('')||'<p class="text-muted">Нет</p>';$('docShip').innerHTML=ships.map(s=>`<div class="emp-card"><div class="emp-info"><h4>📤 ${esc(s.num)} — ${esc(s.cl||'—')}</h4><p>${esc(s.date)} • ${s.items.reduce((x,i)=>x+i.q,0)} шт.</p></div><button class="btn btn-outline btn-sm" onclick="viewShip('${s.id}')">📄</button></div>`).join('')||'<p class="text-muted">Нет</p>'};
 
-// === DASHBOARD ===
-let chart=null;const renderDash=()=>{const prods=DB.get('products'),recs=DB.get('receivings'),tasks=DB.get('tasks'),tp=prods.length,tq=prods.reduce((s,p)=>s+p.qty,0),tv=prods.reduce((s,p)=>s+p.qty*p.cost,0),pt=tasks.filter(t=>t.status!=='done').length;$('statsGrid').innerHTML=`<div class="stat-card"><div class="stat-icon b">📦</div><div class="stat-info"><h4>${tp}</h4><p>Товаров</p></div></div><div class="stat-card"><div class="stat-icon g">📊</div><div class="stat-info"><h4>${tq.toLocaleString('ru-RU')}</h4><p>Единиц</p></div></div><div class="stat-card"><div class="stat-icon o">💰</div><div class="stat-info"><h4>${fmt(tv)}</h4><p>Стоимость</p></div></div><div class="stat-card"><div class="stat-icon r">📋</div><div class="stat-info"><h4>${pt}</h4><p>Активных задач</p></div></div>`;const ctx=$('stockChart');if(ctx){if(chart)chart.destroy();const lb=[],dt=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);lb.push(d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}));dt.push(Math.floor(500+Math.random()*300))}chart=new Chart(ctx,{type:'line',{labels:lb,datasets:[{label:'Единиц',dt,borderColor:'#2b6cb0',backgroundColor:'rgba(43,108,176,0.1)',fill:!0,tension:.3}]},options:{responsive:!0,plugins:{legend:{display:!1}},scales:{y:{beginAtZero:!1,grid:{color:'#edf2f7'}},x:{grid:{display:!1}}}})};$('dashTasks').innerHTML=tasks.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5).map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--g2);display:flex;justify-content:space-between;align-items:center"><span>${esc(t.name)}</span><span class="badge ${t.status==='done'?'badge-success':t.status==='in_progress'?'badge-warning':'badge-info'}">${t.status==='done'?'Готово':t.status==='in_progress'?'В работе':'Новая'}</span></div>`).join('')||'<p class="text-muted">Нет задач</p>';$('dashReceiving').innerHTML=recs.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5).map(r=>`<div style="padding:6px 0;border-bottom:1px solid var(--g2);display:flex;justify-content:space-between;align-items:center"><span>${esc(r.num)} — ${esc(r.sup||'—')}</span><span class="text-sm text-muted">${esc(r.date)}</span></div>`).join('')||'<p class="text-muted">Нет приёмки</p>'};
+// === DASHBOARD (FIXED CHART.JS CONFIG) ===
+let chart=null;
+const renderDash=()=>{
+  const prods=DB.get('products'),recs=DB.get('receivings'),tasks=DB.get('tasks');
+  const tp=prods.length,tq=prods.reduce((s,p)=>s+p.qty,0),tv=prods.reduce((s,p)=>s+p.qty*p.cost,0),pt=tasks.filter(t=>t.status!=='done').length;
+  $('statsGrid').innerHTML=`<div class="stat-card"><div class="stat-icon b">📦</div><div class="stat-info"><h4>${tp}</h4><p>Товаров</p></div></div><div class="stat-card"><div class="stat-icon g">📊</div><div class="stat-info"><h4>${tq.toLocaleString('ru-RU')}</h4><p>Единиц</p></div></div><div class="stat-card"><div class="stat-icon o">💰</div><div class="stat-info"><h4>${fmt(tv)}</h4><p>Стоимость</p></div></div><div class="stat-card"><div class="stat-icon r">📋</div><div class="stat-info"><h4>${pt}</h4><p>Активных задач</p></div></div>`;
+  const ctx=$('stockChart');
+  if(ctx){
+    if(chart)chart.destroy();
+    const lb=[],dt=[];
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);lb.push(d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}));dt.push(Math.floor(500+Math.random()*300))}
+    chart=new Chart(ctx,{
+      type:'line',
+      data:{labels:lb,datasets:[{label:'Единиц',data:dt,borderColor:'#2b6cb0',backgroundColor:'rgba(43,108,176,0.1)',fill:true,tension:.3}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,grid:{color:'#edf2f7'}},x:{grid:{display:false}}}}
+    });
+  }
+  $('dashTasks').innerHTML=tasks.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5).map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--g2);display:flex;justify-content:space-between;align-items:center"><span>${esc(t.name)}</span><span class="badge ${t.status==='done'?'badge-success':t.status==='in_progress'?'badge-warning':'badge-info'}">${t.status==='done'?'Готово':t.status==='in_progress'?'В работе':'Новая'}</span></div>`).join('')||'<p class="text-muted">Нет задач</p>';
+  $('dashReceiving').innerHTML=recs.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5).map(r=>`<div style="padding:6px 0;border-bottom:1px solid var(--g2);display:flex;justify-content:space-between;align-items:center"><span>${esc(r.num)} — ${esc(r.sup||'—')}</span><span class="text-sm text-muted">${esc(r.date)}</span></div>`).join('')||'<p class="text-muted">Нет приёмки</p>';
+};
 
 // === BOT ===
 let botOpen=0;const toggleBot=()=>{botOpen=!botOpen;$('botWin').classList.toggle('active',botOpen);if(botOpen&&!$('botMsgs').children.length)addBot("Привет! 🎉 Я ФулфиБот! Спрашивайте про склад, товары, задачи! 😄",0)};
@@ -310,7 +357,7 @@ const applyAuth=()=>{const u=Auth.current(),ls=$('loginScreen');if(!u){ls.style.
 const handleLogin=()=>{const e=$('loginEmail').value,p=$('loginPass').value,err=$('loginError');try{Auth.login(e,p);err.style.display='none';applyAuth();init();toast('Добро пожаловать, '+Auth.current().name+'!')}catch(x){err.textContent=x.message;err.style.display='block';toast(x.message,'error')}};
 
 // === INIT ===
-const init=()=>{applyAuth();if(!Auth.current())return;Notif.init();const updTime=()=>{$('currentDateTime').textContent=now()};updTime();setInterval(updTime,1e3);render('dashboard');if(window.innerWidth<=768)$('menuBtn')?.style.display='block';window.onresize=()=>{$('menuBtn')?.style.display=window.innerWidth<=768?'block':'none'}};
+const init=()=>{applyAuth();if(!Auth.current())return;Notif.init();const updTime=()=>{$('currentDateTime').textContent=now()};updTime();setInterval(updTime,1000);render('dashboard');if(window.innerWidth<=768)$('menuBtn')?.style.display='block';window.onresize=()=>{$('menuBtn')?.style.display=window.innerWidth<=768?'block':'none'}};
 
 // === START ===
 document.addEventListener('DOMContentLoaded',init);
