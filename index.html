@@ -114,7 +114,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--g2);vertical-align:middle}tr:
 <a href="#" data-page="tasks"><span class="icon">✅</span> Задачи</a><a href="#" data-page="employees"><span class="icon">👥</span> Сотрудники</a>
 <a href="#" data-page="inventory"><span class="icon">📋</span> Инвентаризация</a><a href="#" data-page="labels"><span class="icon">🏷️</span> Этикетки</a>
 <div class="section-title">Документы</div><a href="#" data-page="documents"><span class="icon">📄</span> Документы</a></nav>
-<div class="sidebar-footer">v3.2 • <span id="currentUserDisplay"></span><br><span id="currentDateTime"></span></div></aside>
+<div class="sidebar-footer">v3.3 • <span id="currentUserDisplay"></span><br><span id="currentDateTime"></span></div></aside>
 
 <header class="header" id="mainHeader" style="display:none"><span class="page-title" id="pageTitle">Дашборд</span>
 <div class="header-actions"><button class="btn btn-outline btn-sm" onclick="exportAll()" data-requires="admin">💾</button>
@@ -219,7 +219,7 @@ const DB={
   setObj(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v));return true}catch{toast('Ошибка сохранения','error');return false}}
 };
 
-// === AUTH (FIXED) ===
+// === AUTH ===
 const DEF_USERS={'admin@fulfillment.pro':{password:'admin123',role:'admin',name:'Администратор'},'manager@fulfillment.pro':{password:'manager123',role:'manager',name:'Менеджер'}};
 const Auth={
   KEY:'ff_auth',
@@ -319,7 +319,7 @@ const printLbl=()=>{const c=$('lblPrint');if(!c)return;const w=window.open('','_
 // === DOCUMENTS ===
 const renderDocs=()=>{const recs=DB.get('receivings'),ships=DB.get('shippings');$('docRec').innerHTML=recs.map(r=>`<div class="emp-card"><div class="emp-info"><h4>📥 ${esc(r.num)} — ${esc(r.sup||'—')}</h4><p>${esc(r.date)} • ${r.items.reduce((s,i)=>s+i.q,0)} шт.</p></div><button class="btn btn-outline btn-sm" onclick="viewRec('${r.id}')">📄</button></div>`).join('')||'<p class="text-muted">Нет</p>';$('docShip').innerHTML=ships.map(s=>`<div class="emp-card"><div class="emp-info"><h4>📤 ${esc(s.num)} — ${esc(s.cl||'—')}</h4><p>${esc(s.date)} • ${s.items.reduce((x,i)=>x+i.q,0)} шт.</p></div><button class="btn btn-outline btn-sm" onclick="viewShip('${s.id}')">📄</button></div>`).join('')||'<p class="text-muted">Нет</p>'};
 
-// === DASHBOARD (FIXED CHART.JS CONFIG) ===
+// === DASHBOARD (ИСПРАВЛЕН CHART.JS) ===
 let chart=null;
 const renderDash=()=>{
   const prods=DB.get('products'),recs=DB.get('receivings'),tasks=DB.get('tasks');
@@ -332,8 +332,22 @@ const renderDash=()=>{
     for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);lb.push(d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}));dt.push(Math.floor(500+Math.random()*300))}
     chart=new Chart(ctx,{
       type:'line',
-      data:{labels:lb,datasets:[{label:'Единиц',data:dt,borderColor:'#2b6cb0',backgroundColor:'rgba(43,108,176,0.1)',fill:true,tension:.3}]},
-      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,grid:{color:'#edf2f7'}},x:{grid:{display:false}}}}
+      data:{
+        labels:lb,
+        datasets:[{
+          label:'Единиц на складе',
+          data:dt,
+          borderColor:'#2b6cb0',
+          backgroundColor:'rgba(43,108,176,0.1)',
+          fill:true,
+          tension:.3
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:false,grid:{color:'#edf2f7'}},x:{grid:{display:false}}}
+      }
     });
   }
   $('dashTasks').innerHTML=tasks.sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5).map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--g2);display:flex;justify-content:space-between;align-items:center"><span>${esc(t.name)}</span><span class="badge ${t.status==='done'?'badge-success':t.status==='in_progress'?'badge-warning':'badge-info'}">${t.status==='done'?'Готово':t.status==='in_progress'?'В работе':'Новая'}</span></div>`).join('')||'<p class="text-muted">Нет задач</p>';
