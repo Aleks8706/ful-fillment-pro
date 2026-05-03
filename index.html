@@ -1,0 +1,2732 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Система контроля склада + FBO</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+:root {
+  --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #a5b4fc;
+  --success: #10b981; --success-light: #d1fae5; --danger: #ef4444; --danger-light: #fee2e2;
+  --warning: #f59e0b; --warning-light: #fef3c7; --info: #3b82f6; --info-light: #dbeafe;
+  --bg: #0f172a; --bg-card: #1e293b; --bg-input: #334155; --text: #f1f5f9;
+  --text-muted: #94a3b8; --border: #334155; --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --radius: 16px; --radius-sm: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--primary); border-radius:3px; }
+.sidebar { position:fixed; left:0; top:0; width:260px; height:100vh; background:var(--bg-card); border-right:1px solid var(--border); z-index:100; transition:transform 0.3s ease; display:flex; flex-direction:column; }
+.sidebar-header { padding:24px 20px; border-bottom:1px solid var(--border); }
+.sidebar-header h2 { font-size:18px; font-weight:700; background:linear-gradient(135deg,var(--primary),#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.sidebar-header p { font-size:11px; color:var(--text-muted); margin-top:4px; }
+.nav-menu { padding:16px 12px; flex:1; overflow-y:auto; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.2s; margin-bottom:4px; font-size:14px; color:var(--text-muted); font-weight:500; }
+.nav-item:hover { background:var(--bg-input); color:var(--text); }
+.nav-item.active { background:var(--primary); color:#fff; }
+.nav-item svg { width:20px; height:20px; flex-shrink:0; }
+.nav-divider { height:1px; background:var(--border); margin:12px 0; }
+.main { margin-left:260px; min-height:100vh; transition:margin-left 0.3s ease; }
+.topbar { position:sticky; top:0; background:rgba(15,23,42,0.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; z-index:50; }
+.topbar-left { display:flex; align-items:center; gap:16px; }
+.menu-toggle { display:none; background:none; border:none; color:var(--text); cursor:pointer; padding:8px; border-radius:8px; }
+.menu-toggle:hover { background:var(--bg-input); }
+.menu-toggle svg { width:24px; height:24px; }
+.topbar h1 { font-size:20px; font-weight:700; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.live-time { font-size:13px; color:var(--text-muted); font-weight:500; background:var(--bg-card); padding:8px 14px; border-radius:20px; border:1px solid var(--border); }
+.content { padding:24px 32px; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+.stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:transform 0.2s,box-shadow 0.2s; }
+.stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+.stat-card .stat-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; font-size:20px; }
+.stat-card .stat-value { font-size:26px; font-weight:800; margin-bottom:4px; }
+.stat-card .stat-label { font-size:12px; color:var(--text-muted); font-weight:500; }
+.panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:20px; overflow:hidden; }
+.panel-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.panel-header h3 { font-size:15px; font-weight:700; }
+.panel-body { padding:20px; }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th { text-align:left; padding:10px 14px; background:var(--bg-input); color:var(--text-muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+tbody td { padding:12px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+tbody tr:hover { background:rgba(99,102,241,0.05); }
+tbody tr:last-child td { border-bottom:none; }
+.badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-success { background:var(--success-light); color:#065f46; }
+.badge-danger { background:var(--danger-light); color:#991b1b; }
+.badge-warning { background:var(--warning-light); color:#92400e; }
+.badge-info { background:var(--info-light); color:#1e40af; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.btn svg { width:15px; height:15px; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-success:hover { background:#059669; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-danger:hover { background:#dc2626; }
+.btn-warning { background:var(--warning); color:#fff; }
+.btn-warning:hover { background:#d97706; }
+.btn-ghost { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--bg-input); color:var(--text); }
+.btn-sm { padding:5px 10px; font-size:11px; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px; }
+.form-control { width:100%; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:inherit; font-size:13px; transition:border-color 0.2s; }
+.form-control:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(99,102,241,0.2); }
+select.form-control { cursor:pointer; }
+textarea.form-control { resize:vertical; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.active { display:flex; }
+.modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); width:100%; max-width:680px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); }
+.modal-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:16px; font-weight:700; }
+.modal-close { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; border-radius:6px; }
+.modal-close:hover { background:var(--bg-input); color:var(--text); }
+.modal-close svg { width:18px; height:18px; }
+.modal-body { padding:20px; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+.chat-container { height:480px; display:flex; flex-direction:column; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+.chat-msg { display:flex; gap:10px; max-width:85%; animation:fadeIn 0.3s ease; }
+.chat-msg.bot { align-self:flex-start; }
+.chat-msg.user { align-self:flex-end; flex-direction:row-reverse; }
+.chat-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.chat-msg.bot .chat-avatar { background:var(--primary); }
+.chat-msg.user .chat-avatar { background:var(--success); }
+.chat-bubble { padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.5; }
+.chat-msg.bot .chat-bubble { background:var(--bg-input); border-bottom-left-radius:4px; }
+.chat-msg.user .chat-bubble { background:var(--primary); color:#fff; border-bottom-right-radius:4px; }
+.chat-input-wrap { padding:14px 16px; border-top:1px solid var(--border); display:flex; gap:10px; }
+.chat-input-wrap input { flex:1; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:24px; color:var(--text); font-family:inherit; font-size:13px; }
+.chat-input-wrap input:focus { outline:none; border-color:var(--primary); }
+.chat-input-wrap button { width:40px; height:40px; border-radius:50%; border:none; background:var(--primary); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.chat-input-wrap button:hover { background:var(--primary-dark); }
+.chat-input-wrap button svg { width:18px; height:18px; }
+.quick-actions { display:flex; flex-wrap:wrap; gap:6px; padding:0 16px 10px; }
+.quick-btn { padding:5px 12px; border-radius:18px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:inherit; font-size:11px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.quick-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+.rules-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.rule-card { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; transition:transform 0.2s; }
+.rule-card:hover { transform:translateY(-2px); }
+.rule-card .rule-icon { font-size:26px; margin-bottom:10px; }
+.rule-card h4 { font-size:13px; font-weight:700; margin-bottom:6px; color:var(--danger); }
+.rule-card p { font-size:12px; color:var(--text-muted); line-height:1.5; }
+.rule-card .rule-amount { margin-top:10px; font-size:16px; font-weight:800; color:var(--warning); }
+.avoid-card { background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:var(--radius-sm); padding:16px; margin-bottom:10px; }
+.avoid-card h4 { color:var(--success); font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.avoid-card p { font-size:12px; color:var(--text-muted); line-height:1.5; }
+.emp-card { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; text-align:center; transition:transform 0.2s; }
+.emp-card:hover { transform:translateY(-2px); }
+.emp-avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; }
+.emp-card .emp-name { font-size:15px; font-weight:700; margin-bottom:3px; }
+.emp-card .emp-role { font-size:11px; color:var(--text-muted); margin-bottom:12px; }
+.emp-card .emp-rate { font-size:18px; font-weight:800; color:var(--success); }
+.emp-card .emp-rate-label { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.emp-status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:18px; font-size:11px; font-weight:600; margin-top:10px; }
+.emp-status.online { background:var(--success-light); color:#065f46; }
+.emp-status.offline { background:var(--danger-light); color:#991b1b; }
+.emp-actions { display:flex; gap:6px; margin-top:12px; justify-content:center; }
+.rate-input { width:70px; padding:5px 8px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--success); font-family:inherit; font-size:13px; font-weight:700; text-align:center; }
+.rate-input:focus { outline:none; border-color:var(--primary); }
+.doc-preview { background:#fff; color:#1a1a1a; border-radius:var(--radius-sm); padding:32px; font-size:13px; line-height:1.6; max-height:500px; overflow-y:auto; }
+.doc-preview h2 { text-align:center; margin-bottom:20px; font-size:16px; }
+.doc-preview table { color:#1a1a1a; border:1px solid #ddd; }
+.doc-preview thead th { background:#f5f5f5; color:#333; border-bottom:2px solid #ddd; }
+.doc-preview tbody td { border-bottom:1px solid #eee; color:#333; }
+.section { display:none; }
+.section.active { display:block; animation:fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.typing-indicator { display:flex; gap:4px; padding:10px 14px; }
+.typing-indicator span { width:7px; height:7px; border-radius:50%; background:var(--text-muted); animation:typing 1.4s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay:0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay:0.4s; }
+@keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-5px); opacity:1; } }
+@media (max-width:768px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .main { margin-left:0; } .menu-toggle { display:flex; } .content { padding:14px; } .topbar { padding:10px 14px; } .stats-grid { grid-template-columns:repeat(2,1fr); gap:10px; } .form-row { grid-template-columns:1fr; } .rules-grid { grid-template-columns:1fr; } .modal { max-width:100%; margin:10px; } .live-time { display:none; } }
+@media (max-width:480px) { .stats-grid { grid-template-columns:1fr; } .topbar h1 { font-size:15px; } }
+.sidebar-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; display:none; }
+.sidebar-overlay.active { display:block; }
+.fine-row { background:rgba(239,68,68,0.04) !important; }
+.import-export-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:var(--bg-input); border-bottom:1px solid var(--border); }
+.import-export-bar .btn { font-size:12px; padding:6px 12px; }
+#fileInput { display:none; }
+.toast-container { position:fixed; top:20px; right:20px; z-index:300; display:flex; flex-direction:column; gap:8px; }
+.toast { padding:12px 20px; border-radius:10px; color:#fff; font-size:13px; font-weight:500; box-shadow:var(--shadow); animation:slideIn 0.3s ease; max-width:320px; }
+.toast-success { background:var(--success); }
+.toast-error { background:var(--danger); }
+.toast-info { background:var(--info); }
+@keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@media print { .sidebar,.topbar,.menu-toggle,.btn,.nav-menu,.chat-container,.import-export-bar,.toast-container { display:none!important; } .main { margin-left:0!important; } .content { padding:0!important; } .panel { border:none!important; box-shadow:none!important; } .doc-preview { background:#fff; color:#000; } }
+
+/* === НОВЫЕ СТИЛИ ДЛЯ МОДУЛЕЙ === */
+.wh-search { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.wh-search input { flex:1; min-width:200px; }
+.wh-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.label-preview { display:flex; flex-wrap:wrap; gap:10px; margin-top:15px; }
+.label-card { border:1px solid #000; padding:8px; width:58mm; height:40mm; font-size:11px; display:flex; flex-direction:column; justify-content:center; text-align:center; background:#fff; color:#000; }
+.badge-print { border:2px solid #000; padding:15px; width:120mm; height:76mm; margin:10px auto; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#fff; color:#000; font-family:sans-serif; }
+.badge-print .qr { margin:10px 0; font-family:monospace; font-size:24px; letter-spacing:2px; }
+.robot-log { height:150px; overflow-y:auto; background:var(--bg-input); padding:10px; border-radius:8px; font-family:monospace; font-size:11px; }
+.int-log { height:120px; overflow-y:auto; background:var(--bg-input); padding:10px; border-radius:8px; font-family:monospace; font-size:11px; }
+.api-key-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.api-key-row input { flex:1; }
+</style>
+</head>
+<body>
+ 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+ 
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>📦 СкладКонтроль</h2>
+    <p>Система управления персоналом</p>
+  </div>
+  <nav class="nav-menu">
+    <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Дашборд
+    </div>
+    <div class="nav-item" data-section="warehouse" onclick="showSection('warehouse',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      🏭 Склад
+    </div>
+    <div class="nav-item" data-section="receiving" onclick="showSection('receiving',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      📥 Приёмка
+    </div>
+    <div class="nav-item" data-section="shipping" onclick="showSection('shipping',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      📤 Отгрузка
+    </div>
+    <div class="nav-item" data-section="employees" onclick="showSection('employees',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      👥 Сотрудники
+    </div>
+    <div class="nav-item" data-section="timetracking" onclick="showSection('timetracking',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ⏱️ Учёт времени
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="labels" onclick="showSection('labels',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      🏷️ Этикетки
+    </div>
+    <div class="nav-item" data-section="badges" onclick="showSection('badges',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      🪪 Бейджи & Смены
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="marketplace" onclick="showSection('marketplace',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      🛒 ТЗ Маркетплейсы
+    </div>
+    <div class="nav-item" data-section="robot" onclick="showSection('robot',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+      🤖 Робот FBS/FBO
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="integrations" onclick="showSection('integrations',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      🔗 Интеграции
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="rates" onclick="showSection('rates',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      💰 Часовые ставки
+    </div>
+    <div class="nav-item" data-section="fines" onclick="showSection('fines',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      ⚠️ Штрафы
+    </div>
+    <div class="nav-item" data-section="avoidfines" onclick="showSection('avoidfines',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      ✅ Как не получить штраф
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="timesheet" onclick="showSection('timesheet',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      📅 Табель
+    </div>
+    <div class="nav-item" data-section="documents" onclick="showSection('documents',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      📄 Документы
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="chatbot" onclick="showSection('chatbot',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      🤖 Бот-помощник
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="importexport" onclick="showSection('importexport',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      📥📤 Импорт / Экспорт
+    </div>
+  </nav>
+</aside>
+ 
+<div class="main" id="mainContent">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h1 id="pageTitle">Дашборд</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="live-time" id="liveTime"></div>
+    </div>
+  </header>
+ 
+  <div class="content">
+ 
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(99,102,241,0.15);color:var(--primary-light)">👥</div>
+          <div class="stat-value" id="statTotalEmps">0</div>
+          <div class="stat-label">Всего сотрудников</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success)">✅</div>
+          <div class="stat-value" id="statOnline">0</div>
+          <div class="stat-label">На складе сейчас</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning)">⏱️</div>
+          <div class="stat-value" id="statHours">0</div>
+          <div class="stat-label">Часов за месяц</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:var(--danger)">⚠️</div>
+          <div class="stat-value" id="statFines">0</div>
+          <div class="stat-label">Штрафов за месяц</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>📊 Сотрудники сегодня</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Сотрудник</th><th>Должность</th><th>Статус</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead>
+              <tbody id="dashEmpTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>🔔 Последние штрафы</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th></tr></thead>
+              <tbody id="dashFineTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- WAREHOUSE -->
+    <div class="section" id="sec-warehouse">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🏭 Склад — Товары</h3>
+          <div class="wh-actions">
+            <button class="btn btn-primary" onclick="openAddProductModal()">➕ Добавить товар</button>
+            <button class="btn btn-success" onclick="exportWarehouseCSV()">📥 Excel</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="wh-search">
+            <input type="text" class="form-control" id="whSearch" placeholder="Поиск по названию, артикулу, штрихкоду..." oninput="filterWarehouse()">
+            <select class="form-control" id="whCategory" style="width:auto" onchange="filterWarehouse()">
+              <option value="">Все категории</option>
+            </select>
+            <select class="form-control" id="whLocation" style="width:auto" onchange="filterWarehouse()">
+              <option value="">Все места</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Артикул</th><th>Штрихкод</th><th>Название</th><th>Категория</th><th>Место</th>
+                  <th>Кол-во</th><th>Вес</th><th>Цена</th><th>Годен до</th><th>Действия</th>
+                </tr>
+              </thead>
+              <tbody id="warehouseTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- RECEIVING -->
+    <div class="section" id="sec-receiving">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>📥 Приёмка товара</h3>
+          <button class="btn btn-primary" onclick="openReceivingModal()">➕ Новая приёмка</button>
+        </div>
+        <div class="panel-body">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('rec-list',this)">📋 Список</div>
+            <div class="tab" onclick="switchTab('rec-scanner',this)">📱 Сканер</div>
+          </div>
+          <div class="tab-content active" id="tab-rec-list">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Товар</th><th>Кол-во</th><th>Вес общий</th><th>Статус</th><th>Действия</th></tr></thead>
+                <tbody id="receivingTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-content" id="tab-rec-scanner">
+            <div class="form-group">
+              <label>Штрихкод / Артикул:</label>
+              <input type="text" class="form-control" id="scanInput" placeholder="Отсканируйте или введите..." onkeypress="if(event.key==='Enter')addScannedItem()">
+            </div>
+            <div class="form-group">
+              <label>Количество:</label>
+              <input type="number" class="form-control" id="scanQty" value="1" min="1" style="width:120px">
+            </div>
+            <button class="btn btn-success" onclick="addScannedItem()">✅ Принять товар</button>
+            <div class="mt-4">
+              <h4 class="mb-2">Отсканированные товары:</h4>
+              <div id="scannedItems"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- SHIPPING -->
+    <div class="section" id="sec-shipping">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>📤 Отгрузка товара</h3>
+          <button class="btn btn-primary" onclick="openShippingModal()">➕ Новая отгрузка</button>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>№</th><th>Дата</th><th>Клиент</th><th>Товар</th><th>Кол-во</th><th>Вес общий</th><th>Статус</th><th>Действия</th></tr></thead>
+              <tbody id="shippingTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- EMPLOYEES -->
+    <div class="section" id="sec-employees">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>👥 Сотрудники</h3>
+          <button class="btn btn-primary" onclick="openAddEmployeeModal()">➕ Добавить</button>
+        </div>
+        <div class="panel-body">
+          <div class="stats-grid" id="empCardsGrid"></div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- TIME TRACKING -->
+    <div class="section" id="sec-timetracking">
+      <div class="panel">
+        <div class="panel-header"><h3>⏱️ Учёт времени</h3></div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Сотрудник</label>
+            <select class="form-control" id="ttEmployee" onchange="loadTTInfo()"></select>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Приход</div>
+              <div class="stat-value" id="ttCheckIn" style="font-size:20px;">—</div>
+            </div>
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Уход</div>
+              <div class="stat-value" id="ttCheckOut" style="font-size:20px;">—</div>
+            </div>
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Отработано</div>
+              <div class="stat-value" id="ttHoursWorked" style="font-size:20px;">—</div>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-success" onclick="checkIn()">✅ Приход</button>
+            <button class="btn btn-danger" onclick="checkOut()">🚪 Уход</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>📋 История отметок</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Дата</th><th>Сотрудник</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead>
+              <tbody id="timeHistoryTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- LABELS -->
+    <div class="section" id="sec-labels">
+      <div class="panel">
+        <div class="panel-header"><h3>🏷️ Печать этикеток</h3></div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Выберите товар:</label>
+            <select class="form-control" id="labelProduct" onchange="updateLabelPreview()"></select>
+          </div>
+          <div class="form-group">
+            <label>Количество этикеток:</label>
+            <input type="number" class="form-control" id="labelQty" value="1" min="1" max="100">
+          </div>
+          <button class="btn btn-primary" onclick="generateLabels()">🖨️ Создать и печатать</button>
+          <div id="labelPreview" class="label-preview"></div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- BADGES -->
+    <div class="section" id="sec-badges">
+      <div class="panel">
+        <div class="panel-header"><h3>🪪 Бейджи & Смены</h3></div>
+        <div class="panel-body">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('badge-print',this)">🖨️ Печать бейджа</div>
+            <div class="tab" onclick="switchTab('badge-scan',this)">📱 Сканирование смен</div>
+          </div>
+          <div class="tab-content active" id="tab-badge-print">
+            <div class="form-group">
+              <label>Выберите сотрудника:</label>
+              <select class="form-control" id="badgeEmployee" onchange="updateBadgePreview()"></select>
+            </div>
+            <div id="badgePreviewContainer" style="text-align:center;padding:20px;border:2px dashed var(--border);border-radius:var(--radius);margin-top:15px">
+              <p style="color:var(--text-muted)">Выберите сотрудника для генерации бейджа</p>
+            </div>
+            <button class="btn btn-primary mt-2" onclick="printBadge()">🖨️ Печать бейджа</button>
+          </div>
+          <div class="tab-content" id="tab-badge-scan">
+            <div class="form-group">
+              <label>Отсканируйте QR бейджа:</label>
+              <input type="text" class="form-control" id="shiftScan" placeholder="Сканируйте..." onkeypress="if(event.key==='Enter')logShift()">
+            </div>
+            <button class="btn btn-success" onclick="logShift()">✅ Зафиксировать смену</button>
+            <div class="mt-4">
+              <h4 class="mb-2">Журнал смен:</h4>
+              <div id="shiftLog" style="max-height:200px;overflow-y:auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- ROBOT -->
+    <div class="section" id="sec-robot">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🤖 Робот FBS/FBO</h3>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select class="form-control" id="robotMode" style="width:auto">
+              <option value="fbs">FBS (со своего склада)</option>
+              <option value="fbo">FBO (со склада маркетплейса)</option>
+            </select>
+            <button class="btn btn-primary" onclick="toggleRobot()">▶️ Запуск / ⏹ Стоп</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(99,102,241,0.15);color:var(--primary-light)">📦</div>
+              <div class="stat-value" id="robotQueue">0</div>
+              <div class="stat-label">В очереди</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning)">⚙️</div>
+              <div class="stat-value" id="robotWorking">0</div>
+              <div class="stat-label">В работе</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success)">✅</div>
+              <div class="stat-value" id="robotDone">0</div>
+              <div class="stat-label">Выполнено</div>
+            </div>
+          </div>
+          <div class="robot-log" id="robotLog">Робот ожидает команды...</div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- INTEGRATIONS -->
+    <div class="section" id="sec-integrations">
+      <div class="panel">
+        <div class="panel-header"><h3>🔗 Интеграции</h3></div>
+        <div class="panel-body">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('int-1c',this)">1С</div>
+            <div class="tab" onclick="switchTab('int-diadoc',this)">Диадок</div>
+            <div class="tab" onclick="switchTab('int-wms',this)">WMS</div>
+            <div class="tab" onclick="switchTab('int-keys',this)">🔑 API Ключи</div>
+          </div>
+          <div class="tab-content active" id="tab-int-1c">
+            <button class="btn btn-primary" onclick="sync1C()">🔄 Синхронизировать с 1С</button>
+            <div class="int-log" id="log1c">Ожидание подключения...</div>
+          </div>
+          <div class="tab-content" id="tab-int-diadoc">
+            <button class="btn btn-success" onclick="syncDiadoc()">📤 Отправить акт в Диадок</button>
+            <div class="int-log" id="logDiadoc">Ожидание...</div>
+          </div>
+          <div class="tab-content" id="tab-int-wms">
+            <button class="btn btn-warning" onclick="syncWMS()">📡 Обновить остатки в WMS</button>
+            <div class="int-log" id="logWMS">Ожидание...</div>
+          </div>
+          <div class="tab-content" id="tab-int-keys">
+            <h4 class="mb-2">Клиентские API ключи</h4>
+            <div class="api-key-row">
+              <input type="text" class="form-control" id="apiClient" placeholder="Название клиента">
+              <input type="text" class="form-control" id="apiKey" placeholder="Ключ (токен)">
+              <button class="btn btn-success" onclick="addApiKey()">➕</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Клиент</th><th>Ключ</th><th>Статус</th><th>Действия</th></tr></thead>
+                <tbody id="apiKeysTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- RATES -->
+    <div class="section" id="sec-rates">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>💰 Часовые ставки</h3>
+          <button class="btn btn-primary btn-sm" onclick="saveAllRates()">💾 Сохранить</button>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Сотрудник</th><th>Должность</th><th>Ставка ₽/ч</th><th>Часы/мес</th><th>Начислено</th><th>Штрафы</th><th>Итого</th></tr></thead>
+              <tbody id="ratesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- FINES -->
+    <div class="section" id="sec-fines">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>⚠️ Штрафы на складе</h3>
+          <button class="btn btn-danger" onclick="openFineModal()">➕ Назначить штраф</button>
+        </div>
+        <div class="panel-body">
+          <h4 style="margin-bottom:14px;color:var(--danger);font-size:14px;">📋 За что штраф:</h4>
+          <div class="rules-grid">
+            <div class="rule-card"><div class="rule-icon">⏰</div><h4>Опоздание</h4><p>Более 10 минут без причины</p><div class="rule-amount">500 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🚬</div><h4>Курение</h4><p>Вне зоны для курения</p><div class="rule-amount">1 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">📱</div><h4>Телефон</h4><p>Использование в рабочее время</p><div class="rule-amount">500 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🧹</div><h4>Чистота</h4><p>Неубранное рабочее место</p><div class="rule-amount">700 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">📦</div><h4>Порча товара</h4><p>Повреждение по невнимательности</p><div class="rule-amount">2 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🦺</div><h4>Без спецодежды</h4><p>Работа без СИЗ</p><div class="rule-amount">1 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🏃</div><h4>Самовольный уход</h4><p>Уход без уведомления</p><div class="rule-amount">1 500 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🗣️</div><h4>Конфликт</h4><p>Оскорбления, грубость</p><div class="rule-amount">2 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">📋</div><h4>Ошибка в заказе</h4><p>Неверная сборка, пересорт</p><div class="rule-amount">1 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🔒</div><h4>Нарушение ТБ</h4><p>Игнорирование правил безопасности</p><div class="rule-amount">3 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🍺</div><h4>Алкоголь/наркотики</h4><p>Появление в нетрезвом виде</p><div class="rule-amount">5 000 ₽</div></div>
+            <div class="rule-card"><div class="rule-icon">🚫</div><h4>Хищение</h4><p>Кража товара или имущества</p><div class="rule-amount">10 000 ₽ + увольнение</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>📜 История штрафов</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th><th>Статус</th></tr></thead>
+              <tbody id="finesHistoryTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- AVOID FINES -->
+    <div class="section" id="sec-avoidfines">
+      <div class="panel">
+        <div class="panel-header"><h3>✅ Как не получить штраф</h3></div>
+        <div class="panel-body">
+          <div class="avoid-card"><h4>✅ Приходите вовремя</h4><p>Приходите за 10 минут до смены. Если опаздываете — звоните администратору заранее. Опоздание >10 мин = 500 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Курите только в зоне курения</h4><p>Курение на территории склада запрещено. Перерывы на курение — 15 мин каждые 2 часа. Штраф — 1 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Телефон только в перерывах</h4><p>Убирайте телефон в шкафчик. Срочные звонки — через администратора. Штраф — 500 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Держите рабочее место в чистоте</h4><p>Убирайте после каждой смены. Мусор в контейнеры, паллеты на места. Штраф — 700 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Берегите товар</h4><p>Проверяйте при приёмке. Не бросайте коробки. При повреждении — сообщайте сразу. Штраф — от 2 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Носите спецодежду</h4><p>Каска, жилет, перчатки, спецобувь — обязательны. Штраф — 1 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Не уходите без разрешения</h4><p>Сообщайте администратору. Штраф за самовольный уход — 1 500 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Будьте вежливы</h4><p>Уважайте коллег. Конфликты через администратора. Штраф — 2 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Проверяйте заказы</h4><p>Дважды проверяйте артикул и количество. Сканируйте каждый товар. Штраф — 1 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Соблюдайте ТБ</h4><p>Не используйте оборудование без обучения. Не стойте под грузом. Штраф — 3 000 ₽.</p></div>
+          <div class="avoid-card"><h4>✅ Трезвость — закон</h4><p>Алкоголь и наркотики запрещены. Появление = 5 000 ₽ + увольнение.</p></div>
+          <div class="avoid-card"><h4>✅ Не берите чужое</h4><p>Хищение = 10 000 ₽ + увольнение + полиция. Весь склад под видеонаблюдением.</p></div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- TIMESHEET -->
+    <div class="section" id="sec-timesheet">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>📅 Табель</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="form-control" id="tsMonth" style="width:auto;" onchange="renderTimesheet()"></select>
+            <select class="form-control" id="tsEmployee" style="width:auto;" onchange="renderTimesheet()"></select>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Дата</th><th>День</th><th>Приход</th><th>Уход</th><th>Часы</th><th>Ставка</th><th>Сумма</th><th>Штрафы</th></tr></thead>
+              <tbody id="timesheetTable"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:16px;padding:14px;background:var(--bg-input);border-radius:var(--radius-sm);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div><strong>Часов:</strong> <span id="tsTotalHours">0</span></div>
+            <div><strong>Начислено:</strong> <span id="tsTotalPay" style="color:var(--success);font-weight:700;">0 ₽</span></div>
+            <div><strong>Штрафы:</strong> <span id="tsTotalFines" style="color:var(--danger);font-weight:700;">0 ₽</span></div>
+            <div><strong>К выплате:</strong> <span id="tsTotalNet" style="color:var(--primary-light);font-weight:700;font-size:16px;">0 ₽</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- DOCUMENTS -->
+    <div class="section" id="sec-documents">
+      <div class="panel">
+        <div class="panel-header"><h3>📄 Формирование документов</h3></div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+            <div class="form-group"><label>Тип</label><select class="form-control" id="docType"><option value="report">Отчёт по сотруднику</option><option value="fines_report">Отчёт по штрафам</option><option value="payroll">Расчётная ведомость</option><option value="timesheet_doc">Табель</option></select></div>
+            <div class="form-group"><label>Сотрудник</label><select class="form-control" id="docEmployee"><option value="all">Все</option></select></div>
+            <div class="form-group"><label>Период</label><select class="form-control" id="docPeriod"><option value="current">Текущий месяц</option><option value="prev">Предыдущий</option></select></div>
+          </div>
+          <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-primary" onclick="generateDocument()">📄 Сформировать</button>
+            <button class="btn btn-ghost" onclick="window.print()">🖨️ Печать</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="docPreviewPanel" style="display:none;">
+        <div class="panel-header"><h3>Предпросмотр</h3></div>
+        <div class="panel-body"><div class="doc-preview" id="docPreview"></div></div>
+      </div>
+    </div>
+ 
+    <!-- CHATBOT -->
+    <div class="section" id="sec-chatbot">
+      <div class="panel">
+        <div class="panel-header"><h3>🤖 Бот-помощник</h3></div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="quick-actions">
+            <button class="quick-btn" onclick="sendQuickMsg('Какие штрафы есть?')">Штрафы</button>
+            <button class="quick-btn" onclick="sendQuickMsg('Как избежать штрафов?')">Избежать штрафов</button>
+            <button class="quick-btn" onclick="sendQuickMsg('Кто сейчас на складе?')">Кто на складе?</button>
+            <button class="quick-btn" onclick="sendQuickMsg('Как сформировать отчёт?')">Отчёты</button>
+            <button class="quick-btn" onclick="sendQuickMsg('Правила техники безопасности')">ТБ</button>
+          </div>
+          <div class="chat-input-wrap">
+            <input type="text" id="chatInput" placeholder="Ваш вопрос..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- IMPORT/EXPORT -->
+    <div class="section" id="sec-importexport">
+      <div class="panel">
+        <div class="panel-header"><h3>📥📤 Импорт и Экспорт системы</h3></div>
+        <div class="panel-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+            Вы можете выгрузить все данные системы (сотрудники, товары, время, штрафы) в файл и загрузить обратно.
+            Это удобно для резервных копий и переноса на другое устройство.
+          </p>
+ 
+          <h4 style="font-size:14px;margin-bottom:12px;">📤 Экспорт</h4>
+          <div class="btn-group" style="margin-bottom:24px;">
+            <button class="btn btn-success" onclick="exportJSON()">📋 Экспорт JSON</button>
+            <button class="btn btn-primary" onclick="exportCSV()">📊 Экспорт CSV</button>
+            <button class="btn btn-warning" onclick="exportFullBackup()">💾 Полный бэкап</button>
+            <button class="btn btn-info" onclick="exportWarehouseExcel()">📦 Склад (Excel)</button>
+          </div>
+ 
+          <h4 style="font-size:14px;margin-bottom:12px;">📥 Импорт</h4>
+          <div class="btn-group" style="margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📁 Загрузить файл</button>
+            <button class="btn btn-danger" onclick="clearAllData()">🗑️ Очистить все данные</button>
+          </div>
+          <input type="file" id="fileInput" accept=".json,.csv" onchange="importFile(event)">
+ 
+          <div id="importStatus" style="margin-top:16px;font-size:13px;"></div>
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+</div>
+ 
+<!-- MODALS -->
+<div class="modal-overlay" id="modalAddEmployee">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>➕ Добавить сотрудника</h3>
+      <button class="modal-close" onclick="closeModal('modalAddEmployee')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="newEmpName" placeholder="Имя сотрудника"></div>
+      <div class="form-group"><label>Должность</label><select class="form-control" id="newEmpRole"><option>Сборщик</option><option>Администратор</option><option>Кладовщик</option><option>Водитель погрузчика</option><option>Грузчик</option></select></div>
+      <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="newEmpRate" value="500"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalAddEmployee')">Отмена</button>
+      <button class="btn btn-primary" onclick="addEmployee()">Добавить</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal-overlay" id="modalEditEmployee">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ Редактировать</h3>
+      <button class="modal-close" onclick="closeModal('modalEditEmployee')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editEmpId">
+      <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="editEmpName"></div>
+      <div class="form-group"><label>Должность</label><select class="form-control" id="editEmpRole"><option>Сборщик</option><option>Администратор</option><option>Кладовщик</option><option>Водитель погрузчика</option><option>Грузчик</option></select></div>
+      <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="editEmpRate"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditEmployee')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveEmployeeEdit()">Сохранить</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal-overlay" id="modalFine">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚠️ Назначить штраф</h3>
+      <button class="modal-close" onclick="closeModal('modalFine')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Сотрудник</label><select class="form-control" id="fineEmployee"></select></div>
+      <div class="form-group">
+        <button type="button" class="btn btn-warning btn-sm" onclick="autoGenerateFine()" style="width:100%; justify-content:center; margin-bottom:10px;">
+          🎲 Сгенерировать случайный штраф
+        </button>
+      </div>
+      <div class="form-group">
+        <label>Причина</label>
+        <select class="form-control" id="fineReason" onchange="autoFillFineAmount()">
+          <option value="">Выберите...</option>
+          <option value="Опоздание|500">Опоздание (500 ₽)</option>
+          <option value="Курение в неположенном месте|1000">Курение (1 000 ₽)</option>
+          <option value="Использование телефона|500">Телефон (500 ₽)</option>
+          <option value="Нарушение чистоты|700">Чистота (700 ₽)</option>
+          <option value="Порча товара|2000">Порча товара (2 000 ₽)</option>
+          <option value="Без спецодежды|1000">Без спецодежды (1 000 ₽)</option>
+          <option value="Самовольный уход|1500">Самовольный уход (1 500 ₽)</option>
+          <option value="Конфликт с коллегами|2000">Конфликт (2 000 ₽)</option>
+          <option value="Ошибка в заказе|1000">Ошибка в заказе (1 000 ₽)</option>
+          <option value="Нарушение ТБ|3000">Нарушение ТБ (3 000 ₽)</option>
+          <option value="Алкоголь/наркотики|5000">Алкоголь/наркотики (5 000 ₽)</option>
+          <option value="Хищение|10000">Хищение (10 000 ₽)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Сумма штрафа (₽)</label><input type="number" class="form-control" id="fineAmount"></div>
+      <div class="form-group"><label>Комментарий</label><textarea class="form-control" id="fineComment" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalFine')">Отмена</button>
+      <button class="btn btn-danger" onclick="applyFine()">Назначить</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="modalAddProduct">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="productModalTitle">Добавить товар</h3>
+      <button class="modal-close" onclick="closeModal('modalAddProduct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prodId">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div class="form-group"><label>Артикул / Штрихкод *</label><input type="text" class="form-control" id="prodSku" required></div>
+        <div class="form-group"><label>Штрихкод (EAN-13)</label><input type="text" class="form-control" id="prodBarcode" placeholder="4600000000000"></div>
+      </div>
+      <div class="form-group"><label>Название *</label><input type="text" class="form-control" id="prodName" required></div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div class="form-group"><label>Категория</label><input type="text" class="form-control" id="prodCategory"></div>
+        <div class="form-group"><label>Место хранения</label><input type="text" class="form-control" id="prodLocation"></div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px">
+        <div class="form-group"><label>Кол-во</label><input type="number" class="form-control" id="prodQty" value="0" min="0"></div>
+        <div class="form-group"><label>Вес (кг) *</label><input type="number" class="form-control" id="prodWeight" value="0" step="0.001" min="0"></div>
+        <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="prodExpiry"></div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div class="form-group"><label>Цена закупки (₽)</label><input type="number" class="form-control" id="prodCost" value="0" step="0.01"></div>
+        <div class="form-group"><label>Цена продажи (₽)</label><input type="number" class="form-control" id="prodPrice" value="0" step="0.01"></div>
+      </div>
+      <div class="form-group"><label>Описание</label><textarea class="form-control" id="prodDesc" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalAddProduct')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIVING MODAL -->
+<div class="modal-overlay" id="modalReceiving">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📥 Новая приёмка</h3>
+      <button class="modal-close" onclick="closeModal('modalReceiving')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="recSupplier"></div>
+        <div class="form-group"><label>Накладная №</label><input type="text" class="form-control" id="recInvoice"></div>
+      </div>
+      <div class="form-group"><label>Комментарий</label><textarea class="form-control" id="recComment" rows="2"></textarea></div>
+      <h4 class="mb-2">Товары:</h4>
+      <div id="recItems"></div>
+      <button class="btn btn-ghost btn-sm mt-2" onclick="addReceivingItemRow()">➕ Добавить товар</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalReceiving')">Отмена</button>
+      <button class="btn btn-success" onclick="saveReceiving()">✅ Создать приёмку</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHIPPING MODAL -->
+<div class="modal-overlay" id="modalShipping">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📤 Новая отгрузка</h3>
+      <button class="modal-close" onclick="closeModal('modalShipping')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="shipClient"></div>
+        <div class="form-group"><label>Заказ №</label><input type="text" class="form-control" id="shipOrder"></div>
+      </div>
+      <div class="form-group"><label>Адрес доставки</label><input type="text" class="form-control" id="shipAddress"></div>
+      <h4 class="mb-2">Товары:</h4>
+      <div id="shipItems"></div>
+      <button class="btn btn-ghost btn-sm mt-2" onclick="addShippingItemRow()">➕ Добавить товар</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalShipping')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveShipping()">📤 Создать отгрузку</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="toast-container" id="toastContainer"></div>
+ 
+<script>
+// ===== ДАННЫЕ И ХРАНИЛИЩЕ =====
+let employees = [];
+let products = [];
+let timeRecords = [];
+let fines = [];
+let receivings = [];
+let shippings = [];
+let apiKeys = [];
+let nextEmpId = 1;
+let nextProdId = 1;
+let scannedItems = [];
+let robotInterval = null;
+let robotQueue = 0, robotWorking = 0, robotDone = 0;
+
+// Загрузка данных
+async function loadData() {
+    try {
+        const response = await fetch('api.php?action=get');
+        if(response.ok) {
+            const data = await response.json();
+            if(data.employees) employees = data.employees;
+            if(data.products) products = data.products;
+            if(data.timeRecords) timeRecords = data.timeRecords;
+            if(data.fines) fines = data.fines;
+            if(data.receivings) receivings = data.receivings;
+            if(data.shippings) shippings = data.shippings;
+            if(data.apiKeys) apiKeys = data.apiKeys;
+            if(data.nextEmpId) nextEmpId = data.nextEmpId;
+            if(data.nextProdId) nextProdId = data.nextProdId;
+            console.log("✅ Данные загружены с сервера");
+        } else {
+            loadFromLocalStorage();
+        }
+    } catch(e) {
+        console.log("ℹ️ API недоступен, используем localStorage");
+        loadFromLocalStorage();
+    }
+    init();
+}
+
+// Сохранение данных
+async function saveData() {
+    const payload = {
+        employees, products, timeRecords, fines, receivings, shippings, apiKeys,
+        nextEmpId, nextProdId
+    };
+    
+    try {
+        await fetch('api.php?action=save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        saveToStorage(); // Дублируем в localStorage для скорости
+        updateSaveStatus();
+    } catch(e) {
+        console.error("Ошибка сохранения:", e);
+        showToast("⚠️ Данные сохранены только локально", "info");
+    }
+}
+
+// localStorage
+function saveToStorage() {
+  try {
+    localStorage.setItem('wh_employees', JSON.stringify(employees));
+    localStorage.setItem('wh_products', JSON.stringify(products));
+    localStorage.setItem('wh_timeRecords', JSON.stringify(timeRecords));
+    localStorage.setItem('wh_fines', JSON.stringify(fines));
+    localStorage.setItem('wh_receivings', JSON.stringify(receivings));
+    localStorage.setItem('wh_shippings', JSON.stringify(shippings));
+    localStorage.setItem('wh_apiKeys', JSON.stringify(apiKeys));
+    localStorage.setItem('wh_nextEmpId', nextEmpId);
+    localStorage.setItem('wh_nextProdId', nextProdId);
+  } catch(e) { console.error('Storage error:', e); }
+}
+ 
+function loadFromLocalStorage() {
+  try {
+    const e = localStorage.getItem('wh_employees');
+    const p = localStorage.getItem('wh_products');
+    const t = localStorage.getItem('wh_timeRecords');
+    const f = localStorage.getItem('wh_fines');
+    const r = localStorage.getItem('wh_receivings');
+    const s = localStorage.getItem('wh_shippings');
+    const k = localStorage.getItem('wh_apiKeys');
+    const n1 = localStorage.getItem('wh_nextEmpId');
+    const n2 = localStorage.getItem('wh_nextProdId');
+    
+    if (e) employees = JSON.parse(e);
+    if (p) products = JSON.parse(p);
+    if (t) timeRecords = JSON.parse(t);
+    if (f) fines = JSON.parse(f);
+    if (r) receivings = JSON.parse(r);
+    if (s) shippings = JSON.parse(s);
+    if (k) apiKeys = JSON.parse(k);
+    if (n1) nextEmpId = parseInt(n1);
+    if (n2) nextProdId = parseInt(n2);
+    
+    // Демо-данные если пусто
+    if(employees.length === 0) {
+        employees = [
+          {id:1,name:'Инна',role:'Администратор',rate:600,color:'#6366f1'},
+          {id:2,name:'Наташа',role:'Сборщик',rate:450,color:'#10b981'},
+          {id:3,name:'Алексей',role:'Кладовщик',rate:500,color:'#f59e0b'}
+        ];
+        nextEmpId = 4;
+    }
+    if(products.length === 0) {
+        products = [
+          {id:1,sku:'ART-001',barcode:'4601234567890',name:'Товар тестовый',category:'Электроника',location:'A-01',qty:50,weight:0.5,expiry:'2025-12-31',cost:300,price:500,desc:'Тестовый товар'},
+          {id:2,sku:'ART-002',barcode:'4609876543210',name:'Упаковка картон',category:'Упаковка',location:'B-05',qty:200,weight:0.2,expiry:'',cost:50,price:100,desc:'Картонная коробка'}
+        ];
+        nextProdId = 3;
+    }
+  } catch(ex) { console.error('Storage load error:', ex); }
+}
+
+// ===== УТИЛИТЫ =====
+const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#06b6d4','#84cc16'];
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n||0).toLocaleString('ru-RU') + ' ₽';
+const esc = s => {const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const today = () => new Date().toISOString().slice(0,10);
+const now = () => new Date().toLocaleString('ru-RU');
+const calcHours = (ci, co) => {
+  if (!ci) return 0;
+  if (!co) co = '23:59';
+  const [h1,m1] = ci.split(':').map(Number);
+  const [h2,m2] = co.split(':').map(Number);
+  let diff = (h2*60+m2) - (h1*60+m1);
+  if (diff < 0) diff += 1440;
+  return (diff/60).toFixed(1);
+};
+
+// ===== TOAST =====
+function showToast(msg, type) {
+  type = type || 'info';
+  const c = $('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ===== ВРЕМЯ =====
+function updateLiveTime() {
+  const now = new Date();
+  const d = now.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const t = now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  $('liveTime').textContent = d + ' ' + t;
+}
+
+// ===== НАВИГАЦИЯ =====
+function showSection(id, navEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  $('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+ 
+  const titles = {
+    dashboard:'Дашборд', warehouse:'🏭 Склад', receiving:'📥 Приёмка', shipping:'📤 Отгрузка',
+    employees:'👥 Сотрудники', timetracking:'⏱️ Учёт времени', labels:'🏷️ Этикетки',
+    badges:'🪪 Бейджи', marketplace:'🛒 ТЗ Маркетплейсы', robot:'🤖 Робот',
+    integrations:'🔗 Интеграции', rates:'💰 Ставки', fines:'⚠️ Штрафы',
+    avoidfines:'✅ Без штрафов', timesheet:'📅 Табель', documents:'📄 Документы',
+    chatbot:'🤖 Бот', importexport:'📥📤 Импорт/Экспорт'
+  };
+  $('pageTitle').textContent = titles[id] || '';
+ 
+  // Рендер при переходе
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'warehouse') { renderWarehouse(); updateWarehouseFilters(); }
+  if (id === 'receiving') renderReceiving();
+  if (id === 'shipping') renderShipping();
+  if (id === 'employees') renderEmployees();
+  if (id === 'timetracking') { renderTimeHistory(); populateSelects(); }
+  if (id === 'labels') { renderLabels(); updateLabelPreview(); }
+  if (id === 'badges') { renderBadges(); updateBadgePreview(); }
+  if (id === 'robot') renderRobot();
+  if (id === 'integrations') renderIntegrations();
+  if (id === 'rates') renderRates();
+  if (id === 'fines') renderFinesHistory();
+  if (id === 'timesheet') renderTimesheet();
+  if (id === 'documents') populateDocEmployeeSelect();
+ 
+  // Мобильное меню
+  if (window.innerWidth <= 768) {
+    $('sidebar').classList.remove('open');
+    $('sidebarOverlay').classList.remove('active');
+  }
+}
+
+function toggleSidebar() {
+  $('sidebar').classList.toggle('open');
+  $('sidebarOverlay').classList.toggle('active');
+}
+
+function switchTab(tabId, btn) {
+  btn.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  btn.parentElement.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  $(tabId).classList.add('active');
+}
+
+// ===== МОДАЛКИ =====
+function openModal(id) { $(id).classList.add('active'); }
+function closeModal(id) { $(id).classList.remove('active'); }
+
+// ===== ПОИСК И ФИЛЬТРЫ =====
+function getEmpName(id) {
+  const e = employees.find(x => x.id === id);
+  return e ? e.name : 'Удалён';
+}
+function getEmpById(id) { return employees.find(x => x.id === id); }
+function getProdById(id) { return products.find(x => x.id === id); }
+function isEmployeeOnline(empId) {
+  const today = new Date().toISOString().slice(0,10);
+  const rec = timeRecords.find(r => r.employeeId === empId && r.date === today);
+  return rec && rec.checkIn && !rec.checkOut;
+}
+function getTodayRecord(empId) {
+  const today = new Date().toISOString().slice(0,10);
+  let rec = timeRecords.find(r => r.employeeId === empId && r.date === today);
+  if (!rec) {
+    rec = {date: today, employeeId: empId, checkIn: null, checkOut: null};
+    timeRecords.push(rec);
+  }
+  return rec;
+}
+
+// ===== РЕНДЕРЫ =====
+function renderEmployees() {
+  const grid = $('empCardsGrid');
+  grid.innerHTML = '';
+  employees.forEach(emp => {
+    const online = isEmployeeOnline(emp.id);
+    const initials = emp.name.charAt(0);
+    grid.innerHTML += `<div class="emp-card">
+      <div class="emp-avatar" style="background:${emp.color}">${initials}</div>
+      <div class="emp-name">${emp.name}</div>
+      <div class="emp-role">${emp.role}</div>
+      <div class="emp-rate">${emp.rate} ₽</div>
+      <div class="emp-rate-label">в час</div>
+      <div class="emp-status ${online?'online':'offline'}">${online?'🟢 На складе':'⚫ Не на складе'}</div>
+      <div class="emp-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editEmployee(${emp.id})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="removeEmployee(${emp.id})">🗑️</button>
+      </div>
+    </div>`;
+  });
+}
+
+function renderWarehouse() {
+  filterWarehouse();
+}
+
+function updateWarehouseFilters() {
+  // Категории
+  const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
+  const catSel = $('whCategory');
+  catSel.innerHTML = '<option value="">Все категории</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  
+  // Места
+  const locs = [...new Set(products.map(p => p.location).filter(Boolean))];
+  const locSel = $('whLocation');
+  locSel.innerHTML = '<option value="">Все места</option>' + locs.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+}
+
+function filterWarehouse() {
+  const search = $('whSearch').value.toLowerCase();
+  const cat = $('whCategory').value;
+  const loc = $('whLocation').value;
+  
+  const filtered = products.filter(p => {
+    const matchSearch = (p.sku+p.barcode+p.name+p.category+p.location).toLowerCase().includes(search);
+    const matchCat = !cat || p.category === cat;
+    const matchLoc = !loc || p.location === loc;
+    return matchSearch && matchCat && matchLoc;
+  });
+  
+  const tbody = $('warehouseTable');
+  tbody.innerHTML = filtered.map(p => {
+    const exp = p.expiry ? (new Date(p.expiry) < new Date() ? '<span class="badge badge-danger">Просрочен</span>' : p.expiry) : '—';
+    return `<tr>
+      <td><strong>${esc(p.sku)}</strong></td>
+      <td style="font-family:monospace">${esc(p.barcode||'—')}</td>
+      <td>${esc(p.name)}</td>
+      <td><span class="badge badge-info">${esc(p.category||'—')}</span></td>
+      <td>${esc(p.location||'—')}</td>
+      <td>${p.qty}</td>
+      <td><strong>${p.weight} кг</strong></td>
+      <td>${fmt(p.price)}</td>
+      <td>${exp}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openEditProductModal(${p.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text-muted)">Нет товаров</td></tr>';
+}
+
+function renderReceiving() {
+  const tbody = $('receivingTable');
+  tbody.innerHTML = receivings.sort((a,b) => b.id - a.id).map(r => {
+    const prod = getProdById(r.productId);
+    const totalWeight = (r.qty * (prod?.weight || 0)).toFixed(2);
+    return `<tr>
+      <td>${r.number}</td>
+      <td>${r.date}</td>
+      <td>${esc(r.supplier)}</td>
+      <td>${prod ? esc(prod.name) : '—'}</td>
+      <td>${r.qty}</td>
+      <td>${totalWeight} кг</td>
+      <td><span class="badge ${r.status==='confirmed'?'badge-success':r.status==='cancelled'?'badge-danger':'badge-warning'}">${r.status==='confirmed'?'✅ Подтверждена':r.status==='cancelled'?'❌ Отменена':'⏳ Ожидает'}</span></td>
+      <td>
+        ${r.status==='pending' ? `<button class="btn btn-success btn-sm" onclick="confirmReceiving(${r.id})">✅</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelReceiving(${r.id})">❌</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center">Нет приёмки</td></tr>';
+}
+
+function renderShipping() {
+  const tbody = $('shippingTable');
+  tbody.innerHTML = shippings.sort((a,b) => b.id - a.id).map(s => {
+    const prod = getProdById(s.productId);
+    const totalWeight = (s.qty * (prod?.weight || 0)).toFixed(2);
+    return `<tr>
+      <td>${s.number}</td>
+      <td>${s.date}</td>
+      <td>${esc(s.client)}</td>
+      <td>${prod ? esc(prod.name) : '—'}</td>
+      <td>${s.qty}</td>
+      <td>${totalWeight} кг</td>
+      <td><span class="badge ${s.status==='shipped'?'badge-success':s.status==='cancelled'?'badge-danger':'badge-warning'}">${s.status==='shipped'?'✅ Отгружено':s.status==='cancelled'?'❌ Отменена':'⏳ Ожидает'}</span></td>
+      <td>
+        ${s.status==='pending' ? `<button class="btn btn-success btn-sm" onclick="confirmShipping(${s.id})">🚚</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelShipping(${s.id})">❌</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center">Нет отгрузок</td></tr>';
+}
+
+function renderLabels() {
+  const sel = $('labelProduct');
+  sel.innerHTML = '<option value="">— Выберите товар —</option>' + products.map(p => 
+    `<option value="${p.id}">${esc(p.name)} (${p.sku}) — ${p.weight} кг</option>`
+  ).join('');
+}
+
+function updateLabelPreview() {
+  const pid = $('labelProduct').value;
+  const qty = parseInt($('labelQty').value) || 1;
+  if(!pid) { $('labelPreview').innerHTML = ''; return; }
+  
+  const p = getProdById(pid);
+  if(!p) return;
+  
+  let html = '';
+  const barcode = p.barcode || p.sku;
+  const expiry = p.expiry ? `Годен: ${new Date(p.expiry).toLocaleDateString('ru-RU')}` : '';
+  
+  for(let i=0; i<qty; i++) {
+    html += `<div class="label-card">
+      <div style="font-weight:bold;font-size:12px">${esc(p.name)}</div>
+      <div style="margin:2px 0">Арт: <strong>${esc(p.sku)}</strong></div>
+      <div style="font-family:monospace;font-size:11px">||| ${esc(barcode)} |||</div>
+      ${expiry ? `<div style="font-size:10px;margin-top:2px">${expiry}</div>` : ''}
+      <div style="font-size:10px;margin-top:2px">Вес: ${p.weight} кг</div>
+    </div>`;
+  }
+  $('labelPreview').innerHTML = html;
+}
+
+function renderBadges() {
+  const sel = $('badgeEmployee');
+  sel.innerHTML = '<option value="">— Выберите сотрудника —</option>' + employees.map(e => 
+    `<option value="${e.id}">${esc(e.name)} (${esc(e.role)})</option>`
+  ).join('');
+}
+
+function updateBadgePreview() {
+  const eid = $('badgeEmployee').value;
+  if(!eid) { $('badgePreviewContainer').innerHTML = '<p style="color:var(--text-muted)">Выберите сотрудника</p>'; return; }
+  
+  const emp = getEmpById(eid);
+  if(!emp) return;
+  
+  const qrData = `EMP:${emp.id}|NAME:${emp.name}|ROLE:${emp.role}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}`;
+  
+  $('badgePreviewContainer').innerHTML = `
+    <div class="badge-print">
+      <div style="font-size:14px;font-weight:700">${esc(emp.name)}</div>
+      <div style="font-size:11px;color:#666;margin-bottom:4px">${esc(emp.role)}</div>
+      <div style="margin:10px 0"><img src="${qrUrl}" alt="QR" style="width:50mm;height:50mm"></div>
+      <div style="font-size:8px;color:#999">ID: ${emp.id}</div>
+      <div style="font-size:8px;color:#999">Сканируйте для начала смены</div>
+    </div>
+  `;
+}
+
+function renderRobot() {
+  $('robotQueue').textContent = robotQueue;
+  $('robotWorking').textContent = robotWorking;
+  $('robotDone').textContent = robotDone;
+}
+
+function renderIntegrations() {
+  renderApiKeys();
+}
+
+function renderApiKeys() {
+  const tbody = $('apiKeysTable');
+  tbody.innerHTML = apiKeys.map(k => `
+    <tr>
+      <td>${esc(k.client)}</td>
+      <td style="font-family:monospace">${esc(k.key.slice(0,8))}***</td>
+      <td><span class="badge badge-success">${k.status}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteApiKey(${k.id})">✕</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Нет ключей</td></tr>';
+}
+
+function renderDashboard() {
+  $('statTotalEmps').textContent = employees.length;
+  $('statOnline').textContent = employees.filter(e => isEmployeeOnline(e.id)).length;
+  $('statHours').textContent = getTotalMonthHours();
+  $('statFines').textContent = fines.filter(f => f.date.startsWith(getCurrentMonth())).length;
+ 
+  // Сотрудники сегодня
+  const tbody = $('dashEmpTable');
+  tbody.innerHTML = '';
+  employees.forEach(emp => {
+    const rec = getTodayRecord(emp.id);
+    const h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '0';
+    tbody.innerHTML += `<tr>
+      <td><strong>${emp.name}</strong></td>
+      <td>${emp.role}</td>
+      <td>${isEmployeeOnline(emp.id) ? '<span class="badge badge-success">🟢 На складе</span>' : '<span class="badge badge-danger">⚫ Не на складе</span>'}</td>
+      <td>${rec.checkIn||'—'}</td>
+      <td>${rec.checkOut||'—'}</td>
+      <td><strong>${h} ч.</strong></td>
+    </tr>`;
+  });
+ 
+  // Последние штрафы
+  const fineTbody = $('dashFineTable');
+  fineTbody.innerHTML = '';
+  const recent = fines.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
+  if (recent.length === 0) {
+    fineTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Штрафов пока нет ✅</td></tr>';
+  } else {
+    recent.forEach(f => {
+      fineTbody.innerHTML += `<tr><td>${f.date}</td><td>${getEmpName(f.employeeId)}</td><td>${f.reason}</td><td><strong style="color:var(--danger)">-${f.amount.toLocaleString()} ₽</strong></td></tr>`;
+    });
+  }
+}
+
+// ===== ТОВАРЫ =====
+function openAddProductModal() {
+  $('productModalTitle').textContent = 'Добавить товар';
+  $('prodId').value = '';
+  $('prodSku').value = '';
+  $('prodBarcode').value = '';
+  $('prodName').value = '';
+  $('prodCategory').value = '';
+  $('prodLocation').value = '';
+  $('prodQty').value = '0';
+  $('prodWeight').value = '0';
+  $('prodExpiry').value = '';
+  $('prodCost').value = '0';
+  $('prodPrice').value = '0';
+  $('prodDesc').value = '';
+  openModal('modalAddProduct');
+}
+
+function openEditProductModal(id) {
+  const p = getProdById(id);
+  if(!p) return;
+  $('productModalTitle').textContent = 'Редактировать товар';
+  $('prodId').value = p.id;
+  $('prodSku').value = p.sku;
+  $('prodBarcode').value = p.barcode || '';
+  $('prodName').value = p.name;
+  $('prodCategory').value = p.category || '';
+  $('prodLocation').value = p.location || '';
+  $('prodQty').value = p.qty;
+  $('prodWeight').value = p.weight;
+  $('prodExpiry').value = p.expiry || '';
+  $('prodCost').value = p.cost;
+  $('prodPrice').value = p.price;
+  $('prodDesc').value = p.desc || '';
+  openModal('modalAddProduct');
+}
+
+function saveProduct() {
+  const id = $('prodId').value;
+  const p = {
+    id: id ? parseInt(id) : nextProdId++,
+    sku: $('prodSku').value.trim(),
+    barcode: $('prodBarcode').value.trim(),
+    name: $('prodName').value.trim(),
+    category: $('prodCategory').value.trim(),
+    location: $('prodLocation').value.trim(),
+    qty: parseInt($('prodQty').value) || 0,
+    weight: parseFloat($('prodWeight').value) || 0,
+    expiry: $('prodExpiry').value,
+    cost: parseFloat($('prodCost').value) || 0,
+    price: parseFloat($('prodPrice').value) || 0,
+    desc: $('prodDesc').value.trim()
+  };
+  
+  if(!p.sku || !p.name) { showToast('Заполните Артикул и Название', 'error'); return; }
+  
+  if(id) {
+    const idx = products.findIndex(x => x.id === p.id);
+    if(idx >= 0) products[idx] = p;
+  } else {
+    products.push(p);
+  }
+  
+  closeModal('modalAddProduct');
+  renderWarehouse();
+  updateWarehouseFilters();
+  renderLabels();
+  saveData();
+  showToast(id ? 'Товар обновлён' : 'Товар добавлен', 'success');
+}
+
+function deleteProduct(id) {
+  if(!confirm('Удалить товар?')) return;
+  products = products.filter(p => p.id !== id);
+  renderWarehouse();
+  renderLabels();
+  saveData();
+  showToast('Товар удалён', 'info');
+}
+
+// ===== ПРИЁМКА =====
+function openReceivingModal() {
+  $('recSupplier').value = '';
+  $('recInvoice').value = '';
+  $('recComment').value = '';
+  $('recItems').innerHTML = '';
+  addReceivingItemRow();
+  openModal('modalReceiving');
+}
+
+function addReceivingItemRow() {
+  const div = $('recItems');
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.marginBottom = '10px';
+  row.innerHTML = `
+    <div style="flex:2">
+      <select class="form-control rec-prod">
+        ${products.map(p => `<option value="${p.id}" data-weight="${p.weight}">${esc(p.sku)} — ${esc(p.name)} (${p.weight} кг)</option>`).join('')}
+      </select>
+    </div>
+    <div style="flex:1">
+      <input type="number" class="form-control rec-qty" value="1" min="1" placeholder="Кол-во">
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove()">✕</button>
+  `;
+  div.appendChild(row);
+}
+
+function saveReceiving() {
+  const items = [];
+  document.querySelectorAll('#recItems .form-row').forEach(row => {
+    const sel = row.querySelector('.rec-prod');
+    const qty = parseInt(row.querySelector('.rec-qty').value) || 0;
+    if(sel && qty > 0) {
+      items.push({
+        productId: parseInt(sel.value),
+        qty: qty,
+        weight: parseFloat(sel.options[sel.selectedIndex].dataset.weight) || 0
+      });
+    }
+  });
+  
+  if(items.length === 0) { showToast('Добавьте хотя бы один товар', 'error'); return; }
+  
+  const rec = {
+    id: Date.now(),
+    number: 'ПР-' + (receivings.length + 1),
+    date: now(),
+    supplier: $('recSupplier').value.trim(),
+    invoice: $('recInvoice').value.trim(),
+    comment: $('recComment').value.trim(),
+    items: items,
+    status: 'pending'
+  };
+  
+  // Обновляем остатки
+  items.forEach(item => {
+    const prod = getProdById(item.productId);
+    if(prod) {
+      prod.qty += item.qty;
+    }
+  });
+  
+  receivings.push(rec);
+  saveData();
+  closeModal('modalReceiving');
+  renderReceiving();
+  renderDashboard();
+  showToast('Приёмка создана', 'success');
+}
+
+function confirmReceiving(id) {
+  const r = receivings.find(x => x.id === id);
+  if(r) { r.status = 'confirmed'; saveData(); renderReceiving(); showToast('Приёмка подтверждена', 'success'); }
+}
+
+function cancelReceiving(id) {
+  if(!confirm('Отменить приёмку?')) return;
+  const r = receivings.find(x => x.id === id);
+  if(r && r.status === 'pending') {
+    r.status = 'cancelled';
+    // Возвращаем товар на склад (если нужно)
+    saveData();
+    renderReceiving();
+    showToast('Приёмка отменена', 'info');
+  }
+}
+
+// ===== СКАНЕР =====
+function addScannedItem() {
+  const sku = $('scanInput').value.trim();
+  const qty = parseInt($('scanQty').value) || 1;
+  if(!sku) { showToast('Введите артикул или штрихкод', 'error'); return; }
+  
+  let prod = products.find(p => p.sku === sku || p.barcode === sku);
+  if(!prod) {
+    prod = {
+      id: nextProdId++,
+      sku: sku,
+      barcode: '',
+      name: 'Товар ' + sku,
+      category: '',
+      location: '',
+      qty: 0,
+      weight: 0,
+      expiry: '',
+      cost: 0,
+      price: 0,
+      desc: ''
+    };
+    products.push(prod);
+    showToast('Создан новый товар: ' + sku, 'info');
+  }
+  
+  scannedItems.push({ productId: prod.id, qty: qty, name: prod.name, sku: prod.sku });
+  $('scanInput').value = '';
+  renderScannedItems();
+  showToast(`✅ ${prod.name} × ${qty}`, 'success');
+}
+
+function renderScannedItems() {
+  const el = $('scannedItems');
+  if(scannedItems.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted)">Нет отсканированных товаров</p>';
+    return;
+  }
+  el.innerHTML = scannedItems.map((item, i) => `
+    <div style="padding:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span><strong>${esc(item.sku)}</strong> ${esc(item.name)} × ${item.qty}</span>
+      <button class="btn btn-danger btn-sm" onclick="scannedItems.splice(${i},1);renderScannedItems()">✕</button>
+    </div>
+  `).join('');
+}
+
+// ===== ОТГРУЗКА =====
+function openShippingModal() {
+  $('shipClient').value = '';
+  $('shipOrder').value = '';
+  $('shipAddress').value = '';
+  $('shipItems').innerHTML = '';
+  addShippingItemRow();
+  openModal('modalShipping');
+}
+
+function addShippingItemRow() {
+  const div = $('shipItems');
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.marginBottom = '10px';
+  row.innerHTML = `
+    <div style="flex:2">
+      <select class="form-control ship-prod">
+        ${products.filter(p => p.qty > 0).map(p => `<option value="${p.id}" data-qty="${p.qty}" data-weight="${p.weight}">${esc(p.sku)} — ${esc(p.name)} (ост.: ${p.qty})</option>`).join('')}
+      </select>
+    </div>
+    <div style="flex:1">
+      <input type="number" class="form-control ship-qty" value="1" min="1" placeholder="Кол-во">
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove()">✕</button>
+  `;
+  div.appendChild(row);
+}
+
+function saveShipping() {
+  const items = [];
+  document.querySelectorAll('#shipItems .form-row').forEach(row => {
+    const sel = row.querySelector('.ship-prod');
+    const qty = parseInt(row.querySelector('.ship-qty').value) || 0;
+    const maxQty = sel ? parseInt(sel.options[sel.selectedIndex].dataset.qty) || 0 : 0;
+    if(sel && qty > 0) {
+      if(qty > maxQty) { showToast('Недостаточно товара на складе', 'error'); return; }
+      items.push({
+        productId: parseInt(sel.value),
+        qty: qty,
+        weight: parseFloat(sel.options[sel.selectedIndex].dataset.weight) || 0
+      });
+    }
+  });
+  
+  if(items.length === 0) { showToast('Добавьте хотя бы один товар', 'error'); return; }
+  
+  const ship = {
+    id: Date.now(),
+    number: 'ОТ-' + (shippings.length + 1),
+    date: now(),
+    client: $('shipClient').value.trim(),
+    order: $('shipOrder').value.trim(),
+    address: $('shipAddress').value.trim(),
+    items: items,
+    status: 'pending'
+  };
+  
+  // Списываем со склада
+  items.forEach(item => {
+    const prod = getProdById(item.productId);
+    if(prod) {
+      prod.qty -= item.qty;
+    }
+  });
+  
+  shippings.push(ship);
+  saveData();
+  closeModal('modalShipping');
+  renderShipping();
+  renderDashboard();
+  showToast('Отгрузка создана', 'success');
+}
+
+function confirmShipping(id) {
+  const s = shippings.find(x => x.id === id);
+  if(s) { s.status = 'shipped'; saveData(); renderShipping(); showToast('Отгрузка подтверждена', 'success'); }
+}
+
+function cancelShipping(id) {
+  if(!confirm('Отменить отгрузку?')) return;
+  const s = shippings.find(x => x.id === id);
+  if(s && s.status === 'pending') {
+    s.status = 'cancelled';
+    // Возвращаем товар на склад
+    s.items.forEach(item => {
+      const prod = getProdById(item.productId);
+      if(prod) prod.qty += item.qty;
+    });
+    saveData();
+    renderShipping();
+    showToast('Отгрузка отменена', 'info');
+  }
+}
+
+// ===== БЕЙДЖИ =====
+function printBadge() {
+  const eid = $('badgeEmployee').value;
+  if(!eid) { showToast('Выберите сотрудника', 'error'); return; }
+  
+  const emp = getEmpById(eid);
+  if(!emp) { showToast('Сотрудник не найден', 'error'); return; }
+  
+  const qrData = `EMP:${emp.id}|NAME:${emp.name}|ROLE:${emp.role}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=ffffff&color=000000&data=${encodeURIComponent(qrData)}`;
+  
+  // Создаем временное изображение для проверки загрузки
+  const testImg = new Image();
+  testImg.src = qrUrl;
+  
+  testImg.onload = function() {
+    // QR-код загрузился, открываем окно печати
+    const w = window.open('', '_blank', 'width=500,height=600,scrollbars=yes');
+    if(!w) { 
+      showToast('⚠️ Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта в настройках браузера.', 'error'); 
+      return; 
+    }
+    
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Бейдж - ${esc(emp.name)}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: Arial, sans-serif; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100vh;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .badge {
+      border: 2px solid #000;
+      padding: 12px;
+      width: 120mm;
+      height: 76mm;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: #fff;
+    }
+    .name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+    .role { font-size: 11px; color: #666; margin-bottom: 8px; }
+    .qr { margin: 6px 0; }
+    .qr img { width: 50mm; height: 50mm; display: block; }
+    .id { font-size: 8px; color: #888; margin-top: 4px; }
+    .hint { font-size: 8px; color: #888; margin-top: 2px; }
+    
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 30px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .print-btn:hover { background: #4338ca; }
+    
+    @media print {
+      body { background: #fff; padding: 0; }
+      .badge { border: 2px solid #000; box-shadow: none; page-break-inside: avoid; }
+      .print-btn { display: none; }
+    }
+    @page { size: auto; margin: 10mm; }
+  </style>
+</head>
+<body>
+  <div style="text-align:center;">
+    <div class="badge">
+      <div class="name">${esc(emp.name)}</div>
+      <div class="role">${esc(emp.role)}</div>
+      <div class="qr">
+        <img src="${qrUrl}" alt="QR" id="qrImg">
+      </div>
+      <div class="id">ID: ${emp.id}</div>
+      <div class="hint">Сканируйте для начала смены</div>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ Печать</button>
+  </div>
+  
+  <script>
+    // Автоматическая печать после загрузки изображения
+    window.onload = function() {
+      const img = document.getElementById('qrImg');
+      if(img && img.complete && img.naturalWidth > 0) {
+        setTimeout(function() { window.print(); }, 300);
+      } else if(img) {
+        img.onload = function() {
+          setTimeout(function() { window.print(); }, 300);
+        };
+      }
+    };
+  <\/script>
+</body>
+</html>`;
+    
+    w.document.open();
+    w.document.write(htmlContent);
+    w.document.close();
+    
+    showToast('🖨️ Бейдж готов! Нажмите кнопку печати в открывшемся окне.', 'success');
+  };
+  
+  testImg.onerror = function() {
+    showToast('❌ Не удалось загрузить QR-код. Проверьте подключение к интернету.', 'error');
+  };
+}
+
+function logShift() {
+  const val = $('shiftScan').value.trim();
+  if(!val || !val.startsWith('EMP:')) { showToast('Неверный формат QR', 'error'); return; }
+  
+  const empId = parseInt(val.split('|')[0].replace('EMP:', ''));
+  const emp = getEmpById(empId);
+  if(!emp) { showToast('Сотрудник не найден', 'error'); return; }
+  
+  const today = new Date().toISOString().slice(0,10);
+  let rec = timeRecords.find(r => r.employeeId === empId && r.date === today);
+  
+  if(!rec) {
+    rec = { date: today, employeeId: empId, checkIn: null, checkOut: null };
+    timeRecords.push(rec);
+  }
+  
+  if(!rec.checkIn) {
+    const now = new Date();
+    rec.checkIn = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    showToast(`🟢 Смена начата: ${emp.name} в ${rec.checkIn}`, 'success');
+  } else if(!rec.checkOut) {
+    const now = new Date();
+    rec.checkOut = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    const hours = calcHours(rec.checkIn, rec.checkOut);
+    showToast(`🔴 Смена завершена: ${emp.name} — ${hours} ч.`, 'success');
+  } else {
+    showToast('Смена уже завершена сегодня', 'info');
+  }
+  
+  $('shiftScan').value = '';
+  renderShiftLog();
+  renderDashboard();
+  renderEmployees();
+  saveData();
+}
+
+function renderShiftLog() {
+  const log = $('shiftLog');
+  const shifts = timeRecords.filter(r => r.checkIn).sort((a,b) => b.date.localeCompare(a.date)).slice(0,20);
+  
+  if(shifts.length === 0) {
+    log.innerHTML = '<p style="color:var(--text-muted)">Нет записей</p>';
+    return;
+  }
+  
+  log.innerHTML = shifts.map(r => {
+    const emp = getEmpById(r.employeeId);
+    const status = r.checkOut ? `✅ ${r.checkIn} → ${r.checkOut}` : `🟢 ${r.checkIn} (в работе)`;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+      <span>${emp ? esc(emp.name) : 'Удалён'}</span>
+      <span style="font-size:11px;color:var(--text-muted)">${r.date} — ${status}</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== РОБОТ =====
+function toggleRobot() {
+  if(robotInterval) {
+    clearInterval(robotInterval);
+    robotInterval = null;
+    $('robotLog').innerHTML += `<div style="color:var(--warning)">⏹ Робот остановлен</div>`;
+    showToast('Робот остановлен', 'info');
+    return;
+  }
+  
+  const mode = $('robotMode').value.toUpperCase();
+  robotQueue = 5; robotWorking = 0; robotDone = 0;
+  $('robotLog').innerHTML = `<div>🤖 Запущен режим: ${mode}</div>`;
+  
+  robotInterval = setInterval(() => {
+    if(robotQueue > 0 && Math.random() > 0.5) {
+      robotQueue--; robotWorking++;
+      $('robotLog').innerHTML += `<div>[${now().split(' ')[1]}] 📦 Задача #${uid().slice(0,4)}: ${mode}</div>`;
+    }
+    if(robotWorking > 0 && Math.random() > 0.4) {
+      robotWorking--; robotDone++;
+      $('robotLog').innerHTML += `<div>[${now().split(' ')[1]}] ✅ Задача завершена</div>`;
+    }
+    
+    $('robotQueue').textContent = robotQueue;
+    $('robotWorking').textContent = robotWorking;
+    $('robotDone').textContent = robotDone;
+    $('robotLog').scrollTop = $('robotLog').scrollHeight;
+    
+    if(robotQueue === 0 && robotWorking === 0) {
+      clearInterval(robotInterval);
+      robotInterval = null;
+      $('robotLog').innerHTML += `<div style="color:var(--success)">🏁 Очередь пуста. Робот в ожидании.</div>`;
+      showToast('Робот завершил работу', 'success');
+    }
+  }, 1500);
+}
+
+// ===== ИНТЕГРАЦИИ =====
+function sync1C() {
+  const log = $('log1c');
+  log.innerHTML += `▶️ [${now().split(' ')[1]}] Запрос к 1С: /api/warehouse/sync...<br>`;
+  setTimeout(() => {
+    log.innerHTML += `✅ [${now().split(' ')[1]}] Успешно: импортировано ${Math.floor(Math.random()*10+5)} накладных, обновлено ${Math.floor(Math.random()*20+10)} позиций.<br>`;
+    log.scrollTop = log.scrollHeight;
+    showToast('1С синхронизирована', 'success');
+  }, 1500);
+}
+
+function syncDiadoc() {
+  const log = $('logDiadoc');
+  log.innerHTML += `📤 [${now().split(' ')[1]}] Формирование акта для Диадок...<br>`;
+  setTimeout(() => {
+    log.innerHTML += `✅ [${now().split(' ')[1]}] Акт ПР-104 подписан ЭЦП и отправлен.<br>`;
+    log.scrollTop = log.scrollHeight;
+    showToast('Документ отправлен в Диадок', 'success');
+  }, 1500);
+}
+
+function syncWMS() {
+  const log = $('logWMS');
+  log.innerHTML += `📡 [${now().split(' ')[1]}] Отправка остатков в WMS...<br>`;
+  setTimeout(() => {
+    log.innerHTML += `✅ [${now().split(' ')[1]}] WMS подтвердила: склад №2 синхронизирован.<br>`;
+    log.scrollTop = log.scrollHeight;
+    showToast('WMS обновлён', 'success');
+  }, 1500);
+}
+
+function addApiKey() {
+  const client = $('apiClient').value.trim();
+  const key = $('apiKey').value.trim();
+  if(!client || !key) { showToast('Заполните все поля', 'error'); return; }
+  
+  apiKeys.push({ id: Date.now(), client, key, status: 'active' });
+  $('apiClient').value = '';
+  $('apiKey').value = '';
+  renderApiKeys();
+  saveData();
+  showToast('Ключ добавлен', 'success');
+}
+
+function deleteApiKey(id) {
+  if(!confirm('Удалить ключ?')) return;
+  apiKeys = apiKeys.filter(k => k.id !== id);
+  renderApiKeys();
+  saveData();
+  showToast('Ключ удалён', 'info');
+}
+
+// ===== ЭКСПОРТ =====
+function exportJSON() {
+  const data = {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    employees, products, timeRecords, fines, receivings, shippings, apiKeys,
+    nextEmpId, nextProdId
+  };
+  const json = JSON.stringify(data, null, 2);
+  downloadFile(json, 'warehouse_backup_' + today() + '.json', 'application/json');
+  showToast('JSON экспорт сохранён', 'success');
+}
+
+function exportCSV() {
+  let csv = '\uFEFF'; // BOM для Excel
+  
+  // Сотрудники
+  csv += '=== СОТРУДНИКИ ===\n';
+  csv += 'ID,Имя,Должность,Ставка,Цвет,Часы_мес,Штрафы_мес,Итого_мес\n';
+  employees.forEach(e => {
+    const hrs = getEmployeeMonthHours(e.id);
+    const earned = Math.round(hrs * e.rate);
+    const ft = getEmployeeMonthFines(e.id);
+    csv += `${e.id},"${e.name}","${e.role}",${e.rate},${e.color},${hrs},${ft},${earned-ft}\n`;
+  });
+  
+  // Товары
+  csv += '\n=== ТОВАРЫ ===\n';
+  csv += 'ID,Артикул,Штрихкод,Название,Категория,Место,Кол-во,Вес_кг,Цена,Срок_годности,Описание\n';
+  products.forEach(p => {
+    csv += `${p.id},"${p.sku}","${p.barcode}","${p.name}","${p.category}","${p.location}",${p.qty},${p.weight},${p.price},"${p.expiry}","${p.desc}"\n`;
+  });
+  
+  // Штрафы
+  csv += '\n=== ШТРАФЫ ===\n';
+  csv += 'Дата,Сотрудник,Причина,Сумма,Статус,Комментарий\n';
+  fines.forEach(f => {
+    csv += `${f.date},"${getEmpName(f.employeeId)}","${f.reason}",${f.amount},${f.status},"${f.comment||''}"\n`;
+  });
+  
+  downloadFile(csv, 'warehouse_report_' + today() + '.csv', 'text/csv;charset=utf-8');
+  showToast('CSV экспорт сохранён', 'success');
+}
+
+function exportFullBackup() {
+  const data = {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    employees, products, timeRecords, fines, receivings, shippings, apiKeys,
+    nextEmpId, nextProdId,
+    settings: { companyName: 'СкладКонтроль', currency: 'RUB', language: 'ru' }
+  };
+  const json = JSON.stringify(data, null, 2);
+  downloadFile(json, 'warehouse_full_backup_' + today() + '.json', 'application/json');
+  showToast('Полный бэкап сохранён', 'success');
+}
+
+function exportWarehouseExcel() {
+  // Простой CSV экспорт для склада с весом
+  let csv = '\uFEFFАртикул;Штрихкод;Название;Категория;Место;Кол-во;Вес_кг;Цена_закупки;Цена_продажи;Срок_годности;Описание\n';
+  products.forEach(p => {
+    csv += `${p.sku};${p.barcode};${p.name};${p.category};${p.location};${p.qty};${p.weight};${p.cost};${p.price};${p.expiry};${p.desc}\n`;
+  });
+  downloadFile(csv, 'warehouse_' + today() + '.csv', 'text/csv;charset=utf-8');
+  showToast('Склад экспортирован в Excel', 'success');
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
+function importFile(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const content = e.target.result;
+      
+      if(file.name.endsWith('.json')) {
+        const data = JSON.parse(content);
+        if(!data.employees && !data.products) {
+          showToast('Неверный формат файла', 'error');
+          return;
+        }
+        if(!confirm('Это заменит все текущие данные. Продолжить?')) return;
+        
+        if(data.employees) employees = data.employees;
+        if(data.products) products = data.products;
+        if(data.timeRecords) timeRecords = data.timeRecords;
+        if(data.fines) fines = data.fines;
+        if(data.receivings) receivings = data.receivings;
+        if(data.shippings) shippings = data.shippings;
+        if(data.apiKeys) apiKeys = data.apiKeys;
+        if(data.nextEmpId) nextEmpId = data.nextEmpId;
+        if(data.nextProdId) nextProdId = data.nextProdId;
+        
+        saveData();
+        refreshAll();
+        showToast('Данные импортированы: ' + employees.length + ' сотрудников, ' + products.length + ' товаров', 'success');
+        
+        $('importStatus').innerHTML = `<div style="color:var(--success);font-weight:600">✅ Импорт завершён!</div>
+          <p>Сотрудников: ${employees.length}</p><p>Товаров: ${products.length}</p><p>Дата экспорта: ${data.exportDate || 'не указана'}</p>`;
+          
+      } else if(file.name.endsWith('.csv')) {
+        showToast('Импорт CSV не поддерживается. Используйте JSON для полного импорта.', 'info');
+      } else {
+        showToast('Неподдерживаемый формат. Используйте .json', 'error');
+      }
+    } catch(err) {
+      showToast('Ошибка импорта: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearAllData() {
+  if(!confirm('⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ?\nЭто действие нельзя отменить.')) return;
+  if(!confirm('Вы уверены? Все сотрудники, товары, время и штрафы будут удалены.')) return;
+  
+  employees = []; products = []; timeRecords = []; fines = [];
+  receivings = []; shippings = []; apiKeys = [];
+  nextEmpId = 1; nextProdId = 1;
+  
+  saveData();
+  refreshAll();
+  showToast('Все данные удалены', 'warning');
+  $('importStatus').innerHTML = '<div style="color:var(--danger);font-weight:600">🗑️ Все данные очищены</div>';
+}
+
+function refreshAll() {
+  populateSelects();
+  populateDocEmployeeSelect();
+  renderDashboard();
+  renderEmployees();
+  renderWarehouse();
+  updateWarehouseFilters();
+  renderRates();
+  renderFinesHistory();
+  renderTimeHistory();
+  renderTimesheet();
+  renderLabels();
+  renderBadges();
+}
+
+function updateSaveStatus() {
+  $('status').textContent = '💾 Сохранено';
+  setTimeout(() => $('status').textContent = '💾 Готово', 2000);
+}
+
+// ===== ОСТАЛЬНЫЕ ФУНКЦИИ (из оригинала) =====
+function populateSelects() {
+  const tt = $('ttEmployee'), fine = $('fineEmployee'), ts = $('tsEmployee');
+  tt.innerHTML = ''; fine.innerHTML = ''; ts.innerHTML = '<option value="all">Все сотрудники</option>';
+  employees.forEach(emp => {
+    const opt = `<option value="${emp.id}">${emp.name} (${emp.role})</option>`;
+    tt.innerHTML += opt; fine.innerHTML += opt; ts.innerHTML += opt;
+  });
+}
+
+function populateDocEmployeeSelect() {
+  const sel = $('docEmployee');
+  sel.innerHTML = '<option value="all">Все сотрудники</option>';
+  employees.forEach(emp => {
+    sel.innerHTML += `<option value="${emp.id}">${emp.name} (${emp.role})</option>`;
+  });
+}
+
+function openAddEmployeeModal() {
+  $('newEmpName').value = '';
+  $('newEmpRate').value = '500';
+  openModal('modalAddEmployee');
+}
+
+function addEmployee() {
+  const name = $('newEmpName').value.trim();
+  const role = $('newEmpRole').value;
+  const rate = parseInt($('newEmpRate').value) || 500;
+  if(!name) { showToast('Введите имя сотрудника', 'error'); return; }
+  
+  employees.push({id: nextEmpId++, name, role, rate, color: COLORS[(nextEmpId-1) % COLORS.length]});
+  closeModal('modalAddEmployee');
+  populateSelects();
+  renderEmployees();
+  renderDashboard();
+  saveData();
+  showToast(name + ' добавлен(а)', 'success');
+}
+
+function editEmployee(id) {
+  const emp = getEmpById(id);
+  if(!emp) return;
+  $('editEmpId').value = id;
+  $('editEmpName').value = emp.name;
+  $('editEmpRole').value = emp.role;
+  $('editEmpRate').value = emp.rate;
+  openModal('modalEditEmployee');
+}
+
+function saveEmployeeEdit() {
+  const id = parseInt($('editEmpId').value);
+  const emp = getEmpById(id);
+  if(!emp) return;
+  emp.name = $('editEmpName').value.trim();
+  emp.role = $('editEmpRole').value;
+  emp.rate = parseInt($('editEmpRate').value) || 500;
+  closeModal('modalEditEmployee');
+  populateSelects();
+  renderEmployees();
+  renderRates();
+  saveData();
+  showToast('Сотрудник обновлён', 'success');
+}
+
+function removeEmployee(id) {
+  const emp = getEmpById(id);
+  if(!emp) return;
+  if(!confirm('Удалить ' + emp.name + '?')) return;
+  employees = employees.filter(e => e.id !== id);
+  populateSelects();
+  renderEmployees();
+  renderDashboard();
+  saveData();
+  showToast(emp.name + ' удалён(а)', 'info');
+}
+
+function checkIn() {
+  const empId = parseInt($('ttEmployee').value);
+  const rec = getTodayRecord(empId);
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  
+  if(rec.checkIn && !rec.checkOut) {
+    showToast('Уже отмечен приход. Сначала отметьте уход.', 'error');
+    return;
+  }
+  if(rec.checkIn && rec.checkOut) {
+    timeRecords.push({date: rec.date, employeeId: empId, checkIn: null, checkOut: null});
+    rec = getTodayRecord(empId);
+  }
+  
+  rec.checkIn = time;
+  showToast(getEmpName(empId) + ' — приход: ' + time, 'success');
+  loadTTInfo();
+  renderTimeHistory();
+  renderDashboard();
+  renderEmployees();
+  saveData();
+}
+
+function checkOut() {
+  const empId = parseInt($('ttEmployee').value);
+  const rec = getTodayRecord(empId);
+  
+  if(!rec.checkIn) { showToast('Сначала отметьте приход!', 'error'); return; }
+  if(rec.checkOut) { showToast('Уже отмечен уход сегодня.', 'error'); return; }
+  
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  rec.checkOut = time;
+  const hours = calcHours(rec.checkIn, rec.checkOut);
+  showToast(getEmpName(empId) + ' — уход: ' + time + ' (отработано ' + hours + ' ч.)', 'success');
+  loadTTInfo();
+  renderTimeHistory();
+  renderDashboard();
+  renderEmployees();
+  saveData();
+}
+
+function loadTTInfo() {
+  const empId = parseInt($('ttEmployee').value);
+  const rec = getTodayRecord(empId);
+  $('ttCheckIn').textContent = rec.checkIn || '—';
+  $('ttCheckOut').textContent = rec.checkOut || '—';
+  $('ttHoursWorked').textContent = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) + ' ч.' : '—';
+}
+
+function renderTimeHistory() {
+  const tbody = $('timeHistoryTable');
+  tbody.innerHTML = '';
+  const sorted = timeRecords.slice().sort((a,b) => b.date.localeCompare(a.date));
+  sorted.forEach(rec => {
+    const h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '—';
+    tbody.innerHTML += `<tr>
+      <td>${rec.date}</td>
+      <td>${getEmpName(rec.employeeId)}</td>
+      <td><span class="badge badge-success">${rec.checkIn||'—'}</span></td>
+      <td><span class="badge badge-danger">${rec.checkOut||'—'}</span></td>
+      <td><strong>${h} ч.</strong></td>
+    </tr>`;
+  });
+}
+
+function getEmployeeMonthHours(empId) {
+  const month = getCurrentMonth();
+  let total = 0;
+  timeRecords.forEach(rec => {
+    if(rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) {
+      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
+    }
+  });
+  return total.toFixed(1);
+}
+
+function getEmployeeMonthFines(empId) {
+  const month = getCurrentMonth();
+  let total = 0;
+  fines.forEach(f => {
+    if(f.employeeId === empId && f.date.startsWith(month)) total += f.amount;
+  });
+  return total;
+}
+
+function renderRates() {
+  const tbody = $('ratesTable');
+  tbody.innerHTML = '';
+  employees.forEach(emp => {
+    const hours = getEmployeeMonthHours(emp.id);
+    const earned = Math.round(hours * emp.rate);
+    const fineTotal = getEmployeeMonthFines(emp.id);
+    const total = earned - fineTotal;
+    tbody.innerHTML += `<tr>
+      <td><strong>${emp.name}</strong></td>
+      <td>${emp.role}</td>
+      <td><input type="number" class="rate-input" value="${emp.rate}" onchange="updateRate(${emp.id},this.value)"></td>
+      <td>${hours} ч.</td>
+      <td style="color:var(--success);font-weight:600">${earned.toLocaleString()} ₽</td>
+      <td style="color:var(--danger);font-weight:600">-${fineTotal.toLocaleString()} ₽</td>
+      <td style="color:var(--primary-light);font-weight:700">${total.toLocaleString()} ₽</td>
+    </tr>`;
+  });
+}
+
+function updateRate(empId, val) {
+  const emp = getEmpById(empId);
+  if(emp) { emp.rate = parseInt(val) || 500; saveData(); }
+}
+
+function saveAllRates() {
+  const inputs = document.querySelectorAll('.rate-input');
+  inputs.forEach((inp, i) => {
+    if(employees[i]) employees[i].rate = parseInt(inp.value) || 500;
+  });
+  renderRates();
+  saveData();
+  showToast('Все ставки сохранены', 'success');
+}
+
+function getTotalMonthHours() {
+  const month = getCurrentMonth();
+  let total = 0;
+  timeRecords.forEach(rec => {
+    if(rec.date.startsWith(month) && rec.checkIn) {
+      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
+    }
+  });
+  return total.toFixed(1);
+}
+
+function getOnlineCount() {
+  return employees.filter(e => isEmployeeOnline(e.id)).length;
+}
+
+function getTotalMonthFinesCount() {
+  const month = getCurrentMonth();
+  return fines.filter(f => f.date.startsWith(month)).length;
+}
+
+function openFineModal() {
+  populateSelects();
+  $('fineReason').value = '';
+  $('fineAmount').value = '';
+  $('fineComment').value = '';
+  openModal('modalFine');
+}
+
+function autoFillFineAmount() {
+  const val = $('fineReason').value;
+  if(val && val !== 'other') {
+    const parts = val.split('|');
+    $('fineAmount').value = parts[1];
+  }
+}
+
+function autoGenerateFine() {
+  const reasons = document.querySelectorAll('#fineReason option');
+  if(reasons.length <= 1) return;
+  const randomIndex = Math.floor(Math.random() * (reasons.length - 1)) + 1;
+  const selectedOption = reasons[randomIndex];
+  $('fineReason').value = selectedOption.value;
+  autoFillFineAmount();
+  showToast(`Сгенерирован штраф: ${selectedOption.text.split('(')[0]}`, 'info');
+}
+
+function applyFine() {
+  const empId = parseInt($('fineEmployee').value);
+  const reasonRaw = $('fineReason').value;
+  const amount = parseInt($('fineAmount').value) || 0;
+  const comment = $('fineComment').value.trim();
+  
+  if(!empId) { showToast('Выберите сотрудника', 'error'); return; }
+  if(!reasonRaw) { showToast('Выберите причину', 'error'); return; }
+  if(amount <= 0) { showToast('Укажите сумму', 'error'); return; }
+  
+  const reason = reasonRaw.split('|')[0];
+  
+  fines.push({
+    date: today(),
+    employeeId: empId,
+    reason: reason,
+    amount: amount,
+    comment: comment,
+    status: 'Активен'
+  });
+  
+  closeModal('modalFine');
+  renderFinesHistory();
+  renderDashboard();
+  renderRates();
+  saveData();
+  showToast('Штраф ' + amount + ' ₽ назначен: ' + getEmpName(empId), 'warning');
+}
+
+function renderFinesHistory() {
+  const tbody = $('finesHistoryTable');
+  tbody.innerHTML = '';
+  const sorted = fines.slice().sort((a,b) => b.date.localeCompare(a.date));
+  if(sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Штрафов пока нет ✅</td></tr>';
+    return;
+  }
+  sorted.forEach(f => {
+    tbody.innerHTML += `<tr class="fine-row">
+      <td>${f.date}</td>
+      <td>${getEmpName(f.employeeId)}</td>
+      <td>${f.reason}</td>
+      <td><strong style="color:var(--danger)">-${f.amount.toLocaleString()} ₽</strong></td>
+      <td><span class="badge badge-warning">${f.status}</span></td>
+    </tr>`;
+  });
+}
+
+function initMonthSelector() {
+  const sel = $('tsMonth');
+  sel.innerHTML = '';
+  const now = new Date();
+  for(let i=0; i<6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const label = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+    sel.innerHTML += `<option value="${val}">${label.charAt(0).toUpperCase() + label.slice(1)}</option>`;
+  }
+}
+
+function renderTimesheet() {
+  const month = $('tsMonth').value;
+  const empId = $('tsEmployee').value;
+  const tbody = $('timesheetTable');
+  tbody.innerHTML = '';
+  
+  const parts = month.split('-');
+  const year = parseInt(parts[0]), mon = parseInt(parts[1]);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  
+  let totalHours = 0, totalPay = 0, totalFines = 0;
+  
+  for(let day=1; day<=daysInMonth; day++) {
+    const dateStr = month + '-' + String(day).padStart(2,'0');
+    const dateObj = new Date(year, mon-1, day);
+    const dayName = dateObj.toLocaleDateString('ru-RU', {weekday:'short'});
+    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+    
+    let records = timeRecords.filter(r => r.date === dateStr);
+    if(empId !== 'all') records = records.filter(r => r.employeeId === parseInt(empId));
+    
+    let dayHours = 0, dayPay = 0;
+    records.forEach(rec => {
+      if(rec.checkIn) {
+        const h = parseFloat(calcHours(rec.checkIn, rec.checkOut));
+        dayHours += h;
+        const emp = getEmpById(rec.employeeId);
+        if(emp) dayPay += h * emp.rate;
+      }
+    });
+    
+    let dayFines = 0;
+    fines.forEach(f => {
+      if(f.date === dateStr && (empId === 'all' || f.employeeId === parseInt(empId))) {
+        dayFines += f.amount;
+      }
+    });
+    
+    totalHours += dayHours;
+    totalPay += dayPay;
+    totalFines += dayFines;
+    
+    if(records.length > 0) {
+      tbody.innerHTML += `<tr${isWeekend?' style="opacity:0.5"':''}>
+        <td>${dateStr}</td><td>${dayName}</td>
+        <td>${records.map(r=>r.checkIn||'—').join(', ')||'—'}</td>
+        <td>${records.map(r=>r.checkOut||'—').join(', ')||'—'}</td>
+        <td><strong>${dayHours.toFixed(1)} ч.</strong></td>
+        <td>${records.length>0 ? (getEmpById(records[0].employeeId)||{}).rate+' ₽' : '—'}</td>
+        <td style="color:var(--success);font-weight:600">${Math.round(dayPay).toLocaleString()} ₽</td>
+        <td style="color:var(--danger);font-weight:600">${dayFines>0 ? '-'+dayFines.toLocaleString()+' ₽' : '—'}</td>
+      </tr>`;
+    }
+  }
+  
+  if(tbody.innerHTML === '') {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Нет данных за этот период</td></tr>';
+  }
+  
+  $('tsTotalHours').textContent = totalHours.toFixed(1);
+  $('tsTotalPay').textContent = Math.round(totalPay).toLocaleString() + ' ₽';
+  $('tsTotalFines').textContent = '-' + totalFines.toLocaleString() + ' ₽';
+  $('tsTotalNet').textContent = Math.round(totalPay - totalFines).toLocaleString() + ' ₽';
+}
+
+function getCurrentMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function generateDocument() {
+  const type = $('docType').value;
+  const empId = $('docEmployee').value;
+  const period = $('docPeriod').value;
+  
+  const now = new Date();
+  let month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  if(period === 'prev') {
+    const d = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    month = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  
+  const monthName = new Date(month + '-01').toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+  const preview = $('docPreview');
+  $('docPreviewPanel').style.display = 'block';
+  
+  let html = `<h2>СкладКонтроль — ${monthName}</h2>`;
+  
+  if(type === 'report') {
+    html += '<h3 style="margin-bottom:16px">Отчёт по сотрудникам</h3>';
+    html += '<table><thead><tr><th>Сотрудник</th><th>Должность</th><th>Часы</th><th>Ставка</th><th>Начислено</th><th>Штрафы</th><th>Итого</th></tr></thead><tbody>';
+    const list = empId === 'all' ? employees : employees.filter(e => e.id === parseInt(empId));
+    list.forEach(emp => {
+      const h = getMonthHours(emp.id, month);
+      const earned = Math.round(h * emp.rate);
+      const ft = getMonthFines(emp.id, month);
+      html += `<tr><td>${emp.name}</td><td>${emp.role}</td><td>${h.toFixed(1)}</td><td>${emp.rate} ₽</td><td>${earned.toLocaleString()} ₽</td><td>-${ft.toLocaleString()} ₽</td><td><strong>${(earned-ft).toLocaleString()} ₽</strong></td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  // ... другие типы документов можно добавить по аналогии
+  
+  preview.innerHTML = html;
+  showToast('Документ сформирован', 'success');
+}
+
+function getMonthHours(empId, month) {
+  let total = 0;
+  timeRecords.forEach(rec => {
+    if(rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) {
+      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
+    }
+  });
+  return total;
+}
+
+function getMonthFines(empId, month) {
+  let total = 0;
+  fines.forEach(f => {
+    if(f.employeeId === empId && f.date.startsWith(month)) total += f.amount;
+  });
+  return total;
+}
+
+// ===== БОТ =====
+function addChatMsg(text, type) {
+  const container = $('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + type;
+  const avatar = type === 'bot' ? '🤖' : '👤';
+  div.innerHTML = `<div class="chat-avatar">${avatar}</div><div class="chat-bubble">${text}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  const container = $('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg bot';
+  div.id = 'typingIndicator';
+  div.innerHTML = `<div class="chat-avatar">🤖</div><div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  const el = $('typingIndicator');
+  if(el) el.remove();
+}
+
+function sendMessage() {
+  const input = $('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  addChatMsg(msg, 'user');
+  showTyping();
+  setTimeout(() => {
+    removeTyping();
+    const reply = getBotReply(msg);
+    addChatMsg(reply, 'bot');
+  }, 600 + Math.random() * 600);
+}
+
+function sendQuickMsg(msg) {
+  $('chatInput').value = msg;
+  sendMessage();
+}
+
+function getBotReply(msg) {
+  const m = msg.toLowerCase();
+  
+  if(m.includes('штраф') && (m.includes('какие') || m.includes('какой') || m.includes('список'))) {
+    return '📋 <strong>Штрафы:</strong><br>⏰ Опоздание — 500 ₽<br>🚬 Курение — 1 000 ₽<br>📱 Телефон — 500 ₽<br>🧹 Чистота — 700 ₽<br>📦 Порча товара — 2 000 ₽<br>🦺 Без спецодежды — 1 000 ₽<br>🏃 Самовольный уход — 1 500 ₽<br>🗣️ Конфликт — 2 000 ₽<br>📋 Ошибка в заказе — 1 000 ₽<br>🔒 Нарушение ТБ — 3 000 ₽<br>🍺 Алкоголь — 5 000 ₽<br>🚫 Хищение — 10 000 ₽ + увольнение';
+  }
+  
+  if(m.includes('избежать') || m.includes('как не получить')) {
+    return '✅ <strong>Как не получить штраф:</strong><br>1. Приходите за 10 мин до смены<br>2. Курите только в зоне курения<br>3. Убирайте телефон в шкафчик<br>4. Держите рабочее место в чистоте<br>5. Бережно относитесь к товару<br>6. Всегда носите спецодежду<br>7. Не уходите без разрешения<br>8. Будьте вежливы с коллегами<br>9. Дважды проверяйте заказы<br>10. Соблюдайте ТБ';
+  }
+  
+  if(m.includes('кто') && (m.includes('сейчас') || m.includes('на складе'))) {
+    const online = employees.filter(e => isEmployeeOnline(e.id));
+    if(online.length === 0) return '⚫ Сейчас никто не отметился на складе.';
+    const list = online.map(e => '• ' + e.name + ' (' + e.role + ')').join('<br>');
+    return '🟢 <strong>На складе:</strong><br><br>' + list + '<br><br>Всего: ' + online.length + ' чел.';
+  }
+  
+  if(m.includes('отчёт') || m.includes('документ') || m.includes('сформировать')) {
+    return '📄 Перейдите в раздел «Документы», выберите тип, сотрудника и период, нажмите «Сформировать». Доступны: отчёт по сотруднику, по штрафам, расчётная ведомость, табель.';
+  }
+  
+  if(m.includes('техник') && m.includes('безопасност') || m.includes('тб')) {
+    return '🔒 <strong>ТБ:</strong><br>• Работайте только на обученном оборудовании<br>• Не стойте под грузом<br>• Используйте СИЗ всегда<br>• Держите проходы свободными<br>• Поднимайте тяжести правильно (сгибая колени)<br>• Знайте расположение аптечки и огнетушителя';
+  }
+  
+  if(m.includes('ставка') || m.includes('заработ')) {
+    const list = employees.map(e => '• ' + e.name + ' (' + e.role + ') — ' + e.rate + ' ₽/час').join('<br>');
+    return '💰 <strong>Ставки:</strong><br><br>' + list + '<br><br>Расчёт: часы × ставка − штрафы = к выплате.';
+  }
+  
+  // === НОВЫЕ ОТВЕТЫ БОТА ===
+  if(m.includes('товар') && (m.includes('добавить') || m.includes('создать'))) {
+    return '📦 Чтобы добавить товар: перейдите в раздел "🏭 Склад" → нажмите "➕ Добавить товар" → заполните артикул, название, вес и другие поля → "💾 Сохранить".';
+  }
+  
+  if(m.includes('этикет') || m.includes('печать')) {
+    return '🏷️ Печать этикеток: раздел "🏷️ Этикетки" → выберите товар → укажите количество → "🖨️ Создать". Этикетки содержат: название, артикул, штрихкод, вес, срок годности.';
+  }
+  
+  if(m.includes('бейдж') || m.includes('смен')) {
+    return '🪪 Бейджи: раздел "🪪 Бейджи" → выберите сотрудника → "🖨️ Печать" (размер 120×76 мм, QR 50×50 мм). Сканируйте бейдж для фиксации начала/конца смены.';
+  }
+  
+  if(m.includes('робот') || m.includes('fbs') || m.includes('fbo')) {
+    return '🤖 Робот: раздел "🤖 Робот" → выберите режим (FBS/FBO) → "▶️ Запуск". Робот симулирует обработку заказов маркетплейсов с отображением очереди и логов.';
+  }
+  
+  if(m.includes('интеграц') || m.includes('1с') || m.includes('диадо') || m.includes('wms')) {
+    return '🔗 Интеграции: раздел "🔗 Интеграции". Поддерживается: 1С (обмен товарами), Диадок (отправка актов), WMS (синхронизация остатков). Для работы требуется бэкенд (api.php).';
+  }
+  
+  if(m.includes('привет') || m.includes('здравствуй') || m.includes('добрый')) {
+    return 'Здравствуйте! 👋 Я бот-помощник. Спрашивайте о штрафах, ставках, отчётах, ТБ, товарах, этикетках, бейджах или правилах работы.';
+  }
+  
+  if(m.includes('спасибо') || m.includes('благодар')) {
+    return 'Пожалуйста! 😊 Обращайтесь, если будут вопросы.';
+  }
+  
+  if(m.includes('помощь') || m.includes('помоги') || m.includes('help') || m.includes('умеешь')) {
+    return '🤖 <strong>Я могу:</strong><br>• Рассказать о штрафах 💰<br>• Подсказать как избежать штрафов ✅<br>• Показать кто на складе 👥<br>• Объяснить как сделать отчёт 📄<br>• Рассказать правила ТБ 🔒<br>• Показать ставки сотрудников 💵<br>• Помочь с товарами и этикетками 📦🏷️';
+  }
+  
+  if(m.includes('импорт') || m.includes('экспорт') || m.includes('бэкап')) {
+    return '📥📤 Перейдите в раздел «Импорт / Экспорт». Можно выгрузить данные в JSON/CSV/Excel и загрузить обратно. Полный бэкап сохраняет всю систему.';
+  }
+  
+  if(m.includes('вес') || m.includes('кг')) {
+    return '⚖️ Вес товара: указывается при добавлении/редактировании товара (поле "Вес (кг)"). Отображается в складе, этикетках, приёмке/отгрузке (общий вес = кол-во × вес единицы).';
+  }
+  
+  return 'Не совсем понял вопрос 🤔. Спросите о: штрафах, ТБ, ставках, отчётах, кто на складе, товарах, этикетках, бейджах, роботе, интеграциях, или нажмите «Помощь».';
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+function init() {
+  updateLiveTime();
+  setInterval(updateLiveTime, 1000);
+  populateSelects();
+  populateDocEmployeeSelect();
+  initMonthSelector();
+  renderDashboard();
+  renderEmployees();
+  renderWarehouse();
+  updateWarehouseFilters();
+  renderRates();
+  renderFinesHistory();
+  renderTimeHistory();
+  renderTimesheet();
+  renderLabels();
+  renderBadges();
+  
+  // Chat welcome
+  addChatMsg('Здравствуйте! 👋 Я бот-помощник системы СкладКонтроль. Задайте вопрос о штрафах, правилах, отчётах, ставках, товарах, этикетках или технике безопасности.', 'bot');
+}
+
+// Запуск
+loadData();
+</script>
+</body>
+</html>
