@@ -2,299 +2,180 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fulfillment WMS Ultimate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS Fulfillment System</title>
     
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Tailwind CSS -->
+    <!-- Подключение стилей Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Barcode Gen -->
+    <!-- Подключение Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Генератор штрихкодов -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <!-- Excel Support -->
+    <!-- Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-Я понял. "Не доработана" означает, что предыдущий вариант был слишком поверхностным и не закрывал все жесткие требования (особенно по интеграциям, реальной работе с документами, сложной логике штрафов и схеме склада).
-
-Ниже — **максимально полная версия**, насколько это возможно в рамках одного HTML-файла без реального серверного бэкенда.
-
-**Что кардинально изменено и добавлено:**
-1.  **Полноценная схема склада (Heatmap):** Визуализация ячеек с цветовой индикацией заполненности. Можно кликнуть на ячейку и увидеть товары.
-2.  **Реальная работа с документами:** Генерация Актов Приемки и Отгрузки, которые можно распечатать как официальный документ.
-3.  **Логика КИЗ (Честный Знак):** Поле для ввода кодов маркировки при приемке.
-4.  **Сложная система штрафов:** История штрафов, фото-фиксация (сохраняется в base64), причины.
-5.  **Интеграционный хаб:** Имитация отправки данных в 1С/Диадок с логом запросов.
-6.  **Умный сканер:** Различает контекст (сканирование товара vs сканирование сотрудника).
-7.  **Экспорт/Импорт всей базы:** Полный бэкап системы в JSON.
-
-Сохраните этот код как `index.html`. Это **готовое SPA приложение**.
-
-```html
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fulfillment WMS Ultimate</title>
-    
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Barcode Gen -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <!-- Excel Support -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563eb',
-                        secondary: '#475569',
-                        success: '#16a34a',
-                        warning: '#ca8a04',
-                        danger: '#dc2626',
-                        darkbg: '#0f172a',
-                        darkcard: '#1e293b'
-                    },
-                    fontFamily: {
-                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        /* Печать этикетки 58x40 */
+        /* Настройка печати этикеток 58мм х 40мм */
         @media print {
             @page { size: 58mm 40mm; margin: 0; }
             body * { visibility: hidden; }
-            #label-print-area, #label-print-area * { visibility: visible; }
-            #label-print-area { 
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { 
                 position: absolute; left: 0; top: 0; width: 58mm; height: 40mm; 
                 display: flex; flex-direction: column; align-items: center; justify-content: center;
-                border: 1px dashed #ccc; padding: 2mm; text-align: center;
+                border: 1px dashed #000; padding: 2mm; text-align: center; background: white;
             }
             .no-print { display: none !important; }
         }
-
-        /* Печать Документа А4 */
-        @media print {
-            @page.doc { size: A4; margin: 20mm; }
-            body.doc-print * { visibility: hidden; }
-            #doc-print-area, #doc-print-area * { visibility: visible; }
-            #doc-print-area { 
-                position: absolute; left: 0; top: 0; width: 100%; 
-                background: white; color: black; padding: 20px; font-family: serif;
-            }
-        }
-
-        /* Скроллбар */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-
-        /* Анимации */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+        
+        /* Анимации переходов */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         
         [v-cloak] { display: none; }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-darkbg text-slate-800 dark:text-slate-200 h-screen overflow-hidden select-none font-sans">
+<body class="bg-gray-100 text-gray-800 h-screen overflow-hidden font-sans">
 
 <div id="app" v-cloak class="h-full flex flex-col">
 
-    <!-- ЗАГРУЗКА -->
-    <div v-if="isLoading" class="fixed inset-0 z-[100] bg-white dark:bg-darkbg flex items-center justify-center">
+    <!-- ЭКРАН ЗАГРУЗКИ -->
+    <div v-if="loading" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
-            <i class="fas fa-cube text-5xl text-primary animate-spin mb-4"></i>
-            <h1 class="text-xl font-bold tracking-widest">WMS SYSTEM</h1>
-            <p class="text-xs text-gray-400 mt-2">Инициализация модулей...</p>
+            <i class="fas fa-cube text-5xl text-blue-600 animate-bounce mb-4"></i>
+            <h1 class="text-xl font-bold">Загрузка WMS...</h1>
         </div>
     </div>
 
-    <!-- АВТОРИЗАЦИЯ -->
-    <div v-else-if="!user" class="flex-1 flex items-center justify-center bg-gradient-to-tr from-blue-700 to-purple-800 p-4">
-        <div class="bg-white dark:bg-darkcard w-full max-w-sm p-8 rounded-2xl shadow-2xl">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-warehouse text-2xl text-primary"></i>
-                </div>
-                <h2 class="text-2xl font-bold">Вход в систему</h2>
-            </div>
-            <form @submit.prevent="login">
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs uppercase font-bold text-gray-500 ml-1">Логин</label>
-                        <input v-model="auth.login" type="text" class="w-full mt-1 p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:border-primary outline-none transition" placeholder="admin">
-                    </div>
-                    <div>
-                        <label class="text-xs uppercase font-bold text-gray-500 ml-1">Пароль</label>
-                        <input v-model="auth.pass" type="password" class="w-full mt-1 p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:border-primary outline-none transition" placeholder="••••••">
-                    </div>
-                    <button class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform active:scale-95 transition">ВОЙТИ</button>
-                </div>
-            </form>
-            <div class="mt-6 text-center text-xs text-gray-400">
-                Demo: admin / admin
-            </div>
+    <!-- ЭКРАН ВХОДА -->
+    <div v-else-if="!user" class="flex-1 flex items-center justify-center bg-blue-600 p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-center mb-6">Вход в систему</h2>
+            <input v-model="loginForm.user" type="text" placeholder="Логин (admin)" class="w-full p-3 border rounded mb-4">
+            <input v-model="loginForm.pass" type="password" placeholder="Пароль (admin)" class="w-full p-3 border rounded mb-6">
+            <button @click="doLogin" class="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 font-bold">ВОЙТИ</button>
+            <p class="text-xs text-center mt-4 text-gray-500">Используйте admin / admin</p>
         </div>
     </div>
 
     <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div v-else class="flex-1 flex overflow-hidden">
         
-        <!-- SIDEBAR -->
-        <aside class="w-16 md:w-64 bg-white dark:bg-darkcard border-r dark:border-gray-700 flex flex-col z-20 transition-all">
-            <div class="h-16 flex items-center justify-center md:justify-start md:px-6 border-b dark:border-gray-700">
-                <i class="fas fa-cubes text-primary text-xl"></i>
-                <span class="ml-3 font-bold text-lg hidden md:block">Fulfillment<span class="text-primary">PRO</span></span>
+        <!-- БОКОВОЕ МЕНЮ -->
+        <aside class="w-20 md:w-64 bg-white shadow-lg flex flex-col z-10">
+            <div class="h-16 flex items-center justify-center border-b">
+                <span class="font-bold text-xl text-blue-600 hidden md:block">WMS PRO</span>
+                <i class="fas fa-boxes text-blue-600 text-2xl md:hidden"></i>
             </div>
-
-            <nav class="flex-1 py-4 space-y-1 overflow-y-auto">
-                <a v-for="item in navItems" :key="item.id" 
-                   @click="view = item.id"
-                   class="flex items-center px-4 py-3 cursor-pointer border-l-4 transition-colors"
-                   :class="view === item.id ? 'border-primary bg-blue-50 dark:bg-gray-800 text-primary' : 'border-transparent text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'">
+            
+            <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
+                <button v-for="item in menu" :key="item.id" 
+                    @click="currentView = item.id"
+                    :class="{'bg-blue-50 text-blue-600': currentView === item.id}"
+                    class="w-full text-left p-3 rounded flex items-center gap-3 hover:bg-gray-50 transition">
                     <i :class="['fas', item.icon, 'w-6 text-center']"></i>
-                    <span class="ml-3 font-medium hidden md:block">{{ item.label }}</span>
-                </a>
+                    <span class="hidden md:block">{{ item.name }}</span>
+                </button>
             </nav>
 
-            <div class="p-4 border-t dark:border-gray-700">
+            <div class="p-4 border-t">
                 <div class="flex items-center gap-3 mb-4">
-                    <img :src="user.avatar" class="w-10 h-10 rounded-full border border-gray-200">
-                    <div class="hidden md:block overflow-hidden">
-                        <div class="font-bold text-sm truncate">{{ user.name }}</div>
-                        <div class="text-xs text-green-500" v-if="workSession.active">On Air: {{ workSession.timer }}</div>
-                        <div class="text-xs text-gray-400" v-else>Offline</div>
+                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold">AD</div>
+                    <div class="hidden md:block">
+                        <div class="text-sm font-bold">Администратор</div>
+                        <div class="text-xs text-green-500" v-if="workActive">На смене</div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button @click="toggleTheme" class="p-2 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-center"><i class="fas fa-moon"></i></button>
-                    <button @click="logout" class="p-2 rounded bg-red-100 text-red-600 hover:bg-red-200 text-center"><i class="fas fa-power-off"></i></button>
-                </div>
+                <button @click="logout" class="w-full text-red-500 text-sm text-left hover:bg-red-50 p-2 rounded"><i class="fas fa-sign-out-alt"></i> Выход</button>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-darkbg">
+        <!-- РАБОЧАЯ ОБЛАСТЬ -->
+        <main class="flex-1 flex flex-col bg-gray-100 overflow-hidden relative">
             
-            <!-- HEADER -->
-            <header class="h-16 bg-white dark:bg-darkcard shadow-sm flex items-center justify-between px-6 z-10 no-print">
-                <h2 class="text-xl font-bold">{{ currentTitle }}</h2>
-                
-                <div class="flex items-center gap-4">
-                    <!-- Глобальный поиск -->
-                    <div class="relative hidden md:block">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input v-model="searchQuery" type="text" placeholder="Поиск (ШК, Артикул, Имя)..." class="pl-10 pr-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 border-none focus:ring-2 ring-primary text-sm w-64">
-                    </div>
-                    
-                    <!-- Уведомления -->
-                    <button class="relative p-2 text-gray-500 hover:text-primary">
-                        <i class="fas fa-bell"></i>
-                        <span v-if="notifications.length > 0" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                    </button>
+            <!-- Верхняя панель -->
+            <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 no-print">
+                <h2 class="text-xl font-bold">{{ getMenuName() }}</h2>
+                <div class="flex gap-4">
+                    <input v-model="search" type="text" placeholder="Поиск товара..." class="border rounded-full px-4 py-1 text-sm focus:outline-none focus:border-blue-500 w-48">
                 </div>
             </header>
 
-            <!-- WORKSPACE -->
-            <div class="flex-1 overflow-auto p-4 md:p-6 scroll-smooth relative">
+            <!-- Контент -->
+            <div class="flex-1 overflow-auto p-6 relative">
                 
-                <!-- СКРЫТЫЙ ИНПУТ ДЛЯ СКАНЕРА -->
-                <input ref="scannerInput" v-model="scanBuffer" @keyup.enter="handleScan" class="absolute opacity-0 top-0 left-0 h-0 w-0" tabindex="-1">
+                <!-- Скрытый инпут для сканера -->
+                <input ref="scanner" v-model="scanBuffer" @keyup.enter="processScan" class="absolute opacity-0 top-0 left-0" tabindex="-1">
 
-                <!-- DASHBOARD -->
-                <div v-if="view === 'dashboard'" class="space-y-6">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <kpi-card title="Товаров" :val="products.length" icon="fa-box" color="blue"></kpi-card>
-                        <kpi-card title="Задачи" :val="tasks.length" icon="fa-list-check" color="yellow"></kpi-card>
-                        <kpi-card title="Отгружено" :val="stats.shippedToday" icon="fa-truck-fast" color="green"></kpi-card>
-                        <kpi-card title="Штрафы (мес)" :val="stats.totalFines + ' ₽'" icon="fa-gavel" color="red"></kpi-card>
+                <!-- 1. ДАШБОРД -->
+                <div v-if="currentView === 'dashboard'" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
+                        <div class="text-gray-500 text-sm">Всего товаров</div>
+                        <div class="text-3xl font-bold">{{ products.length }}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
+                        <div class="text-gray-500 text-sm">Отгружено сегодня</div>
+                        <div class="text-3xl font-bold">{{ stats.shipped }}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-red-500">
+                        <div class="text-gray-500 text-sm">Сумма штрафов</div>
+                        <div class="text-3xl font-bold">{{ totalFines }} ₽</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-yellow-500">
+                        <div class="text-gray-500 text-sm">Сотрудников онлайн</div>
+                        <div class="text-3xl font-bold">{{ employees.filter(e=>e.active).length }}</div>
                     </div>
 
                     <!-- Схема склада -->
-                    <div class="bg-white dark:bg-darkcard rounded-xl shadow p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold"><i class="fas fa-map mr-2"></i>Карта склада (Онлайн)</h3>
-                            <div class="flex gap-2 text-xs">
-                                <span class="flex items-center gap-1"><div class="w-3 h-3 bg-green-100 border border-green-300 rounded"></div> Свободно</span>
-                                <span class="flex items-center gap-1"><div class="w-3 h-3 bg-red-100 border border-red-300 rounded"></div> Занято >80%</span>
-                            </div>
-                        </div>
+                    <div class="col-span-1 md:col-span-4 bg-white p-6 rounded-xl shadow mt-4">
+                        <h3 class="font-bold mb-4">Карта склада</h3>
                         <div class="grid grid-cols-6 md:grid-cols-12 gap-2">
-                            <div v-for="loc in locations" :key="loc.id" 
-                                 @click="inspectLocation(loc)"
-                                 class="aspect-square rounded border flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition relative group"
-                                 :class="loc.fill > 80 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800'">
-                                <span class="font-bold text-xs md:text-sm">{{ loc.code }}</span>
-                                <span class="text-[10px] opacity-75">{{ loc.fill }}%</span>
-                                
-                                <!-- Tooltip -->
-                                <div class="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs p-2 rounded z-50 whitespace-nowrap">
-                                    Товаров: {{ loc.itemsCount }}<br>
-                                    Свободно: {{ loc.capacity - loc.itemsCount }}
-                                </div>
+                            <div v-for="loc in locations" :key="loc.code" 
+                                 @click="alert('Локация: ' + loc.code + '\nТоваров: ' + loc.count)"
+                                 class="aspect-square rounded border flex items-center justify-center text-xs cursor-pointer hover:bg-blue-50"
+                                 :class="loc.count > 0 ? 'bg-green-100 border-green-300 text-green-800' : 'bg-gray-50 border-gray-200'">
+                                {{ loc.code }}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- WAREHOUSE (ТОВАРЫ) -->
-                <div v-if="view === 'warehouse'" class="space-y-4">
-                    <div class="flex flex-wrap gap-2 justify-between bg-white dark:bg-darkcard p-4 rounded-xl shadow">
-                        <div class="flex gap-2">
-                            <button @click="$refs.excelInput.click()" class="btn-success"><i class="fas fa-file-excel mr-2"></i>Импорт</button>
-                            <input type="file" ref="excelInput" @change="importExcel" accept=".xlsx" class="hidden">
-                            <button @click="exportData('json')" class="btn-secondary"><i class="fas fa-download mr-2"></i>Бэкап JSON</button>
-                        </div>
-                        <button @click="openProductModal()" class="btn-primary"><i class="fas fa-plus mr-2"></i>Товар</button>
+                <!-- 2. СКЛАД -->
+                <div v-if="currentView === 'warehouse'" class="space-y-4">
+                    <div class="flex gap-2">
+                        <button @click="$refs.fileInput.click()" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700"><i class="fas fa-file-excel mr-2"></i>Импорт Excel</button>
+                        <input type="file" ref="fileInput" @change="importExcel" class="hidden" accept=".xlsx">
+                        <button @click="exportData" class="bg-gray-600 text-white px-4 py-2 rounded shadow hover:bg-gray-700"><i class="fas fa-download mr-2"></i>Экспорт Базы</button>
+                        <button @click="openProductModal()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 ml-auto"><i class="fas fa-plus mr-2"></i>Добавить товар</button>
                     </div>
 
-                    <div class="bg-white dark:bg-darkcard rounded-xl shadow overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                    <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 border-b">
                                 <tr>
-                                    <th class="p-4">Товар</th>
-                                    <th class="p-4">ШК / КИЗ</th>
-                                    <th class="p-4">Локация</th>
-                                    <th class="p-4 text-right">Остаток</th>
-                                    <th class="p-4 text-center">Действия</th>
+                                    <th class="p-4 text-sm text-gray-500">Фото</th>
+                                    <th class="p-4 text-sm text-gray-500">ШК / Артикул</th>
+                                    <th class="p-4 text-sm text-gray-500">Название</th>
+                                    <th class="p-4 text-sm text-gray-500">Место</th>
+                                    <th class="p-4 text-sm text-gray-500 text-right">Остаток</th>
+                                    <th class="p-4 text-sm text-gray-500 text-center">Действия</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                <tr v-for="p in filteredProducts" :key="p.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-3">
-                                            <img :src="p.photo || 'https://placehold.co/40'" class="w-10 h-10 rounded object-cover bg-gray-200">
-                                            <div>
-                                                <div class="font-bold text-sm">{{ p.name }}</div>
-                                                <div class="text-xs text-gray-400">{{ p.sku }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 font-mono text-xs">
+                            <tbody>
+                                <tr v-for="p in filteredProducts" :key="p.id" class="border-b hover:bg-gray-50">
+                                    <td class="p-4"><img :src="p.photo || 'https://placehold.co/40'" class="w-10 h-10 rounded object-cover"></td>
+                                    <td class="p-4 font-mono text-sm">
                                         <div>{{ p.barcode }}</div>
-                                        <div v-if="p.kiz" class="text-[10px] text-blue-500">КИЗ: {{ p.kiz.substring(0,8) }}...</div>
+                                        <div class="text-xs text-gray-400">{{ p.sku }}</div>
                                     </td>
-                                    <td class="p-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">{{ p.location }}</span></td>
+                                    <td class="p-4 font-medium">{{ p.name }}</td>
+                                    <td class="p-4"><span class="bg-gray-200 px-2 py-1 rounded text-xs">{{ p.location }}</span></td>
                                     <td class="p-4 text-right font-bold">{{ p.qty }}</td>
-                                    <td class="p-4 text-center space-x-2">
-                                        <button @click="printLabel(p)" class="text-gray-400 hover:text-primary" title="Этикетка 58x40"><i class="fas fa-tag"></i></button>
-                                        <button @click="openProductModal(p)" class="text-gray-400 hover:text-blue-500"><i class="fas fa-edit"></i></button>
+                                    <td class="p-4 text-center">
+                                        <button @click="printLabel(p)" class="text-blue-600 hover:text-blue-800 mx-1" title="Печать"><i class="fas fa-print"></i></button>
+                                        <button @click="openProductModal(p)" class="text-gray-500 hover:text-gray-700 mx-1" title="Изменить"><i class="fas fa-edit"></i></button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -302,137 +183,66 @@
                     </div>
                 </div>
 
-                <!-- ПРИЕМКА / ОТГРУЗКА -->
-                <div v-if="['receiving', 'shipment'].includes(view)" class="h-full flex flex-col">
-                    <div class="flex-1 bg-white dark:bg-darkcard rounded-xl shadow border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center p-6 relative transition-colors"
-                         :class="scanStatus === 'ok' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : (scanStatus === 'err' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : '')">
+                <!-- 3. ПРИЕМКА / ОТГРУЗКА -->
+                <div v-if="currentView === 'receiving' || currentView === 'shipment'" class="h-full flex flex-col items-center justify-center">
+                    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg text-center border-2 border-dashed border-gray-300"
+                         :class="scanStatus === 'ok' ? 'border-green-500 bg-green-50' : (scanStatus === 'err' ? 'border-red-500 bg-red-50' : '')">
                         
-                        <div class="text-center mb-6">
-                            <i class="fas fa-barcode text-6xl text-gray-200 dark:text-gray-700 mb-4"></i>
-                            <h3 class="text-2xl font-bold uppercase">{{ view === 'receiving' ? 'Приемка товара' : 'Отгрузка заказа' }}</h3>
-                            <p class="text-gray-500 text-sm mt-2">Сканируйте ШК или КИЗ. Фокус автоматический.</p>
-                        </div>
+                        <i class="fas fa-barcode text-6xl text-gray-300 mb-6"></i>
+                        <h3 class="text-2xl font-bold mb-2 uppercase">{{ currentView === 'receiving' ? 'Приемка' : 'Отгрузка' }}</h3>
+                        <p class="text-gray-500 mb-6">Сканируйте штрихкод. Курсор установлен автоматически.</p>
+                        
+                        <input v-model="scanBuffer" @keyup.enter="processScan" type="text" autofocus
+                               class="w-full text-center text-xl p-3 border-2 border-blue-500 rounded-lg outline-none font-mono mb-4"
+                               placeholder="Ожидание сканирования...">
 
-                        <div class="w-full max-w-md">
-                            <input v-model="scanBuffer" @keyup.enter="handleScan" type="text" autofocus
-                                   class="w-full text-center text-xl p-4 rounded-lg border-2 border-primary focus:ring-4 ring-blue-100 outline-none dark:bg-gray-800 font-mono"
-                                   placeholder="--- ОЖИДАНИЕ СКАНА ---">
-                        </div>
-
-                        <div v-if="lastScanResult" class="mt-6 w-full max-w-md bg-white dark:bg-gray-800 p-4 rounded shadow-lg animate-bounce-short">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <div class="text-xs text-gray-500">Последний скан</div>
-                                    <div class="font-bold text-lg">{{ lastScanResult.name }}</div>
-                                    <div class="text-sm font-mono text-gray-400">{{ lastScanResult.barcode }}</div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-2xl font-bold" :class="view === 'receiving' ? 'text-green-500' : 'text-orange-500'">
-                                        {{ view === 'receiving' ? '+' : '-' }} 1
-                                    </div>
-                                </div>
+                        <div v-if="lastScanned" class="mt-4 p-4 bg-white rounded shadow text-left">
+                            <div class="font-bold text-lg">{{ lastScanned.name }}</div>
+                            <div class="text-sm text-gray-500">{{ lastScanned.barcode }}</div>
+                            <div class="text-right text-2xl font-bold mt-2" 
+                                 :class="currentView === 'receiving' ? 'text-green-600' : 'text-orange-600'">
+                                {{ currentView === 'receiving' ? '+' : '-' }} 1 шт.
                             </div>
                         </div>
-                        
-                        <!-- Сообщения об ошибках/успехе -->
-                        <div v-if="scanMessage" class="mt-4 font-bold text-lg" :class="scanStatus === 'ok' ? 'text-green-600' : 'text-red-600'">
-                            {{ scanMessage }}
-                        </div>
-
-                        <!-- Кнопки документов -->
-                        <div class="mt-8 flex gap-4" v-if="sessionDocs.length > 0">
-                             <button @click="printDocument('act')" class="btn-secondary text-sm"><i class="fas fa-file-contract mr-2"></i>Печать Акта</button>
-                        </div>
+                        <div v-if="scanMsg" class="mt-2 font-bold" :class="scanStatus === 'ok' ? 'text-green-600' : 'text-red-600'">{{ scanMsg }}</div>
                     </div>
                 </div>
 
-                <!-- СОТРУДНИКИ -->
-                <div v-if="view === 'employees'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 4. СОТРУДНИКИ -->
+                <div v-if="currentView === 'employees'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 space-y-4">
-                        <div v-for="emp in employees" :key="emp.id" class="bg-white dark:bg-darkcard p-4 rounded-xl shadow flex items-center justify-between">
+                        <div v-for="emp in employees" :key="emp.id" class="bg-white p-4 rounded-xl shadow flex items-center justify-between">
                             <div class="flex items-center gap-4">
-                                <div class="relative">
-                                    <img :src="emp.photo" class="w-12 h-12 rounded-full object-cover">
-                                    <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white" :class="emp.online ? 'bg-green-500' : 'bg-gray-400'"></span>
-                                </div>
+                                <img :src="emp.photo" class="w-12 h-12 rounded-full bg-gray-200">
                                 <div>
-                                    <h4 class="font-bold">{{ emp.name }}</h4>
-                                    <div class="text-xs text-gray-500">Ставка: {{ emp.rate }} ₽/ч • QR: {{ emp.qr }}</div>
+                                    <div class="font-bold">{{ emp.name }}</div>
+                                    <div class="text-xs text-gray-500">Ставка: {{ emp.rate }} ₽/ч</div>
+                                    <div class="text-[10px] font-mono bg-gray-100 px-1 inline-block mt-1">QR: {{ emp.qr }}</div>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="mb-2">
-                                    <span class="text-xl font-bold text-red-500">{{ emp.finesTotal }} ₽</span>
-                                    <span class="text-xs text-gray-400 block">Штрафы</span>
-                                </div>
-                                <div class="flex gap-2 justify-end">
-                                    <button @click="openFineModal(emp)" class="px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"><i class="fas fa-gavel"></i> Штраф</button>
-                                    <button @click="toggleWork(emp)" class="px-2 py-1 rounded text-xs font-bold" 
-                                            :class="emp.working ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
-                                        {{ emp.working ? 'На смене' : 'Старт' }}
+                                <div class="text-red-500 font-bold text-xl">{{ emp.fines }} ₽ <span class="text-xs text-gray-400 font-normal">штрафы</span></div>
+                                <div class="flex gap-2 justify-end mt-2">
+                                    <button @click="openFineModal(emp)" class="bg-red-50 text-red-600 px-3 py-1 rounded text-xs hover:bg-red-100">Штраф</button>
+                                    <button @click="toggleWork(emp)" 
+                                            :class="emp.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                                            class="px-3 py-1 rounded text-xs font-bold">
+                                        {{ emp.active ? 'На смене' : 'Начать' }}
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Монитор смены -->
-                    <div class="bg-white dark:bg-darkcard p-6 rounded-xl shadow h-fit">
+                    <!-- Активные смены -->
+                    <div class="bg-white p-6 rounded-xl shadow h-fit">
                         <h3 class="font-bold mb-4">Активные смены</h3>
-                        <div v-if="activeSessions.length === 0" class="text-center text-gray-400 py-4">Нет активных сотрудников</div>
-                        <div v-for="sess in activeSessions" :key="sess.empId" class="mb-4 last:mb-0">
+                        <div v-if="activeLogs.length === 0" class="text-gray-400 text-sm">Никого нет на смене</div>
+                        <div v-for="log in activeLogs" :key="log.id" class="mb-4 pb-4 border-b last:border-0">
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="font-bold">{{ getEmpName(sess.empId) }}</span>
-                                <span class="font-mono text-green-600">{{ sess.timeStr }}</span>
+                                <span class="font-bold">{{ getEmpName(log.empId) }}</span>
+                                <span class="font-mono text-green-600">{{ log.timeStr }}</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                                <div class="bg-primary h-1.5 rounded-full transition-all duration-1000" :style="{width: sess.progress + '%'}"></div>
-                            </div>
-                            <div class="text-xs text-gray-400 mt-1 text-right">Заработано: {{ sess.earned }} ₽</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- НАСТРОЙКИ / ИНТЕГРАЦИИ -->
-                <div v-if="view === 'settings'" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white dark:bg-darkcard p-6 rounded-xl shadow">
-                            <h3 class="font-bold mb-4 border-b pb-2 dark:border-gray-700">API Интеграции</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div class="font-bold">1C: Предприятие</div>
-                                        <div class="text-xs text-green-500">Подключено (v8.3.20)</div>
-                                    </div>
-                                    <button class="text-xs bg-gray-100 px-2 py-1 rounded">Log</button>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div class="font-bold">Diadoc (ЭДО)</div>
-                                        <div class="text-xs text-yellow-500">Требует ключа</div>
-                                    </div>
-                                    <button class="text-xs bg-gray-100 px-2 py-1 rounded">Настроить</button>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div class="font-bold">Клиентский Портал</div>
-                                        <div class="text-xs font-mono bg-gray-100 p-1 rounded">ip_key_8823_xj29</div>
-                                    </div>
-                                    <button class="text-xs text-red-500">Revoke</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white dark:bg-darkcard p-6 rounded-xl shadow">
-                            <h3 class="font-bold mb-4 border-b pb-2 dark:border-gray-700">Система</h3>
-                            <div class="space-y-2">
-                                <button @click="exportData('json')" class="w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded flex justify-between">
-                                    <span>Полный экспорт базы (JSON)</span> <i class="fas fa-download"></i>
-                                </button>
-                                <button @click="clearData" class="w-full text-left p-2 hover:bg-red-50 text-red-500 rounded flex justify-between">
-                                    <span>Сброс всех данных</span> <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            <div class="text-xs text-gray-400">Заработано: {{ log.earned }} ₽</div>
                         </div>
                     </div>
                 </div>
@@ -441,426 +251,355 @@
         </main>
     </div>
 
-    <!-- МОДАЛКИ -->
-    
-    <!-- Товар -->
-    <modal v-if="modals.product" @close="modals.product = false">
-        <template #header>{{ modals.data.id ? 'Редактировать' : 'Новый товар' }}</template>
-        <template #body>
+    <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
+    <div v-if="showProdModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 no-print">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+            <h3 class="font-bold text-xl mb-4">{{ editMode ? 'Редактировать' : 'Новый товар' }}</h3>
             <div class="space-y-3">
-                <input v-model="modals.data.name" placeholder="Название" class="w-full p-2 border rounded dark:bg-gray-700">
-                <div class="grid grid-cols-2 gap-2">
-                    <input v-model="modals.data.barcode" placeholder="Штрихкод" class="w-full p-2 border rounded dark:bg-gray-700">
-                    <input v-model="modals.data.sku" placeholder="Артикул" class="w-full p-2 border rounded dark:bg-gray-700">
+                <input v-model="prodForm.name" placeholder="Название" class="w-full border p-2 rounded">
+                <div class="flex gap-2">
+                    <input v-model="prodForm.barcode" placeholder="Штрихкод" class="w-full border p-2 rounded">
+                    <input v-model="prodForm.sku" placeholder="Артикул" class="w-full border p-2 rounded">
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <input v-model.number="modals.data.qty" type="number" placeholder="Кол-во" class="w-full p-2 border rounded dark:bg-gray-700">
-                    <input v-model="modals.data.location" placeholder="Ячейка (A-1)" class="w-full p-2 border rounded dark:bg-gray-700">
+                <div class="flex gap-2">
+                    <input v-model.number="prodForm.qty" type="number" placeholder="Кол-во" class="w-full border p-2 rounded">
+                    <input v-model="prodForm.location" placeholder="Ячейка (A1)" class="w-full border p-2 rounded">
                 </div>
-                <input v-model="modals.data.kiz" placeholder="КИЗ (Честный Знак)" class="w-full p-2 border rounded dark:bg-gray-700 text-xs font-mono">
-                <input v-model="modals.data.expiry" type="date" class="w-full p-2 border rounded dark:bg-gray-700">
+                <input v-model="prodForm.expiry" type="date" class="w-full border p-2 rounded">
             </div>
-        </template>
-        <template #footer>
-            <button @click="saveProduct" class="btn-primary">Сохранить</button>
-        </template>
-    </modal>
+            <div class="flex justify-end gap-2 mt-6">
+                <button @click="showProdModal = false" class="px-4 py-2 text-gray-500">Отмена</button>
+                <button @click="saveProduct" class="px-4 py-2 bg-blue-600 text-white rounded">Сохранить</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Штраф -->
-    <modal v-if="modals.fine" @close="modals.fine = false">
-        <template #header><span class="text-red-500"><i class="fas fa-gavel mr-2"></i>Выписка штрафа</span></template>
-        <template #body>
-            <div class="text-sm mb-4">Сотрудник: <b>{{ modals.data.employee?.name }}</b></div>
-            <select v-model="modals.data.reason" class="w-full p-2 border rounded dark:bg-gray-700 mb-2">
-                <option value="" disabled>Причина...</option>
+    <!-- МОДАЛЬНОЕ ОКНО ШТРАФА -->
+    <div v-if="showFineModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 no-print">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+            <h3 class="font-bold text-xl mb-2 text-red-600">Выписать штраф</h3>
+            <p class="text-sm mb-4">Сотрудник: <b>{{ fineForm.empName }}</b></p>
+            <select v-model="fineForm.reason" class="w-full border p-2 rounded mb-2">
                 <option>Опоздание</option>
                 <option>Курение</option>
                 <option>Брак</option>
                 <option>other">Другое</option>
             </select>
-            <input v-if="modals.data.reason === 'other'" v-model="modals.data.customReason" placeholder="Укажите причину" class="w-full p-2 border rounded dark:bg-gray-700 mb-2">
-            <input v-model.number="modals.data.amount" type="number" placeholder="Сумма (₽)" class="w-full p-2 border rounded dark:bg-gray-700 mb-4">
+            <input v-if="fineForm.reason === 'other'" v-model="fineForm.customReason" class="w-full border p-2 rounded mb-2" placeholder="Причина">
+            <input v-model.number="fineForm.amount" type="number" placeholder="Сумма (₽)" class="w-full border p-2 rounded mb-4">
             
-            <div class="border-2 border-dashed border-gray-300 rounded p-4 text-center relative cursor-pointer hover:bg-gray-50">
-                <input type="file" @change="handlePhoto" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer">
-                <i class="fas fa-camera text-2xl text-gray-400"></i>
-                <p class="text-xs text-gray-500">Фото фиксация нарушения</p>
-                <img v-if="modals.data.photo" :src="modals.data.photo" class="mt-2 h-20 mx-auto rounded shadow">
-            </div>
-        </template>
-        <template #footer>
-            <button @click="saveFine" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Выписать</button>
-        </template>
-    </modal>
+            <label class="block border-2 border-dashed border-gray-300 p-4 text-center rounded cursor-pointer hover:bg-gray-50">
+                <input type="file" @change="handlePhoto" accept="image/*" class="hidden">
+                <i class="fas fa-camera text-gray-400 mb-2"></i>
+                <div class="text-xs text-gray-500">Фото нарушения</div>
+                <img v-if="fineForm.photo" :src="fineForm.photo" class="h-20 mx-auto mt-2 rounded">
+            </label>
 
-    <!-- Область печати этикетки -->
-    <div id="label-print-area" style="display:none;">
-        <div class="font-bold text-sm truncate w-full">{{ labelData.name }}</div>
-        <svg id="barcode-svg"></svg>
-        <div class="text-[10px]">{{ labelData.sku }}</div>
-        <div class="text-[9px]" v-if="labelData.expiry">До: {{ labelData.expiry }}</div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button @click="showFineModal = false" class="px-4 py-2 text-gray-500">Отмена</button>
+                <button @click="saveFine" class="px-4 py-2 bg-red-600 text-white rounded">Выписать</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Область печати документа А4 -->
-    <div id="doc-print-area" style="display:none;">
-        <h1 class="text-center text-xl font-bold mb-4">АКТ {{ docType === 'act' ? 'ПРИЕМКИ' : 'ОТГРУЗКИ' }} ТОВАРА</h1>
-        <p class="mb-4">Дата: {{ new Date().toLocaleDateString() }}</p>
-        <p class="mb-4">Ответственное лицо: {{ user.name }}</p>
-        <table class="w-full border-collapse border border-black text-sm">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="border border-black p-2">Наименование</th>
-                    <th class="border border-black p-2">ШК</th>
-                    <th class="border border-black p-2">Кол-во</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in sessionDocs" :key="item.id">
-                    <td class="border border-black p-2">{{ item.name }}</td>
-                    <td class="border border-black p-2 font-mono">{{ item.barcode }}</td>
-                    <td class="border border-black p-2 text-center">1</td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="mt-8 flex justify-between">
-            <div>Подпись: _________________</div>
-            <div>М.П.</div>
-        </div>
+    <!-- ЗОНА ПЕЧАТИ (СКРЫТА) -->
+    <div id="print-area">
+        <div class="font-bold text-sm truncate w-full">{{ labelItem.name }}</div>
+        <svg id="barcode-svg"></svg>
+        <div class="text-[10px]">{{ labelItem.sku }}</div>
+        <div class="text-[9px]" v-if="labelItem.expiry">Годен до: {{ labelItem.expiry }}</div>
     </div>
 
 </div>
 
 <script>
-    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
-
-    // Компоненты
-    const KpiCard = { props: ['title','val','icon','color'], template: `
-        <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow border-l-4 flex items-center justify-between" :class="'border-'+color+'-500'">
-            <div><p class="text-gray-500 text-xs uppercase font-bold">{{title}}</p><p class="text-2xl font-bold mt-1">{{val}}</p></div>
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white bg-'+color+'-500"><i class="fas '+icon+'"></i></div>
-        </div>`};
-    
-    const Modal = { emits: ['close'], template: `
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm no-print">
-            <div class="bg-white dark:bg-darkcard w-full max-w-md rounded-xl shadow-2xl p-6 m-4 animate-scale-in">
-                <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold"><slot name="header"></slot></h3><button @click="$emit('close')" class="text-gray-400"><i class="fas fa-times"></i></button></div>
-                <div class="mb-6"><slot name="body"></slot></div>
-                <div class="flex justify-end gap-2"><slot name="footer"></slot></div>
-            </div>
-        </div>`;
+    const { createApp, ref, computed, onMounted, watch } = Vue;
 
     createApp({
-        components: { KpiCard, Modal },
         setup() {
-            // --- STATE ---
-            const isLoading = ref(true);
+            // Состояние
+            const loading = ref(true);
             const user = ref(null);
-            const auth = reactive({login:'', pass:''});
-            const view = ref('dashboard');
-            const searchQuery = ref('');
-            const scanBuffer = ref('');
-            const scannerInput = ref(null);
+            const loginForm = ref({user: '', pass: ''});
+            const currentView = ref('dashboard');
+            const search = ref('');
+            const showProdModal = ref(false);
+            const showFineModal = ref(false);
+            const editMode = ref(false);
             
             // Данные
             const products = ref([]);
             const employees = ref([]);
             const locations = ref([]);
-            const tasks = ref([{id:1, text:'Проверить ячейку B-05'}, {id:2, text:'Отгрузка ООО "Вектор"'}]);
-            const stats = reactive({shippedToday: 12, totalFines: 0});
+            const stats = ref({ shipped: 0 });
             
-            // Сканирование
-            const lastScanResult = ref(null);
+            // Сканер
+            const scanBuffer = ref('');
+            const scanner = ref(null);
+            const lastScanned = ref(null);
             const scanStatus = ref(''); // ok, err
-            const scanMessage = ref('');
-            const sessionDocs = ref([]); // Для печати акта
+            const scanMsg = ref('');
+
+            // Формы
+            const prodForm = ref({});
+            const fineForm = ref({});
+            const labelItem = ref({});
             
-            // Модальные окна
-            const modals = reactive({
-                product: false, fine: false,
-                data: {}
-            });
-            const labelData = ref({});
-            const docType = ref('act');
+            // Работа
+            const workActive = ref(false);
+            const activeLogs = ref([]);
 
-            // Сессия сотрудника
-            const workSession = reactive({active: false, start: null, timer: '00:00:00'});
-            const activeSessions = ref([]);
-
-            const navItems = [
-                {id:'dashboard', label:'Дашборд', icon:'fa-chart-pie'},
-                {id:'warehouse', label:'Склад', icon:'fa-boxes'},
-                {id:'receiving', label:'Приемка', icon:'fa-download'},
-                {id:'shipment', label:'Отгрузка', icon:'fa-upload'},
-                {id:'employees', label:'Сотрудники', icon:'fa-users-cog'},
-                {id:'settings', label:'Настройки', icon:'fa-cogs'}
+            const menu = [
+                {id: 'dashboard', name: 'Дашборд', icon: 'fa-chart-pie'},
+                {id: 'warehouse', name: 'Склад', icon: 'fa-boxes'},
+                {id: 'receiving', name: 'Приемка', icon: 'fa-download'},
+                {id: 'shipment', name: 'Отгрузка', icon: 'fa-upload'},
+                {id: 'employees', name: 'Сотрудники', icon: 'fa-users'},
             ];
 
-            // --- COMPUTED ---
-            const currentTitle = computed(() => navItems.find(i=>i.id===view.value)?.label);
-            const filteredProducts = computed(() => {
-                if(!searchQuery.value) return products.value;
-                const q = searchQuery.value.toLowerCase();
-                return products.value.filter(p => p.name.toLowerCase().includes(q) || p.barcode.includes(q) || p.sku.includes(q));
-            });
-
-            // --- METHODS ---
-            
-            // Init
+            // Инициализация
             onMounted(() => {
-                if(localStorage.getItem('theme')==='dark') document.documentElement.classList.add('dark');
                 loadData();
-                
-                // Автофокус сканера
+                // Автофокус сканера каждые 2 сек
                 setInterval(() => {
-                    if(document.activeElement.tagName !== 'INPUT' && !modals.product && !modals.fine) {
-                        scannerInput.value?.focus();
+                    if(document.activeElement.tagName !== 'INPUT' && !showProdModal.value && !showFineModal.value) {
+                        scanner.value?.focus();
                     }
-                }, 1000);
-
-                // Таймер
+                }, 2000);
+                
+                // Таймер сотрудников
                 setInterval(updateTimers, 1000);
                 
-                setTimeout(()=>isLoading.value=false, 800);
+                setTimeout(() => loading.value = false, 1000);
             });
 
             function loadData() {
-                const p = localStorage.getItem('wms_products_v2');
-                const e = localStorage.getItem('wms_employees_v2');
+                const savedP = localStorage.getItem('wms_products');
+                const savedE = localStorage.getItem('wms_employees');
                 
-                products.value = p ? JSON.parse(p) : [
-                    {id:1, name:'iPhone 15 Case', sku:'APP-001', barcode:'2001001', qty:50, location:'A-01', kiz:'', photo:'https://placehold.co/40'},
-                    {id:2, name:'Samsung S24', sku:'SAM-002', barcode:'2002002', qty:10, location:'B-02', kiz:'0000123456789', photo:'https://placehold.co/40'}
+                if(savedP) products.value = JSON.parse(savedP);
+                else products.value = [
+                    {id: 1, name: 'Тестовый товар 1', barcode: '123456', sku: 'TST-001', qty: 10, location: 'A-1', photo: ''},
+                    {id: 2, name: 'Тестовый товар 2', barcode: '987654', sku: 'TST-002', qty: 5, location: 'B-2', photo: ''}
                 ];
-                
-                employees.value = e ? JSON.parse(e) : [
-                    {id:1, name:'Иванов И.И.', rate:350, working:false, finesTotal:0, qr:'EMP-001', online:true, photo:'https://ui-avatars.com/api/?name=I+I'},
-                    {id:2, name:'Петров П.П.', rate:300, working:true, finesTotal:1000, qr:'EMP-002', online:false, photo:'https://ui-avatars.com/api/?name=P+P', workStart: Date.now()-7200000}
+
+                if(savedE) employees.value = JSON.parse(savedE);
+                else employees.value = [
+                    {id: 1, name: 'Иванов И.', rate: 300, fines: 0, active: false, qr: 'EMP-001', photo: 'https://ui-avatars.com/api/?name=I+I'},
+                    {id: 2, name: 'Петров П.', rate: 350, fines: 500, active: true, start: Date.now(), qr: 'EMP-002', photo: 'https://ui-avatars.com/api/?name=P+P'}
                 ];
 
                 // Генерация локаций
                 locations.value = [];
-                ['A','B','C','D'].forEach(r => {
-                    for(let i=1; i<=10; i++) {
-                        const code = `${r}-${i}`;
-                        // Расчет заполненности на основе товаров
-                        const count = products.value.filter(p=>p.location===code).length;
-                        locations.value.push({id:code, code, capacity: 50, itemsCount: count, fill: Math.min((count/50)*100, 100)});
+                ['A','B','C'].forEach(r => {
+                    for(let i=1; i<=5; i++) {
+                        let code = `${r}-${i}`;
+                        let count = products.value.filter(p => p.location === code).length;
+                        locations.value.push({code, count});
                     }
                 });
                 
-                recalcStats();
+                updateStats();
             }
 
             function saveData() {
-                localStorage.setItem('wms_products_v2', JSON.stringify(products.value));
-                localStorage.setItem('wms_employees_v2', JSON.stringify(employees.value));
-                recalcStats();
+                localStorage.setItem('wms_products', JSON.stringify(products.value));
+                localStorage.setItem('wms_employees', JSON.stringify(employees.value));
+                updateStats();
             }
 
-            function recalcStats() {
-                stats.totalFines = employees.value.reduce((a,b)=>a+b.finesTotal, 0);
+            function updateStats() {
+                stats.value.shipped = 12; // Заглушка
             }
 
-            // Auth
-            function login() {
-                if(auth.login==='admin' && auth.pass==='admin') {
-                    user.value = {name:'Администратор', role:'admin', avatar:'https://ui-avatars.com/api/?name=Admin'};
-                } else alert('Ошибка входа');
+            // Логика
+            function doLogin() {
+                if(loginForm.value.user === 'admin' && loginForm.value.pass === 'admin') {
+                    user.value = { name: 'Admin' };
+                } else {
+                    alert('Неверный логин/пароль');
+                }
             }
             function logout() { user.value = null; }
-            function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+            function getMenuName() { return menu.find(m => m.id === currentView.value)?.name; }
 
-            // Scanner Logic
-            function handleScan() {
+            // Фильтр товаров
+            const filteredProducts = computed(() => {
+                if(!search.value) return products.value;
+                const s = search.value.toLowerCase();
+                return products.value.filter(p => p.name.toLowerCase().includes(s) || p.barcode.includes(s));
+            });
+
+            // Сканер
+            function processScan() {
                 const code = scanBuffer.value.trim();
                 if(!code) return;
 
-                // 1. Check Employee QR
+                // Проверка QR сотрудника
                 if(code.startsWith('EMP-')) {
-                    const emp = employees.value.find(e=>e.qr === code);
+                    const emp = employees.value.find(e => e.qr === code);
                     if(emp) {
                         toggleWork(emp);
-                        showScan(null, 'ok', `Смена: ${emp.working?'СТАРТ':'СТОП'}`);
-                    } else showScan(null, 'err', 'Сотрудник не найден');
-                    scanBuffer.value=''; return;
+                        showScanResult(null, 'ok', `Смена: ${emp.active ? 'СТАРТ' : 'СТОП'}`);
+                    }
+                    scanBuffer.value = '';
+                    return;
                 }
 
-                // 2. Check Product
-                const prod = products.value.find(p => p.barcode === code || (p.kiz && p.kiz === code));
+                const prod = products.value.find(p => p.barcode === code);
                 
-                if(view.value === 'warehouse') {
-                    if(prod) openProductModal(prod);
-                    else showScan(null, 'err', 'Товар не найден');
-                }
-                else if(['receiving','shipment'].includes(view.value)) {
+                if(currentView.value === 'receiving') {
                     if(prod) {
-                        if(view.value === 'receiving') {
-                            prod.qty++;
-                            showScan(prod, 'ok', `Принято: ${prod.name}`);
-                        } else {
-                            if(prod.qty > 0) {
-                                prod.qty--;
-                                stats.shippedToday++;
-                                showScan(prod, 'ok', `Отгружено: ${prod.name}`);
-                            } else {
-                                showScan(prod, 'err', 'НЕТ НА СКЛАДЕ!');
-                            }
-                        }
-                        // Добавить в акт
-                        sessionDocs.value.push(prod);
-                        saveData();
+                        prod.qty++;
+                        showScanResult(prod, 'ok', 'Принято');
                     } else {
-                        showScan(null, 'err', 'Товар не найден в базе');
+                        if(confirm('Товар не найден. Создать новый?')) {
+                            products.value.push({id: Date.now(), name: 'Новый товар', barcode: code, sku: code, qty: 1, location: 'INBOX', photo: ''});
+                            saveData();
+                            showScanResult(products.value[products.value.length-1], 'ok', 'Создан');
+                        }
+                    }
+                } else if(currentView.value === 'shipment') {
+                    if(prod) {
+                        if(prod.qty > 0) {
+                            prod.qty--;
+                            showScanResult(prod, 'ok', 'Отгружено');
+                        } else {
+                            showScanResult(prod, 'err', 'НЕТ НА СКЛАДЕ');
+                        }
+                    } else {
+                        showScanResult(null, 'err', 'Неизвестный товар');
+                    }
+                } else {
+                    // Просто поиск
+                    if(prod) {
+                        search.value = prod.barcode;
+                        currentView.value = 'warehouse';
                     }
                 }
+                
+                saveData();
                 scanBuffer.value = '';
             }
 
-            function showScan(prod, status, msg) {
-                lastScanResult.value = prod;
+            function showScanResult(prod, status, msg) {
+                lastScanned.value = prod;
                 scanStatus.value = status;
-                scanMessage.value = msg;
-                setTimeout(()=>{ scanStatus.value=''; scanMessage.value=''; }, 3000);
+                scanMsg.value = msg;
+                setTimeout(() => { scanStatus.value = ''; scanMsg.value = ''; }, 3000);
             }
 
-            // Products
-            function openProductModal(p=null) {
-                modals.product = true;
-                modals.data = p ? JSON.parse(JSON.stringify(p)) : {id:null, qty:0, location:'INBOX'};
+            // Товары
+            function openProductModal(p = null) {
+                editMode.value = !!p;
+                prodForm.value = p ? JSON.parse(JSON.stringify(p)) : {id: null, qty: 0};
+                showProdModal.value = true;
             }
             function saveProduct() {
-                if(modals.data.id) {
-                    const idx = products.value.findIndex(p=>p.id===modals.data.id);
-                    products.value[idx] = modals.data;
+                if(editMode.value) {
+                    const idx = products.value.findIndex(p => p.id === prodForm.value.id);
+                    products.value[idx] = prodForm.value;
                 } else {
-                    modals.data.id = Date.now();
-                    if(!modals.data.photo) modals.data.photo = 'https://placehold.co/40';
-                    products.value.push(modals.data);
+                    prodForm.value.id = Date.now();
+                    products.value.push(prodForm.value);
                 }
                 saveData();
-                modals.product = false;
+                showProdModal.value = false;
             }
 
-            // Printing
+            // Печать
             function printLabel(p) {
-                labelData.value = p;
-                setTimeout(()=>{
-                    JsBarcode("#barcode-svg", p.barcode, {format:"CODE128", width:1.5, height:30, displayValue:false, margin:0});
+                labelItem.value = p;
+                setTimeout(() => {
+                    JsBarcode("#barcode-svg", p.barcode, {format: "CODE128", width: 1.5, height: 30, displayValue: false, margin: 0});
                     window.print();
                 }, 100);
             }
-            function printDocument(type) {
-                docType.value = type;
-                document.body.classList.add('doc-print'); // Хак для стилей
-                window.print();
-                document.body.classList.remove('doc-print');
-            }
 
-            // Employees & Fines
+            // Сотрудники
             function toggleWork(emp) {
-                if(emp.working) {
-                    emp.working = false;
-                    emp.workStart = null;
-                    activeSessions.value = activeSessions.value.filter(s=>s.empId!==emp.id);
-                } else {
-                    emp.working = true;
-                    emp.workStart = Date.now();
-                    activeSessions.value.push({empId:emp.id, start:Date.now(), timeStr:'00:00:00', earned:0, progress:0});
-                }
+                emp.active = !emp.active;
+                emp.start = emp.active ? Date.now() : null;
                 saveData();
             }
             function updateTimers() {
-                activeSessions.value.forEach(s => {
-                    const diff = Math.floor((Date.now() - s.start)/1000);
+                activeLogs.value = [];
+                employees.value.filter(e => e.active).forEach(e => {
+                    const diff = Math.floor((Date.now() - e.start) / 1000);
                     const h = Math.floor(diff/3600).toString().padStart(2,'0');
                     const m = Math.floor((diff%3600)/60).toString().padStart(2,'0');
-                    const sec = (diff%60).toString().padStart(2,'0');
-                    s.timeStr = `${h}:${m}:${sec}`;
-                    
-                    const emp = employees.value.find(e=>e.id===s.empId);
-                    if(emp) {
-                        s.earned = (diff/3600 * emp.rate).toFixed(2);
-                        s.progress = Math.min((diff / (8*3600))*100, 100);
-                    }
+                    const s = (diff%60).toString().padStart(2,'0');
+                    const earned = ((diff/3600) * e.rate).toFixed(2);
+                    activeLogs.value.push({
+                        id: e.id, empId: e.id, timeStr: `${h}:${m}:${s}`, earned: earned
+                    });
                 });
             }
-            function getEmpName(id) { return employees.value.find(e=>e.id===id)?.name; }
+            function getEmpName(id) { return employees.value.find(e => e.id === id)?.name; }
 
+            // Штрафы
             function openFineModal(emp) {
-                modals.fine = true;
-                modals.data = {employee: emp, amount:100, reason:'', customReason:'', photo:null};
+                fineForm.value = { empId: emp.id, empName: emp.name, amount: 100, reason: '', photo: null };
+                showFineModal.value = true;
             }
             function handlePhoto(e) {
-                const f = e.target.files[0];
-                if(f) {
-                    const r = new FileReader();
-                    r.onload = (ev) => modals.data.photo = ev.target.result;
-                    r.readAsDataURL(f);
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => fineForm.value.photo = ev.target.result;
+                    reader.readAsDataURL(file);
                 }
             }
             function saveFine() {
-                const emp = modals.data.employee;
-                emp.finesTotal += Number(modals.data.amount);
-                // Здесь можно сохранить в историю штрафов
-                saveData();
-                modals.fine = false;
+                const emp = employees.value.find(e => e.id === fineForm.value.empId);
+                if(emp) {
+                    emp.fines += Number(fineForm.value.amount);
+                    saveData();
+                }
+                showFineModal.value = false;
             }
 
-            // Excel & Import/Export
+            // Excel
             function importExcel(e) {
                 const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const wb = XLSX.read(evt.target.result, {type:'binary'});
-                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    json.forEach((row, i) => {
+                    const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    data.forEach(row => {
                         products.value.push({
-                            id: Date.now()+i, name: row.Name||row['Наименование'], 
-                            barcode: String(row.Barcode||row['ШК']), sku: row.SKU||'', 
-                            qty: Number(row.Qty||0), location: 'IMPORT', photo: ''
+                            id: Date.now() + Math.random(),
+                            name: row.Name || row['Наименование'] || 'Без имени',
+                            barcode: String(row.Barcode || row['ШК']),
+                            sku: row.SKU || '',
+                            qty: Number(row.Qty || 0),
+                            location: 'Import'
                         });
                     });
                     saveData();
-                    alert(`Загружено ${json.length} строк`);
+                    alert('Импорт завершен');
                 };
                 reader.readAsBinaryString(file);
             }
-            function exportData(type) {
-                if(type==='json') {
-                    const data = {products: products.value, employees: employees.value};
-                    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.href=url; a.download='wms_backup.json'; a.click();
-                }
-            }
-            function clearData() {
-                if(confirm('Удалить ВСЕ данные?')) {
-                    localStorage.clear(); location.reload();
-                }
-            }
-            function inspectLocation(loc) {
-                searchQuery.value = loc.code;
-                view.value = 'warehouse';
+            function exportData() {
+                const blob = new Blob([JSON.stringify(products.value)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'wms_backup.json'; a.click();
             }
 
             return {
-                isLoading, user, auth, login, logout, toggleTheme,
-                view, navItems, currentTitle, searchQuery,
-                products, filteredProducts, locations, tasks, stats,
-                scanBuffer, scannerInput, handleScan, lastScanResult, scanStatus, scanMessage, sessionDocs,
-                modals, openProductModal, saveProduct, printLabel, labelData, printDocument, docType,
-                employees, activeSessions, toggleWork, getEmpName, openFineModal, saveFine, handlePhoto,
-                importExcel, exportData, clearData, inspectLocation
+                loading, user, loginForm, doLogin, logout,
+                currentView, menu, getMenuName, search, filteredProducts,
+                products, locations, stats,
+                scanBuffer, scanner, processScan, lastScanned, scanStatus, scanMsg,
+                showProdModal, prodForm, openProductModal, saveProduct, editMode,
+                printLabel, labelItem,
+                employees, activeLogs, toggleWork, workActive, getEmpName,
+                showFineModal, fineForm, openFineModal, saveFine, handlePhoto,
+                importExcel, exportData
             };
         }
     }).mount('#app');
 </script>
-<style>
-    .btn-primary { @apply bg-primary text-white px-4 py-2 rounded hover:bg-blue-600 transition shadow; }
-    .btn-success { @apply bg-success text-white px-4 py-2 rounded hover:bg-green-600 transition shadow; }
-    .btn-secondary { @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition; }
-    .animate-scale-in { animation: scaleIn 0.2s ease-out; }
-    @keyframes scaleIn { from {transform: scale(0.9); opacity: 0;} to {transform: scale(1); opacity: 1;} }
-</style>
 </body>
 </html>
