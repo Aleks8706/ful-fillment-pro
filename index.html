@@ -1,248 +1,595 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WMS Склад (Автономная версия)</title>
-<style>
-    /* БАЗОВЫЕ СТИЛИ */
-    :root {
-        --primary: #2563eb;
-        --bg: #f8fafc;
-        --card: #ffffff;
-        --text: #1e293b;
-        --border: #e2e8f0;
-    }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WMS PRO | Fulfillment Control System</title>
+    <!-- Подключаем профессиональные шрифты и иконки -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    /* УТИЛИТЫ */
-    .hidden { display: none !important; }
-    .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-success { background: #10b981; color: white; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    
-    /* ЛЕЙАУТ */
-    #app { display: flex; width: 100%; height: 100%; }
-    aside { width: 240px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    
-    /* МЕНЮ */
-    .nav-item { padding: 12px 20px; cursor: pointer; border-left: 3px solid transparent; }
-    .nav-item:hover { background: #f1f5f9; }
-    .nav-item.active { background: #eff6ff; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
-    
-    /* КОНТЕНТ */
-    header { height: 50px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: white; }
-    .content { padding: 20px; overflow-y: auto; flex: 1; }
-    
-    /* ТАБЛИЦЫ */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
-    th { background: #f8fafc; font-weight: 600; font-size: 12px; color: #64748b; }
-    
-    /* КАРТА СКЛАДА */
-    .grid-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; }
-    .cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
-    .cell.full { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
-    .cell.empty { background: #dcfce7; border-color: #10b981; color: #166534; }
+    <style>
+        /* --- CORE VARIABLES & RESET --- */
+        :root {
+            --primary: #2563eb; /* Corporate Blue */
+            --secondary: #475569;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-body: #f1f5f9;
+            --bg-panel: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius: 8px;
+        }
 
-    /* ПЕЧАТЬ ЭТИКЕТКИ */
-    @media print {
-        body * { visibility: hidden; }
-        #label-print-area, #label-print-area * { visibility: visible; }
-        #label-print-area { position: absolute; left: 0; top: 0; width: 58mm; height: 40mm; padding: 2mm; border: 1px dashed black; }
-    }
-</style>
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+        /* --- LOGIN OVERLAY --- */
+        #auth-overlay {
+            position: fixed; inset: 0; background: var(--bg-body); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .auth-card {
+            background: var(--bg-panel); padding: 40px; border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); width: 100%; max-width: 400px; text-align: center;
+        }
+        .auth-logo { font-size: 48px; color: var(--primary); margin-bottom: 10px; }
+
+        /* --- LAYOUT --- */
+        .sidebar {
+            width: 260px; background: #1e293b; color: white; display: flex; flex-direction: column;
+            transition: transform 0.3s; z-index: 100;
+        }
+        .brand { padding: 20px; font-size: 20px; font-weight: 700; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+        .nav-scroll { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-item {
+            padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+            color: #94a3b8; transition: 0.2s; text-decoration: none; font-size: 14px;
+        }
+        .nav-item:hover, .nav-item.active { background: #334155; color: white; border-left: 4px solid var(--primary); }
+        .nav-item i { width: 20px; text-align: center; }
+
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        
+        /* --- TOPBAR --- */
+        .topbar {
+            height: 60px; background: var(--bg-panel); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+        }
+        .page-title { font-size: 18px; font-weight: 600; }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .avatar { width: 32px; height: 32px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        /* --- CONTENT AREA --- */
+        .content { flex: 1; overflow-y: auto; padding: 24px; }
+        
+        /* --- COMPONENTS --- */
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-panel); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-info h3 { margin: 0; font-size: 24px; font-weight: 700; }
+        .stat-info p { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+        .panel { background: var(--bg-panel); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+        .panel-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .panel-body { padding: 20px; }
+
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 12px; background: #f8fafc; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+
+        /* --- WAREHOUSE MAP --- */
+        .wh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+        .wh-cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: 0.2s; }
+        .wh-cell:hover { transform: scale(1.05); z-index: 10; box-shadow: var(--shadow); }
+        .wh-cell.occupied { background: #fff7ed; border-color: var(--warning); color: var(--warning); }
+        .wh-cell.free { background: #f0fdf4; border-color: var(--success); color: var(--success); }
+        .wh-cell span { font-weight: bold; font-size: 14px; }
+        .wh-cell small { font-size: 10px; opacity: 0.8; }
+
+        /* --- EMPLOYEE CLOCK --- */
+        .clock-interface { text-align: center; padding: 40px; max-width: 500px; margin: 0 auto; }
+        .clock-display { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 20px 0; }
+        .qr-simulator { width: 150px; height: 150px; border: 2px dashed var(--border); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; }
+
+        /* --- PRINT LABEL 58x40 --- */
+        @media print {
+            body * { visibility: hidden; }
+            #print-label-area, #print-label-area * { visibility: visible; }
+            #print-label-area {
+                position: absolute; left: 0; top: 0;
+                width: 58mm; height: 40mm;
+                padding: 2mm;
+                background: white;
+                overflow: hidden;
+            }
+            .lbl-row { display: flex; justify-content: space-between; align-items: flex-end; height: 100%; }
+            .lbl-text { font-family: Arial, sans-serif; }
+            .lbl-name { font-size: 10pt; font-weight: bold; margin-bottom: 2px; }
+            .lbl-sku { font-size: 8pt; color: #555; }
+            .lbl-barcode { height: 25px; }
+        }
+        #print-label-area { display: none; }
+
+        /* --- MOBILE --- */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; height: 100%; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .menu-toggle { display: block !important; }
+        }
+        .menu-toggle { display: none; background: none; border: none; font-size: 20px; margin-right: 15px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-<!-- ЭКРАН ВХОДА -->
-<div id="login-screen" style="position:fixed; inset:0; background:white; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-    <h1>📦 WMS Склад</h1>
-    <p>Автономная система управления</p>
-    <br>
-    <button class="btn btn-success" onclick="startSystem()">🚀 НАЧАТЬ РАБОТУ (Создать базу)</button>
-    <p style="font-size:12px; color:#666; margin-top:10px;">Нажмите, чтобы создать демо-данные</p>
-</div>
+    <!-- AUTH SCREEN -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <i class="fas fa-cubes auth-logo"></i>
+            <h2>WMS PRO</h2>
+            <p style="color:#64748b; margin-bottom:20px;">Система управления фулфилментом</p>
+            <input type="password" id="pin-code" placeholder="Введите PIN (1234)" style="padding:12px; width:100%; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:15px; text-align:center; font-size:18px;">
+            <button class="btn btn-primary" style="width:100%" onclick="App.login()">ВОЙТИ В СИСТЕМУ</button>
+            <div style="margin-top:15px; font-size:12px; color:#94a3b8;">Демо доступ: 1234</div>
+        </div>
+    </div>
 
-<!-- ПРИЛОЖЕНИЕ -->
-<div id="app" class="hidden">
-    <aside>
-        <div style="padding:20px; font-weight:bold; font-size:18px; border-bottom:1px solid var(--border);">WMS v1.0</div>
-        <nav id="menu"></nav>
-        <div style="margin-top:auto; padding:20px; border-top:1px solid var(--border);">
-            <button class="btn btn-danger" style="width:100%" onclick="location.reload()">Выход</button>
+    <!-- MAIN APP -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand"><i class="fas fa-layer-group"></i> FBO CONTROL</div>
+        <div class="nav-scroll" id="nav-container">
+            <!-- Nav Items Generated via JS -->
+        </div>
+        <div style="padding:20px; border-top:1px solid #334155;">
+            <div class="nav-item" onclick="App.logout()"><i class="fas fa-sign-out-alt"></i> Выход</div>
         </div>
     </aside>
-    
-    <main>
-        <header>
-            <strong id="page-title">Дашборд</strong>
-            <span id="clock">00:00</span>
-        </header>
-        <div id="content" class="content"></div>
-    </main>
-</div>
 
-<!-- ОБЛАСТЬ ПЕЧАТИ -->
-<div id="label-print-area" style="display:none;"></div>
+    <div class="main-wrapper">
+        <header class="topbar">
+            <div style="display:flex; align-items:center;">
+                <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+                <span class="page-title" id="page-title">Дашборд</span>
+            </div>
+            <div class="user-profile">
+                <span id="current-time" style="font-weight:500; color:#64748b;"></span>
+                <div class="avatar">A</div>
+            </div>
+        </header>
+
+        <main class="content" id="main-content">
+            <!-- Dynamic Content -->
+        </main>
+    </div>
+
+    <!-- HIDDEN PRINT AREA -->
+    <div id="print-label-area"></div>
 
 <script>
-// --- ДАННЫЕ И ХРАНИЛИЩЕ ---
-const Store = {
-    get: (k) => JSON.parse(localStorage.getItem('wms_' + k) || '[]'),
-    set: (k, v) => localStorage.setItem('wms_' + k, JSON.stringify(v)),
+/**
+ * WMS PRO CORE
+ * Модульная архитектура приложения
+ */
+
+const DB = {
+    // Простая обертка над LocalStorage
+    get: (key) => JSON.parse(localStorage.getItem('wms_pro_' + key) || 'null'),
+    set: (key, val) => localStorage.setItem('wms_pro_' + key, JSON.stringify(val)),
+    
+    // Инициализация демо-данных
+    seed: () => {
+        if(DB.get('products')) return;
+        
+        const products = [
+            { id: 101, sku: 'WB-12345', name: 'Платье женское летнее', barcode: '200101', cell: 'A-01-02', qty: 50, photo: null },
+            { id: 102, sku: 'OZ-98765', name: 'Чехол iPhone 14 Pro', barcode: '200102', cell: 'B-05-01', qty: 120, photo: null },
+            { id: 103, sku: 'YAN-555', name: 'Набор косметики', barcode: '200103', cell: 'C-02-03', qty: 15, photo: null },
+            { id: 104, sku: 'TEST-001', name: 'Игрушка мягкая', barcode: '200104', cell: 'A-02-01', qty: 200, photo: null }
+        ];
+
+        const employees = [
+            { id: 1, name: 'Алексей С.', role: 'Кладовщик', rate: 450, status: 'active', pin: '101' },
+            { id: 2, name: 'Мария К.', role: 'Упаковщик', rate: 400, status: 'idle', pin: '102' },
+            { id: 3, name: 'Иван Д.', role: 'Водитель', rate: 600, status: 'idle', pin: '103' }
+        ];
+
+        const fines = [
+            { id: 1, empId: 2, reason: 'Опоздание', amount: 500, date: '2023-10-25' }
+        ];
+
+        DB.set('products', products);
+        DB.set('employees', employees);
+        DB.set('fines', fines);
+        DB.set('sessions', []);
+    }
+};
+
+const App = {
+    state: {
+        currentPage: 'dashboard',
+        user: null
+    },
+
     init: () => {
-        if(!localStorage.getItem('wms_products')) {
-            // Демо данные
-            Store.set('products', [
-                {id: 1, name: 'Футболка Белая', sku: 'ART-001', barcode: '1001', cell: 'A1'},
-                {id: 2, name: 'Джинсы Синие', sku: 'ART-002', barcode: '1002', cell: 'A2'},
-                {id: 3, name: 'Кепка Красная', sku: 'ART-003', barcode: '1003', cell: 'B1'}
-            ]);
-            Store.set('employees', [
-                {id: 1, name: 'Иванов И.И.', status: 'work'},
-                {id: 2, name: 'Петров П.П.', status: 'off'}
-            ]);
+        // Проверка авторизации
+        const session = sessionStorage.getItem('wms_session');
+        if(session) {
+            App.state.user = JSON.parse(session);
+            App.showApp();
+        }
+
+        // Часы
+        setInterval(() => {
+            const el = document.getElementById('current-time');
+            if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+    },
+
+    login: () => {
+        const pin = document.getElementById('pin-code').value;
+        if(pin === '1234') {
+            DB.seed(); // Создаем базу если нет
+            const user = { name: 'Администратор', role: 'Admin' };
+            sessionStorage.setItem('wms_session', JSON.stringify(user));
+            App.state.user = user;
+            App.showApp();
+        } else {
+            alert('Неверный PIN. Попробуйте 1234');
+        }
+    },
+
+    logout: () => {
+        sessionStorage.removeItem('wms_session');
+        location.reload();
+    },
+
+    showApp: () => {
+        document.getElementById('auth-overlay').style.display = 'none';
+        App.renderNav();
+        App.navigate('dashboard');
+    },
+
+    renderNav: () => {
+        const menu = [
+            { id: 'dashboard', icon: 'fa-chart-line', label: 'Дашборд' },
+            { id: 'warehouse', icon: 'fa-warehouse', label: 'Склад (Карта)' },
+            { id: 'inventory', icon: 'fa-boxes', label: 'Товары' },
+            { id: 'acceptance', icon: 'fa-dolly', label: 'Приемка / Отгрузка' },
+            { id: 'staff', icon: 'fa-users-cog', label: 'Персонал & KPI' },
+            { id: 'settings', icon: 'fa-cogs', label: 'Интеграции' }
+        ];
+
+        document.getElementById('nav-container').innerHTML = menu.map(item => `
+            <div class="nav-item" onclick="App.navigate('${item.id}')" id="nav-${item.id}">
+                <i class="fas ${item.icon}"></i> ${item.label}
+            </div>
+        `).join('');
+    },
+
+    navigate: (page) => {
+        App.state.currentPage = page;
+        
+        // Update UI Active State
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const activeNav = document.getElementById(`nav-${page}`);
+        if(activeNav) activeNav.classList.add('active');
+
+        // Render Content
+        const content = document.getElementById('main-content');
+        const title = document.getElementById('page-title');
+        
+        // Mobile sidebar close
+        document.getElementById('sidebar').classList.remove('open');
+
+        switch(page) {
+            case 'dashboard':
+                title.innerText = 'Обзор показателей';
+                Modules.dashboard(content);
+                break;
+            case 'warehouse':
+                title.innerText = 'Интерактивная карта склада';
+                Modules.warehouse(content);
+                break;
+            case 'inventory':
+                title.innerText = 'Управление товарами';
+                Modules.inventory(content);
+                break;
+            case 'staff':
+                title.innerText = 'Учет персонала и Штрафы';
+                Modules.staff(content);
+                break;
+            case 'acceptance':
+                title.innerText = 'Операции приемки';
+                Modules.acceptance(content);
+                break;
+            default:
+                content.innerHTML = '<div class="panel"><div class="panel-body">Раздел в разработке</div></div>';
         }
     }
 };
 
-// --- ЛОГИКА ---
-function startSystem() {
-    Store.init();
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    renderMenu();
-    navigate('dashboard');
-    setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
-}
+const Modules = {
+    dashboard: (container) => {
+        const products = DB.get('products');
+        const emps = DB.get('employees');
+        const totalStock = products.reduce((acc, p) => acc + p.qty, 0);
+        
+        container.innerHTML = `
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#eff6ff; color:#2563eb;"><i class="fas fa-box-open"></i></div>
+                    <div class="stat-info"><h3>${totalStock}</h3><p>Единиц на складе</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-info"><h3>${emps.filter(e=>e.status==='active').length}</h3><p>Сотрудников на смене</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fef2f2; color:#dc2626;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info"><h3>${DB.get('fines').length}</h3><p>Штрафов за месяц</p></div>
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+                <div class="panel">
+                    <div class="panel-header"><strong>Последние операции</strong></div>
+                    <div class="panel-body">
+                        <table>
+                            <thead><tr><th>Время</th><th>Операция</th><th>Статус</th></tr></thead>
+                            <tbody>
+                                <tr><td>10:45</td><td>Приемка партии #4421</td><td><span class="badge badge-green">Завершено</span></td></tr>
+                                <tr><td>10:30</td><td>Отгрузка WB (ФБО)</td><td><span class="badge badge-blue">В процессе</span></td></tr>
+                                <tr><td>09:15</td><td>Инвентаризация ячеек B</td><td><span class="badge badge-green">Завершено</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><strong>Быстрые действия</strong></div>
+                    <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+                        <button class="btn btn-primary" onclick="App.navigate('acceptance')"><i class="fas fa-plus"></i> Новая приемка</button>
+                        <button class="btn btn-success" onclick="App.navigate('warehouse')"><i class="fas fa-map-marker-alt"></i> Найти товар</button>
+                        <button class="btn btn-danger" onclick="App.navigate('staff')"><i class="fas fa-user-clock"></i> Учет времени</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
 
-function navigate(page) {
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    // Подсветка меню (упрощенно)
-    
-    const content = document.getElementById('content');
-    const title = document.getElementById('page-title');
-    
-    if (page === 'dashboard') {
-        title.innerText = 'Обзор';
-        const p = Store.get('products');
-        const e = Store.get('employees');
-        content.innerHTML = `
-            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-bottom:20px;">
-                <div class="card"><h3>Товаров</h3><h1>${p.length}</h1></div>
-                <div class="card"><h3>Сотрудников</h3><h1>${e.length}</h1></div>
-                <div class="card"><h3>Заказов</h3><h1>0</h1></div>
-            </div>
-            <div class="card">
-                <h4>Быстрые действия</h4>
-                <button class="btn btn-primary" onclick="navigate('products')">Товары</button>
-                <button class="btn btn-primary" onclick="navigate('warehouse')">Склад</button>
-            </div>
-        `;
-    } 
-    else if (page === 'products') {
-        title.innerText = 'Товары';
-        const list = Store.get('products');
-        let html = `
-            <div style="margin-bottom:10px;"><button class="btn btn-success" onclick="addProduct()">+ Добавить товар</button></div>
-            <div class="card">
-            <table>
-                <thead><tr><th>Артикул</th><th>Название</th><th>ШК</th><th>Ячейка</th><th>Действия</th></tr></thead>
-                <tbody>
-        `;
-        list.forEach(item => {
-            html += `
-                <tr>
-                    <td>${item.sku}</td>
-                    <td>${item.name}</td>
-                    <td>${item.barcode}</td>
-                    <td>${item.cell}</td>
-                    <td>
-                        <button class="btn btn-primary" onclick="printLabel('${item.name}', '${item.barcode}')">Печать</button>
-                        <button class="btn btn-danger" onclick="deleteProduct(${item.id})">X</button>
-                    </td>
-                </tr>
-            `;
-        });
-        html += '</tbody></table></div>';
-        content.innerHTML = html;
-    }
-    else if (page === 'warehouse') {
-        title.innerText = 'Карта склада';
-        // Генерация сетки 5x5
-        let grid = '<div class="grid-map">';
-        const products = Store.get('products');
-        const rows = ['A','B','C','D','E'];
+    warehouse: (container) => {
+        const products = DB.get('products');
+        let gridHtml = '';
+        
+        // Генерируем карту A1-C5
+        const rows = ['A','B','C','D'];
+        const cols = [1,2,3,4,5];
         
         rows.forEach(r => {
-            for(let i=1; i<=5; i++) {
-                const cellId = r + i;
-                const hasItem = products.find(p => p.cell === cellId);
-                grid += `<div class="cell ${hasItem ? 'full' : 'empty'}" onclick="alert('Ячейка: ${cellId}\\n' + (hasItem ? hasItem.name : 'Свободно'))">${cellId}</div>`;
-            }
+            cols.forEach(c => {
+                const cellCode = `${r}-${c.toString().padStart(2,'0')}`; // A-01
+                // Ищем товары в ячейке (упрощенно считаем что 1 товар на ячейку для демо)
+                const item = products.find(p => p.cell === cellCode);
+                
+                gridHtml += `
+                    <div class="wh-cell ${item ? 'occupied' : 'free'}" onclick="Modules.whClick('${cellCode}', ${item ? true : false})">
+                        <span>${cellCode}</span>
+                        ${item ? '<small><i class="fas fa-box"></i> '+item.qty+' шт</small>' : '<small>Свободно</small>'}
+                    </div>
+                `;
+            });
         });
-        grid += '</div>';
-        content.innerHTML = `<div class="card">${grid}</div>`;
+
+        container.innerHTML = `
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Схема хранения (Вид сверху)</span>
+                    <div>
+                        <span class="badge badge-green" style="margin-right:10px;">Свободно</span>
+                        <span class="badge" style="background:#fff7ed; color:#c2410c;">Занято</span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="wh-grid">${gridHtml}</div>
+                </div>
+            </div>
+        `;
+    },
+
+    whClick: (cell, occupied) => {
+        if(occupied) {
+            alert(`Ячейка ${cell}\nЗанята товаром.\nДля детальной информации перейдите в раздел "Товары"`);
+        } else {
+            if(confirm(`Ячейка ${cell} свободна. Разместить товар сюда?`)) {
+                alert('Режим размещения: отсканируйте товар');
+            }
+        }
+    },
+
+    inventory: (container) => {
+        const list = DB.get('products');
+        container.innerHTML = `
+            <div class="panel">
+                <div class="panel-header">
+                    <strong>Номенклатура</strong>
+                    <div>
+                        <button class="btn btn-sm btn-primary" onclick="alert('Функция импорта Excel')"><i class="fas fa-file-import"></i> Импорт</button>
+                        <button class="btn btn-sm btn-success" onclick="alert('Экспорт в Excel')"><i class="fas fa-file-export"></i> Экспорт</button>
+                    </div>
+                </div>
+                <div class="panel-body" style="padding:0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Фото</th>
+                                <th>Артикул / Name</th>
+                                <th>Штрихкод</th>
+                                <th>Локация</th>
+                                <th>Остаток</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${list.map(p => `
+                                <tr>
+                                    <td><div style="width:30px;height:30px;background:#eee;border-radius:4px;"></div></td>
+                                    <td>
+                                        <div style="font-weight:bold;">${p.sku}</div>
+                                        <div style="font-size:12px;color:#64748b;">${p.name}</div>
+                                    </td>
+                                    <td>${p.barcode}</td>
+                                    <td><span class="badge badge-blue">${p.cell}</span></td>
+                                    <td>${p.qty}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="Printer.print('${p.name}', '${p.barcode}')"><i class="fas fa-print"></i></button>
+                                        <button class="btn btn-sm" style="color:#64748b;"><i class="fas fa-edit"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    },
+
+    staff: (container) => {
+        const emps = DB.get('employees');
+        container.innerHTML = `
+            <div class="grid-stats">
+                <div class="panel" style="margin:0;">
+                    <div class="panel-body clock-interface">
+                        <h4>Учет рабочего времени</h4>
+                        <div class="clock-display" id="emp-clock">00:00:00</div>
+                        <div class="qr-simulator" onclick="alert('Эмуляция сканера QR: Сотрудник ID 101 распознан')">
+                            <i class="fas fa-qrcode" style="font-size:64px;"></i>
+                        </div>
+                        <p style="font-size:12px; color:#64748b;">Отсканируйте личный QR код сотрудника<br>или введите ID вручную</p>
+                        <input type="text" placeholder="ID Сотрудника" style="padding:8px; border:1px solid #ddd; border-radius:4px; text-align:center;">
+                        <button class="btn btn-primary" style="margin-top:10px; width:100%;">Отметиться</button>
+                    </div>
+                </div>
+                
+                <div class="panel" style="margin:0;">
+                    <div class="panel-header">
+                        <strong>Сотрудники и Ставки</strong>
+                        <button class="btn btn-sm btn-success">+ Добавить</button>
+                    </div>
+                    <div class="panel-body" style="padding:0;">
+                        <table>
+                            <thead><tr><th>Сотрудник</th><th>Ставка/ч</th><th>Статус</th><th>Штрафы</th></tr></thead>
+                            <tbody>
+                                ${emps.map(e => `
+                                    <tr>
+                                        <td>
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <div class="avatar" style="width:24px;height:24px;font-size:10px;">${e.name.charAt(0)}</div>
+                                                <div>${e.name}<br><small style="color:#64748b">${e.role}</small></div>
+                                            </div>
+                                        </td>
+                                        <td>${e.rate} ₽</td>
+                                        <td><span class="badge ${e.status==='active'?'badge-green':'badge-red'}">${e.status==='active'?'На смене':'Оффлайн'}</span></td>
+                                        <td style="color:var(--danger); font-weight:bold;">
+                                            ${DB.get('fines').filter(f=>f.empId===e.id).reduce((a,b)=>a+b.amount,0)} ₽
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header"><strong>Журнал штрафов и нарушений</strong></div>
+                <div class="panel-body">
+                    <table>
+                        <thead><tr><th>Дата</th><th>Сотрудник</th><th>Нарушение</th><th>Сумма</th><th>Фото-фиксация</th></tr></thead>
+                        <tbody>
+                            ${DB.get('fines').map(f => {
+                                const emp = emps.find(e=>e.id===f.empId);
+                                return `
+                                <tr>
+                                    <td>${f.date}</td>
+                                    <td>${emp ? emp.name : 'Unknown'}</td>
+                                    <td>${f.reason}</td>
+                                    <td style="color:red">-${f.amount} ₽</td>
+                                    <td><button class="btn btn-sm btn-ghost"><i class="fas fa-camera"></i> Смотреть</button></td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    },
+
+    acceptance: (container) => {
+        container.innerHTML = `
+            <div class="panel">
+                <div class="panel-header"><strong>Терминал Приемки</strong></div>
+                <div class="panel-body">
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <input type="text" autofocus placeholder="Скан ШК товара..." style="flex:1; padding:12px; border:2px solid var(--primary); border-radius:6px; font-size:16px;">
+                        <button class="btn btn-primary">Добавить</button>
+                    </div>
+                    <div style="background:#f8fafc; padding:20px; border-radius:6px; text-align:center; color:#64748b;">
+                        <i class="fas fa-barcode" style="font-size:32px; margin-bottom:10px;"></i>
+                        <p>Ожидание сканирования...</p>
+                    </div>
+                </div>
+            </div>
+        `;
     }
-}
+};
 
-function renderMenu() {
-    const items = [
-        {id: 'dashboard', label: '📊 Дашборд'},
-        {id: 'products', label: '📦 Товары'},
-        {id: 'warehouse', label: '🏭 Склад'},
-        {id: 'employees', label: '👷 Сотрудники'}
-    ];
-    document.getElementById('menu').innerHTML = items.map(i => 
-        `<div class="nav-item" onclick="navigate('${i.id}')">${i.label}</div>`
-    ).join('');
-}
+const Printer = {
+    print: (name, barcode) => {
+        const area = document.getElementById('print-label-area');
+        // Верстка строго под термопринтер 58x40мм
+        area.innerHTML = `
+            <div class="lbl-row">
+                <div class="lbl-text">
+                    <div class="lbl-name">${name}</div>
+                    <div class="lbl-sku">Арт: ${Math.floor(Math.random()*10000)}</div>
+                    <div class="lbl-sku">Срок: 12.2025</div>
+                </div>
+                <svg id="lbl-svg" class="lbl-barcode"></svg>
+            </div>
+        `;
+        
+        // Генерируем SVG штрихкода "на коленке" для автономности (полоски)
+        // В реальном проекте тут был бы JsBarcode
+        let bars = '';
+        for(let i=0; i<30; i++) {
+            const w = Math.random() > 0.5 ? 2 : 1;
+            bars += `<rect x="${i*4}" y="0" width="${w}" height="25" fill="black"/>`;
+        }
+        document.getElementById('lbl-svg').innerHTML = `<svg viewBox="0 0 120 25" xmlns="http://www.w3.org/2000/svg">${bars}</svg>`;
 
-// --- ФУНКЦИИ ТОВАРОВ ---
-function addProduct() {
-    const name = prompt("Название товара:");
-    if(!name) return;
-    const sku = prompt("Артикул:", Math.floor(Math.random()*1000));
-    const cell = prompt("Ячейка (например A1):", "A1");
-    
-    const list = Store.get('products');
-    list.push({
-        id: Date.now(),
-        name: name,
-        sku: sku || 'NO-SKU',
-        barcode: Math.floor(Math.random()*1000000).toString(),
-        cell: cell
-    });
-    Store.set('products', list);
-    navigate('products');
-}
+        area.style.display = 'block';
+        window.print();
+        setTimeout(() => area.style.display = 'none', 1000);
+    }
+};
 
-function deleteProduct(id) {
-    if(!confirm('Удалить?')) return;
-    const list = Store.get('products').filter(x => x.id !== id);
-    Store.set('products', list);
-    navigate('products');
-}
-
-// --- ПЕЧАТЬ ---
-function printLabel(name, barcode) {
-    const area = document.getElementById('label-print-area');
-    // Рисуем простой HTML для печати
-    area.innerHTML = `
-        <div style="text-align:center; font-family:sans-serif;">
-            <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">${name}</div>
-            <div style="font-size:24px; font-family:'Courier New', monospace; letter-spacing:2px;">||| ${barcode} |||</div>
-            <div style="font-size:10px; margin-top:5px;">WMS SYSTEM</div>
-        </div>
-    `;
-    area.style.display = 'block';
-    window.print();
-    area.style.display = 'none';
-}
+// Запуск
+window.onload = App.init;
 </script>
 </body>
 </html>
