@@ -2,622 +2,247 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FBO Master WMS | Система Управления Складом</title>
-<!-- Иконки и Шрифты -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<!-- Библиотеки для графики и штрихкодов -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS Склад (Автономная версия)</title>
 <style>
-:root {
-    --primary: #4f46e5; --primary-hover: #4338ca;
-    --bg-light: #f3f4f6; --card-light: #ffffff; --text-light: #1f2937;
-    --bg-dark: #0f172a; --card-dark: #1e293b; --text-dark: #f8fafc;
-    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
-    --border-light: #e5e7eb; --border-dark: #334155;
-    --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
+    /* БАЗОВЫЕ СТИЛИ */
+    :root {
+        --primary: #2563eb;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #1e293b;
+        --border: #e2e8f0;
+    }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+    
+    /* УТИЛИТЫ */
+    .hidden { display: none !important; }
+    .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    /* ЛЕЙАУТ */
+    #app { display: flex; width: 100%; height: 100%; }
+    aside { width: 240px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* МЕНЮ */
+    .nav-item { padding: 12px 20px; cursor: pointer; border-left: 3px solid transparent; }
+    .nav-item:hover { background: #f1f5f9; }
+    .nav-item.active { background: #eff6ff; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+    
+    /* КОНТЕНТ */
+    header { height: 50px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: white; }
+    .content { padding: 20px; overflow-y: auto; flex: 1; }
+    
+    /* ТАБЛИЦЫ */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    th { background: #f8fafc; font-weight: 600; font-size: 12px; color: #64748b; }
+    
+    /* КАРТА СКЛАДА */
+    .grid-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; }
+    .cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
+    .cell.full { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .cell.empty { background: #dcfce7; border-color: #10b981; color: #166534; }
 
-/* Темы */
-body.light-mode { --bg: var(--bg-light); --card: var(--card-light); --text: var(--text-light); --border: var(--border-light); }
-body.dark-mode { --bg: var(--bg-dark); --card: var(--card-dark); --text: var(--text-dark); --border: var(--border-dark); }
-
-* { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; height: 100vh; overflow: hidden; display: flex; }
-
-/* Login Screen */
-#login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-.login-box { background: var(--card); padding: 40px; border-radius: 20px; box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border); }
-.login-logo { font-size: 40px; color: var(--primary); margin-bottom: 20px; }
-
-/* Layout */
-.sidebar { width: 260px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s; z-index: 100; }
-.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-.top-bar { height: 60px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-.content-area { flex: 1; overflow-y: auto; padding: 20px; }
-
-/* Nav */
-.nav-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text); opacity: 0.7; transition: 0.2s; font-weight: 500; }
-.nav-item:hover, .nav-item.active { opacity: 1; background: rgba(79, 70, 229, 0.1); color: var(--primary); border-right: 3px solid var(--primary); }
-.nav-icon { width: 20px; text-align: center; }
-
-/* Components */
-.btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 14px; }
-.btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-hover); }
-.btn-danger { background: var(--danger); color: white; }
-.btn-success { background: var(--success); color: white; }
-.card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
-.grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px; }
-.stat-card { display: flex; align-items: center; gap: 15px; }
-.stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(79, 70, 229, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px; }
-
-/* Forms & Tables */
-.form-group { margin-bottom: 15px; text-align: left; }
-.form-label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: var(--text); opacity: 0.8; }
-.form-control { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { text-align: left; padding: 12px; background: rgba(0,0,0,0.05); font-weight: 600; font-size: 12px; text-transform: uppercase; }
-td { padding: 12px; border-bottom: 1px solid var(--border); }
-.badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-.badge-green { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-.badge-red { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-
-/* Specific Modules */
-.warehouse-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-.cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; position: relative; }
-.cell.occupied { background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
-.cell.free { background: rgba(16, 185, 129, 0.1); border-color: var(--success); }
-
-.employee-clock { text-align: center; padding: 40px; }
-.clock-btn { width: 200px; height: 200px; border-radius: 50%; border: 8px solid var(--border); background: var(--card); font-size: 24px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; }
-.clock-btn.active { border-color: var(--success); color: var(--success); box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
-
-/* Print Styles (58x40mm) */
-@media print {
-    body * { visibility: hidden; }
-    #print-area, #print-area * { visibility: visible; }
-    #print-area { position: absolute; left: 0; top: 0; width: 58mm; height: 40mm; padding: 2mm; margin: 0; overflow: hidden; }
-    .label-container { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
-    .label-title { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
-    .label-barcode { height: 25px; width: 100%; }
-    .label-info { font-size: 8px; display: flex; justify-content: space-between; }
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-    .sidebar { position: fixed; height: 100%; transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .mobile-menu-btn { display: block !important; }
-}
-.mobile-menu-btn { display: none; background: none; border: none; font-size: 20px; color: var(--text); cursor: pointer; }
+    /* ПЕЧАТЬ ЭТИКЕТКИ */
+    @media print {
+        body * { visibility: hidden; }
+        #label-print-area, #label-print-area * { visibility: visible; }
+        #label-print-area { position: absolute; left: 0; top: 0; width: 58mm; height: 40mm; padding: 2mm; border: 1px dashed black; }
+    }
 </style>
 </head>
-<body class="light-mode">
+<body>
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen">
-        <div class="login-box">
-            <i class="fas fa-cubes login-logo"></i>
-            <h2>FBO Master WMS</h2>
-            <p style="margin-bottom: 20px; opacity: 0.7;">Система управления складом</p>
-            <div class="form-group">
-                <input type="text" id="login-user" class="form-control" placeholder="Логин (admin)">
-            </div>
-            <div class="form-group">
-                <input type="password" id="login-pass" class="form-control" placeholder="Пароль (admin)">
-            </div>
-            <button class="btn btn-primary" style="width: 100%" onclick="app.login()">ВОЙТИ В СИСТЕМУ</button>
-        </div>
-    </div>
+<!-- ЭКРАН ВХОДА -->
+<div id="login-screen" style="position:fixed; inset:0; background:white; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+    <h1>📦 WMS Склад</h1>
+    <p>Автономная система управления</p>
+    <br>
+    <button class="btn btn-success" onclick="startSystem()">🚀 НАЧАТЬ РАБОТУ (Создать базу)</button>
+    <p style="font-size:12px; color:#666; margin-top:10px;">Нажмите, чтобы создать демо-данные</p>
+</div>
 
-    <!-- APP STRUCTURE -->
-    <aside class="sidebar" id="sidebar">
-        <div style="padding: 20px; font-weight: 800; font-size: 18px; color: var(--primary); display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-cubes"></i> FBO MASTER
-        </div>
-        <nav id="nav-menu">
-            <!-- Generated by JS -->
-        </nav>
-        <div style="margin-top: auto; padding: 20px; border-top: 1px solid var(--border);">
-            <div class="nav-item" onclick="app.toggleTheme()"><i class="fas fa-moon nav-icon"></i> Тема</div>
-            <div class="nav-item" onclick="app.logout()"><i class="fas fa-sign-out-alt nav-icon"></i> Выход</div>
+<!-- ПРИЛОЖЕНИЕ -->
+<div id="app" class="hidden">
+    <aside>
+        <div style="padding:20px; font-weight:bold; font-size:18px; border-bottom:1px solid var(--border);">WMS v1.0</div>
+        <nav id="menu"></nav>
+        <div style="margin-top:auto; padding:20px; border-top:1px solid var(--border);">
+            <button class="btn btn-danger" style="width:100%" onclick="location.reload()">Выход</button>
         </div>
     </aside>
-
-    <main class="main-content">
-        <header class="top-bar">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
-                <h3 id="page-title">Дашборд</h3>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span id="user-display" class="badge badge-green">Admin</span>
-                <div id="live-clock" style="font-weight: 600; font-size: 14px;"></div>
-            </div>
+    
+    <main>
+        <header>
+            <strong id="page-title">Дашборд</strong>
+            <span id="clock">00:00</span>
         </header>
-
-        <div id="content" class="content-area">
-            <!-- Dynamic Content Here -->
-        </div>
+        <div id="content" class="content"></div>
     </main>
+</div>
 
-    <!-- PRINT AREA (Hidden usually) -->
-    <div id="print-area"></div>
+<!-- ОБЛАСТЬ ПЕЧАТИ -->
+<div id="label-print-area" style="display:none;"></div>
 
 <script>
-/**
- * FBO MASTER WMS CORE
- * Модульная архитектура
- */
-
-const DB = {
-    // Имитация базы данных в LocalStorage
-    get: (key) => JSON.parse(localStorage.getItem('fbo_wms_' + key) || '[]'),
-    set: (key, data) => localStorage.setItem('fbo_wms_' + key, JSON.stringify(data)),
-    add: (key, item) => {
-        let data = DB.get(key);
-        item.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        item.created_at = new Date().toISOString();
-        data.push(item);
-        DB.set(key, data);
-        return item;
-    },
-    update: (key, id, newData) => {
-        let data = DB.get(key);
-        const index = data.findIndex(x => x.id === id);
-        if(index !== -1) {
-            data[index] = { ...data[index], ...newData };
-            DB.set(key, data);
-        }
-    },
-    delete: (key, id) => {
-        let data = DB.get(key).filter(x => x.id !== id);
-        DB.set(key, data);
-    }
-};
-
-const Utils = {
-    formatMoney: (n) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(n),
-    formatDate: (d) => new Date(d).toLocaleString('ru-RU'),
-    generateBarcodeHTML: (code, type='CODE128') => `<svg class="jsbarcode"></svg>`,
-    printLabel: (product) => {
-        const area = document.getElementById('print-area');
-        area.innerHTML = `
-            <div class="label-container">
-                <div class="label-title">${product.name}</div>
-                <div class="label-title" style="font-size:8px; opacity:0.8">${product.sku || 'Без артикула'}</div>
-                <img id="label-barcode-img" style="width:100%; height:25px;" />
-                <div class="label-info">
-                    <span>Арт: ${product.sku || '-'}</span>
-                    <span>Годен до: ${product.expiry || '-'}</span>
-                </div>
-            </div>
-        `;
-        JsBarcode("#label-barcode-img", product.barcode || product.sku || "123456", {
-            format: "CODE128",
-            height: 25,
-            displayValue: false,
-            margin: 0
-        });
-        setTimeout(() => window.print(), 200);
-    },
-    exportToExcel: (data, filename) => {
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Data");
-        XLSX.writeFile(wb, filename + ".xlsx");
-    },
-    fileToBase64: (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    })
-};
-
-const app = {
-    currentUser: null,
-    activeSection: 'dashboard',
-    
+// --- ДАННЫЕ И ХРАНИЛИЩЕ ---
+const Store = {
+    get: (k) => JSON.parse(localStorage.getItem('wms_' + k) || '[]'),
+    set: (k, v) => localStorage.setItem('wms_' + k, JSON.stringify(v)),
     init: () => {
-        app.renderNav();
-        setInterval(() => {
-            document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('ru-RU');
-        }, 1000);
-        
-        // Проверка сессии
-        if(localStorage.getItem('fbo_session')) {
-            app.currentUser = JSON.parse(localStorage.getItem('fbo_session'));
-            document.getElementById('login-screen').style.display = 'none';
-            app.navigate('dashboard');
-        }
-    },
-
-    login: () => {
-        const u = document.getElementById('login-user').value;
-        const p = document.getElementById('login-pass').value;
-        if(u === 'admin' && p === 'admin') {
-            app.currentUser = { name: 'Администратор', role: 'admin', id: 1 };
-            localStorage.setItem('fbo_session', JSON.stringify(app.currentUser));
-            document.getElementById('login-screen').style.display = 'none';
-            app.navigate('dashboard');
-        } else {
-            alert('Неверный логин или пароль!');
-        }
-    },
-
-    logout: () => {
-        localStorage.removeItem('fbo_session');
-        location.reload();
-    },
-
-    toggleTheme: () => {
-        document.body.classList.toggle('light-mode');
-        document.body.classList.toggle('dark-mode');
-    },
-
-    renderNav: () => {
-        const menu = [
-            { id: 'dashboard', icon: 'fa-chart-pie', label: 'Дашборд' },
-            { id: 'warehouse', icon: 'fa-warehouse', label: 'Склад (Карта)' },
-            { id: 'products', icon: 'fa-boxes', label: 'Товары' },
-            { id: 'acceptance', icon: 'fa-dolly', label: 'Приемка (FBO)' },
-            { id: 'shipment', icon: 'fa-truck-loading', label: 'Отгрузка' },
-            { id: 'inventory', icon: 'fa-clipboard-check', label: 'Инвентаризация' },
-            { id: 'employees', icon: 'fa-users', label: 'Сотрудники & KPI' },
-            { id: 'tasks', icon: 'fa-tasks', label: 'Задачи' },
-            { id: 'settings', icon: 'fa-cogs', label: 'Настройки / Интеграции' }
-        ];
-        
-        document.getElementById('nav-menu').innerHTML = menu.map(item => `
-            <div class="nav-item" onclick="app.navigate('${item.id}')">
-                <i class="fas ${item.icon} nav-icon"></i> ${item.label}
-            </div>
-        `).join('');
-    },
-
-    navigate: (section) => {
-        app.activeSection = section;
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        // Simple highlight logic could be improved with IDs
-        
-        const content = document.getElementById('content');
-        const title = document.getElementById('page-title');
-        
-        // Mobile sidebar close
-        document.getElementById('sidebar').classList.remove('open');
-
-        switch(section) {
-            case 'dashboard':
-                title.innerText = 'Обзор склада';
-                modules.dashboard(content);
-                break;
-            case 'warehouse':
-                title.innerText = 'Карта склада';
-                modules.warehouse(content);
-                break;
-            case 'products':
-                title.innerText = 'Номенклатура';
-                modules.products(content);
-                break;
-            case 'acceptance':
-                title.innerText = 'Приемка товара';
-                modules.acceptance(content);
-                break;
-            case 'employees':
-                title.innerText = 'Сотрудники и Контроль';
-                modules.employees(content);
-                break;
-            case 'settings':
-                title.innerText = 'Настройки и Интеграции';
-                modules.settings(content);
-                break;
-            default:
-                content.innerHTML = '<div class="card">Раздел в разработке...</div>';
+        if(!localStorage.getItem('wms_products')) {
+            // Демо данные
+            Store.set('products', [
+                {id: 1, name: 'Футболка Белая', sku: 'ART-001', barcode: '1001', cell: 'A1'},
+                {id: 2, name: 'Джинсы Синие', sku: 'ART-002', barcode: '1002', cell: 'A2'},
+                {id: 3, name: 'Кепка Красная', sku: 'ART-003', barcode: '1003', cell: 'B1'}
+            ]);
+            Store.set('employees', [
+                {id: 1, name: 'Иванов И.И.', status: 'work'},
+                {id: 2, name: 'Петров П.П.', status: 'off'}
+            ]);
         }
     }
 };
 
-const modules = {
-    dashboard: (container) => {
-        const products = DB.get('products');
-        const employees = DB.get('employees');
-        const fines = DB.get('fines');
-        
-        container.innerHTML = `
-            <div class="grid-dashboard">
-                <div class="card stat-card">
-                    <div class="stat-icon"><i class="fas fa-box"></i></div>
-                    <div><div style="font-size:24px; font-weight:bold">${products.length}</div><div style="opacity:0.7">Товаров</div></div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon" style="color:var(--success); background:rgba(16,185,129,0.1)"><i class="fas fa-users"></i></div>
-                    <div><div style="font-size:24px; font-weight:bold">${employees.length}</div><div style="opacity:0.7">Сотрудников</div></div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon" style="color:var(--danger); background:rgba(239,68,68,0.1)"><i class="fas fa-exclamation-triangle"></i></div>
-                    <div><div style="font-size:24px; font-weight:bold">${fines.length}</div><div style="opacity:0.7">Штрафов</div></div>
-                </div>
-            </div>
-            
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
-                <div class="card">
-                    <h4>Эффективность склада (Часы)</h4>
-                    <canvas id="dashChart" height="150"></canvas>
-                </div>
-                <div class="card">
-                    <h4>Быстрые действия</h4>
-                    <button class="btn btn-primary" style="width:100%; margin-bottom:10px" onclick="app.navigate('acceptance')">📥 Новая приемка</button>
-                    <button class="btn btn-success" style="width:100%; margin-bottom:10px" onclick="app.navigate('shipment')">📤 Отгрузка</button>
-                    <button class="btn btn-danger" style="width:100%" onclick="app.navigate('inventory')">📋 Инвентаризация</button>
-                </div>
-            </div>
-        `;
-        
-        // Chart
-        new Chart(document.getElementById('dashChart'), {
-            type: 'line',
-            data: {
-                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-                datasets: [{
-                    label: 'Отгружено заказов',
-                    data: [12, 19, 3, 5, 2, 3, 10],
-                    borderColor: '#4f46e5',
-                    tension: 0.4
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-    },
+// --- ЛОГИКА ---
+function startSystem() {
+    Store.init();
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    renderMenu();
+    navigate('dashboard');
+    setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
+}
 
-    products: (container) => {
-        const products = DB.get('products');
-        container.innerHTML = `
+function navigate(page) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    // Подсветка меню (упрощенно)
+    
+    const content = document.getElementById('content');
+    const title = document.getElementById('page-title');
+    
+    if (page === 'dashboard') {
+        title.innerText = 'Обзор';
+        const p = Store.get('products');
+        const e = Store.get('employees');
+        content.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-bottom:20px;">
+                <div class="card"><h3>Товаров</h3><h1>${p.length}</h1></div>
+                <div class="card"><h3>Сотрудников</h3><h1>${e.length}</h1></div>
+                <div class="card"><h3>Заказов</h3><h1>0</h1></div>
+            </div>
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <input type="text" placeholder="Поиск по названию, SKU, ШК..." class="form-control" style="width:300px">
-                    <div>
-                        <button class="btn btn-primary" onclick="modules.products.addModal()"><i class="fas fa-plus"></i> Добавить</button>
-                        <button class="btn btn-success" onclick="Utils.exportToExcel(DB.get('products'), 'Products_Export')"><i class="fas fa-file-excel"></i> Экспорт</button>
-                    </div>
-                </div>
-                <table>
-                    <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>ШК</th><th>Остаток</th><th>Ячейка</th><th>Действия</th></tr></thead>
-                    <tbody>
-                        ${products.map(p => `
-                            <tr>
-                                <td><img src="${p.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:4px; object-fit:cover"></td>
-                                <td>${p.name}</td>
-                                <td>${p.sku}</td>
-                                <td>${p.barcode}</td>
-                                <td>${p.stock}</td>
-                                <td>${p.cell_id || '-'}</td>
-                                <td>
-                                    <button class="btn btn-sm" onclick="Utils.printLabel(${JSON.stringify(p).replace(/"/g, '&quot;')})"><i class="fas fa-print"></i></button>
-                                    <button class="btn btn-sm btn-danger" onclick="DB.delete('products','${p.id}'); app.navigate('products')"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                <h4>Быстрые действия</h4>
+                <button class="btn btn-primary" onclick="navigate('products')">Товары</button>
+                <button class="btn btn-primary" onclick="navigate('warehouse')">Склад</button>
             </div>
         `;
-    },
-
-    products: {
-        ...modules.products, // keep reference
-        addModal: async () => {
-            // Simplified modal via prompt for prototype, ideally use a real modal
-            const name = prompt("Название товара:");
-            if(!name) return;
-            const sku = prompt("Артикул:");
-            const barcode = prompt("Штрихкод:");
-            
-            // Photo simulation
-            const photoInput = document.createElement('input');
-            photoInput.type = 'file';
-            photoInput.onchange = async e => {
-                const base64 = await Utils.fileToBase64(e.target.files[0]);
-                DB.add('products', { name, sku, barcode, stock: 0, photo: base64, cell_id: null });
-                app.navigate('products');
-            };
-            photoInput.click();
-        }
-    },
-
-    warehouse: (container) => {
-        // Generate Grid A1 to C5 for demo
-        let cellsHTML = '';
+    } 
+    else if (page === 'products') {
+        title.innerText = 'Товары';
+        const list = Store.get('products');
+        let html = `
+            <div style="margin-bottom:10px;"><button class="btn btn-success" onclick="addProduct()">+ Добавить товар</button></div>
+            <div class="card">
+            <table>
+                <thead><tr><th>Артикул</th><th>Название</th><th>ШК</th><th>Ячейка</th><th>Действия</th></tr></thead>
+                <tbody>
+        `;
+        list.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.sku}</td>
+                    <td>${item.name}</td>
+                    <td>${item.barcode}</td>
+                    <td>${item.cell}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="printLabel('${item.name}', '${item.barcode}')">Печать</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${item.id})">X</button>
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div>';
+        content.innerHTML = html;
+    }
+    else if (page === 'warehouse') {
+        title.innerText = 'Карта склада';
+        // Генерация сетки 5x5
+        let grid = '<div class="grid-map">';
+        const products = Store.get('products');
         const rows = ['A','B','C','D','E'];
-        const cols = [1,2,3,4,5,6];
         
-        const products = DB.get('products');
-
         rows.forEach(r => {
-            cols.forEach(c => {
-                const cellId = `${r}${c}`;
-                const item = products.find(p => p.cell_id === cellId);
-                cellsHTML += `
-                    <div class="cell ${item ? 'occupied' : 'free'}" onclick="modules.warehouse.cellClick('${cellId}', '${item ? item.name : ''}')">
-                        <strong>${cellId}</strong>
-                        ${item ? '<i class="fas fa-box" style="margin-top:5px"></i>' : ''}
-                    </div>
-                `;
-            });
+            for(let i=1; i<=5; i++) {
+                const cellId = r + i;
+                const hasItem = products.find(p => p.cell === cellId);
+                grid += `<div class="cell ${hasItem ? 'full' : 'empty'}" onclick="alert('Ячейка: ${cellId}\\n' + (hasItem ? hasItem.name : 'Свободно'))">${cellId}</div>`;
+            }
         });
-
-        container.innerHTML = `
-            <div class="card">
-                <h4>Схема склада (Онлайн)</h4>
-                <div style="margin-bottom:10px; font-size:12px; opacity:0.7">
-                    <span style="color:var(--success)">■</span> Свободно 
-                    <span style="color:var(--warning); margin-left:10px">■</span> Занято
-                </div>
-                <div class="warehouse-map">
-                    ${cellsHTML}
-                </div>
-            </div>
-        `;
-    },
-    
-    warehouse: {
-        ...modules.warehouse,
-        cellClick: (id, content) => {
-            alert(`Ячейка: ${id}\nСодержимое: ${content || 'Пусто'}`);
-        }
-    },
-
-    acceptance: (container) => {
-        container.innerHTML = `
-            <div class="card">
-                <h3>📥 Приемка товара (FBO)</h3>
-                <div class="form-group">
-                    <label class="form-label">Сканер ШК / Ввод вручную</label>
-                    <input type="text" id="acc-scan" class="form-control" autofocus onkeypress="if(event.key==='Enter') modules.acceptance.processScan(this.value)">
-                </div>
-                <div id="acc-result"></div>
-            </div>
-            <div class="card">
-                <h4>Текущая поставка</h4>
-                <table id="acc-table">
-                    <thead><tr><th>Товар</th><th>Кол-во</th><th>Статус</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                <button class="btn btn-primary" style="margin-top:15px" onclick="alert('Поставка сохранена и отправлена в 1С (эмуляция)')">✅ Завершить приемку</button>
-            </div>
-        `;
-    },
-    
-    acceptance: {
-        ...modules.acceptance,
-        processScan: (code) => {
-            const resDiv = document.getElementById('acc-result');
-            // Mock lookup
-            const prod = DB.get('products').find(p => p.barcode === code) || { name: 'Новый товар ('+code+')' };
-            
-            resDiv.innerHTML = `<div class="badge badge-green" style="margin-top:10px; padding:10px;">Распознан: ${prod.name}</div>`;
-            
-            // Add to temp table
-            const tbody = document.querySelector('#acc-table tbody');
-            tbody.innerHTML += `<tr><td>${prod.name}</td><td>1</td><td><span class="badge badge-green">OK</span></td></tr>`;
-            
-            document.getElementById('acc-scan').value = '';
-            document.getElementById('acc-scan').focus();
-        }
-    },
-
-    employees: (container) => {
-        const emps = DB.get('employees');
-        container.innerHTML = `
-            <div class="grid-dashboard">
-                <div class="card employee-clock">
-                    <h4>Контроль времени (QR/Сканер)</h4>
-                    <p style="margin-bottom:20px; opacity:0.7">Сканируйте QR сотрудника для начала/конца смены</p>
-                    <input type="text" id="emp-scan-input" style="opacity:0; position:absolute;" onchange="modules.employees.handleClock(this.value)">
-                    <button class="clock-btn" onclick="document.getElementById('emp-scan-input').focus()">
-                        <i class="fas fa-qrcode" style="font-size:40px; margin-bottom:10px"></i>
-                        СКАНИРОВАТЬ
-                    </button>
-                </div>
-                
-                <div class="card" style="flex:1">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-                        <h4>Сотрудники онлайн</h4>
-                        <button class="btn btn-primary" onclick="modules.employees.addEmp()">+ Сотрудник</button>
-                    </div>
-                    <div style="overflow-y:auto; max-height:400px">
-                        ${emps.map(e => `
-                            <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--border)">
-                                <img src="${e.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; margin-right:10px">
-                                <div style="flex:1">
-                                    <div style="font-weight:bold">${e.name}</div>
-                                    <div style="font-size:12px; opacity:0.7">Ставка: ${e.rate} ₽/ч</div>
-                                </div>
-                                <div style="text-align:right">
-                                    <div class="badge ${e.status === 'work' ? 'badge-green' : 'badge-red'}">${e.status === 'work' ? 'РАБОТАЕТ' : 'ОФФЛАЙН'}</div>
-                                    <div style="font-size:11px; margin-top:4px">${e.last_action || '-'}</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h4>Штрафы и Поощрения</h4>
-                <button class="btn btn-danger" onclick="modules.employees.fineModal()">Выписать штраф</button>
-                <!-- Table of fines would go here -->
-            </div>
-        `;
-    },
-    
-    employees: {
-        ...modules.employees,
-        addEmp: async () => {
-            const name = prompt("ФИО Сотрудника:");
-            const rate = prompt("Ставка в час:");
-            
-            // Генерация QR кода при создании
-            const empId = Date.now().toString();
-            
-            // Фото
-            const photoInput = document.createElement('input');
-            photoInput.type = 'file';
-            photoInput.onchange = async e => {
-                const base64 = await Utils.fileToBase64(e.target.files[0]);
-                DB.add('employees', { 
-                    name, rate, photo: base64, status: 'offline', last_action: '-', qr_data: empId 
-                });
-                app.navigate('employees');
-            };
-            photoInput.click();
-        },
-        handleClock: (val) => {
-            // Logic to find employee by QR val and toggle status
-            alert(`Сканирован ID: ${val}. Время зафиксировано.`);
-            // Update logic here
-        },
-        fineModal: () => {
-             alert("Модальное окно штрафа: Выбор сотрудника -> Причина -> Сумма -> Фото фиксация");
-        }
-    },
-
-    settings: (container) => {
-        container.innerHTML = `
-            <div class="card">
-                <h3>⚙️ Настройки и Интеграции</h3>
-                <div class="form-group">
-                    <label class="form-label">API Key Маркетплейса (WB/Ozon)</label>
-                    <input type="password" class="form-control" value="eyJhbGciOiJIUzI1NiIs...">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Путь к 1С (Enterprise Data)</label>
-                    <input type="text" class="form-control" value="http://1c-server/odata/standard.odata">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Диадок (Token)</label>
-                    <input type="password" class="form-control" value="******************">
-                </div>
-                <button class="btn btn-primary">Сохранить настройки</button>
-            </div>
-            
-            <div class="card">
-                <h3>💾 Управление данными</h3>
-                <button class="btn btn-success" onclick="alert('Бэкап создан и скачан')">Скачать бэкап (JSON)</button>
-                <button class="btn btn-danger" onclick="localStorage.clear(); location.reload()">Сброс системы</button>
-            </div>
-        `;
+        grid += '</div>';
+        content.innerHTML = `<div class="card">${grid}</div>`;
     }
-};
+}
 
-// Init App
-window.onload = app.init;
+function renderMenu() {
+    const items = [
+        {id: 'dashboard', label: '📊 Дашборд'},
+        {id: 'products', label: '📦 Товары'},
+        {id: 'warehouse', label: '🏭 Склад'},
+        {id: 'employees', label: '👷 Сотрудники'}
+    ];
+    document.getElementById('menu').innerHTML = items.map(i => 
+        `<div class="nav-item" onclick="navigate('${i.id}')">${i.label}</div>`
+    ).join('');
+}
+
+// --- ФУНКЦИИ ТОВАРОВ ---
+function addProduct() {
+    const name = prompt("Название товара:");
+    if(!name) return;
+    const sku = prompt("Артикул:", Math.floor(Math.random()*1000));
+    const cell = prompt("Ячейка (например A1):", "A1");
+    
+    const list = Store.get('products');
+    list.push({
+        id: Date.now(),
+        name: name,
+        sku: sku || 'NO-SKU',
+        barcode: Math.floor(Math.random()*1000000).toString(),
+        cell: cell
+    });
+    Store.set('products', list);
+    navigate('products');
+}
+
+function deleteProduct(id) {
+    if(!confirm('Удалить?')) return;
+    const list = Store.get('products').filter(x => x.id !== id);
+    Store.set('products', list);
+    navigate('products');
+}
+
+// --- ПЕЧАТЬ ---
+function printLabel(name, barcode) {
+    const area = document.getElementById('label-print-area');
+    // Рисуем простой HTML для печати
+    area.innerHTML = `
+        <div style="text-align:center; font-family:sans-serif;">
+            <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">${name}</div>
+            <div style="font-size:24px; font-family:'Courier New', monospace; letter-spacing:2px;">||| ${barcode} |||</div>
+            <div style="font-size:10px; margin-top:5px;">WMS SYSTEM</div>
+        </div>
+    `;
+    area.style.display = 'block';
+    window.print();
+    area.style.display = 'none';
+}
 </script>
 </body>
 </html>
