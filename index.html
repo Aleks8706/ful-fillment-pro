@@ -2182,127 +2182,35 @@ QR КОД СОТРУДНИКА
 </div>
 <script>
 // ============================================
-// ГЛОБАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ (IndexedDB + LocalStorage Fallback)
+// ГЛОБАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ (LocalStorage)
 // ============================================
-const DB_NAME = 'FulfilProDB';
-const DB_VERSION = 1;
-let db;
-let useLocalStorage = false; // Флаг для переключения на localStorage если IDB не работает
-
-// Обертка для работы с БД
 const Storage = {
-    async get(store, id) {
-        if (useLocalStorage) {
-            const data = JSON.parse(localStorage.getItem('fp_' + store) || '{}');
-            return data[id];
-        }
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(store, 'readonly');
-                const req = tx.objectStore(store).get(id);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-            } catch(e) { resolve(null); }
-        });
+    get(store) {
+        const data = localStorage.getItem('fp_' + store);
+        return data ? JSON.parse(data) : [];
     },
-    async getAll(store) {
-        if (useLocalStorage) {
-            const data = JSON.parse(localStorage.getItem('fp_' + store) || '{}');
-            return Object.values(data);
-        }
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(store, 'readonly');
-                const req = tx.objectStore(store).getAll();
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve([]);
-            } catch(e) { resolve([]); }
-        });
+    getAll(store) {
+        return this.get(store);
     },
-    async put(store, item) {
-        if (useLocalStorage) {
-            const data = JSON.parse(localStorage.getItem('fp_' + store) || '{}');
-            data[item.id] = item;
-            localStorage.setItem('fp_' + store, JSON.stringify(data));
-            return;
+    put(store, item) {
+        const data = this.get(store);
+        const index = data.findIndex(i => i.id === item.id);
+        if (index >= 0) {
+            data[index] = item;
+        } else {
+            data.push(item);
         }
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(store, 'readwrite');
-                tx.objectStore(store).put(item);
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => resolve();
-            } catch(e) { resolve(); }
-        });
+        localStorage.setItem('fp_' + store, JSON.stringify(data));
     },
-    async delete(store, id) {
-        if (useLocalStorage) {
-            const data = JSON.parse(localStorage.getItem('fp_' + store) || '{}');
-            delete data[id];
-            localStorage.setItem('fp_' + store, JSON.stringify(data));
-            return;
-        }
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(store, 'readwrite');
-                tx.objectStore(store).delete(id);
-                tx.oncomplete = () => resolve();
-            } catch(e) { resolve(); }
-        });
+    delete(store, id) {
+        let data = this.get(store);
+        data = data.filter(i => i.id !== id);
+        localStorage.setItem('fp_' + store, JSON.stringify(data));
     },
-    async clear(store) {
-        if (useLocalStorage) {
-            localStorage.removeItem('fp_' + store);
-            return;
-        }
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(store, 'readwrite');
-                tx.objectStore(store).clear();
-                tx.oncomplete = () => resolve();
-            } catch(e) { resolve(); }
-        });
+    clear(store) {
+        localStorage.removeItem('fp_' + store);
     }
 };
-
-function openDB() {
-    return new Promise((resolve) => {
-        try {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onupgradeneeded = (e) => {
-                db = e.target.result;
-                const stores = ['products', 'receiving', 'shipping', 'employees', 'tasks', 'clients', 'fines', 'inventory', 'documents', 'integrations', 'apiKeys', 'settings'];
-                stores.forEach(store => {
-                    if (!db.objectStoreNames.contains(store)) {
-                        db.createObjectStore(store, { keyPath: 'id' });
-                    }
-                });
-            };
-            request.onsuccess = (e) => {
-                db = e.target.result;
-                console.log('IndexedDB OK');
-                resolve(true);
-            };
-            request.onerror = (e) => {
-                console.warn('IndexedDB Error, switching to LocalStorage', e);
-                useLocalStorage = true;
-                resolve(false);
-            };
-            // Таймаут на случай зависания
-            setTimeout(() => {
-                if (!db) {
-                    console.warn('IndexedDB Timeout, switching to LocalStorage');
-                    useLocalStorage = true;
-                    resolve(false);
-                }
-            }, 2000);
-        } catch (e) {
-            console.warn('IndexedDB Exception, switching to LocalStorage', e);
-            useLocalStorage = true;
-            resolve(false);
-        }
-    });
-}
 
 // Генерация ID
 function genId() {
@@ -2419,8 +2327,8 @@ function changeTheme(theme) {
 // ============================================
 // ЗАПОЛНЕНИЕ СЕЛЕКТОВ
 // ============================================
-async function populateEmployeeSelects() {
-    const employees = await Storage.getAll('employees');
+function populateEmployeeSelects() {
+    const employees = Storage.getAll('employees');
     document.querySelectorAll('#task-employee, #fine-employee').forEach(sel => {
         sel.innerHTML = '<option value="">Выберите сотрудника</option>';
         employees.forEach(e => {
@@ -2428,8 +2336,8 @@ async function populateEmployeeSelects() {
         });
     });
 }
-async function populateClientSelects() {
-    const clients = await Storage.getAll('clients');
+function populateClientSelects() {
+    const clients = Storage.getAll('clients');
     document.querySelectorAll('#shipping-client').forEach(sel => {
         sel.innerHTML = '<option value="">Выберите клиента</option>';
         clients.forEach(c => {
@@ -2437,8 +2345,8 @@ async function populateClientSelects() {
         });
     });
 }
-async function populateProductSelects() {
-    const products = await Storage.getAll('products');
+function populateProductSelects() {
+    const products = Storage.getAll('products');
     document.querySelectorAll('#label-product-select, .shipping-product-select').forEach(sel => {
         sel.innerHTML = '<option value="">Выберите товар</option>';
         products.forEach(p => {
@@ -2457,8 +2365,8 @@ function populateCellSelect() {
 // ============================================
 // СКЛАД — ТОВАРЫ
 // ============================================
-async function loadWarehouse() {
-    const products = await Storage.getAll('products');
+function loadWarehouse() {
+    const products = Storage.getAll('products');
     const tbody = document.getElementById('warehouse-table-body');
     tbody.innerHTML = '';
     products.forEach(p => {
@@ -2485,51 +2393,59 @@ async function loadWarehouse() {
     });
     document.getElementById('warehouse-badge').textContent = products.length;
 }
-async function saveProduct() {
+function saveProduct() {
     const editId = document.getElementById('product-edit-id').value;
     const photoInput = document.getElementById('product-photo');
-    let photo = null;
-    if (photoInput.files[0]) {
-        photo = await readFileAsDataURL(photoInput.files[0]);
-    }
-    const product = {
-        id: editId || genId(),
-        name: document.getElementById('product-name').value,
-        sku: document.getElementById('product-sku').value,
-        barcode: document.getElementById('product-barcode').value,
-        kiz: document.getElementById('product-kiz').value,
-        qty: parseInt(document.getElementById('product-qty').value) || 0,
-        expiry: document.getElementById('product-expiry').value,
-        zone: document.getElementById('product-zone').value,
-        cell: document.getElementById('product-cell').value,
-        note: document.getElementById('product-note').value,
-        photo: photo,
-        createdAt: new Date().toISOString()
+    
+    const processSave = (photo) => {
+        const product = {
+            id: editId || genId(),
+            name: document.getElementById('product-name').value,
+            sku: document.getElementById('product-sku').value,
+            barcode: document.getElementById('product-barcode').value,
+            kiz: document.getElementById('product-kiz').value,
+            qty: parseInt(document.getElementById('product-qty').value) || 0,
+            expiry: document.getElementById('product-expiry').value,
+            zone: document.getElementById('product-zone').value,
+            cell: document.getElementById('product-cell').value,
+            note: document.getElementById('product-note').value,
+            photo: photo,
+            createdAt: new Date().toISOString()
+        };
+        
+        if (editId) {
+            const existing = Storage.getAll('products').find(p => p.id === editId);
+            if (existing && !photo) product.photo = existing.photo;
+            product.createdAt = existing.createdAt;
+            product.updatedAt = new Date().toISOString();
+        }
+        
+        Storage.put('products', product);
+        closeModal('add-product-modal');
+        loadWarehouse();
+        notify(editId ? 'Товар обновлён' : 'Товар добавлен', 'success');
+        
+        // Очистка формы
+        document.getElementById('product-edit-id').value = '';
+        document.getElementById('product-name').value = '';
+        document.getElementById('product-sku').value = '';
+        document.getElementById('product-barcode').value = '';
+        document.getElementById('product-kiz').value = '';
+        document.getElementById('product-qty').value = '1';
+        document.getElementById('product-expiry').value = '';
+        document.getElementById('product-note').value = '';
+        document.getElementById('product-photo').value = '';
     };
-    // Если редактирование, сохраняем фото если новое не загружено
-    if (editId) {
-        const existing = await Storage.get('products', editId);
-        if (existing && !photo) product.photo = existing.photo;
-        product.createdAt = existing.createdAt;
-        product.updatedAt = new Date().toISOString();
+
+    if (photoInput.files[0]) {
+        readFileAsDataURL(photoInput.files[0]).then(processSave);
+    } else {
+        processSave(null);
     }
-    await Storage.put('products', product);
-    closeModal('add-product-modal');
-    loadWarehouse();
-    notify(editId ? 'Товар обновлён' : 'Товар добавлен', 'success');
-    // Очистка формы
-    document.getElementById('product-edit-id').value = '';
-    document.getElementById('product-name').value = '';
-    document.getElementById('product-sku').value = '';
-    document.getElementById('product-barcode').value = '';
-    document.getElementById('product-kiz').value = '';
-    document.getElementById('product-qty').value = '1';
-    document.getElementById('product-expiry').value = '';
-    document.getElementById('product-note').value = '';
-    document.getElementById('product-photo').value = '';
 }
-async function editProduct(id) {
-    const p = await Storage.get('products', id);
+function editProduct(id) {
+    const products = Storage.getAll('products');
+    const p = products.find(item => item.id === id);
     if (!p) return;
     document.getElementById('product-edit-id').value = p.id;
     document.getElementById('product-name').value = p.name;
@@ -2543,9 +2459,9 @@ async function editProduct(id) {
     document.getElementById('product-note').value = p.note || '';
     openModal('add-product-modal');
 }
-async function deleteProduct(id) {
+function deleteProduct(id) {
     if (!confirm('Удалить товар?')) return;
-    await Storage.delete('products', id);
+    Storage.delete('products', id);
     loadWarehouse();
     notify('Товар удалён', 'warning');
 }
@@ -2557,11 +2473,11 @@ function readFileAsDataURL(file) {
     });
 }
 // Импорт Excel
-document.getElementById('warehouse-import').addEventListener('change', async function(e) {
+document.getElementById('warehouse-import').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async function(ev) {
+    reader.onload = function(ev) {
         const wb = XLSX.read(ev.target.result, { type: 'binary' });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(sheet);
@@ -2580,7 +2496,7 @@ document.getElementById('warehouse-import').addEventListener('change', async fun
                 note: row['Примечание'] || row['note'] || '',
                 createdAt: new Date().toISOString()
             };
-            await Storage.put('products', product);
+            Storage.put('products', product);
             count++;
         }
         loadWarehouse();
@@ -2590,8 +2506,8 @@ document.getElementById('warehouse-import').addEventListener('change', async fun
     e.target.value = '';
 });
 // Экспорт Excel
-async function exportWarehouseExcel() {
-    const products = await Storage.getAll('products');
+function exportWarehouseExcel() {
+    const products = Storage.getAll('products');
     const ws = XLSX.utils.json_to_sheet(products.map(p => ({
         'Название': p.name,
         'Артикул': p.sku,
@@ -2621,9 +2537,9 @@ document.getElementById('warehouse-search').addEventListener('input', function(e
 // ПРИЁМКА
 // ============================================
 let receivingItems = [];
-async function loadReceiving() {
+function loadReceiving() {
     // Загрузка последних приёмок из хранилища
-    const records = await Storage.getAll('receiving');
+    const records = Storage.getAll('receiving');
     // Можно отобразить историю
 }
 function addReceivingItem() {
@@ -2673,22 +2589,22 @@ function removeReceivingItem(idx) {
     receivingItems.splice(idx, 1);
     renderReceivingTable();
 }
-async function completeReceiving() {
+function completeReceiving() {
     if (receivingItems.length === 0) {
         notify('Нет товаров в приёмке', 'warning');
         return;
     }
+    const products = Storage.getAll('products');
+    
     for (const item of receivingItems) {
-        // Проверяем, есть ли такой товар
-        const products = await Storage.getAll('products');
         let existing = products.find(p => p.barcode === item.barcode);
         if (existing) {
             existing.qty += item.qty;
             if (item.expiry) existing.expiry = item.expiry;
             if (item.name) existing.name = item.name;
-            await Storage.put('products', existing);
+            Storage.put('products', existing);
         } else {
-            await Storage.put('products', {
+            Storage.put('products', {
                 id: genId(),
                 name: item.name || `Товар ${item.barcode}`,
                 barcode: item.barcode,
@@ -2703,7 +2619,7 @@ async function completeReceiving() {
             });
         }
         // Сохраняем запись приёмки
-        await Storage.put('receiving', {
+        Storage.put('receiving', {
             id: genId(),
             barcode: item.barcode,
             name: item.name,
@@ -2734,8 +2650,8 @@ function printReceivingDoc() {
 // ============================================
 // ОТГРУЗКА
 // ============================================
-async function loadShipping() {
-    const records = await Storage.getAll('shipping');
+function loadShipping() {
+    const records = Storage.getAll('shipping');
     const tbody = document.getElementById('shipping-table-body');
     tbody.innerHTML = '';
     records.forEach(r => {
@@ -2757,13 +2673,15 @@ async function loadShipping() {
         `;
     });
 }
-async function saveShipping() {
+function saveShipping() {
     const clientId = document.getElementById('shipping-client').value;
     if (!clientId) {
         notify('Выберите клиента', 'warning');
         return;
     }
-    const client = await Storage.get('clients', clientId);
+    const clients = Storage.getAll('clients');
+    const client = clients.find(c => c.id === clientId);
+    
     const items = [];
     document.querySelectorAll('#shipping-items .form-row').forEach(row => {
         const productId = row.querySelector('.shipping-product-select').value;
@@ -2785,15 +2703,18 @@ async function saveShipping() {
         date: new Date().toISOString(),
         status: 'new'
     };
-    await Storage.put('shipping', shipping);
+    Storage.put('shipping', shipping);
+    
     // Уменьшаем количество товаров на складе
+    const products = Storage.getAll('products');
     for (const item of items) {
-        const product = await Storage.get('products', item.productId);
+        const product = products.find(p => p.id === item.productId);
         if (product) {
             product.qty = Math.max(0, product.qty - item.qty);
-            await Storage.put('products', product);
+            Storage.put('products', product);
         }
     }
+    
     closeModal('add-shipping-modal');
     loadShipping();
     loadWarehouse();
@@ -2804,9 +2725,10 @@ function addShippingItemRow() {
     const row = document.createElement('div');
     row.className = 'form-row';
     row.style.alignItems = 'end';
-    populateProductSelects().then(() => {
+    populateProductSelects();
+    setTimeout(() => {
         const select = container.querySelector('.shipping-product-select');
-        const options = select.innerHTML;
+        const options = select ? select.innerHTML : '';
         row.innerHTML = `
         <div class="form-group">
             <select class="form-control shipping-product-select">${options}</select>
@@ -2816,20 +2738,22 @@ function addShippingItemRow() {
         </div>
         `;
         container.appendChild(row);
-    });
+    }, 100);
 }
-async function editShippingStatus(id) {
-    const record = await Storage.get('shipping', id);
+function editShippingStatus(id) {
+    const records = Storage.getAll('shipping');
+    const record = records.find(r => r.id === id);
     if (!record) return;
     const statuses = ['new', 'in_progress', 'completed'];
     const currentIdx = statuses.indexOf(record.status);
     record.status = statuses[(currentIdx + 1) % statuses.length];
-    await Storage.put('shipping', record);
+    Storage.put('shipping', record);
     loadShipping();
     notify('Статус обновлён', 'success');
 }
-async function printShippingDoc(id) {
-    const r = await Storage.get('shipping', id);
+function printShippingDoc(id) {
+    const records = Storage.getAll('shipping');
+    const r = records.find(item => item.id === id);
     if (!r) return;
     
     let content = `
@@ -2841,10 +2765,11 @@ async function printShippingDoc(id) {
     `;
     
     if (r.items) {
-        for (const item of r.items) { // Используем for...of для await
-            const product = await Storage.get('products', item.productId);
+        const products = Storage.getAll('products');
+        r.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
             content += `<tr><td>${product ? product.name : item.productId}</td><td>${item.qty}</td></tr>`;
-        }
+        });
     }
     content += '</table>';
     openDocumentViewer('Накладная на отгрузку', content);
@@ -2853,7 +2778,7 @@ async function printShippingDoc(id) {
 // ИНВЕНТАРИЗАЦИЯ
 // ============================================
 let inventoryItems = [];
-async function loadInventory() {
+function loadInventory() {
     const tbody = document.getElementById('inventory-table-body');
     tbody.innerHTML = '';
     inventoryItems.forEach((item, idx) => {
@@ -2880,52 +2805,51 @@ function addInventoryItem() {
         return;
     }
     // Ищем товар
-    Storage.getAll('products').then(products => {
-        const product = products.find(p => p.barcode === barcode);
-        if (product) {
-            const existing = inventoryItems.find(i => i.barcode === barcode);
-            if (existing) {
-                existing.fact++;
-            } else {
-                inventoryItems.push({
-                    barcode: product.barcode,
-                    name: product.name,
-                    system: product.qty,
-                    fact: 1
-                });
-            }
+    const products = Storage.getAll('products');
+    const product = products.find(p => p.barcode === barcode);
+    if (product) {
+        const existing = inventoryItems.find(i => i.barcode === barcode);
+        if (existing) {
+            existing.fact++;
         } else {
             inventoryItems.push({
-                barcode: barcode,
-                name: 'Неизвестный товар',
-                system: 0,
+                barcode: product.barcode,
+                name: product.name,
+                system: product.qty,
                 fact: 1
             });
         }
-        document.getElementById('inventory-barcode').value = '';
-        renderInventoryTable();
-        notify('Товар добавлен в инвентаризацию', 'success');
-    });
+    } else {
+        inventoryItems.push({
+            barcode: barcode,
+            name: 'Неизвестный товар',
+            system: 0,
+            fact: 1
+        });
+    }
+    document.getElementById('inventory-barcode').value = '';
+    renderInventoryTable();
+    notify('Товар добавлен в инвентаризацию', 'success');
 }
 function renderInventoryTable() {
     loadInventory();
 }
-async function completeInventory() {
+function completeInventory() {
     if (inventoryItems.length === 0) {
         notify('Нет товаров', 'warning');
         return;
     }
     // Обновляем количество товаров
+    const products = Storage.getAll('products');
     for (const item of inventoryItems) {
-        const products = await Storage.getAll('products');
         const product = products.find(p => p.barcode === item.barcode);
         if (product) {
             product.qty = item.fact;
-            await Storage.put('products', product);
+            Storage.put('products', product);
         }
     }
     // Сохраняем отчёт
-    await Storage.put('inventory', {
+    Storage.put('inventory', {
         id: genId(),
         date: new Date().toISOString(),
         items: inventoryItems
@@ -2952,8 +2876,8 @@ function printInventoryReport() {
 // ============================================
 // ЗАДАЧИ
 // ============================================
-async function loadTasks() {
-    const tasks = await Storage.getAll('tasks');
+function loadTasks() {
+    const tasks = Storage.getAll('tasks');
     const tbody = document.getElementById('tasks-table-body');
     tbody.innerHTML = '';
     const today = new Date().toDateString();
@@ -2978,11 +2902,12 @@ async function loadTasks() {
     });
     document.getElementById('tasks-badge').textContent = todayTasks.filter(t => t.status !== 'done').length;
 }
-async function saveTask() {
+function saveTask() {
     const employeeId = document.getElementById('task-employee').value;
     let employeeName = '';
     if (employeeId) {
-        const emp = await Storage.get('employees', employeeId);
+        const employees = Storage.getAll('employees');
+        const emp = employees.find(e => e.id === employeeId);
         employeeName = emp ? emp.name : '';
     }
     const task = {
@@ -2996,22 +2921,23 @@ async function saveTask() {
         date: new Date().toISOString(),
         status: 'new'
     };
-    await Storage.put('tasks', task);
+    Storage.put('tasks', task);
     closeModal('add-task-modal');
     loadTasks();
     notify('Задача создана', 'success');
 }
-async function toggleTaskStatus(id) {
-    const task = await Storage.get('tasks', id);
+function toggleTaskStatus(id) {
+    const tasks = Storage.getAll('tasks');
+    const task = tasks.find(t => t.id === id);
     if (!task) return;
     const statuses = ['new', 'in_progress', 'done'];
     const idx = statuses.indexOf(task.status);
     task.status = statuses[(idx + 1) % statuses.length];
-    await Storage.put('tasks', task);
+    Storage.put('tasks', task);
     loadTasks();
 }
-async function deleteTask(id) {
-    await Storage.delete('tasks', id);
+function deleteTask(id) {
+    Storage.delete('tasks', id);
     loadTasks();
     notify('Задача удалена', 'warning');
 }
@@ -3019,8 +2945,8 @@ async function deleteTask(id) {
 // СОТРУДНИКИ
 // ============================================
 let activeWorkTimers = {};
-async function loadEmployees() {
-    const employees = await Storage.getAll('employees');
+function loadEmployees() {
+    const employees = Storage.getAll('employees');
     const tbody = document.getElementById('employees-table-body');
     tbody.innerHTML = '';
     employees.forEach(e => {
@@ -3048,40 +2974,46 @@ async function loadEmployees() {
     });
     updateActiveTimers();
 }
-async function saveEmployee() {
+function saveEmployee() {
     const editId = document.getElementById('employee-edit-id').value;
     const photoInput = document.getElementById('employee-photo');
-    let photo = null;
-    if (photoInput.files[0]) {
-        photo = await readFileAsDataURL(photoInput.files[0]);
-    }
-    const employee = {
-        id: editId || genId(),
-        name: document.getElementById('employee-name').value,
-        position: document.getElementById('employee-position').value,
-        phone: document.getElementById('employee-phone').value,
-        rate: parseInt(document.getElementById('employee-rate').value) || 300,
-        photo: photo,
-        createdAt: new Date().toISOString()
+    
+    const processSave = (photo) => {
+        const employee = {
+            id: editId || genId(),
+            name: document.getElementById('employee-name').value,
+            position: document.getElementById('employee-position').value,
+            phone: document.getElementById('employee-phone').value,
+            rate: parseInt(document.getElementById('employee-rate').value) || 300,
+            photo: photo,
+            createdAt: new Date().toISOString()
+        };
+        if (editId) {
+            const existing = Storage.getAll('employees').find(e => e.id === editId);
+            if (existing && !photo) employee.photo = existing.photo;
+            employee.createdAt = existing.createdAt;
+        }
+        Storage.put('employees', employee);
+        closeModal('add-employee-modal');
+        loadEmployees();
+        notify(editId ? 'Сотрудник обновлён' : 'Сотрудник добавлен', 'success');
+        document.getElementById('employee-edit-id').value = '';
+        document.getElementById('employee-name').value = '';
+        document.getElementById('employee-position').value = '';
+        document.getElementById('employee-phone').value = '';
+        document.getElementById('employee-rate').value = '300';
+        document.getElementById('employee-photo').value = '';
     };
-    if (editId) {
-        const existing = await Storage.get('employees', editId);
-        if (existing && !photo) employee.photo = existing.photo;
-        employee.createdAt = existing.createdAt;
+
+    if (photoInput.files[0]) {
+        readFileAsDataURL(photoInput.files[0]).then(processSave);
+    } else {
+        processSave(null);
     }
-    await Storage.put('employees', employee);
-    closeModal('add-employee-modal');
-    loadEmployees();
-    notify(editId ? 'Сотрудник обновлён' : 'Сотрудник добавлен', 'success');
-    document.getElementById('employee-edit-id').value = '';
-    document.getElementById('employee-name').value = '';
-    document.getElementById('employee-position').value = '';
-    document.getElementById('employee-phone').value = '';
-    document.getElementById('employee-rate').value = '300';
-    document.getElementById('employee-photo').value = '';
 }
-async function editEmployee(id) {
-    const e = await Storage.get('employees', id);
+function editEmployee(id) {
+    const employees = Storage.getAll('employees');
+    const e = employees.find(item => item.id === id);
     if (!e) return;
     document.getElementById('employee-edit-id').value = e.id;
     document.getElementById('employee-name').value = e.name;
@@ -3090,37 +3022,37 @@ async function editEmployee(id) {
     document.getElementById('employee-rate').value = e.rate;
     openModal('add-employee-modal');
 }
-async function deleteEmployee(id) {
+function deleteEmployee(id) {
     if (!confirm('Удалить сотрудника?')) return;
-    await Storage.delete('employees', id);
+    Storage.delete('employees', id);
     loadEmployees();
     notify('Сотрудник удалён', 'warning');
 }
 function showEmployeeQR(id) {
-    Storage.get('employees', id).then(e => {
-        if (!e) return;
-        const photoHtml = e.photo
-            ? `<img src="${e.photo}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;">`
-            : `<div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#6C5CE7,#A29BFE);display:flex;align-items:center;justify-content:center;color:white;font-size:36px;font-weight:700;margin:0 auto 12px;">${e.name.charAt(0)}</div>`;
-        document.getElementById('employee-qr-content').innerHTML = `
-        ${photoHtml}
-        <div class="qr-employee-name">${e.name}</div>
-        <div class="qr-employee-role">${e.position || 'Сотрудник'} | ${e.rate} ₽/ч</div>
-        <div class="qr-code-container" id="employee-qr-display"></div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">ID: ${e.id}</div>
-        `;
-        // Генерируем QR-код
-        setTimeout(() => {
-            new QRCode(document.getElementById('employee-qr-display'), {
-                text: `EMP:${e.id}`,
-                width: 150,
-                height: 150,
-                colorDark: '#2D3436',
-                colorLight: '#FFFFFF'
-            });
-        }, 100);
-        openModal('employee-qr-modal');
-    });
+    const employees = Storage.getAll('employees');
+    const e = employees.find(item => item.id === id);
+    if (!e) return;
+    const photoHtml = e.photo
+        ? `<img src="${e.photo}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;">`
+        : `<div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#6C5CE7,#A29BFE);display:flex;align-items:center;justify-content:center;color:white;font-size:36px;font-weight:700;margin:0 auto 12px;">${e.name.charAt(0)}</div>`;
+    document.getElementById('employee-qr-content').innerHTML = `
+    ${photoHtml}
+    <div class="qr-employee-name">${e.name}</div>
+    <div class="qr-employee-role">${e.position || 'Сотрудник'} | ${e.rate} ₽/ч</div>
+    <div class="qr-code-container" id="employee-qr-display"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">ID: ${e.id}</div>
+    `;
+    // Генерируем QR-код
+    setTimeout(() => {
+        new QRCode(document.getElementById('employee-qr-display'), {
+            text: `EMP:${e.id}`,
+            width: 150,
+            height: 150,
+            colorDark: '#2D3436',
+            colorLight: '#FFFFFF'
+        });
+    }, 100);
+    openModal('employee-qr-modal');
 }
 function printEmployeeQR() {
     const content = document.getElementById('employee-qr-content').innerHTML;
@@ -3134,10 +3066,12 @@ function printEmployeeQR() {
     win.print();
 }
 // Трекер рабочего времени
-async function toggleEmployeeWork() {
+function toggleEmployeeWork() {
     const qrInput = document.getElementById('employee-qr-input').value.trim();
     const empId = qrInput.replace('EMP:', '');
-    const employee = await Storage.get('employees', empId);
+    const employees = Storage.getAll('employees');
+    const employee = employees.find(e => e.id === empId);
+    
     if (!employee) {
         notify('Сотрудник не найден', 'error');
         return;
@@ -3191,8 +3125,8 @@ setInterval(updateActiveTimers, 1000);
 // ============================================
 // КЛИЕНТЫ
 // ============================================
-async function loadClients() {
-    const clients = await Storage.getAll('clients');
+function loadClients() {
+    const clients = Storage.getAll('clients');
     const tbody = document.getElementById('clients-table-body');
     tbody.innerHTML = '';
     clients.forEach(c => {
@@ -3210,12 +3144,12 @@ async function loadClients() {
         `;
     });
 }
-async function saveClient() {
-    const editId = document.getElementById('client-api-key').dataset.editId; // Получаем ID редактирования, если есть
+function saveClient() {
+    const editId = document.getElementById('client-api-key').dataset.editId;
     const clientId = document.getElementById('client-api-key').value || 'KEY-' + genId();
     
     const client = {
-        id: editId || genId(), // Если есть ID редактирования, используем его, иначе новый
+        id: editId || genId(),
         name: document.getElementById('client-name').value,
         contact: document.getElementById('client-contact').value,
         phone: document.getElementById('client-phone').value,
@@ -3223,34 +3157,33 @@ async function saveClient() {
         createdAt: new Date().toISOString()
     };
     
-    await Storage.put('clients', client);
+    Storage.put('clients', client);
     closeModal('add-client-modal');
     loadClients();
     notify(editId ? 'Клиент обновлён' : 'Клиент добавлен', 'success');
-    
-    // Очистка
     document.getElementById('client-api-key').dataset.editId = '';
 }
-async function editClient(id) {
-    const c = await Storage.get('clients', id);
+function editClient(id) {
+    const clients = Storage.getAll('clients');
+    const c = clients.find(item => item.id === id);
     if (!c) return;
     document.getElementById('client-name').value = c.name;
     document.getElementById('client-contact').value = c.contact || '';
     document.getElementById('client-phone').value = c.phone || '';
     document.getElementById('client-api-key').value = c.apiKey || '';
-    document.getElementById('client-api-key').dataset.editId = c.id; // Сохраняем ID для обновления
+    document.getElementById('client-api-key').dataset.editId = c.id;
     openModal('add-client-modal');
 }
-async function deleteClient(id) {
-    await Storage.delete('clients', id);
+function deleteClient(id) {
+    Storage.delete('clients', id);
     loadClients();
     notify('Клиент удалён', 'warning');
 }
 // ============================================
 // ШТРАФЫ
 // ============================================
-async function loadFines() {
-    const fines = await Storage.getAll('fines');
+function loadFines() {
+    const fines = Storage.getAll('fines');
     const container = document.getElementById('fines-container');
     container.innerHTML = '';
     if (fines.length === 0) {
@@ -3288,46 +3221,54 @@ async function loadFines() {
     <li>🚫 Использование телефона — 200 ₽</li>
     `;
 }
-async function addFine() {
+function addFine() {
     const employeeId = document.getElementById('fine-employee').value;
     if (!employeeId) {
         notify('Выберите сотрудника', 'warning');
         return;
     }
-    const employee = await Storage.get('employees', employeeId);
+    const employees = Storage.getAll('employees');
+    const employee = employees.find(e => e.id === employeeId);
+    
     const photoInput = document.getElementById('fine-photo');
-    let photo = null;
-    if (photoInput.files[0]) {
-        photo = await readFileAsDataURL(photoInput.files[0]);
-    }
-    const fine = {
-        id: genId(),
-        employeeId,
-        employeeName: employee.name,
-        reason: document.getElementById('fine-reason-select').value,
-        amount: parseInt(document.getElementById('fine-amount').value) || 500,
-        comment: document.getElementById('fine-comment').value,
-        photo,
-        date: new Date().toISOString(),
-        forgiven: false
+    
+    const processSave = (photo) => {
+        const fine = {
+            id: genId(),
+            employeeId,
+            employeeName: employee.name,
+            reason: document.getElementById('fine-reason-select').value,
+            amount: parseInt(document.getElementById('fine-amount').value) || 500,
+            comment: document.getElementById('fine-comment').value,
+            photo,
+            date: new Date().toISOString(),
+            forgiven: false
+        };
+        Storage.put('fines', fine);
+        loadFines();
+        notify('Штраф выписан', 'warning');
+        document.getElementById('fine-comment').value = '';
+        document.getElementById('fine-photo').value = '';
     };
-    await Storage.put('fines', fine);
-    loadFines();
-    notify('Штраф выписан', 'warning');
-    document.getElementById('fine-comment').value = '';
-    document.getElementById('fine-photo').value = '';
+
+    if (photoInput.files[0]) {
+        readFileAsDataURL(photoInput.files[0]).then(processSave);
+    } else {
+        processSave(null);
+    }
 }
-async function forgiveFine(id) {
-    const fine = await Storage.get('fines', id);
+function forgiveFine(id) {
+    const fines = Storage.getAll('fines');
+    const fine = fines.find(f => f.id === id);
     if (!fine) return;
     fine.forgiven = true;
     fine.forgivenDate = new Date().toISOString();
-    await Storage.put('fines', fine);
+    Storage.put('fines', fine);
     loadFines();
     notify('Штраф прощён', 'success');
 }
-async function deleteFine(id) {
-    await Storage.delete('fines', id);
+function deleteFine(id) {
+    Storage.delete('fines', id);
     loadFines();
     notify('Штраф удалён', 'warning');
 }
@@ -3341,16 +3282,18 @@ function switchFinesTab(tab) {
 // ============================================
 // ЭТИКЕТКИ
 // ============================================
-async function loadLabels() {
+function loadLabels() {
     populateProductSelects();
 }
-async function generateLabels() {
+function generateLabels() {
     const productId = document.getElementById('label-product-select').value;
     if (!productId) {
         notify('Выберите товар', 'warning');
         return;
     }
-    const product = await Storage.get('products', productId);
+    const products = Storage.getAll('products');
+    const product = products.find(p => p.id === productId);
+    
     if (!product) {
         notify('Товар не найден', 'error');
         return;
@@ -3451,13 +3394,13 @@ function printLabels() {
 // ============================================
 // ДОКУМЕНТЫ
 // ============================================
-async function loadDocuments() {
+function loadDocuments() {
     const docs = [];
     // Собираем все типы документов
-    const products = await Storage.getAll('products');
-    const receiving = await Storage.getAll('receiving');
-    const shipping = await Storage.getAll('shipping');
-    const inventory = await Storage.getAll('inventory');
+    const products = Storage.getAll('products');
+    const receiving = Storage.getAll('receiving');
+    const shipping = Storage.getAll('shipping');
+    const inventory = Storage.getAll('inventory');
     products.forEach(p => {
         docs.push({ type: 'product', name: `Карточка товара: ${p.name}`, date: p.createdAt });
     });
@@ -3488,12 +3431,12 @@ async function loadDocuments() {
         `;
     });
 }
-async function viewDocument(type, date) {
+function viewDocument(type, date) {
     let content = '';
     const title = type === 'product' ? 'Карточка товара' : type === 'receiving' ? 'Приёмка' : type === 'shipping' ? 'Отгрузка' : 'Инвентаризация';
     document.getElementById('document-view-title').textContent = '📄 ' + title;
     if (type === 'product') {
-        const products = await Storage.getAll('products');
+        const products = Storage.getAll('products');
         const product = products.find(p => p.createdAt === date);
         if (product) {
             content = `
@@ -3510,7 +3453,7 @@ async function viewDocument(type, date) {
             `;
         }
     } else if (type === 'receiving') {
-        const receiving = await Storage.getAll('receiving');
+        const receiving = Storage.getAll('receiving');
         const record = receiving.find(r => r.date === date);
         if (record) {
             content = `
@@ -3552,7 +3495,7 @@ function generateApiKey() {
     const key = 'fp_' + Array.from({length: 32}, () => Math.random().toString(36).substr(2, 1)).join('');
     document.getElementById('api-key-value').value = key;
 }
-async function saveApiKey() {
+function saveApiKey() {
     const apiKey = {
         id: genId(),
         name: document.getElementById('api-name').value,
@@ -3560,19 +3503,19 @@ async function saveApiKey() {
         key: document.getElementById('api-key-value').value,
         createdAt: new Date().toISOString()
     };
-    await Storage.put('apiKeys', apiKey);
+    Storage.put('apiKeys', apiKey);
     closeModal('add-api-key-modal');
     notify('API ключ сохранён', 'success');
 }
 // ============================================
 // ДАШБОРД
 // ============================================
-async function loadDashboard() {
-    const products = await Storage.getAll('products');
-    const receiving = await Storage.getAll('receiving');
-    const shipping = await Storage.getAll('shipping');
-    const employees = await Storage.getAll('employees');
-    const tasks = await Storage.getAll('tasks');
+function loadDashboard() {
+    const products = Storage.getAll('products');
+    const receiving = Storage.getAll('receiving');
+    const shipping = Storage.getAll('shipping');
+    const employees = Storage.getAll('employees');
+    const tasks = Storage.getAll('tasks');
     const today = new Date().toDateString();
     const todayReceiving = receiving.filter(r => new Date(r.date).toDateString() === today);
     const todayShipping = shipping.filter(s => new Date(s.date).toDateString() === today);
@@ -3639,11 +3582,11 @@ function renderWarehouseMap(products) {
 // ============================================
 // НАСТРОЙКИ
 // ============================================
-async function exportAllData() {
+function exportAllData() {
     const data = {};
     const stores = ['products', 'receiving', 'shipping', 'employees', 'tasks', 'clients', 'fines', 'inventory', 'documents', 'integrations', 'apiKeys'];
     for (const store of stores) {
-        data[store] = await Storage.getAll(store);
+        data[store] = Storage.getAll(store);
     }
     data.users = JSON.parse(localStorage.getItem('fp_users') || '[]');
     data.settings = {
@@ -3660,20 +3603,20 @@ async function exportAllData() {
     URL.revokeObjectURL(url);
     notify('Экспорт завершён', 'success');
 }
-async function importAllData(input) {
+function importAllData(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
             // Восстанавливаем stores
             const stores = ['products', 'receiving', 'shipping', 'employees', 'tasks', 'clients', 'fines', 'inventory', 'documents', 'integrations', 'apiKeys'];
             for (const store of stores) {
                 if (data[store]) {
-                    await Storage.clear(store);
+                    Storage.clear(store);
                     for (const item of data[store]) {
-                        await Storage.put(store, item);
+                        Storage.put(store, item);
                     }
                 }
             }
@@ -3720,9 +3663,7 @@ function saveWarehouseSettings() {
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
-async function init() {
-    // Открываем БД
-    await openDB();
+function init() {
     initAuth();
     // Загружаем тему
     const savedTheme = localStorage.getItem('fp_theme') || 'light';
@@ -3736,9 +3677,9 @@ async function init() {
         } else {
             document.getElementById('auth-page').style.display = 'flex';
         }
-    }, 2200);
+    }, 1000);
     // Форма логина
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
+    document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const username = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
@@ -3884,8 +3825,8 @@ window.addEventListener('beforeunload', function() {
     // localStorage для настроек
 });
 // Автосохранение каждые 30 секунд
-setInterval(async () => {
-    // IndexedDB автосохраняет всё
+setInterval(() => {
+    // LocalStorage автосохраняет всё
 }, 30000);
 console.log('📦 FulfilPro система загружена');
 </script>
