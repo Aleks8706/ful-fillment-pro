@@ -9,7 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root {
@@ -1769,10 +1768,17 @@ integrations: 'Интеграции', settings: 'Настройки'
 };
 function showPage(page) {
 document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-document.getElementById('page-' + page).style.display = 'block';
+const pageEl = document.getElementById('page-' + page);
+if(pageEl) pageEl.style.display = 'block';
 document.getElementById('pageTitle').textContent = pageTitles[page] || page;
 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-event && event.target && event.target.closest('.nav-item') && event.target.closest('.nav-item').classList.add('active');
+// Simple active state logic for sidebar
+const navItems = document.querySelectorAll('.nav-item');
+navItems.forEach(item => {
+    if(item.getAttribute('onclick').includes(page)) {
+        item.classList.add('active');
+    }
+});
 refreshPage(page);
 }
 function switchTab(el, tabId) {
@@ -1893,13 +1899,10 @@ renderDashMap();
 function renderDashChart() {
 const ctx = document.getElementById('dashChart');
 if(!ctx) return;
-const chartCtx = ctx.getContext('2d');
-const receiving = DB.get('receiving');
-const shipping = DB.get('shipping');
 // FIX: Corrected Chart.js configuration structure
-new Chart(chartCtx, {
+new Chart(ctx.getContext('2d'), {
 type: 'bar',
-data: { // Added 'data:' key here
+data: { 
 labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
 datasets: [
 { label: 'Приёмка', data: [5, 8, 3, 6, 4, 2, 1], backgroundColor: 'rgba(34,197,94,0.6)' },
@@ -1912,12 +1915,11 @@ options: { responsive: true, plugins: { legend: { labels: { color: getComputedSt
 function renderTaskChart() {
 const ctx = document.getElementById('taskChart');
 if(!ctx) return;
-const chartCtx = ctx.getContext('2d');
 const tasks = DB.get('tasks');
 const done = tasks.filter(t => t.status === 'done').length;
 const progress = tasks.filter(t => t.status === 'progress').length;
 const pending = tasks.filter(t => t.status === 'pending').length;
-new Chart(chartCtx, {
+new Chart(ctx.getContext('2d'), {
 type: 'doughnut',
 data: {
 labels: ['Выполнено', 'В работе', 'Ожидает'],
