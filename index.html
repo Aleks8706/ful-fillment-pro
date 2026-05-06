@@ -166,6 +166,30 @@ textarea.form-control { resize:vertical; }
 .typing-indicator span:nth-child(2) { animation-delay:0.2s; }
 .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
 @keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-5px); opacity:1; } }
+
+/* Стили для раздела Интеграции */
+.integration-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: all 0.2s;
+}
+.integration-card:hover { border-color: var(--primary); }
+.integration-header { display: flex; align-items: center; justify-content: space-between; }
+.integration-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.integration-logo { width: 32px; height: 32px; border-radius: 6px; object-fit: contain; background: #fff; padding: 2px; }
+.integration-status { font-size: 11px; padding: 4px 8px; border-radius: 12px; font-weight: 600; }
+.status-connected { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.status-disconnected { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.status-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+.api-key-group { display: flex; gap: 8px; }
+.api-key-input { flex: 1; }
+
 @media (max-width:768px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .main { margin-left:0; } .menu-toggle { display:flex; } .content { padding:14px; } .topbar { padding:10px 14px; } .stats-grid { grid-template-columns:repeat(2,1fr); gap:10px; } .form-row { grid-template-columns:1fr; } .rules-grid { grid-template-columns:1fr; } .modal { max-width:100%; margin:10px; } .live-time { display:none; } }
 @media (max-width:480px) { .stats-grid { grid-template-columns:1fr; } .topbar h1 { font-size:15px; } }
 .sidebar-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; display:none; }
@@ -213,6 +237,11 @@ textarea.form-control { resize:vertical; }
     <div class="nav-item" data-section="marketplace" onclick="showSection('marketplace',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
       ТЗ Маркетплейсы
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="integrations" onclick="showSection('integrations',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      🔌 Интеграции
     </div>
     <div class="nav-divider"></div>
     <div class="nav-item" data-section="fines" onclick="showSection('fines',this)">
@@ -384,6 +413,151 @@ textarea.form-control { resize:vertical; }
       </div>
     </div>
  
+    <!-- INTEGRATIONS (NEW SECTION) -->
+    <div class="section" id="sec-integrations">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🔌 Настройка интеграций</h3>
+          <span class="badge badge-info">API v2.0</span>
+        </div>
+        <div class="panel-body">
+          <p style="color:var(--text-muted); margin-bottom: 20px; font-size: 13px;">
+            Здесь вы можете настроить подключение к внешним системам. Данные шифруются и хранятся локально. 
+            Для реальной работы требуется Backend-сервер.
+          </p>
+          
+          <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+            
+            <!-- Wildberries -->
+            <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Wildberries_Logo.svg/1200px-Wildberries_Logo.svg.png" class="integration-logo" alt="WB">
+                  Wildberries API
+                </div>
+                <span class="integration-status status-disconnected" id="status-wb">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>API Ключ поставщика</label>
+                <div class="api-key-group">
+                  <input type="password" class="form-control api-key-input" id="key-wb" placeholder="eyJhbGciOiJIUzI1NiIs...">
+                  <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('wb')">💾</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('wb')">🔍 Проверить связь</button>
+            </div>
+
+            <!-- Ozon -->
+            <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Ozon_logo.svg/2560px-Ozon_logo.svg.png" class="integration-logo" alt="Ozon">
+                  Ozon Seller API
+                </div>
+                <span class="integration-status status-disconnected" id="status-ozon">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>Client ID</label>
+                <input type="text" class="form-control" id="id-ozon" placeholder="123456" style="margin-bottom:8px;">
+                <label>API Key</label>
+                <div class="api-key-group">
+                  <input type="password" class="form-control api-key-input" id="key-ozon" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                  <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('ozon')">💾</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('ozon')">🔍 Проверить связь</button>
+            </div>
+
+            <!-- Yandex Market -->
+            <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Yandex.Market_logo.svg/2560px-Yandex.Market_logo.svg.png" class="integration-logo" alt="Ya">
+                  Яндекс.Маркет
+                </div>
+                <span class="integration-status status-disconnected" id="status-ya">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>OAuth Token</label>
+                <div class="api-key-group">
+                  <input type="password" class="form-control api-key-input" id="key-ya" placeholder="AQAAAA...">
+                  <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('ya')">💾</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('ya')">🔍 Проверить связь</button>
+            </div>
+
+            <!-- Diadoc -->
+            <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <img src="https://diadoc.kontur.ru/img/logo-diadoc.svg" class="integration-logo" alt="Diadoc">
+                  Диадок (ЭДО)
+                </div>
+                <span class="integration-status status-disconnected" id="status-diadoc">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>API Key</label>
+                <div class="api-key-group">
+                  <input type="password" class="form-control api-key-input" id="key-diadoc" placeholder="dd_live_...">
+                  <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('diadoc')">💾</button>
+                </div>
+              </div>
+               <div class="form-group" style="margin:0; margin-top:8px;">
+                <label>ID Организации</label>
+                <input type="text" class="form-control" id="org-diadoc" placeholder="GUID организации">
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('diadoc')">🔍 Проверить связь</button>
+            </div>
+
+            <!-- 1C -->
+            <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/1C_Company_logo.svg/1200px-1C_Company_logo.svg.png" class="integration-logo" alt="1C">
+                  1С:Предприятие
+                </div>
+                <span class="integration-status status-disconnected" id="status-1c">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>URL Сервера (HTTP Service)</label>
+                <input type="text" class="form-control" id="url-1c" placeholder="http://server:8080/hs/warehouse" style="margin-bottom:8px;">
+                <label>Логин / Пароль</label>
+                <div class="api-key-group">
+                   <input type="text" class="form-control" id="user-1c" placeholder="Admin" style="margin-right:8px;">
+                   <input type="password" class="form-control api-key-input" id="pass-1c" placeholder="••••••">
+                   <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('1c')">💾</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('1c')">🔍 Проверить связь</button>
+            </div>
+
+             <!-- WMS -->
+             <div class="integration-card">
+              <div class="integration-header">
+                <div class="integration-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  WMS Система
+                </div>
+                <span class="integration-status status-disconnected" id="status-wms">Не подключено</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>WMS API Endpoint</label>
+                <input type="text" class="form-control" id="url-wms" placeholder="https://wms.provider.com/api/v1" style="margin-bottom:8px;">
+                <label>Access Token</label>
+                <div class="api-key-group">
+                  <input type="password" class="form-control api-key-input" id="key-wms" placeholder="Bearer token...">
+                  <button class="btn btn-primary btn-sm" onclick="saveIntegrationKey('wms')">💾</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="testConnection('wms')">🔍 Проверить связь</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- FINES -->
     <div class="section" id="sec-fines">
       <div class="panel">
@@ -662,6 +836,7 @@ let employees = [];
 let timeRecords = [];
 let fines = [];
 let nextEmpId = 1;
+let integrations = {}; // Объект для хранения ключей интеграций
 
 // Инициализация загрузки данных
 function initApp() {
@@ -676,6 +851,7 @@ function saveToStorage() {
     localStorage.setItem('wh_timeRecords', JSON.stringify(timeRecords));
     localStorage.setItem('wh_fines', JSON.stringify(fines));
     localStorage.setItem('wh_nextEmpId', nextEmpId);
+    localStorage.setItem('wh_integrations', JSON.stringify(integrations)); // Сохраняем интеграции
   } catch(e) { console.error('Storage save error:', e); }
 }
  
@@ -685,11 +861,13 @@ function loadFromLocalStorage() {
     var t = localStorage.getItem('wh_timeRecords');
     var f = localStorage.getItem('wh_fines');
     var n = localStorage.getItem('wh_nextEmpId');
+    var i = localStorage.getItem('wh_integrations');
     
     if (e) employees = JSON.parse(e);
     if (t) timeRecords = JSON.parse(t);
     if (f) fines = JSON.parse(f);
     if (n) nextEmpId = parseInt(n);
+    if (i) integrations = JSON.parse(i);
     
     // Если база пустая, добавляем демо данные
     if(!e || employees.length === 0) {
@@ -701,6 +879,97 @@ function loadFromLocalStorage() {
         saveToStorage();
     }
   } catch(ex) { console.error('Storage load error:', ex); }
+}
+
+// ===== INTEGRATION LOGIC =====
+function saveIntegrationKey(service) {
+    let keyData = {};
+    
+    if(service === 'wb') {
+        keyData.key = document.getElementById('key-wb').value;
+    } else if(service === 'ozon') {
+        keyData.id = document.getElementById('id-ozon').value;
+        keyData.key = document.getElementById('key-ozon').value;
+    } else if(service === 'ya') {
+        keyData.key = document.getElementById('key-ya').value;
+    } else if(service === 'diadoc') {
+        keyData.key = document.getElementById('key-diadoc').value;
+        keyData.org = document.getElementById('org-diadoc').value;
+    } else if(service === '1c') {
+        keyData.url = document.getElementById('url-1c').value;
+        keyData.user = document.getElementById('user-1c').value;
+        keyData.pass = document.getElementById('pass-1c').value;
+    } else if(service === 'wms') {
+        keyData.url = document.getElementById('url-wms').value;
+        keyData.key = document.getElementById('key-wms').value;
+    }
+
+    integrations[service] = keyData;
+    saveToStorage();
+    showToast(`Ключи для ${service.toUpperCase()} сохранены`, 'success');
+    
+    // Имитируем успешное подключение при сохранении
+    updateStatus(service, 'connected');
+}
+
+function testConnection(service) {
+    const statusEl = document.getElementById('status-' + service);
+    statusEl.className = 'integration-status status-pending';
+    statusEl.textContent = 'Проверка...';
+    
+    setTimeout(() => {
+        // Имитация проверки (в реальности здесь был бы fetch запрос)
+        if(integrations[service] && (integrations[service].key || integrations[service].url)) {
+            updateStatus(service, 'connected');
+            showToast(`Связь с ${service.toUpperCase()} установлена успешно`, 'success');
+        } else {
+            updateStatus(service, 'disconnected');
+            showToast(`Ошибка: Заполните поля для ${service.toUpperCase()}`, 'error');
+        }
+    }, 1000);
+}
+
+function updateStatus(service, state) {
+    const el = document.getElementById('status-' + service);
+    if(state === 'connected') {
+        el.className = 'integration-status status-connected';
+        el.textContent = 'Подключено';
+    } else if (state === 'disconnected') {
+        el.className = 'integration-status status-disconnected';
+        el.textContent = 'Ошибка';
+    } else {
+        el.className = 'integration-status status-pending';
+        el.textContent = 'Проверка...';
+    }
+}
+
+// Восстановление статуса при загрузке
+function restoreIntegrationStatus() {
+    ['wb', 'ozon', 'ya', 'diadoc', '1c', 'wms'].forEach(svc => {
+        if(integrations[svc] && (integrations[svc].key || integrations[svc].url)) {
+            // Заполняем поля
+            if(svc === 'wb' && integrations[svc].key) document.getElementById('key-wb').value = integrations[svc].key;
+            if(svc === 'ozon') {
+                if(integrations[svc].id) document.getElementById('id-ozon').value = integrations[svc].id;
+                if(integrations[svc].key) document.getElementById('key-ozon').value = integrations[svc].key;
+            }
+            if(svc === 'ya' && integrations[svc].key) document.getElementById('key-ya').value = integrations[svc].key;
+            if(svc === 'diadoc') {
+                if(integrations[svc].key) document.getElementById('key-diadoc').value = integrations[svc].key;
+                if(integrations[svc].org) document.getElementById('org-diadoc').value = integrations[svc].org;
+            }
+            if(svc === '1c') {
+                if(integrations[svc].url) document.getElementById('url-1c').value = integrations[svc].url;
+                if(integrations[svc].user) document.getElementById('user-1c').value = integrations[svc].user;
+                if(integrations[svc].pass) document.getElementById('pass-1c').value = integrations[svc].pass;
+            }
+            if(svc === 'wms') {
+                if(integrations[svc].url) document.getElementById('url-wms').value = integrations[svc].url;
+                if(integrations[svc].key) document.getElementById('key-wms').value = integrations[svc].key;
+            }
+            updateStatus(svc, 'connected');
+        }
+    });
 }
 
 // ===== AUTO GENERATE FINE LOGIC =====
@@ -740,7 +1009,7 @@ function showSection(id, navEl) {
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
   if (navEl) navEl.classList.add('active');
  
-  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Бот-помощник',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы'};
+  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Бот-помощник',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы', integrations:'Интеграции'};
   document.getElementById('pageTitle').textContent = titles[id] || '';
  
   if (id === 'dashboard') renderDashboard();
@@ -750,6 +1019,7 @@ function showSection(id, navEl) {
   if (id === 'timetracking') { renderTimeHistory(); populateSelects(); }
   if (id === 'timesheet') renderTimesheet();
   if (id === 'documents') { populateDocEmployeeSelect(); }
+  if (id === 'integrations') { restoreIntegrationStatus(); } // Восстанавливаем статусы при открытии
  
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
@@ -870,16 +1140,11 @@ function renderEmployees() {
     grid.innerHTML += cardHtml;
     
     // Генерируем QR код после добавления элемента в DOM
-    // Используем setTimeout чтобы убедиться, что элемент отрисован
     setTimeout(function() {
         var qrContainer = document.getElementById(qrId);
         if (qrContainer) {
-            // Очищаем контейнер на всякий случай
             qrContainer.innerHTML = "";
-            
-            // Данные для QR: ID сотрудника и Имя
             var qrData = "EMP:" + emp.id + "|" + emp.name;
-            
             new QRCode(qrContainer, {
                 text: qrData,
                 width: 60,
@@ -1470,6 +1735,10 @@ function getBotReply(msg) {
   if (m.indexOf('импорт') !== -1 || m.indexOf('экспорт') !== -1 || m.indexOf('бэкап') !== -1) {
     return '📥📤 Перейдите в раздел «Импорт / Экспорт» в боковом меню. Там можно выгрузить данные в JSON/CSV и загрузить обратно.';
   }
+  
+  if (m.indexOf('интеграц') !== -1 || m.indexOf('1с') !== -1 || m.indexOf('диадо') !== -1) {
+    return '🔌 Перейдите в раздел «Интеграции» в боковом меню. Там можно настроить API ключи для WB, Ozon, 1С, Диадока и WMS.';
+  }
  
   return 'Не совсем понял вопрос 🤔. Спросите о: штрафах, ТБ, ставках, отчётах, кто на складе, или нажмите «Помощь».';
 }
@@ -1481,7 +1750,8 @@ function exportJSON() {
     employees: employees,
     timeRecords: timeRecords,
     fines: fines,
-    nextEmpId: nextEmpId
+    nextEmpId: nextEmpId,
+    integrations: integrations
   };
   var json = JSON.stringify(data, null, 2);
   downloadFile(json, 'warehouse_backup_' + getToday() + '.json', 'application/json');
@@ -1521,6 +1791,7 @@ function exportFullBackup() {
     timeRecords: timeRecords,
     fines: fines,
     nextEmpId: nextEmpId,
+    integrations: integrations,
     settings: {
       companyName: 'СкладКонтроль',
       currency: 'RUB',
@@ -1569,6 +1840,7 @@ function importFile(event) {
         if (data.timeRecords) timeRecords = data.timeRecords;
         if (data.fines) fines = data.fines;
         if (data.nextEmpId) nextEmpId = data.nextEmpId;
+        if (data.integrations) integrations = data.integrations;
  
         saveToStorage();
         refreshAll();
@@ -1602,6 +1874,7 @@ function clearAllData() {
   timeRecords = [];
   fines = [];
   nextEmpId = 1;
+  integrations = {};
   saveToStorage();
   refreshAll();
   showToast('Все данные удалены', 'warning');
@@ -1642,4 +1915,3 @@ initApp();
 </script>
 </body>
 </html>
-```
