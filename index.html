@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>СкладКонтроль PRO + WMS + Voice</title>
+<title>СкладКонтроль PRO + Live WMS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
@@ -124,7 +124,7 @@ textarea.form-control { resize:vertical; }
 .avoid-card h4 { color:var(--success); font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
 .avoid-card p { font-size:12px; color:var(--text-muted); line-height:1.5; }
 
-/* Стили для карточки сотрудника с QR */
+/* Стили для карточки сотрудника */
 .emp-card { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; text-align:center; transition:transform 0.2s; display: flex; flex-direction: column; align-items: center; }
 .emp-card:hover { transform:translateY(-2px); }
 .emp-avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; }
@@ -134,29 +134,50 @@ textarea.form-control { resize:vertical; }
 .access-admin { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
 .access-senior { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
 .access-user { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-
 .emp-card .emp-rate { font-size:18px; font-weight:800; color:var(--success); }
 .emp-card .emp-rate-label { font-size:10px; color:var(--text-muted); margin-top:2px; }
 .emp-status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:18px; font-size:11px; font-weight:600; margin-top:10px; }
 .emp-status.online { background:var(--success-light); color:#065f46; }
 .emp-status.offline { background:var(--danger-light); color:#991b1b; }
 .emp-actions { display:flex; gap:6px; margin-top:12px; justify-content:center; }
-
 .qr-wrapper { margin-top: 12px; padding: 4px; background: #fff; border-radius: 4px; display: inline-block; }
 .qr-wrapper canvas, .qr-wrapper img { display: block; width: 60px !important; height: 60px !important; }
 
-/* Стили для карты склада (WMS) */
-.wms-map-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); }
-.wms-cell { aspect-ratio: 1; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; }
-.wms-cell:hover { transform: scale(1.05); border-color: var(--primary); }
-.wms-cell.free { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
-.wms-cell.occupied { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-.wms-cell.reserved { border-color: var(--warning); background: rgba(245, 158, 11, 0.1); }
-.cell-id { font-size: 10px; font-weight: 700; color: var(--text-muted); position: absolute; top: 4px; left: 6px; }
-.cell-content { font-size: 11px; text-align: center; padding: 0 4px; word-break: break-all; }
-.wms-legend { display: flex; gap: 15px; margin-bottom: 15px; font-size: 12px; }
-.legend-item { display: flex; align-items: center; gap: 5px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; }
+/* LIVE WMS MAP STYLES */
+.wms-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); }
+.wms-stats { display: flex; gap: 15px; font-size: 12px; }
+.wms-stat-item { display: flex; align-items: center; gap: 5px; }
+.wms-map-container { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
+    gap: 12px; 
+    padding: 15px; 
+    background: #0f172a; 
+    border-radius: var(--radius-sm); 
+    border: 1px solid var(--border);
+}
+.wms-cell { 
+    aspect-ratio: 1; 
+    background: var(--bg-card); 
+    border: 2px solid var(--border); 
+    border-radius: 8px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+    position: relative; 
+    user-select: none;
+}
+.wms-cell:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.wms-cell.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--primary); transform: scale(1.05); z-index: 10; }
+.wms-cell.free { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
+.wms-cell.occupied { border-color: var(--danger); background: rgba(239, 68, 68, 0.05); }
+.wms-cell.reserved { border-color: var(--warning); background: rgba(245, 158, 11, 0.05); }
+.cell-id { font-size: 10px; font-weight: 700; color: var(--text-muted); position: absolute; top: 4px; left: 6px; opacity: 0.7; }
+.cell-content { font-size: 11px; text-align: center; padding: 0 4px; word-break: break-all; font-weight: 500; color: var(--text); }
+.cell-icon { font-size: 16px; margin-bottom: 4px; }
 
 .rate-input { width:70px; padding:5px 8px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--success); font-family:inherit; font-size:13px; font-weight:700; text-align:center; }
 .rate-input:focus { outline:none; border-color:var(--primary); }
@@ -174,7 +195,7 @@ textarea.form-control { resize:vertical; }
 .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
 @keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-5px); opacity:1; } }
 
-/* Стили для раздела Интеграции */
+/* Интеграции */
 .integration-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: all 0.2s; }
 .integration-card:hover { border-color: var(--primary); }
 .integration-header { display: flex; align-items: center; justify-content: space-between; }
@@ -187,7 +208,7 @@ textarea.form-control { resize:vertical; }
 .api-key-group { display: flex; gap: 8px; }
 .api-key-input { flex: 1; }
 
-/* Стили для печати бейджа */
+/* Печать */
 @media print {
     body * { visibility: hidden; }
     #badgePrintContainer, #badgePrintContainer * { visibility: visible; }
@@ -227,7 +248,7 @@ textarea.form-control { resize:vertical; }
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <h2>📦 СкладКонтроль</h2>
-    <p>PRO версия + WMS + Voice</p>
+    <p>PRO версия + Live WMS</p>
   </div>
   <nav class="nav-menu">
     <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard',this)">
@@ -240,7 +261,7 @@ textarea.form-control { resize:vertical; }
     </div>
     <div class="nav-item" data-section="wms" onclick="showSection('wms',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18V3H3zm9 16H5v-6h7v6zm7 0h-5v-6h5v6zm-7-8H5V5h7v6zm7 0h-5V5h5v6z"/></svg>
-      🗺️ Карта Склада
+      🗺️ Живая Карта
     </div>
     <div class="nav-item" data-section="timetracking" onclick="showSection('timetracking',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -359,21 +380,28 @@ textarea.form-control { resize:vertical; }
       </div>
     </div>
 
-    <!-- WMS MAP SECTION -->
+    <!-- LIVE WMS MAP SECTION -->
     <div class="section" id="sec-wms">
       <div class="panel">
         <div class="panel-header">
-          <h3>🗺️ Интерактивная карта склада</h3>
+          <h3>🗺️ Живая карта склада (Онлайн)</h3>
           <div class="btn-group">
+             <span class="badge badge-info" id="wmsStatusText">Режим: Просмотр</span>
              <button class="btn btn-sm btn-ghost" onclick="initWMSMap()">🔄 Обновить</button>
           </div>
         </div>
         <div class="panel-body">
-          <div class="wms-legend">
-            <div class="legend-item"><div class="dot" style="background:var(--success)"></div> Свободно</div>
-            <div class="legend-item"><div class="dot" style="background:var(--danger)"></div> Занято</div>
-            <div class="legend-item"><div class="dot" style="background:var(--warning)"></div> Резерв</div>
+          <div class="wms-toolbar">
+             <div class="wms-stats">
+                <div class="wms-stat-item"><div class="dot" style="background:var(--success)"></div> Свободно: <span id="countFree">0</span></div>
+                <div class="wms-stat-item"><div class="dot" style="background:var(--danger)"></div> Занято: <span id="countOccupied">0</span></div>
+                <div class="wms-stat-item"><div class="dot" style="background:var(--warning)"></div> Резерв: <span id="countReserved">0</span></div>
+             </div>
+             <div style="font-size:12px; color:var(--text-muted);">
+                💡 <strong>Как переместить:</strong> Кликните на товар ➔ Кликните на пустую ячейку
+             </div>
           </div>
+          
           <div class="wms-map-container" id="wmsMap">
             <!-- Ячейки генерируются JS -->
           </div>
@@ -737,7 +765,6 @@ textarea.form-control { resize:vertical; }
           </div>
           <div class="chat-input-wrap">
             <input type="text" id="chatInput" placeholder="Ваш вопрос или название товара..." onkeypress="if(event.key==='Enter')sendMessage()">
-            <!-- Кнопка микрофона -->
             <button onclick="startVoiceRecognition()" style="background:var(--warning);" title="Голосовой ввод">
                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
             </button>
@@ -905,15 +932,17 @@ textarea.form-control { resize:vertical; }
 <div class="toast-container" id="toastContainer"></div>
  
 <script>
-// ===== DATA MANAGEMENT (LOCALSTORAGE ONLY FOR STANDALONE USE) =====
+// ===== DATA MANAGEMENT =====
 let employees = [];
 let timeRecords = [];
 let fines = [];
 let nextEmpId = 1;
-let integrations = {}; // Объект для хранения ключей интеграций
-let wmsCells = []; // Данные ячеек склада
+let integrations = {};
+let wmsCells = [];
 
-// Инициализация загрузки данных
+// Переменные для живой карты
+let selectedCellId = null; // ID выбранной ячейки (откуда берем товар)
+
 function initApp() {
     loadFromLocalStorage();
     init();
@@ -927,7 +956,7 @@ function saveToStorage() {
     localStorage.setItem('wh_fines', JSON.stringify(fines));
     localStorage.setItem('wh_nextEmpId', nextEmpId);
     localStorage.setItem('wh_integrations', JSON.stringify(integrations));
-    localStorage.setItem('wh_wmsCells', JSON.stringify(wmsCells)); // Сохраняем карту склада
+    localStorage.setItem('wh_wmsCells', JSON.stringify(wmsCells));
   } catch(e) { console.error('Storage save error:', e); }
 }
  
@@ -947,9 +976,7 @@ function loadFromLocalStorage() {
     if (i) integrations = JSON.parse(i);
     if (w) wmsCells = JSON.parse(w);
     
-    // Если база пустая, добавляем демо данные
     if(!e || employees.length === 0) {
-        // Создаем запрошенных сотрудников с уровнями доступа
         const defaultEmps = [
             {name:'Алексей', role:'Кладовщик', access:'Старший смены', rate:550, color:'#6366f1'},
             {name:'Наза', role:'Сборщик', access:'Сотрудник', rate:450, color:'#10b981'},
@@ -972,7 +999,6 @@ function loadFromLocalStorage() {
             });
         });
         
-        // Генерируем демо карту склада если пусто
         if(!w || wmsCells.length === 0) {
             for(let r=1; r<=4; r++) {
                 for(let c=1; c<=6; c++) {
@@ -992,21 +1018,19 @@ function loadFromLocalStorage() {
   } catch(ex) { console.error('Storage load error:', ex); }
 }
 
-// ===== WMS MAP LOGIC =====
+// ===== LIVE WMS MAP LOGIC =====
 function initWMSMap() {
     const container = document.getElementById('wmsMap');
     container.innerHTML = '';
+    selectedCellId = null;
+    updateWMSStats();
+    document.getElementById('wmsStatusText').textContent = "Режим: Просмотр";
+    document.getElementById('wmsStatusText').className = "badge badge-info";
     
-    // Если массив пуст, создаем структуру 4x6
     if(wmsCells.length === 0) {
          for(let r=1; r<=4; r++) {
             for(let c=1; c<=6; c++) {
-                wmsCells.push({
-                    id: `R${r}-C${c}`,
-                    row: r, col: c,
-                    status: 'free',
-                    content: ''
-                });
+                wmsCells.push({ id: `R${r}-C${c}`, row: r, col: c, status: 'free', content: '' });
             }
         }
     }
@@ -1014,63 +1038,107 @@ function initWMSMap() {
     wmsCells.forEach(cell => {
         const div = document.createElement('div');
         div.className = `wms-cell ${cell.status}`;
-        div.onclick = () => openCellEditor(cell.id);
+        div.id = `cell-${cell.id}`;
+        div.onclick = () => handleCellClick(cell.id);
+        
+        let icon = cell.status === 'occupied' ? '📦' : (cell.status === 'reserved' ? '⚠️' : '✅');
         
         div.innerHTML = `
             <span class="cell-id">${cell.id}</span>
-            <span class="cell-content">${cell.content || (cell.status === 'free' ? 'Свободно' : 'Занято')}</span>
+            <div class="cell-icon">${icon}</div>
+            <span class="cell-content">${cell.content || (cell.status === 'free' ? 'Свободно' : 'Резерв')}</span>
         `;
         container.appendChild(div);
     });
 }
 
-function openCellEditor(cellId) {
-    const cell = wmsCells.find(c => c.id === cellId);
-    if(!cell) return;
+function updateWMSStats() {
+    let free = wmsCells.filter(c => c.status === 'free').length;
+    let occupied = wmsCells.filter(c => c.status === 'occupied').length;
+    let reserved = wmsCells.filter(c => c.status === 'reserved').length;
     
-    // Простая логика переключения для демонстрации
-    if(cell.status === 'free') {
-        const item = prompt(`Что положить в ячейку ${cellId}?`, "Товар А");
-        if(item) {
-            cell.status = 'occupied';
-            cell.content = item;
+    document.getElementById('countFree').textContent = free;
+    document.getElementById('countOccupied').textContent = occupied;
+    document.getElementById('countReserved').textContent = reserved;
+}
+
+// Логика клика по ячейке (Перемещение товара)
+function handleCellClick(cellId) {
+    const clickedCell = wmsCells.find(c => c.id === cellId);
+    if(!clickedCell) return;
+
+    // Сценарий 1: Ничего не выбрано
+    if (!selectedCellId) {
+        if (clickedCell.status === 'occupied') {
+            // Выбираем ячейку с товаром
+            selectedCellId = cellId;
+            highlightCell(cellId, true);
+            document.getElementById('wmsStatusText').textContent = `Выбран: ${clickedCell.content}. Куда переместить?`;
+            document.getElementById('wmsStatusText').className = "badge badge-warning";
+            showToast(`Выбран товар: ${clickedCell.content}. Выберите свободную ячейку.`, 'info');
+        } else if (clickedCell.status === 'free') {
+            // Если кликнули на пустую, предлагаем добавить товар
+            const item = prompt(`Введите название товара для ячейки ${cellId}:`);
+            if(item) {
+                clickedCell.status = 'occupied';
+                clickedCell.content = item;
+                saveToStorage();
+                initWMSMap();
+                showToast(`Товар "${item}" размещен в ${cellId}`, 'success');
+            }
         }
-    } else if (cell.status === 'occupied') {
-        if(confirm(`Убрать "${cell.content}" из ячейки ${cellId}?`)) {
-            cell.status = 'free';
-            cell.content = '';
+    } 
+    // Сценарий 2: Товар уже выбран (selectedCellId не null)
+    else {
+        const sourceCell = wmsCells.find(c => c.id === selectedCellId);
+        
+        if (clickedCell.id === selectedCellId) {
+            // Отмена выбора (кликнули туда же)
+            selectedCellId = null;
+            highlightCell(clickedCell.id, false);
+            document.getElementById('wmsStatusText').textContent = "Режим: Просмотр";
+            document.getElementById('wmsStatusText').className = "badge badge-info";
+        } else if (clickedCell.status === 'free') {
+            // Перемещение в свободную ячейку
+            if(confirm(`Переместить "${sourceCell.content}" из ${sourceCell.id} в ${clickedCell.id}?`)) {
+                clickedCell.status = 'occupied';
+                clickedCell.content = sourceCell.content;
+                
+                sourceCell.status = 'free';
+                sourceCell.content = '';
+                
+                selectedCellId = null;
+                saveToStorage();
+                initWMSMap();
+                showToast(`Товар успешно перемещен в ${clickedCell.id}`, 'success');
+            }
+        } else {
+            // Нельзя переместить в занятую
+            showToast('Нельзя переместить товар в занятую ячейку!', 'error');
+            // Сбрасываем выбор
+            selectedCellId = null;
+            initWMSMap();
         }
-    } else if (cell.status === 'reserved') {
-        cell.status = 'free';
-        cell.content = '';
     }
-    
-    saveToStorage();
-    initWMSMap();
+}
+
+function highlightCell(cellId, isActive) {
+    const el = document.getElementById(`cell-${cellId}`);
+    if(el) {
+        if(isActive) el.classList.add('selected');
+        else el.classList.remove('selected');
+    }
 }
 
 // ===== INTEGRATION LOGIC =====
 function saveIntegrationKey(service) {
     let keyData = {};
-    
-    if(service === 'wb') {
-        keyData.key = document.getElementById('key-wb').value;
-    } else if(service === 'ozon') {
-        keyData.id = document.getElementById('id-ozon').value;
-        keyData.key = document.getElementById('key-ozon').value;
-    } else if(service === 'ya') {
-        keyData.key = document.getElementById('key-ya').value;
-    } else if(service === 'diadoc') {
-        keyData.key = document.getElementById('key-diadoc').value;
-        keyData.org = document.getElementById('org-diadoc').value;
-    } else if(service === '1c') {
-        keyData.url = document.getElementById('url-1c').value;
-        keyData.user = document.getElementById('user-1c').value;
-        keyData.pass = document.getElementById('pass-1c').value;
-    } else if(service === 'wms') {
-        keyData.url = document.getElementById('url-wms').value;
-        keyData.key = document.getElementById('key-wms').value;
-    }
+    if(service === 'wb') keyData.key = document.getElementById('key-wb').value;
+    else if(service === 'ozon') { keyData.id = document.getElementById('id-ozon').value; keyData.key = document.getElementById('key-ozon').value; }
+    else if(service === 'ya') keyData.key = document.getElementById('key-ya').value;
+    else if(service === 'diadoc') { keyData.key = document.getElementById('key-diadoc').value; keyData.org = document.getElementById('org-diadoc').value; }
+    else if(service === '1c') { keyData.url = document.getElementById('url-1c').value; keyData.user = document.getElementById('user-1c').value; keyData.pass = document.getElementById('pass-1c').value; }
+    else if(service === 'wms') { keyData.url = document.getElementById('url-wms').value; keyData.key = document.getElementById('key-wms').value; }
 
     integrations[service] = keyData;
     saveToStorage();
@@ -1082,7 +1150,6 @@ function testConnection(service) {
     const statusEl = document.getElementById('status-' + service);
     statusEl.className = 'integration-status status-pending';
     statusEl.textContent = 'Проверка...';
-    
     setTimeout(() => {
         if(integrations[service] && (integrations[service].key || integrations[service].url)) {
             updateStatus(service, 'connected');
@@ -1096,40 +1163,20 @@ function testConnection(service) {
 
 function updateStatus(service, state) {
     const el = document.getElementById('status-' + service);
-    if(state === 'connected') {
-        el.className = 'integration-status status-connected';
-        el.textContent = 'Подключено';
-    } else if (state === 'disconnected') {
-        el.className = 'integration-status status-disconnected';
-        el.textContent = 'Ошибка';
-    } else {
-        el.className = 'integration-status status-pending';
-        el.textContent = 'Проверка...';
-    }
+    if(state === 'connected') { el.className = 'integration-status status-connected'; el.textContent = 'Подключено'; }
+    else if (state === 'disconnected') { el.className = 'integration-status status-disconnected'; el.textContent = 'Ошибка'; }
+    else { el.className = 'integration-status status-pending'; el.textContent = 'Проверка...'; }
 }
 
 function restoreIntegrationStatus() {
     ['wb', 'ozon', 'ya', 'diadoc', '1c', 'wms'].forEach(svc => {
         if(integrations[svc] && (integrations[svc].key || integrations[svc].url)) {
             if(svc === 'wb' && integrations[svc].key) document.getElementById('key-wb').value = integrations[svc].key;
-            if(svc === 'ozon') {
-                if(integrations[svc].id) document.getElementById('id-ozon').value = integrations[svc].id;
-                if(integrations[svc].key) document.getElementById('key-ozon').value = integrations[svc].key;
-            }
+            if(svc === 'ozon') { if(integrations[svc].id) document.getElementById('id-ozon').value = integrations[svc].id; if(integrations[svc].key) document.getElementById('key-ozon').value = integrations[svc].key; }
             if(svc === 'ya' && integrations[svc].key) document.getElementById('key-ya').value = integrations[svc].key;
-            if(svc === 'diadoc') {
-                if(integrations[svc].key) document.getElementById('key-diadoc').value = integrations[svc].key;
-                if(integrations[svc].org) document.getElementById('org-diadoc').value = integrations[svc].org;
-            }
-            if(svc === '1c') {
-                if(integrations[svc].url) document.getElementById('url-1c').value = integrations[svc].url;
-                if(integrations[svc].user) document.getElementById('user-1c').value = integrations[svc].user;
-                if(integrations[svc].pass) document.getElementById('pass-1c').value = integrations[svc].pass;
-            }
-            if(svc === 'wms') {
-                if(integrations[svc].url) document.getElementById('url-wms').value = integrations[svc].url;
-                if(integrations[svc].key) document.getElementById('key-wms').value = integrations[svc].key;
-            }
+            if(svc === 'diadoc') { if(integrations[svc].key) document.getElementById('key-diadoc').value = integrations[svc].key; if(integrations[svc].org) document.getElementById('org-diadoc').value = integrations[svc].org; }
+            if(svc === '1c') { if(integrations[svc].url) document.getElementById('url-1c').value = integrations[svc].url; if(integrations[svc].user) document.getElementById('user-1c').value = integrations[svc].user; if(integrations[svc].pass) document.getElementById('pass-1c').value = integrations[svc].pass; }
+            if(svc === 'wms') { if(integrations[svc].url) document.getElementById('url-wms').value = integrations[svc].url; if(integrations[svc].key) document.getElementById('key-wms').value = integrations[svc].key; }
             updateStatus(svc, 'connected');
         }
     });
@@ -1137,31 +1184,21 @@ function restoreIntegrationStatus() {
 
 // ===== VOICE ASSISTANT LOGIC =====
 function startVoiceRecognition() {
-    if (!('webkitSpeechRecognition' in window)) {
-        alert("Ваш браузер не поддерживает голосовой ввод. Используйте Chrome.");
-        return;
-    }
-    
+    if (!('webkitSpeechRecognition' in window)) { alert("Ваш браузер не поддерживает голосовой ввод. Используйте Chrome."); return; }
     const recognition = new webkitSpeechRecognition();
     recognition.lang = 'ru-RU';
     recognition.start();
-    
     showToast("🎤 Слушаю...", "info");
-    
     recognition.onresult = function(event) {
         const text = event.results[0][0].transcript;
         document.getElementById('chatInput').value = text;
         sendMessage();
     };
-    
-    recognition.onerror = function(event) {
-        showToast("Ошибка распознавания голоса", "error");
-    };
+    recognition.onerror = function(event) { showToast("Ошибка распознавания голоса", "error"); };
 }
 
 function speak(text) {
     if ('speechSynthesis' in window) {
-        // Отменяем предыдущую речь, если есть
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ru-RU';
@@ -1170,7 +1207,6 @@ function speak(text) {
     }
 }
 
-// ===== AUTO GENERATE FINE LOGIC =====
 function autoGenerateFine() {
     const reasons = document.querySelectorAll('#fineReason option');
     if(reasons.length <= 1) return;
@@ -1181,7 +1217,6 @@ function autoGenerateFine() {
     showToast(`Сгенерирован штраф: ${selectedOption.text.split('(')[0]}`, 'info');
 }
 
-// ===== EXISTING LOGIC (ADAPTED) =====
 const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#06b6d4','#84cc16'];
  
 function showToast(msg, type) {
@@ -1207,7 +1242,7 @@ function showSection(id, navEl) {
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
   if (navEl) navEl.classList.add('active');
  
-  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Голосовой Бот',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы', integrations:'Интеграции', wms:'Карта Склада'};
+  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Голосовой Бот',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы', integrations:'Интеграции', wms:'Живая Карта'};
   document.getElementById('pageTitle').textContent = titles[id] || '';
  
   if (id === 'dashboard') renderDashboard();
@@ -1239,17 +1274,13 @@ function getEmpName(id) {
   return e ? e.name : 'Удалён';
 }
  
-function getEmpById(id) {
-  return employees.find(function(x) { return x.id === id; });
-}
+function getEmpById(id) { return employees.find(function(x) { return x.id === id; }); }
  
 function calcHours(ci, co) {
   if (!ci) return 0;
   if (!co) co = '23:59';
-  var h1 = parseInt(ci.split(':')[0]);
-  var m1 = parseInt(ci.split(':')[1]);
-  var h2 = parseInt(co.split(':')[0]);
-  var m2 = parseInt(co.split(':')[1]);
+  var h1 = parseInt(ci.split(':')[0]); var m1 = parseInt(ci.split(':')[1]);
+  var h2 = parseInt(co.split(':')[0]); var m2 = parseInt(co.split(':')[1]);
   var diff = (h2 * 60 + m2) - (h1 * 60 + m1);
   if (diff < 0) diff += 1440;
   return (diff / 60).toFixed(1);
@@ -1269,25 +1300,17 @@ function populateSelects() {
   var tt = document.getElementById('ttEmployee');
   var fine = document.getElementById('fineEmployee');
   var ts = document.getElementById('tsEmployee');
- 
-  tt.innerHTML = '';
-  fine.innerHTML = '';
-  ts.innerHTML = '<option value="all">Все сотрудники</option>';
- 
+  tt.innerHTML = ''; fine.innerHTML = ''; ts.innerHTML = '<option value="all">Все сотрудники</option>';
   employees.forEach(function(emp) {
     var opt = '<option value="'+emp.id+'">'+emp.name+' ('+emp.role+')</option>';
-    tt.innerHTML += opt;
-    fine.innerHTML += opt;
-    ts.innerHTML += opt;
+    tt.innerHTML += opt; fine.innerHTML += opt; ts.innerHTML += opt;
   });
 }
  
 function populateDocEmployeeSelect() {
   var sel = document.getElementById('docEmployee');
   sel.innerHTML = '<option value="all">Все сотрудники</option>';
-  employees.forEach(function(emp) {
-    sel.innerHTML += '<option value="'+emp.id+'">'+emp.name+' ('+emp.role+')</option>';
-  });
+  employees.forEach(function(emp) { sel.innerHTML += '<option value="'+emp.id+'">'+emp.name+' ('+emp.role+')</option>'; });
 }
  
 function isEmployeeOnline(empId) {
@@ -1299,24 +1322,17 @@ function isEmployeeOnline(empId) {
 function getTodayRecord(empId) {
   var today = getToday();
   var rec = timeRecords.find(function(r) { return r.employeeId === empId && r.date === today; });
-  if (!rec) {
-    rec = {date: today, employeeId: empId, checkIn: null, checkOut: null};
-    timeRecords.push(rec);
-  }
+  if (!rec) { rec = {date: today, employeeId: empId, checkIn: null, checkOut: null}; timeRecords.push(rec); }
   return rec;
 }
  
-// Обновленная функция рендеринга сотрудников с QR кодом, кнопкой печати и уровнем доступа
 function renderEmployees() {
   var grid = document.getElementById('empCardsGrid');
   grid.innerHTML = '';
-  
   employees.forEach(function(emp) {
     var online = isEmployeeOnline(emp.id);
     var initials = emp.name.charAt(0);
     var qrId = 'qr-code-' + emp.id;
-    
-    // Определение класса для бейджа доступа
     let accessClass = 'access-user';
     if(emp.access === 'Администратор') accessClass = 'access-admin';
     if(emp.access === 'Старший смены') accessClass = 'access-senior';
@@ -1329,58 +1345,35 @@ function renderEmployees() {
       '<div class="emp-rate">'+emp.rate+' ₽</div>'+
       '<div class="emp-rate-label">в час</div>'+
       '<div class="emp-status '+(online?'online':'offline')+'">'+(online?'🟢 На складе':'⚫ Не на складе')+'</div>'+
-      
       '<div class="qr-wrapper" id="'+qrId+'"></div>'+
-      
       '<div class="emp-actions">'+
         '<button class="btn btn-ghost btn-sm" onclick="editEmployee('+emp.id+')">✏️</button>'+
         '<button class="btn btn-primary btn-sm" onclick="openBadgePrint('+emp.id+')">🖨️ Бейдж</button>'+
         '<button class="btn btn-ghost btn-sm" onclick="removeEmployee('+emp.id+')">🗑️</button>'+
       '</div>'+
     '</div>';
-    
     grid.innerHTML += cardHtml;
-    
     setTimeout(function() {
         var qrContainer = document.getElementById(qrId);
         if (qrContainer) {
             qrContainer.innerHTML = "";
-            var qrData = "EMP:" + emp.id + "|" + emp.name;
-            new QRCode(qrContainer, {
-                text: qrData,
-                width: 60,
-                height: 60,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            new QRCode(qrContainer, { text: "EMP:" + emp.id + "|" + emp.name, width: 60, height: 60, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
         }
     }, 10);
   });
 }
 
-// Функция открытия окна печати бейджа
 function openBadgePrint(empId) {
     const emp = getEmpById(empId);
     if(!emp) return;
-    
     document.getElementById('printBadgeName').textContent = emp.name;
     document.getElementById('printBadgeRole').textContent = emp.role;
     document.getElementById('printBadgeAccess').textContent = emp.access;
     document.getElementById('printBadgePhoto').textContent = emp.name.charAt(0);
     document.getElementById('printBadgePhoto').style.background = emp.color;
-    
     const qrContainer = document.getElementById('printBadgeQR');
     qrContainer.innerHTML = "";
-    new QRCode(qrContainer, {
-        text: "EMP:" + emp.id + "|" + emp.name,
-        width: 100,
-        height: 100,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-    });
-    
+    new QRCode(qrContainer, { text: "EMP:" + emp.id + "|" + emp.name, width: 100, height: 100, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
     openModal('modalBadgePrint');
 }
  
@@ -1397,7 +1390,6 @@ function addEmployee() {
   var access = document.getElementById('newEmpAccess').value;
   var rate = parseInt(document.getElementById('newEmpRate').value) || 500;
   if (!name) { showToast('Введите имя сотрудника', 'error'); return; }
- 
   employees.push({id: nextEmpId++, name: name, role: role, access: access, rate: rate, color: COLORS[(nextEmpId-1) % COLORS.length]});
   closeModal('modalAddEmployee');
   populateSelects();
@@ -1451,49 +1443,23 @@ function checkIn() {
   var rec = getTodayRecord(empId);
   var now = new Date();
   var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
- 
-  if (rec.checkIn && !rec.checkOut) {
-    showToast('Уже отмечен приход. Сначала отметьте уход.', 'error');
-    return;
-  }
-  if (rec.checkIn && rec.checkOut) {
-    rec.checkIn = time;
-    rec.checkOut = null;
-  } else {
-    rec.checkIn = time;
-  }
-  
+  if (rec.checkIn && !rec.checkOut) { showToast('Уже отмечен приход.', 'error'); return; }
+  if (rec.checkIn && rec.checkOut) { rec.checkIn = time; rec.checkOut = null; } else { rec.checkIn = time; }
   showToast(getEmpName(empId) + ' — приход: ' + time, 'success');
-  loadTTInfo();
-  renderTimeHistory();
-  renderDashboard();
-  renderEmployees();
-  saveToStorage();
+  loadTTInfo(); renderTimeHistory(); renderDashboard(); renderEmployees(); saveToStorage();
 }
  
 function checkOut() {
   var empId = parseInt(document.getElementById('ttEmployee').value);
   var rec = getTodayRecord(empId);
- 
-  if (!rec.checkIn) {
-    showToast('Сначала отметьте приход!', 'error');
-    return;
-  }
-  if (rec.checkOut) {
-    showToast('Уже отмечен уход сегодня.', 'error');
-    return;
-  }
- 
+  if (!rec.checkIn) { showToast('Сначала отметьте приход!', 'error'); return; }
+  if (rec.checkOut) { showToast('Уже отмечен уход.', 'error'); return; }
   var now = new Date();
   var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
   rec.checkOut = time;
   var hours = calcHours(rec.checkIn, rec.checkOut);
-  showToast(getEmpName(empId) + ' — уход: ' + time + ' (отработано ' + hours + ' ч.)', 'success');
-  loadTTInfo();
-  renderTimeHistory();
-  renderDashboard();
-  renderEmployees();
-  saveToStorage();
+  showToast(getEmpName(empId) + ' — уход: ' + time + ' (' + hours + ' ч.)', 'success');
+  loadTTInfo(); renderTimeHistory(); renderDashboard(); renderEmployees(); saveToStorage();
 }
  
 function loadTTInfo() {
@@ -1510,92 +1476,46 @@ function renderTimeHistory() {
   var sorted = timeRecords.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
   sorted.forEach(function(rec) {
     var h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '—';
-    tbody.innerHTML += '<tr>'+
-      '<td>'+rec.date+'</td>'+
-      '<td>'+getEmpName(rec.employeeId)+'</td>'+
-      '<td><span class="badge badge-success">'+(rec.checkIn||'—')+'</span></td>'+
-      '<td><span class="badge badge-danger">'+(rec.checkOut||'—')+'</span></td>'+
-      '<td><strong>'+h+' ч.</strong></td>'+
-    '</tr>';
+    tbody.innerHTML += '<tr><td>'+rec.date+'</td><td>'+getEmpName(rec.employeeId)+'</td><td><span class="badge badge-success">'+(rec.checkIn||'—')+'</span></td><td><span class="badge badge-danger">'+(rec.checkOut||'—')+'</span></td><td><strong>'+h+' ч.</strong></td></tr>';
   });
 }
  
 function getEmployeeMonthHours(empId) {
-  var month = getCurrentMonth();
-  var total = 0;
-  timeRecords.forEach(function(rec) {
-    if (rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) {
-      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
-    }
-  });
+  var month = getCurrentMonth(); var total = 0;
+  timeRecords.forEach(function(rec) { if (rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) { total += parseFloat(calcHours(rec.checkIn, rec.checkOut)); } });
   return total.toFixed(1);
 }
  
 function getEmployeeMonthFines(empId) {
-  var month = getCurrentMonth();
-  var total = 0;
-  fines.forEach(function(f) {
-    if (f.employeeId === empId && f.date.startsWith(month)) {
-      total += f.amount;
-    }
-  });
+  var month = getCurrentMonth(); var total = 0;
+  fines.forEach(function(f) { if (f.employeeId === empId && f.date.startsWith(month)) { total += f.amount; } });
   return total;
 }
  
 function renderRates() {
-  var tbody = document.getElementById('ratesTable');
-  tbody.innerHTML = '';
+  var tbody = document.getElementById('ratesTable'); tbody.innerHTML = '';
   employees.forEach(function(emp) {
-    var hours = getEmployeeMonthHours(emp.id);
-    var earned = Math.round(hours * emp.rate);
-    var fineTotal = getEmployeeMonthFines(emp.id);
-    var total = earned - fineTotal;
-    tbody.innerHTML += '<tr>'+
-      '<td><strong>'+emp.name+'</strong></td>'+
-      '<td>'+emp.role+'</td>'+
-      '<td><input type="number" class="rate-input" value="'+emp.rate+'" onchange="updateRate('+emp.id+',this.value)"></td>'+
-      '<td>'+hours+' ч.</td>'+
-      '<td style="color:var(--success);font-weight:600;">'+earned.toLocaleString()+' ₽</td>'+
-      '<td style="color:var(--danger);font-weight:600;">-'+fineTotal.toLocaleString()+' ₽</td>'+
-      '<td style="color:var(--primary-light);font-weight:700;">'+total.toLocaleString()+' ₽</td>'+
-    '</tr>';
+    var hours = getEmployeeMonthHours(emp.id); var earned = Math.round(hours * emp.rate);
+    var fineTotal = getEmployeeMonthFines(emp.id); var total = earned - fineTotal;
+    tbody.innerHTML += '<tr><td><strong>'+emp.name+'</strong></td><td>'+emp.role+'</td><td><input type="number" class="rate-input" value="'+emp.rate+'" onchange="updateRate('+emp.id+',this.value)"></td><td>'+hours+' ч.</td><td style="color:var(--success);font-weight:600;">'+earned.toLocaleString()+' ₽</td><td style="color:var(--danger);font-weight:600;">-'+fineTotal.toLocaleString()+' ₽</td><td style="color:var(--primary-light);font-weight:700;">'+total.toLocaleString()+' ₽</td></tr>';
   });
 }
  
-function updateRate(empId, val) {
-  var emp = getEmpById(empId);
-  if (emp) { emp.rate = parseInt(val) || 500; saveToStorage(); }
-}
- 
+function updateRate(empId, val) { var emp = getEmpById(empId); if (emp) { emp.rate = parseInt(val) || 500; saveToStorage(); } }
 function saveAllRates() {
   var inputs = document.querySelectorAll('.rate-input');
-  inputs.forEach(function(inp, i) {
-    if (employees[i]) employees[i].rate = parseInt(inp.value) || 500;
-  });
-  renderRates();
-  saveToStorage();
-  showToast('Все ставки сохранены', 'success');
+  inputs.forEach(function(inp, i) { if (employees[i]) employees[i].rate = parseInt(inp.value) || 500; });
+  renderRates(); saveToStorage(); showToast('Ставки сохранены', 'success');
 }
  
 function getTotalMonthHours() {
-  var month = getCurrentMonth();
-  var total = 0;
-  timeRecords.forEach(function(rec) {
-    if (rec.date.startsWith(month) && rec.checkIn) {
-      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
-    }
-  });
+  var month = getCurrentMonth(); var total = 0;
+  timeRecords.forEach(function(rec) { if (rec.date.startsWith(month) && rec.checkIn) { total += parseFloat(calcHours(rec.checkIn, rec.checkOut)); } });
   return total.toFixed(1);
 }
  
-function getOnlineCount() {
-  return employees.filter(function(e) { return isEmployeeOnline(e.id); }).length;
-}
- 
-function getTotalMonthFinesCount() {
-  var month = getCurrentMonth();
-  return fines.filter(function(f) { return f.date.startsWith(month); }).length;
-}
+function getOnlineCount() { return employees.filter(function(e) { return isEmployeeOnline(e.id); }).length; }
+function getTotalMonthFinesCount() { var month = getCurrentMonth(); return fines.filter(function(f) { return f.date.startsWith(month); }).length; }
  
 function openFineModal() {
   populateSelects();
@@ -1607,10 +1527,7 @@ function openFineModal() {
  
 function autoFillFineAmount() {
   var val = document.getElementById('fineReason').value;
-  if (val && val !== 'other') {
-    var parts = val.split('|');
-    document.getElementById('fineAmount').value = parts[1];
-  }
+  if (val && val !== 'other') { var parts = val.split('|'); document.getElementById('fineAmount').value = parts[1]; }
 }
  
 function applyFine() {
@@ -1618,47 +1535,18 @@ function applyFine() {
   var reasonRaw = document.getElementById('fineReason').value;
   var amount = parseInt(document.getElementById('fineAmount').value) || 0;
   var comment = document.getElementById('fineComment').value.trim();
- 
-  if (!empId) { showToast('Выберите сотрудника', 'error'); return; }
-  if (!reasonRaw) { showToast('Выберите причину', 'error'); return; }
-  if (amount <= 0) { showToast('Укажите сумму', 'error'); return; }
- 
+  if (!empId || !reasonRaw || amount <= 0) { showToast('Заполните все поля', 'error'); return; }
   var reason = reasonRaw.split('|')[0];
- 
-  fines.push({
-    date: getToday(),
-    employeeId: empId,
-    reason: reason,
-    amount: amount,
-    comment: comment,
-    status: 'Активен'
-  });
- 
-  closeModal('modalFine');
-  renderFinesHistory();
-  renderDashboard();
-  renderRates();
-  saveToStorage();
-  showToast('Штраф ' + amount + ' ₽ назначен: ' + getEmpName(empId), 'warning');
+  fines.push({ date: getToday(), employeeId: empId, reason: reason, amount: amount, comment: comment, status: 'Активен' });
+  closeModal('modalFine'); renderFinesHistory(); renderDashboard(); renderRates(); saveToStorage();
+  showToast('Штраф назначен', 'warning');
 }
  
 function renderFinesHistory() {
-  var tbody = document.getElementById('finesHistoryTable');
-  tbody.innerHTML = '';
+  var tbody = document.getElementById('finesHistoryTable'); tbody.innerHTML = '';
   var sorted = fines.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
-  if (sorted.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Штрафов пока нет ✅</td></tr>';
-    return;
-  }
-  sorted.forEach(function(f) {
-    tbody.innerHTML += '<tr class="fine-row">'+
-      '<td>'+f.date+'</td>'+
-      '<td>'+getEmpName(f.employeeId)+'</td>'+
-      '<td>'+f.reason+'</td>'+
-      '<td><strong style="color:var(--danger);">-'+f.amount.toLocaleString()+' ₽</strong></td>'+
-      '<td><span class="badge badge-warning">'+f.status+'</span></td>'+
-    '</tr>';
-  });
+  if (sorted.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Штрафов нет ✅</td></tr>'; return; }
+  sorted.forEach(function(f) { tbody.innerHTML += '<tr class="fine-row"><td>'+f.date+'</td><td>'+getEmpName(f.employeeId)+'</td><td>'+f.reason+'</td><td><strong style="color:var(--danger);">-'+f.amount.toLocaleString()+' ₽</strong></td><td><span class="badge badge-warning">'+f.status+'</span></td></tr>'; });
 }
  
 function renderDashboard() {
@@ -1666,42 +1554,21 @@ function renderDashboard() {
   document.getElementById('statOnline').textContent = getOnlineCount();
   document.getElementById('statHours').textContent = getTotalMonthHours();
   document.getElementById('statFines').textContent = getTotalMonthFinesCount();
- 
-  var tbody = document.getElementById('dashEmpTable');
-  tbody.innerHTML = '';
+  var tbody = document.getElementById('dashEmpTable'); tbody.innerHTML = '';
   employees.forEach(function(emp) {
-    var rec = getTodayRecord(emp.id);
-    var h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '0';
-    
+    var rec = getTodayRecord(emp.id); var h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '0';
     let accessBadge = '<span class="badge badge-info">'+emp.access+'</span>';
     if(emp.access === 'Администратор') accessBadge = '<span class="badge badge-admin">Админ</span>';
-    
-    tbody.innerHTML += '<tr>'+
-      '<td><strong>'+emp.name+'</strong></td>'+
-      '<td>'+emp.role+'</td>'+
-      '<td>'+accessBadge+'</td>'+
-      '<td>'+ (isEmployeeOnline(emp.id) ? '<span class="badge badge-success">🟢 На складе</span>' : '<span class="badge badge-danger">⚫ Не на складе</span>') +'</td>'+
-      '<td>'+(rec.checkIn||'—')+'</td>'+
-      '<td>'+(rec.checkOut||'—')+'</td>'+
-      '<td><strong>'+h+' ч.</strong></td>'+
-    '</tr>';
+    tbody.innerHTML += '<tr><td><strong>'+emp.name+'</strong></td><td>'+emp.role+'</td><td>'+accessBadge+'</td><td>'+ (isEmployeeOnline(emp.id) ? '<span class="badge badge-success">🟢 На складе</span>' : '<span class="badge badge-danger">⚫ Не на складе</span>') +'</td><td>'+(rec.checkIn||'—')+'</td><td>'+(rec.checkOut||'—')+'</td><td><strong>'+h+' ч.</strong></td></tr>';
   });
- 
-  var fineTbody = document.getElementById('dashFineTable');
-  fineTbody.innerHTML = '';
+  var fineTbody = document.getElementById('dashFineTable'); fineTbody.innerHTML = '';
   var recent = fines.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,5);
-  if (recent.length === 0) {
-    fineTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Штрафов пока нет ✅</td></tr>';
-  } else {
-    recent.forEach(function(f) {
-      fineTbody.innerHTML += '<tr><td>'+f.date+'</td><td>'+getEmpName(f.employeeId)+'</td><td>'+f.reason+'</td><td><strong style="color:var(--danger);">-'+f.amount.toLocaleString()+' ₽</strong></td></tr>';
-    });
-  }
+  if (recent.length === 0) { fineTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Штрафов нет ✅</td></tr>'; }
+  else { recent.forEach(function(f) { fineTbody.innerHTML += '<tr><td>'+f.date+'</td><td>'+getEmpName(f.employeeId)+'</td><td>'+f.reason+'</td><td><strong style="color:var(--danger);">-'+f.amount.toLocaleString()+' ₽</strong></td></tr>'; }); }
 }
  
 function initMonthSelector() {
-  var sel = document.getElementById('tsMonth');
-  sel.innerHTML = '';
+  var sel = document.getElementById('tsMonth'); sel.innerHTML = '';
   var now = new Date();
   for (var i = 0; i < 6; i++) {
     var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -1714,168 +1581,73 @@ function initMonthSelector() {
 function renderTimesheet() {
   var month = document.getElementById('tsMonth').value;
   var empId = document.getElementById('tsEmployee').value;
-  var tbody = document.getElementById('timesheetTable');
-  tbody.innerHTML = '';
- 
-  var parts = month.split('-');
-  var year = parseInt(parts[0]);
-  var mon = parseInt(parts[1]);
+  var tbody = document.getElementById('timesheetTable'); tbody.innerHTML = '';
+  var parts = month.split('-'); var year = parseInt(parts[0]); var mon = parseInt(parts[1]);
   var daysInMonth = new Date(year, mon, 0).getDate();
- 
-  var totalHours = 0;
-  var totalPay = 0;
-  var totalFines = 0;
- 
+  var totalHours = 0; var totalPay = 0; var totalFines = 0;
   for (var day = 1; day <= daysInMonth; day++) {
     var dateStr = month + '-' + String(day).padStart(2,'0');
     var dateObj = new Date(year, mon - 1, day);
     var dayName = dateObj.toLocaleDateString('ru-RU', {weekday:'short'});
     var isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
- 
     var records = timeRecords.filter(function(r) { return r.date === dateStr; });
-    if (empId !== 'all') {
-      records = records.filter(function(r) { return r.employeeId === parseInt(empId); });
-    }
- 
-    var dayHours = 0;
-    var dayPay = 0;
- 
-    records.forEach(function(rec) {
-      if (rec.checkIn) {
-        var h = parseFloat(calcHours(rec.checkIn, rec.checkOut));
-        dayHours += h;
-        var emp = getEmpById(rec.employeeId);
-        if (emp) dayPay += h * emp.rate;
-      }
-    });
- 
+    if (empId !== 'all') { records = records.filter(function(r) { return r.employeeId === parseInt(empId); }); }
+    var dayHours = 0; var dayPay = 0;
+    records.forEach(function(rec) { if (rec.checkIn) { var h = parseFloat(calcHours(rec.checkIn, rec.checkOut)); dayHours += h; var emp = getEmpById(rec.employeeId); if (emp) dayPay += h * emp.rate; } });
     var dayFines = 0;
-    fines.forEach(function(f) {
-      if (f.date === dateStr) {
-        if (empId === 'all' || f.employeeId === parseInt(empId)) {
-          dayFines += f.amount;
-        }
-      }
-    });
- 
-    totalHours += dayHours;
-    totalPay += dayPay;
-    totalFines += dayFines;
- 
+    fines.forEach(function(f) { if (f.date === dateStr) { if (empId === 'all' || f.employeeId === parseInt(empId)) { dayFines += f.amount; } } });
+    totalHours += dayHours; totalPay += dayPay; totalFines += dayFines;
     if (records.length > 0) {
-      tbody.innerHTML += '<tr'+(isWeekend?' style="opacity:0.5"':'')+'>'+
-        '<td>'+dateStr+'</td>'+
-        '<td>'+dayName+'</td>'+
-        '<td>'+(records.map(function(r){return r.checkIn||'—';}).join(', ')||'—')+'</td>'+
-        '<td>'+(records.map(function(r){return r.checkOut||'—';}).join(', ')||'—')+'</td>'+
-        '<td><strong>'+dayHours.toFixed(1)+' ч.</strong></td>'+
-        '<td>'+(records.length>0 ? (getEmpById(records[0].employeeId)||{}).rate+' ₽' : '—')+'</td>'+
-        '<td style="color:var(--success);font-weight:600;">'+Math.round(dayPay).toLocaleString()+' ₽</td>'+
-        '<td style="color:var(--danger);font-weight:600;">'+(dayFines>0 ? '-'+dayFines.toLocaleString()+' ₽' : '—')+'</td>'+
-      '</tr>';
+      tbody.innerHTML += '<tr'+(isWeekend?' style="opacity:0.5"':'')+'><td>'+dateStr+'</td><td>'+dayName+'</td><td>'+(records.map(function(r){return r.checkIn||'—';}).join(', ')||'—')+'</td><td>'+(records.map(function(r){return r.checkOut||'—';}).join(', ')||'—')+'</td><td><strong>'+dayHours.toFixed(1)+' ч.</strong></td><td>'+(records.length>0 ? (getEmpById(records[0].employeeId)||{}).rate+' ₽' : '—')+'</td><td style="color:var(--success);font-weight:600;">'+Math.round(dayPay).toLocaleString()+' ₽</td><td style="color:var(--danger);font-weight:600;">'+(dayFines>0 ? '-'+dayFines.toLocaleString()+' ₽' : '—')+'</td></tr>';
     }
   }
- 
-  if (tbody.innerHTML === '') {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Нет данных за этот период</td></tr>';
-  }
- 
+  if (tbody.innerHTML === '') { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Нет данных</td></tr>'; }
   document.getElementById('tsTotalHours').textContent = totalHours.toFixed(1);
   document.getElementById('tsTotalPay').textContent = Math.round(totalPay).toLocaleString() + ' ₽';
   document.getElementById('tsTotalFines').textContent = '-' + totalFines.toLocaleString() + ' ₽';
   document.getElementById('tsTotalNet').textContent = Math.round(totalPay - totalFines).toLocaleString() + ' ₽';
 }
  
-function getMonthHours(empId, month) {
-  var total = 0;
-  timeRecords.forEach(function(rec) {
-    if (rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) {
-      total += parseFloat(calcHours(rec.checkIn, rec.checkOut));
-    }
-  });
-  return total;
-}
- 
-function getMonthFines(empId, month) {
-  var total = 0;
-  fines.forEach(function(f) {
-    if (f.employeeId === empId && f.date.startsWith(month)) {
-      total += f.amount;
-    }
-  });
-  return total;
-}
+function getMonthHours(empId, month) { var total = 0; timeRecords.forEach(function(rec) { if (rec.employeeId === empId && rec.date.startsWith(month) && rec.checkIn) { total += parseFloat(calcHours(rec.checkIn, rec.checkOut)); } }); return total; }
+function getMonthFines(empId, month) { var total = 0; fines.forEach(function(f) { if (f.employeeId === empId && f.date.startsWith(month)) { total += f.amount; } }); return total; }
  
 function generateDocument() {
   var type = document.getElementById('docType').value;
   var empId = document.getElementById('docEmployee').value;
   var period = document.getElementById('docPeriod').value;
- 
   var now = new Date();
   var month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-  if (period === 'prev') {
-    var d = new Date(now.getFullYear(), now.getMonth()-1, 1);
-    month = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-  }
- 
+  if (period === 'prev') { var d = new Date(now.getFullYear(), now.getMonth()-1, 1); month = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
   var monthName = new Date(month + '-01').toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
   var preview = document.getElementById('docPreview');
   document.getElementById('docPreviewPanel').style.display = 'block';
- 
   var html = '<h2>СкладКонтроль — ' + monthName + '</h2>';
- 
   if (type === 'report') {
-    html += '<h3 style="margin-bottom:16px;">Отчёт по сотрудникам</h3>';
-    html += '<table><thead><tr><th>Сотрудник</th><th>Должность</th><th>Часы</th><th>Ставка</th><th>Начислено</th><th>Штрафы</th><th>Итого</th></tr></thead><tbody>';
+    html += '<h3 style="margin-bottom:16px;">Отчёт по сотрудникам</h3><table><thead><tr><th>Сотрудник</th><th>Должность</th><th>Часы</th><th>Ставка</th><th>Начислено</th><th>Штрафы</th><th>Итого</th></tr></thead><tbody>';
     var list = empId === 'all' ? employees : employees.filter(function(e){return e.id===parseInt(empId);});
-    list.forEach(function(emp) {
-      var h = getMonthHours(emp.id, month);
-      var earned = Math.round(h * emp.rate);
-      var ft = getMonthFines(emp.id, month);
-      html += '<tr><td>'+emp.name+'</td><td>'+emp.role+'</td><td>'+h.toFixed(1)+'</td><td>'+emp.rate+' ₽</td><td>'+earned.toLocaleString()+' ₽</td><td>-'+ft.toLocaleString()+' ₽</td><td><strong>'+(earned-ft).toLocaleString()+' ₽</strong></td></tr>';
-    });
+    list.forEach(function(emp) { var h = getMonthHours(emp.id, month); var earned = Math.round(h * emp.rate); var ft = getMonthFines(emp.id, month); html += '<tr><td>'+emp.name+'</td><td>'+emp.role+'</td><td>'+h.toFixed(1)+'</td><td>'+emp.rate+' ₽</td><td>'+earned.toLocaleString()+' ₽</td><td>-'+ft.toLocaleString()+' ₽</td><td><strong>'+(earned-ft).toLocaleString()+' ₽</strong></td></tr>'; });
     html += '</tbody></table>';
   } else if (type === 'fines_report') {
-    html += '<h3 style="margin-bottom:16px;">Отчёт по штрафам</h3>';
+    html += '<h3 style="margin-bottom:16px;">Отчёт по штрафам</h3><table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th></tr></thead><tbody>';
     var monthFines = fines.filter(function(f){return f.date.startsWith(month);});
     if (empId !== 'all') monthFines = monthFines.filter(function(f){return f.employeeId===parseInt(empId);});
-    html += '<table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th></tr></thead><tbody>';
     var total = 0;
-    monthFines.forEach(function(f) {
-      total += f.amount;
-      html += '<tr><td>'+f.date+'</td><td>'+getEmpName(f.employeeId)+'</td><td>'+f.reason+'</td><td>'+f.amount.toLocaleString()+' ₽</td></tr>';
-    });
-    html += '<tr style="font-weight:700;"><td colspan="3">ИТОГО</td><td>'+total.toLocaleString()+' ₽</td></tr>';
-    html += '</tbody></table>';
+    monthFines.forEach(function(f) { total += f.amount; html += '<tr><td>'+f.date+'</td><td>'+getEmpName(f.employeeId)+'</td><td>'+f.reason+'</td><td>'+f.amount.toLocaleString()+' ₽</td></tr>'; });
+    html += '<tr style="font-weight:700;"><td colspan="3">ИТОГО</td><td>'+total.toLocaleString()+' ₽</td></tr></tbody></table>';
   } else if (type === 'payroll') {
-    html += '<h3 style="margin-bottom:16px;">Расчётная ведомость</h3>';
-    html += '<table><thead><tr><th>№</th><th>ФИО</th><th>Должность</th><th>Часы</th><th>Ставка</th><th>Начислено</th><th>Удержания</th><th>К выплате</th></tr></thead><tbody>';
-    var grandTotal = 0;
-    var num = 1;
+    html += '<h3 style="margin-bottom:16px;">Расчётная ведомость</h3><table><thead><tr><th>№</th><th>ФИО</th><th>Должность</th><th>Часы</th><th>Ставка</th><th>Начислено</th><th>Удержания</th><th>К выплате</th></tr></thead><tbody>';
+    var grandTotal = 0; var num = 1;
     var list = empId === 'all' ? employees : employees.filter(function(e){return e.id===parseInt(empId);});
-    list.forEach(function(emp) {
-      var h = getMonthHours(emp.id, month);
-      var earned = Math.round(h * emp.rate);
-      var ft = getMonthFines(emp.id, month);
-      var net = earned - ft;
-      grandTotal += net;
-      html += '<tr><td>'+num+++'</td><td>'+emp.name+'</td><td>'+emp.role+'</td><td>'+h.toFixed(1)+'</td><td>'+emp.rate+' ₽</td><td>'+earned.toLocaleString()+' ₽</td><td>-'+ft.toLocaleString()+' ₽</td><td><strong>'+net.toLocaleString()+' ₽</strong></td></tr>';
-    });
-    html += '<tr style="font-weight:700;"><td colspan="7">ИТОГО К ВЫПЛАТЕ</td><td>'+grandTotal.toLocaleString()+' ₽</td></tr>';
-    html += '</tbody></table>';
+    list.forEach(function(emp) { var h = getMonthHours(emp.id, month); var earned = Math.round(h * emp.rate); var ft = getMonthFines(emp.id, month); var net = earned - ft; grandTotal += net; html += '<tr><td>'+num+++'</td><td>'+emp.name+'</td><td>'+emp.role+'</td><td>'+h.toFixed(1)+'</td><td>'+emp.rate+' ₽</td><td>'+earned.toLocaleString()+' ₽</td><td>-'+ft.toLocaleString()+' ₽</td><td><strong>'+net.toLocaleString()+' ₽</strong></td></tr>'; });
+    html += '<tr style="font-weight:700;"><td colspan="7">ИТОГО К ВЫПЛАТЕ</td><td>'+grandTotal.toLocaleString()+' ₽</td></tr></tbody></table>';
   } else if (type === 'timesheet_doc') {
-    html += '<h3 style="margin-bottom:16px;">Табель учёта рабочего времени</h3>';
-    html += '<table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead><tbody>';
+    html += '<h3 style="margin-bottom:16px;">Табель учёта рабочего времени</h3><table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead><tbody>';
     var monthRecs = timeRecords.filter(function(r){return r.date.startsWith(month);});
     if (empId !== 'all') monthRecs = monthRecs.filter(function(r){return r.employeeId===parseInt(empId);});
     monthRecs.sort(function(a,b){return a.date.localeCompare(b.date);});
-    monthRecs.forEach(function(r) {
-      var h = r.checkIn ? calcHours(r.checkIn, r.checkOut) : 0;
-      html += '<tr><td>'+r.date+'</td><td>'+getEmpName(r.employeeId)+'</td><td>'+(r.checkIn||'—')+'</td><td>'+(r.checkOut||'—')+'</td><td>'+h+' ч.</td></tr>';
-    });
+    monthRecs.forEach(function(r) { var h = r.checkIn ? calcHours(r.checkIn, r.checkOut) : 0; html += '<tr><td>'+r.date+'</td><td>'+getEmpName(r.employeeId)+'</td><td>'+(r.checkIn||'—')+'</td><td>'+(r.checkOut||'—')+'</td><td>'+h+' ч.</td></tr>'; });
     html += '</tbody></table>';
   }
- 
   preview.innerHTML = html;
   showToast('Документ сформирован', 'success');
 }
@@ -1900,10 +1672,7 @@ function showTyping() {
   container.scrollTop = container.scrollHeight;
 }
  
-function removeTyping() {
-  var el = document.getElementById('typingIndicator');
-  if (el) el.remove();
-}
+function removeTyping() { var el = document.getElementById('typingIndicator'); if (el) el.remove(); }
  
 function sendMessage() {
   var input = document.getElementById('chatInput');
@@ -1916,40 +1685,33 @@ function sendMessage() {
     removeTyping();
     var reply = getBotReply(msg);
     addChatMsg(reply, 'bot');
-    speak(reply.replace(/<[^>]*>?/gm, '')); // Очищаем HTML теги для речи
+    speak(reply.replace(/<[^>]*>?/gm, ''));
   }, 600 + Math.random() * 600);
 }
  
-function sendQuickMsg(msg) {
-  document.getElementById('chatInput').value = msg;
-  sendMessage();
-}
+function sendQuickMsg(msg) { document.getElementById('chatInput').value = msg; sendMessage(); }
  
 function getBotReply(msg) {
   var m = msg.toLowerCase();
  
-  // --- ЛОГИКА ПОИСКА ТОВАРА НА СКЛАДЕ ---
+  // --- ЛОГИКА ПОИСКА ТОВАРА НА СКЛАДЕ (LIVE) ---
   if (m.indexOf('где') !== -1 || m.indexOf('найди') !== -1 || m.indexOf('лежит') !== -1) {
-      // Извлекаем название товара (упрощенно: всё после слов "где" или "найди")
       let searchTerms = ['где', 'лежит', 'находится', 'найди', 'товар', 'который'];
       let cleanMsg = m;
       searchTerms.forEach(term => { cleanMsg = cleanMsg.replace(term, ''); });
       let query = cleanMsg.trim();
       
       if(query.length > 1) {
-          // Ищем в ячейках
           let foundCells = wmsCells.filter(c => c.content.toLowerCase().includes(query) && c.status === 'occupied');
-          
           if(foundCells.length > 0) {
               let locations = foundCells.map(c => `ячейке ${c.id}`).join(', ');
               let reply = `🔍 Товар "${query}" найден! Он находится в ${locations}.`;
               return reply;
           } else {
-              return `❌ Товар "${query}" не найден на складе. Возможно, он еще не размещен или называется иначе.`;
+              return `❌ Товар "${query}" не найден на складе. Возможно, он еще не размещен.`;
           }
       }
   }
-  // --------------------------------------
 
   if (m.indexOf('штраф') !== -1 && (m.indexOf('какие') !== -1 || m.indexOf('какой') !== -1 || m.indexOf('список') !== -1)) {
     return '📋 <strong>Штрафы:</strong><br>⏰ Опоздание — 500 ₽<br>🚬 Курение — 1 000 ₽<br>📱 Телефон — 500 ₽<br>🧹 Чистота — 700 ₽<br>📦 Порча товара — 2 000 ₽<br>🦺 Без спецодежды — 1 000 ₽<br>🏃 Самовольный уход — 1 500 ₽<br>🗣️ Конфликт — 2 000 ₽<br>📋 Ошибка в заказе — 1 000 ₽<br>🔒 Нарушение ТБ — 3 000 ₽<br>🍺 Алкоголь — 5 000 ₽<br>🚫 Хищение — 10 000 ₽ + увольнение';
@@ -1988,7 +1750,7 @@ function getBotReply(msg) {
   }
  
   if (m.indexOf('помощь') !== -1 || m.indexOf('помоги') !== -1 || m.indexOf('help') !== -1 || m.indexOf('умеешь') !== -1) {
-    return '🤖 <strong>Я могу:</strong><br>• Рассказать о штрафах 💰<br>• Подсказать как избежать штрафов ✅<br>• Показать кто на складе 👥<br>• Объяснить как сделать отчёт 📄<br>• Рассказать правила ТБ 🔒<br>• Показать ставки сотрудников 💵<br>• 🔍 <strong>Найти товар на складе!</strong> (Спросите "Где лежит [Название]?")';
+    return '🤖 <strong>Я могу:</strong><br>• Рассказать о штрафах 💰<br>• Подсказать как избежать штрафов ✅<br>• Показать кто на складе 👥<br>• Объяснить как сделать отчёт 📄<br>• Рассказать правила ТБ 🔒<br>• Показать ставки сотрудников 💵<br>• 🔍 <strong>Найти товар на карте!</strong> (Спросите "Где лежит [Название]?")';
   }
  
   if (m.indexOf('импорт') !== -1 || m.indexOf('экспорт') !== -1 || m.indexOf('бэкап') !== -1) {
@@ -2000,23 +1762,14 @@ function getBotReply(msg) {
   }
   
   if (m.indexOf('склад') !== -1 || m.indexOf('карта') !== -1 || m.indexOf('ячейк') !== -1) {
-    return '🗺️ Перейдите в раздел «Карта Склада» в боковом меню. Там можно видеть занятость ячеек и управлять размещением товаров.';
+    return '🗺️ Перейдите в раздел «Живая Карта» в боковом меню. Там можно видеть занятость ячеек и перемещать товары кликом мыши.';
   }
  
   return 'Не совсем понял вопрос 🤔. Спросите о: штрафах, ТБ, ставках, отчётах, кто на складе, или спросите "Где лежит [Товар]?".';
 }
  
 function exportJSON() {
-  var data = {
-    version: '1.0',
-    exportDate: new Date().toISOString(),
-    employees: employees,
-    timeRecords: timeRecords,
-    fines: fines,
-    nextEmpId: nextEmpId,
-    integrations: integrations,
-    wmsCells: wmsCells
-  };
+  var data = { version: '1.0', exportDate: new Date().toISOString(), employees: employees, timeRecords: timeRecords, fines: fines, nextEmpId: nextEmpId, integrations: integrations, wmsCells: wmsCells };
   var json = JSON.stringify(data, null, 2);
   downloadFile(json, 'warehouse_backup_' + getToday() + '.json', 'application/json');
   showToast('JSON экспорт сохранён', 'success');
@@ -2024,45 +1777,18 @@ function exportJSON() {
  
 function exportCSV() {
   var csv = '\uFEFF';
-  csv += '=== СОТРУДНИКИ ===\n';
-  csv += 'ID,Имя,Должность,Допуск,Ставка,Цвет\n';
-  employees.forEach(function(e) {
-    csv += e.id + ',"' + e.name + '","' + e.role + '","' + e.access + '",' + e.rate + ',' + e.color + '\n';
-  });
- 
-  csv += '\n=== УЧЁТ ВРЕМЕНИ ===\n';
-  csv += 'Дата,ID_Сотрудника,Сотрудник,Приход,Уход,Часы\n';
-  timeRecords.forEach(function(r) {
-    var h = r.checkIn ? calcHours(r.checkIn, r.checkOut) : '';
-    csv += r.date + ',' + r.employeeId + ',"' + getEmpName(r.employeeId) + '",' + (r.checkIn||'') + ',' + (r.checkOut||'') + ',' + h + '\n';
-  });
- 
-  csv += '\n=== ШТРАФЫ ===\n';
-  csv += 'Дата,ID_Сотрудника,Сотрудник,Причина,Сумма,Статус,Комментарий\n';
-  fines.forEach(function(f) {
-    csv += f.date + ',' + f.employeeId + ',"' + getEmpName(f.employeeId) + '","' + f.reason + '",' + f.amount + ',' + f.status + ',"' + (f.comment||'') + '"\n';
-  });
- 
+  csv += '=== СОТРУДНИКИ ===\nID,Имя,Должность,Допуск,Ставка,Цвет\n';
+  employees.forEach(function(e) { csv += e.id + ',"' + e.name + '","' + e.role + '","' + e.access + '",' + e.rate + ',' + e.color + '\n'; });
+  csv += '\n=== УЧЁТ ВРЕМЕНИ ===\nДата,ID_Сотрудника,Сотрудник,Приход,Уход,Часы\n';
+  timeRecords.forEach(function(r) { var h = r.checkIn ? calcHours(r.checkIn, r.checkOut) : ''; csv += r.date + ',' + r.employeeId + ',"' + getEmpName(r.employeeId) + '",' + (r.checkIn||'') + ',' + (r.checkOut||'') + ',' + h + '\n'; });
+  csv += '\n=== ШТРАФЫ ===\nДата,ID_Сотрудника,Сотрудник,Причина,Сумма,Статус,Комментарий\n';
+  fines.forEach(function(f) { csv += f.date + ',' + f.employeeId + ',"' + getEmpName(f.employeeId) + '","' + f.reason + '",' + f.amount + ',' + f.status + ',"' + (f.comment||'') + '"\n'; });
   downloadFile(csv, 'warehouse_report_' + getToday() + '.csv', 'text/csv;charset=utf-8');
   showToast('CSV экспорт сохранён', 'success');
 }
  
 function exportFullBackup() {
-  var data = {
-    version: '1.0',
-    exportDate: new Date().toISOString(),
-    employees: employees,
-    timeRecords: timeRecords,
-    fines: fines,
-    nextEmpId: nextEmpId,
-    integrations: integrations,
-    wmsCells: wmsCells,
-    settings: {
-      companyName: 'СкладКонтроль',
-      currency: 'RUB',
-      language: 'ru'
-    }
-  };
+  var data = { version: '1.0', exportDate: new Date().toISOString(), employees: employees, timeRecords: timeRecords, fines: fines, nextEmpId: nextEmpId, integrations: integrations, wmsCells: wmsCells, settings: { companyName: 'СкладКонтроль', currency: 'RUB', language: 'ru' } };
   var json = JSON.stringify(data, null, 2);
   downloadFile(json, 'warehouse_full_backup_' + getToday() + '.json', 'application/json');
   showToast('Полный бэкап сохранён', 'success');
@@ -2076,57 +1802,36 @@ function downloadFile(content, filename, mime) {
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  setTimeout(function() {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
  
 function importFile(event) {
   var file = event.target.files[0];
   if (!file) return;
- 
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
       var content = e.target.result;
- 
       if (file.name.endsWith('.json')) {
         var data = JSON.parse(content);
- 
-        if (!data.employees && !data.timeRecords && !data.fines) {
-          showToast('Неверный формат файла', 'error');
-          return;
-        }
- 
+        if (!data.employees && !data.timeRecords && !data.fines) { showToast('Неверный формат файла', 'error'); return; }
         if (!confirm('Это заменит все текущие данные. Продолжить?')) return;
- 
         if (data.employees) employees = data.employees;
         if (data.timeRecords) timeRecords = data.timeRecords;
         if (data.fines) fines = data.fines;
         if (data.nextEmpId) nextEmpId = data.nextEmpId;
         if (data.integrations) integrations = data.integrations;
         if (data.wmsCells) wmsCells = data.wmsCells;
- 
         saveToStorage();
         refreshAll();
-        showToast('Данные импортированы: ' + employees.length + ' сотрудников, ' + timeRecords.length + ' записей, ' + fines.length + ' штрафов', 'success');
- 
-        document.getElementById('importStatus').innerHTML =
-          '<div style="color:var(--success);font-weight:600;">✅ Импорт завершён!</div>' +
-          '<p>Сотрудников: ' + employees.length + '</p>' +
-          '<p>Записей времени: ' + timeRecords.length + '</p>' +
-          '<p>Штрафов: ' + fines.length + '</p>' +
-          '<p>Дата экспорта: ' + (data.exportDate || 'не указана') + '</p>';
- 
+        showToast('Данные импортированы', 'success');
+        document.getElementById('importStatus').innerHTML = '<div style="color:var(--success);font-weight:600;">✅ Импорт завершён!</div>';
       } else if (file.name.endsWith('.csv')) {
-        showToast('Импорт CSV не поддерживается. Используйте JSON для полного импорта. Для просмотра — откройте в Excel.', 'info');
+        showToast('Импорт CSV не поддерживается. Используйте JSON.', 'info');
       } else {
         showToast('Неподдерживаемый формат. Используйте .json', 'error');
       }
-    } catch(err) {
-      showToast('Ошибка импорта: ' + err.message, 'error');
-    }
+    } catch(err) { showToast('Ошибка импорта: ' + err.message, 'error'); }
   };
   reader.readAsText(file);
   event.target.value = '';
@@ -2135,19 +1840,11 @@ function importFile(event) {
 function clearAllData() {
   if (!confirm('⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ?\nЭто действие нельзя отменить.')) return;
   if (!confirm('Вы уверены? Все сотрудники, время и штрафы будут удалены.')) return;
- 
-  employees = [];
-  timeRecords = [];
-  fines = [];
-  nextEmpId = 1;
-  integrations = {};
-  wmsCells = [];
+  employees = []; timeRecords = []; fines = []; nextEmpId = 1; integrations = {}; wmsCells = [];
   saveToStorage();
   refreshAll();
   showToast('Все данные удалены', 'warning');
- 
-  document.getElementById('importStatus').innerHTML =
-    '<div style="color:var(--danger);font-weight:600;">🗑️ Все данные очищены</div>';
+  document.getElementById('importStatus').innerHTML = '<div style="color:var(--danger);font-weight:600;">🗑️ Все данные очищены</div>';
 }
  
 function refreshAll() {
@@ -2173,11 +1870,9 @@ function init() {
   renderFinesHistory();
   renderTimeHistory();
   renderTimesheet();
- 
-  addChatMsg('Здравствуйте! 👋 Я бот-помощник системы СкладКонтроль. Задайте вопрос о штрафах, правилах, отчётах, ставках или технике безопасности. Также я могу найти товар на складе!', 'bot');
+  addChatMsg('Здравствуйте! 👋 Я бот-помощник системы СкладКонтроль. Задайте вопрос о штрафах, правилах, отчётах, ставках или технике безопасности. Также я могу найти товар на живой карте!', 'bot');
 }
 
-// Запуск приложения
 initApp();
 </script>
 </body>
