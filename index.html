@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Система контроля склада + FBO</title>
-<!-- Подключаем библиотеку для генерации QR кодов -->
+<title>СкладКонтроль PRO + WMS + Voice</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
@@ -63,6 +62,7 @@ tbody tr:last-child td { border-bottom:none; }
 .badge-danger { background:var(--danger-light); color:#991b1b; }
 .badge-warning { background:var(--warning-light); color:#92400e; }
 .badge-info { background:var(--info-light); color:#1e40af; }
+.badge-admin { background:rgba(168, 85, 247, 0.2); color: #d8b4fe; }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
 .btn svg { width:15px; height:15px; }
 .btn-primary { background:var(--primary); color:#fff; }
@@ -129,7 +129,12 @@ textarea.form-control { resize:vertical; }
 .emp-card:hover { transform:translateY(-2px); }
 .emp-avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; }
 .emp-card .emp-name { font-size:15px; font-weight:700; margin-bottom:3px; }
-.emp-card .emp-role { font-size:11px; color:var(--text-muted); margin-bottom:12px; }
+.emp-card .emp-role { font-size:11px; color:var(--text-muted); margin-bottom:4px; }
+.emp-card .emp-access { font-size:10px; font-weight:600; margin-bottom:12px; padding: 2px 8px; border-radius: 10px; }
+.access-admin { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+.access-senior { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.access-user { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
 .emp-card .emp-rate { font-size:18px; font-weight:800; color:var(--success); }
 .emp-card .emp-rate-label { font-size:10px; color:var(--text-muted); margin-top:2px; }
 .emp-status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:18px; font-size:11px; font-weight:600; margin-top:10px; }
@@ -137,19 +142,21 @@ textarea.form-control { resize:vertical; }
 .emp-status.offline { background:var(--danger-light); color:#991b1b; }
 .emp-actions { display:flex; gap:6px; margin-top:12px; justify-content:center; }
 
-/* Контейнер для QR кода */
-.qr-wrapper {
-    margin-top: 12px;
-    padding: 4px;
-    background: #fff; /* Белый фон обязателен для считывания QR */
-    border-radius: 4px;
-    display: inline-block;
-}
-.qr-wrapper canvas, .qr-wrapper img {
-    display: block;
-    width: 60px !important;
-    height: 60px !important;
-}
+.qr-wrapper { margin-top: 12px; padding: 4px; background: #fff; border-radius: 4px; display: inline-block; }
+.qr-wrapper canvas, .qr-wrapper img { display: block; width: 60px !important; height: 60px !important; }
+
+/* Стили для карты склада (WMS) */
+.wms-map-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); }
+.wms-cell { aspect-ratio: 1; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.wms-cell:hover { transform: scale(1.05); border-color: var(--primary); }
+.wms-cell.free { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+.wms-cell.occupied { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+.wms-cell.reserved { border-color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+.cell-id { font-size: 10px; font-weight: 700; color: var(--text-muted); position: absolute; top: 4px; left: 6px; }
+.cell-content { font-size: 11px; text-align: center; padding: 0 4px; word-break: break-all; }
+.wms-legend { display: flex; gap: 15px; margin-bottom: 15px; font-size: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
 
 .rate-input { width:70px; padding:5px 8px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--success); font-family:inherit; font-size:13px; font-weight:700; text-align:center; }
 .rate-input:focus { outline:none; border-color:var(--primary); }
@@ -168,16 +175,7 @@ textarea.form-control { resize:vertical; }
 @keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-5px); opacity:1; } }
 
 /* Стили для раздела Интеграции */
-.integration-card {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    transition: all 0.2s;
-}
+.integration-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: all 0.2s; }
 .integration-card:hover { border-color: var(--primary); }
 .integration-header { display: flex; align-items: center; justify-content: space-between; }
 .integration-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
@@ -186,17 +184,33 @@ textarea.form-control { resize:vertical; }
 .status-connected { background: rgba(16, 185, 129, 0.2); color: var(--success); }
 .status-disconnected { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
 .status-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-
 .api-key-group { display: flex; gap: 8px; }
 .api-key-input { flex: 1; }
+
+/* Стили для печати бейджа */
+@media print {
+    body * { visibility: hidden; }
+    #badgePrintContainer, #badgePrintContainer * { visibility: visible; }
+    #badgePrintContainer { position: absolute; left: 0; top: 0; width: 100%; display: flex; justify-content: center; align-items: center; height: 100vh; background: white; }
+    .print-badge-card { width: 300px; height: 450px; border: 2px solid #000; border-radius: 15px; padding: 20px; text-align: center; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+    .print-badge-header { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+    .print-badge-photo { width: 100px; height: 100px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 10px 0; border: 2px solid #000;}
+    .print-badge-name { font-size: 28px; font-weight: bold; margin: 5px 0; }
+    .print-badge-role { font-size: 18px; color: #555; margin-bottom: 20px; }
+    .print-badge-access { font-size: 14px; font-weight: bold; color: #000; margin-bottom: 10px; border: 1px solid #000; padding: 5px 10px; border-radius: 20px;}
+    .print-badge-qr { margin-top: 10px; }
+    .print-badge-footer { font-size: 12px; color: #777; margin-top: 10px; }
+    .sidebar,.topbar,.menu-toggle,.btn,.nav-menu,.chat-container,.import-export-bar,.toast-container, .panel, .stats-grid { display:none!important; } 
+    .main { margin-left:0!important; } 
+    .content { padding:0!important; } 
+}
 
 @media (max-width:768px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .main { margin-left:0; } .menu-toggle { display:flex; } .content { padding:14px; } .topbar { padding:10px 14px; } .stats-grid { grid-template-columns:repeat(2,1fr); gap:10px; } .form-row { grid-template-columns:1fr; } .rules-grid { grid-template-columns:1fr; } .modal { max-width:100%; margin:10px; } .live-time { display:none; } }
 @media (max-width:480px) { .stats-grid { grid-template-columns:1fr; } .topbar h1 { font-size:15px; } }
 .sidebar-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; display:none; }
 .sidebar-overlay.active { display:block; }
 .fine-row { background:rgba(239,68,68,0.04) !important; }
-.import-export-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:var(--bg-input); border-bottom:1px solid var(--border); }
-.import-export-bar .btn { font-size:12px; padding:6px 12px; }
+#importexport .btn { font-size:12px; padding:6px 12px; }
 #fileInput { display:none; }
 .toast-container { position:fixed; top:20px; right:20px; z-index:300; display:flex; flex-direction:column; gap:8px; }
 .toast { padding:12px 20px; border-radius:10px; color:#fff; font-size:13px; font-weight:500; box-shadow:var(--shadow); animation:slideIn 0.3s ease; max-width:320px; }
@@ -204,7 +218,6 @@ textarea.form-control { resize:vertical; }
 .toast-error { background:var(--danger); }
 .toast-info { background:var(--info); }
 @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
-@media print { .sidebar,.topbar,.menu-toggle,.btn,.nav-menu,.chat-container,.import-export-bar,.toast-container { display:none!important; } .main { margin-left:0!important; } .content { padding:0!important; } .panel { border:none!important; box-shadow:none!important; } .doc-preview { background:#fff; color:#000; } }
 </style>
 </head>
 <body>
@@ -214,7 +227,7 @@ textarea.form-control { resize:vertical; }
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <h2>📦 СкладКонтроль</h2>
-    <p>Система управления персоналом</p>
+    <p>PRO версия + WMS + Voice</p>
   </div>
   <nav class="nav-menu">
     <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard',this)">
@@ -224,6 +237,10 @@ textarea.form-control { resize:vertical; }
     <div class="nav-item" data-section="employees" onclick="showSection('employees',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Сотрудники
+    </div>
+    <div class="nav-item" data-section="wms" onclick="showSection('wms',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18V3H3zm9 16H5v-6h7v6zm7 0h-5v-6h5v6zm-7-8H5V5h7v6zm7 0h-5V5h5v6z"/></svg>
+      🗺️ Карта Склада
     </div>
     <div class="nav-item" data-section="timetracking" onclick="showSection('timetracking',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -264,7 +281,7 @@ textarea.form-control { resize:vertical; }
     <div class="nav-divider"></div>
     <div class="nav-item" data-section="chatbot" onclick="showSection('chatbot',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Бот-помощник
+      🎙️ Голосовой Бот
     </div>
     <div class="nav-divider"></div>
     <div class="nav-item" data-section="importexport" onclick="showSection('importexport',this)">
@@ -318,19 +335,8 @@ textarea.form-control { resize:vertical; }
         <div class="panel-body">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Сотрудник</th><th>Должность</th><th>Статус</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead>
+              <thead><tr><th>Сотрудник</th><th>Должность</th><th>Допуск</th><th>Статус</th><th>Приход</th><th>Уход</th><th>Часы</th></tr></thead>
               <tbody id="dashEmpTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><h3>🔔 Последние штрафы</h3></div>
-        <div class="panel-body">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th></tr></thead>
-              <tbody id="dashFineTable"></tbody>
             </table>
           </div>
         </div>
@@ -349,6 +355,28 @@ textarea.form-control { resize:vertical; }
         </div>
         <div class="panel-body">
           <div class="stats-grid" id="empCardsGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WMS MAP SECTION -->
+    <div class="section" id="sec-wms">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🗺️ Интерактивная карта склада</h3>
+          <div class="btn-group">
+             <button class="btn btn-sm btn-ghost" onclick="initWMSMap()">🔄 Обновить</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="wms-legend">
+            <div class="legend-item"><div class="dot" style="background:var(--success)"></div> Свободно</div>
+            <div class="legend-item"><div class="dot" style="background:var(--danger)"></div> Занято</div>
+            <div class="legend-item"><div class="dot" style="background:var(--warning)"></div> Резерв</div>
+          </div>
+          <div class="wms-map-container" id="wmsMap">
+            <!-- Ячейки генерируются JS -->
+          </div>
         </div>
       </div>
     </div>
@@ -413,7 +441,7 @@ textarea.form-control { resize:vertical; }
       </div>
     </div>
  
-    <!-- INTEGRATIONS (NEW SECTION) -->
+    <!-- INTEGRATIONS -->
     <div class="section" id="sec-integrations">
       <div class="panel">
         <div class="panel-header">
@@ -697,19 +725,25 @@ textarea.form-control { resize:vertical; }
     <!-- CHATBOT -->
     <div class="section" id="sec-chatbot">
       <div class="panel">
-        <div class="panel-header"><h3>🤖 Бот-помощник</h3></div>
+        <div class="panel-header"><h3>🎙️ Голосовой Бот-помощник</h3></div>
         <div class="chat-container">
           <div class="chat-messages" id="chatMessages"></div>
           <div class="quick-actions">
             <button class="quick-btn" onclick="sendQuickMsg('Какие штрафы есть?')">Штрафы</button>
             <button class="quick-btn" onclick="sendQuickMsg('Как избежать штрафов?')">Избежать штрафов</button>
             <button class="quick-btn" onclick="sendQuickMsg('Кто сейчас на складе?')">Кто на складе?</button>
-            <button class="quick-btn" onclick="sendQuickMsg('Как сформировать отчёт?')">Отчёты</button>
+            <button class="quick-btn" onclick="sendQuickMsg('Где лежит Айфон?')">🔍 Где товар?</button>
             <button class="quick-btn" onclick="sendQuickMsg('Правила техники безопасности')">ТБ</button>
           </div>
           <div class="chat-input-wrap">
-            <input type="text" id="chatInput" placeholder="Ваш вопрос..." onkeypress="if(event.key==='Enter')sendMessage()">
-            <button onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+            <input type="text" id="chatInput" placeholder="Ваш вопрос или название товара..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <!-- Кнопка микрофона -->
+            <button onclick="startVoiceRecognition()" style="background:var(--warning);" title="Голосовой ввод">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            <button onclick="sendMessage()">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -718,11 +752,10 @@ textarea.form-control { resize:vertical; }
     <!-- IMPORT/EXPORT -->
     <div class="section" id="sec-importexport">
       <div class="panel">
-        <div class="panel-header"><h3>📥📤 Импорт и Экспорт системы</h3></div>
+        <div class="panel-header"><h3>📥 Импорт и Экспорт системы</h3></div>
         <div class="panel-body">
           <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
-            Вы можете выгрузить все данные системы (сотрудники, время, штрафы) в файл и загрузить обратно.
-            Это удобно для резервных копий и переноса на другое устройство.
+            Вы можете выгрузить все данные системы (сотрудники, время, штрафы, настройки склада) в файл и загрузить обратно.
           </p>
  
           <h4 style="font-size:14px;margin-bottom:12px;">📤 Экспорт</h4>
@@ -757,6 +790,13 @@ textarea.form-control { resize:vertical; }
     <div class="modal-body">
       <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="newEmpName" placeholder="Имя сотрудника"></div>
       <div class="form-group"><label>Должность</label><select class="form-control" id="newEmpRole"><option>Сборщик</option><option>Администратор</option><option>Кладовщик</option><option>Водитель погрузчика</option><option>Грузчик</option></select></div>
+      <div class="form-group"><label>Уровень допуска</label>
+        <select class="form-control" id="newEmpAccess">
+            <option value="Сотрудник">Сотрудник (Базовый)</option>
+            <option value="Старший смены">Старший смены (Расширенный)</option>
+            <option value="Администратор">Администратор (Полный)</option>
+        </select>
+      </div>
       <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="newEmpRate" value="500"></div>
     </div>
     <div class="modal-footer">
@@ -776,6 +816,13 @@ textarea.form-control { resize:vertical; }
       <input type="hidden" id="editEmpId">
       <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="editEmpName"></div>
       <div class="form-group"><label>Должность</label><select class="form-control" id="editEmpRole"><option>Сборщик</option><option>Администратор</option><option>Кладовщик</option><option>Водитель погрузчика</option><option>Грузчик</option></select></div>
+      <div class="form-group"><label>Уровень допуска</label>
+        <select class="form-control" id="editEmpAccess">
+            <option value="Сотрудник">Сотрудник (Базовый)</option>
+            <option value="Старший смены">Старший смены (Расширенный)</option>
+            <option value="Администратор">Администратор (Полный)</option>
+        </select>
+      </div>
       <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="editEmpRate"></div>
     </div>
     <div class="modal-footer">
@@ -827,6 +874,33 @@ textarea.form-control { resize:vertical; }
     </div>
   </div>
 </div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПЕЧАТИ БЕЙДЖА -->
+<div class="modal-overlay" id="modalBadgePrint">
+  <div class="modal" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3>🖨️ Печать бейджа</h3>
+      <button class="modal-close" onclick="closeModal('modalBadgePrint')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="display:flex; justify-content:center; background:#f0f0f0;">
+       <div id="badgePrintContainer">
+          <div class="print-badge-card">
+             <div class="print-badge-header">СКЛАД КОНТРОЛЬ</div>
+             <div class="print-badge-photo" id="printBadgePhoto">👤</div>
+             <div class="print-badge-name" id="printBadgeName">Имя Фамилия</div>
+             <div class="print-badge-role" id="printBadgeRole">Должность</div>
+             <div class="print-badge-access" id="printBadgeAccess">Допуск</div>
+             <div class="print-badge-qr" id="printBadgeQR"></div>
+             <div class="print-badge-footer">Действителен до: 31.12.2026</div>
+          </div>
+       </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalBadgePrint')">Закрыть</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Распечатать</button>
+    </div>
+  </div>
+</div>
  
 <div class="toast-container" id="toastContainer"></div>
  
@@ -837,6 +911,7 @@ let timeRecords = [];
 let fines = [];
 let nextEmpId = 1;
 let integrations = {}; // Объект для хранения ключей интеграций
+let wmsCells = []; // Данные ячеек склада
 
 // Инициализация загрузки данных
 function initApp() {
@@ -851,7 +926,8 @@ function saveToStorage() {
     localStorage.setItem('wh_timeRecords', JSON.stringify(timeRecords));
     localStorage.setItem('wh_fines', JSON.stringify(fines));
     localStorage.setItem('wh_nextEmpId', nextEmpId);
-    localStorage.setItem('wh_integrations', JSON.stringify(integrations)); // Сохраняем интеграции
+    localStorage.setItem('wh_integrations', JSON.stringify(integrations));
+    localStorage.setItem('wh_wmsCells', JSON.stringify(wmsCells)); // Сохраняем карту склада
   } catch(e) { console.error('Storage save error:', e); }
 }
  
@@ -862,23 +938,115 @@ function loadFromLocalStorage() {
     var f = localStorage.getItem('wh_fines');
     var n = localStorage.getItem('wh_nextEmpId');
     var i = localStorage.getItem('wh_integrations');
+    var w = localStorage.getItem('wh_wmsCells');
     
     if (e) employees = JSON.parse(e);
     if (t) timeRecords = JSON.parse(t);
     if (f) fines = JSON.parse(f);
     if (n) nextEmpId = parseInt(n);
     if (i) integrations = JSON.parse(i);
+    if (w) wmsCells = JSON.parse(w);
     
     // Если база пустая, добавляем демо данные
     if(!e || employees.length === 0) {
-        employees = [
-          {id:1,name:'Инна',role:'Администратор',rate:600,color:'#6366f1'},
-          {id:2,name:'Наташа',role:'Сборщик',rate:450,color:'#10b981'}
+        // Создаем запрошенных сотрудников с уровнями доступа
+        const defaultEmps = [
+            {name:'Алексей', role:'Кладовщик', access:'Старший смены', rate:550, color:'#6366f1'},
+            {name:'Наза', role:'Сборщик', access:'Сотрудник', rate:450, color:'#10b981'},
+            {name:'Лариса', role:'Администратор', access:'Администратор', rate:700, color:'#ec4899'},
+            {name:'Инна', role:'Администратор', access:'Администратор', rate:600, color:'#8b5cf6'},
+            {name:'Наташа', role:'Сборщик', access:'Сотрудник', rate:450, color:'#f59e0b'},
+            {name:'Маша', role:'Сборщик', access:'Сотрудник', rate:450, color:'#06b6d4'},
+            {name:'Гульсара', role:'Кладовщик', access:'Старший смены', rate:550, color:'#14b8a6'},
+            {name:'Рома', role:'Грузчик', access:'Сотрудник', rate:400, color:'#ef4444'}
         ];
-        nextEmpId = 3;
+
+        defaultEmps.forEach(emp => {
+            employees.push({
+                id: nextEmpId++,
+                name: emp.name,
+                role: emp.role,
+                access: emp.access,
+                rate: emp.rate,
+                color: emp.color
+            });
+        });
+        
+        // Генерируем демо карту склада если пусто
+        if(!w || wmsCells.length === 0) {
+            for(let r=1; r<=4; r++) {
+                for(let c=1; c<=6; c++) {
+                    let status = Math.random() > 0.7 ? 'occupied' : (Math.random() > 0.9 ? 'reserved' : 'free');
+                    let content = status === 'occupied' ? `Товар-${Math.floor(Math.random()*1000)}` : '';
+                    wmsCells.push({
+                        id: `R${r}-C${c}`,
+                        row: r, col: c,
+                        status: status,
+                        content: content
+                    });
+                }
+            }
+        }
         saveToStorage();
     }
   } catch(ex) { console.error('Storage load error:', ex); }
+}
+
+// ===== WMS MAP LOGIC =====
+function initWMSMap() {
+    const container = document.getElementById('wmsMap');
+    container.innerHTML = '';
+    
+    // Если массив пуст, создаем структуру 4x6
+    if(wmsCells.length === 0) {
+         for(let r=1; r<=4; r++) {
+            for(let c=1; c<=6; c++) {
+                wmsCells.push({
+                    id: `R${r}-C${c}`,
+                    row: r, col: c,
+                    status: 'free',
+                    content: ''
+                });
+            }
+        }
+    }
+
+    wmsCells.forEach(cell => {
+        const div = document.createElement('div');
+        div.className = `wms-cell ${cell.status}`;
+        div.onclick = () => openCellEditor(cell.id);
+        
+        div.innerHTML = `
+            <span class="cell-id">${cell.id}</span>
+            <span class="cell-content">${cell.content || (cell.status === 'free' ? 'Свободно' : 'Занято')}</span>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function openCellEditor(cellId) {
+    const cell = wmsCells.find(c => c.id === cellId);
+    if(!cell) return;
+    
+    // Простая логика переключения для демонстрации
+    if(cell.status === 'free') {
+        const item = prompt(`Что положить в ячейку ${cellId}?`, "Товар А");
+        if(item) {
+            cell.status = 'occupied';
+            cell.content = item;
+        }
+    } else if (cell.status === 'occupied') {
+        if(confirm(`Убрать "${cell.content}" из ячейки ${cellId}?`)) {
+            cell.status = 'free';
+            cell.content = '';
+        }
+    } else if (cell.status === 'reserved') {
+        cell.status = 'free';
+        cell.content = '';
+    }
+    
+    saveToStorage();
+    initWMSMap();
 }
 
 // ===== INTEGRATION LOGIC =====
@@ -907,8 +1075,6 @@ function saveIntegrationKey(service) {
     integrations[service] = keyData;
     saveToStorage();
     showToast(`Ключи для ${service.toUpperCase()} сохранены`, 'success');
-    
-    // Имитируем успешное подключение при сохранении
     updateStatus(service, 'connected');
 }
 
@@ -918,7 +1084,6 @@ function testConnection(service) {
     statusEl.textContent = 'Проверка...';
     
     setTimeout(() => {
-        // Имитация проверки (в реальности здесь был бы fetch запрос)
         if(integrations[service] && (integrations[service].key || integrations[service].url)) {
             updateStatus(service, 'connected');
             showToast(`Связь с ${service.toUpperCase()} установлена успешно`, 'success');
@@ -943,11 +1108,9 @@ function updateStatus(service, state) {
     }
 }
 
-// Восстановление статуса при загрузке
 function restoreIntegrationStatus() {
     ['wb', 'ozon', 'ya', 'diadoc', '1c', 'wms'].forEach(svc => {
         if(integrations[svc] && (integrations[svc].key || integrations[svc].url)) {
-            // Заполняем поля
             if(svc === 'wb' && integrations[svc].key) document.getElementById('key-wb').value = integrations[svc].key;
             if(svc === 'ozon') {
                 if(integrations[svc].id) document.getElementById('id-ozon').value = integrations[svc].id;
@@ -970,6 +1133,41 @@ function restoreIntegrationStatus() {
             updateStatus(svc, 'connected');
         }
     });
+}
+
+// ===== VOICE ASSISTANT LOGIC =====
+function startVoiceRecognition() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Ваш браузер не поддерживает голосовой ввод. Используйте Chrome.");
+        return;
+    }
+    
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.start();
+    
+    showToast("🎤 Слушаю...", "info");
+    
+    recognition.onresult = function(event) {
+        const text = event.results[0][0].transcript;
+        document.getElementById('chatInput').value = text;
+        sendMessage();
+    };
+    
+    recognition.onerror = function(event) {
+        showToast("Ошибка распознавания голоса", "error");
+    };
+}
+
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        // Отменяем предыдущую речь, если есть
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
 }
 
 // ===== AUTO GENERATE FINE LOGIC =====
@@ -1009,7 +1207,7 @@ function showSection(id, navEl) {
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
   if (navEl) navEl.classList.add('active');
  
-  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Бот-помощник',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы', integrations:'Интеграции'};
+  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени',rates:'Часовые ставки',fines:'Штрафы',avoidfines:'Как не получить штраф',timesheet:'Табель',documents:'Документы',chatbot:'Голосовой Бот',importexport:'Импорт / Экспорт', marketplace:'ТЗ Маркетплейсы', integrations:'Интеграции', wms:'Карта Склада'};
   document.getElementById('pageTitle').textContent = titles[id] || '';
  
   if (id === 'dashboard') renderDashboard();
@@ -1019,7 +1217,8 @@ function showSection(id, navEl) {
   if (id === 'timetracking') { renderTimeHistory(); populateSelects(); }
   if (id === 'timesheet') renderTimesheet();
   if (id === 'documents') { populateDocEmployeeSelect(); }
-  if (id === 'integrations') { restoreIntegrationStatus(); } // Восстанавливаем статусы при открытии
+  if (id === 'integrations') { restoreIntegrationStatus(); }
+  if (id === 'wms') { initWMSMap(); }
  
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
@@ -1107,7 +1306,7 @@ function getTodayRecord(empId) {
   return rec;
 }
  
-// Обновленная функция рендеринга сотрудников с QR кодом
+// Обновленная функция рендеринга сотрудников с QR кодом, кнопкой печати и уровнем доступа
 function renderEmployees() {
   var grid = document.getElementById('empCardsGrid');
   grid.innerHTML = '';
@@ -1115,31 +1314,33 @@ function renderEmployees() {
   employees.forEach(function(emp) {
     var online = isEmployeeOnline(emp.id);
     var initials = emp.name.charAt(0);
-    
-    // Создаем уникальный ID для контейнера QR кода
     var qrId = 'qr-code-' + emp.id;
     
-    // HTML карточки
+    // Определение класса для бейджа доступа
+    let accessClass = 'access-user';
+    if(emp.access === 'Администратор') accessClass = 'access-admin';
+    if(emp.access === 'Старший смены') accessClass = 'access-senior';
+    
     var cardHtml = '<div class="emp-card" id="card-'+emp.id+'">'+
       '<div class="emp-avatar" style="background:'+emp.color+'">'+initials+'</div>'+
       '<div class="emp-name">'+emp.name+'</div>'+
       '<div class="emp-role">'+emp.role+'</div>'+
+      '<div class="emp-access '+accessClass+'">'+emp.access+'</div>'+
       '<div class="emp-rate">'+emp.rate+' ₽</div>'+
       '<div class="emp-rate-label">в час</div>'+
       '<div class="emp-status '+(online?'online':'offline')+'">'+(online?'🟢 На складе':'⚫ Не на складе')+'</div>'+
       
-      // Контейнер для QR кода
       '<div class="qr-wrapper" id="'+qrId+'"></div>'+
       
       '<div class="emp-actions">'+
         '<button class="btn btn-ghost btn-sm" onclick="editEmployee('+emp.id+')">✏️</button>'+
+        '<button class="btn btn-primary btn-sm" onclick="openBadgePrint('+emp.id+')">🖨️ Бейдж</button>'+
         '<button class="btn btn-ghost btn-sm" onclick="removeEmployee('+emp.id+')">🗑️</button>'+
       '</div>'+
     '</div>';
     
     grid.innerHTML += cardHtml;
     
-    // Генерируем QR код после добавления элемента в DOM
     setTimeout(function() {
         var qrContainer = document.getElementById(qrId);
         if (qrContainer) {
@@ -1157,20 +1358,47 @@ function renderEmployees() {
     }, 10);
   });
 }
+
+// Функция открытия окна печати бейджа
+function openBadgePrint(empId) {
+    const emp = getEmpById(empId);
+    if(!emp) return;
+    
+    document.getElementById('printBadgeName').textContent = emp.name;
+    document.getElementById('printBadgeRole').textContent = emp.role;
+    document.getElementById('printBadgeAccess').textContent = emp.access;
+    document.getElementById('printBadgePhoto').textContent = emp.name.charAt(0);
+    document.getElementById('printBadgePhoto').style.background = emp.color;
+    
+    const qrContainer = document.getElementById('printBadgeQR');
+    qrContainer.innerHTML = "";
+    new QRCode(qrContainer, {
+        text: "EMP:" + emp.id + "|" + emp.name,
+        width: 100,
+        height: 100,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+    
+    openModal('modalBadgePrint');
+}
  
 function openAddEmployeeModal() {
   document.getElementById('newEmpName').value = '';
   document.getElementById('newEmpRate').value = '500';
+  document.getElementById('newEmpAccess').value = 'Сотрудник';
   openModal('modalAddEmployee');
 }
  
 function addEmployee() {
   var name = document.getElementById('newEmpName').value.trim();
   var role = document.getElementById('newEmpRole').value;
+  var access = document.getElementById('newEmpAccess').value;
   var rate = parseInt(document.getElementById('newEmpRate').value) || 500;
   if (!name) { showToast('Введите имя сотрудника', 'error'); return; }
  
-  employees.push({id: nextEmpId++, name: name, role: role, rate: rate, color: COLORS[(nextEmpId-1) % COLORS.length]});
+  employees.push({id: nextEmpId++, name: name, role: role, access: access, rate: rate, color: COLORS[(nextEmpId-1) % COLORS.length]});
   closeModal('modalAddEmployee');
   populateSelects();
   renderEmployees();
@@ -1185,6 +1413,7 @@ function editEmployee(id) {
   document.getElementById('editEmpId').value = id;
   document.getElementById('editEmpName').value = emp.name;
   document.getElementById('editEmpRole').value = emp.role;
+  document.getElementById('editEmpAccess').value = emp.access;
   document.getElementById('editEmpRate').value = emp.rate;
   openModal('modalEditEmployee');
 }
@@ -1195,6 +1424,7 @@ function saveEmployeeEdit() {
   if (!emp) return;
   emp.name = document.getElementById('editEmpName').value.trim();
   emp.role = document.getElementById('editEmpRole').value;
+  emp.access = document.getElementById('editEmpAccess').value;
   emp.rate = parseInt(document.getElementById('editEmpRate').value) || 500;
   closeModal('modalEditEmployee');
   populateSelects();
@@ -1442,9 +1672,14 @@ function renderDashboard() {
   employees.forEach(function(emp) {
     var rec = getTodayRecord(emp.id);
     var h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '0';
+    
+    let accessBadge = '<span class="badge badge-info">'+emp.access+'</span>';
+    if(emp.access === 'Администратор') accessBadge = '<span class="badge badge-admin">Админ</span>';
+    
     tbody.innerHTML += '<tr>'+
       '<td><strong>'+emp.name+'</strong></td>'+
       '<td>'+emp.role+'</td>'+
+      '<td>'+accessBadge+'</td>'+
       '<td>'+ (isEmployeeOnline(emp.id) ? '<span class="badge badge-success">🟢 На складе</span>' : '<span class="badge badge-danger">⚫ Не на складе</span>') +'</td>'+
       '<td>'+(rec.checkIn||'—')+'</td>'+
       '<td>'+(rec.checkOut||'—')+'</td>'+
@@ -1681,6 +1916,7 @@ function sendMessage() {
     removeTyping();
     var reply = getBotReply(msg);
     addChatMsg(reply, 'bot');
+    speak(reply.replace(/<[^>]*>?/gm, '')); // Очищаем HTML теги для речи
   }, 600 + Math.random() * 600);
 }
  
@@ -1692,6 +1928,29 @@ function sendQuickMsg(msg) {
 function getBotReply(msg) {
   var m = msg.toLowerCase();
  
+  // --- ЛОГИКА ПОИСКА ТОВАРА НА СКЛАДЕ ---
+  if (m.indexOf('где') !== -1 || m.indexOf('найди') !== -1 || m.indexOf('лежит') !== -1) {
+      // Извлекаем название товара (упрощенно: всё после слов "где" или "найди")
+      let searchTerms = ['где', 'лежит', 'находится', 'найди', 'товар', 'который'];
+      let cleanMsg = m;
+      searchTerms.forEach(term => { cleanMsg = cleanMsg.replace(term, ''); });
+      let query = cleanMsg.trim();
+      
+      if(query.length > 1) {
+          // Ищем в ячейках
+          let foundCells = wmsCells.filter(c => c.content.toLowerCase().includes(query) && c.status === 'occupied');
+          
+          if(foundCells.length > 0) {
+              let locations = foundCells.map(c => `ячейке ${c.id}`).join(', ');
+              let reply = `🔍 Товар "${query}" найден! Он находится в ${locations}.`;
+              return reply;
+          } else {
+              return `❌ Товар "${query}" не найден на складе. Возможно, он еще не размещен или называется иначе.`;
+          }
+      }
+  }
+  // --------------------------------------
+
   if (m.indexOf('штраф') !== -1 && (m.indexOf('какие') !== -1 || m.indexOf('какой') !== -1 || m.indexOf('список') !== -1)) {
     return '📋 <strong>Штрафы:</strong><br>⏰ Опоздание — 500 ₽<br>🚬 Курение — 1 000 ₽<br>📱 Телефон — 500 ₽<br>🧹 Чистота — 700 ₽<br>📦 Порча товара — 2 000 ₽<br>🦺 Без спецодежды — 1 000 ₽<br>🏃 Самовольный уход — 1 500 ₽<br>🗣️ Конфликт — 2 000 ₽<br>📋 Ошибка в заказе — 1 000 ₽<br>🔒 Нарушение ТБ — 3 000 ₽<br>🍺 Алкоголь — 5 000 ₽<br>🚫 Хищение — 10 000 ₽ + увольнение';
   }
@@ -1729,18 +1988,22 @@ function getBotReply(msg) {
   }
  
   if (m.indexOf('помощь') !== -1 || m.indexOf('помоги') !== -1 || m.indexOf('help') !== -1 || m.indexOf('умеешь') !== -1) {
-    return '🤖 <strong>Я могу:</strong><br>• Рассказать о штрафах 💰<br>• Подсказать как избежать штрафов ✅<br>• Показать кто на складе 👥<br>• Объяснить как сделать отчёт 📄<br>• Рассказать правила ТБ 🔒<br>• Показать ставки сотрудников 💵';
+    return '🤖 <strong>Я могу:</strong><br>• Рассказать о штрафах 💰<br>• Подсказать как избежать штрафов ✅<br>• Показать кто на складе 👥<br>• Объяснить как сделать отчёт 📄<br>• Рассказать правила ТБ 🔒<br>• Показать ставки сотрудников 💵<br>• 🔍 <strong>Найти товар на складе!</strong> (Спросите "Где лежит [Название]?")';
   }
  
   if (m.indexOf('импорт') !== -1 || m.indexOf('экспорт') !== -1 || m.indexOf('бэкап') !== -1) {
-    return '📥📤 Перейдите в раздел «Импорт / Экспорт» в боковом меню. Там можно выгрузить данные в JSON/CSV и загрузить обратно.';
+    return '📥 Перейдите в раздел «Импорт / Экспорт» в боковом меню. Там можно выгрузить данные в JSON/CSV и загрузить обратно.';
   }
   
   if (m.indexOf('интеграц') !== -1 || m.indexOf('1с') !== -1 || m.indexOf('диадо') !== -1) {
     return '🔌 Перейдите в раздел «Интеграции» в боковом меню. Там можно настроить API ключи для WB, Ozon, 1С, Диадока и WMS.';
   }
+  
+  if (m.indexOf('склад') !== -1 || m.indexOf('карта') !== -1 || m.indexOf('ячейк') !== -1) {
+    return '🗺️ Перейдите в раздел «Карта Склада» в боковом меню. Там можно видеть занятость ячеек и управлять размещением товаров.';
+  }
  
-  return 'Не совсем понял вопрос 🤔. Спросите о: штрафах, ТБ, ставках, отчётах, кто на складе, или нажмите «Помощь».';
+  return 'Не совсем понял вопрос 🤔. Спросите о: штрафах, ТБ, ставках, отчётах, кто на складе, или спросите "Где лежит [Товар]?".';
 }
  
 function exportJSON() {
@@ -1751,7 +2014,8 @@ function exportJSON() {
     timeRecords: timeRecords,
     fines: fines,
     nextEmpId: nextEmpId,
-    integrations: integrations
+    integrations: integrations,
+    wmsCells: wmsCells
   };
   var json = JSON.stringify(data, null, 2);
   downloadFile(json, 'warehouse_backup_' + getToday() + '.json', 'application/json');
@@ -1761,9 +2025,9 @@ function exportJSON() {
 function exportCSV() {
   var csv = '\uFEFF';
   csv += '=== СОТРУДНИКИ ===\n';
-  csv += 'ID,Имя,Должность,Ставка,Цвет\n';
+  csv += 'ID,Имя,Должность,Допуск,Ставка,Цвет\n';
   employees.forEach(function(e) {
-    csv += e.id + ',"' + e.name + '","' + e.role + '",' + e.rate + ',' + e.color + '\n';
+    csv += e.id + ',"' + e.name + '","' + e.role + '","' + e.access + '",' + e.rate + ',' + e.color + '\n';
   });
  
   csv += '\n=== УЧЁТ ВРЕМЕНИ ===\n';
@@ -1792,6 +2056,7 @@ function exportFullBackup() {
     fines: fines,
     nextEmpId: nextEmpId,
     integrations: integrations,
+    wmsCells: wmsCells,
     settings: {
       companyName: 'СкладКонтроль',
       currency: 'RUB',
@@ -1841,6 +2106,7 @@ function importFile(event) {
         if (data.fines) fines = data.fines;
         if (data.nextEmpId) nextEmpId = data.nextEmpId;
         if (data.integrations) integrations = data.integrations;
+        if (data.wmsCells) wmsCells = data.wmsCells;
  
         saveToStorage();
         refreshAll();
@@ -1875,6 +2141,7 @@ function clearAllData() {
   fines = [];
   nextEmpId = 1;
   integrations = {};
+  wmsCells = [];
   saveToStorage();
   refreshAll();
   showToast('Все данные удалены', 'warning');
@@ -1907,7 +2174,7 @@ function init() {
   renderTimeHistory();
   renderTimesheet();
  
-  addChatMsg('Здравствуйте! 👋 Я бот-помощник системы СкладКонтроль. Задайте вопрос о штрафах, правилах, отчётах, ставках или технике безопасности.', 'bot');
+  addChatMsg('Здравствуйте! 👋 Я бот-помощник системы СкладКонтроль. Задайте вопрос о штрафах, правилах, отчётах, ставках или технике безопасности. Также я могу найти товар на складе!', 'bot');
 }
 
 // Запуск приложения
