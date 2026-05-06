@@ -3,11 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>СкладКонтроль PRO + QR Scan</title>
-<!-- Библиотека для генерации QR -->
+<title>СкладКонтроль PRO + Auth + Integrations</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- Библиотека для сканирования QR -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -25,9 +22,16 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--primary); border-radius:3px; }
 
-/* LOGIN SCREEN */
-#loginScreen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-.login-box { background: var(--bg-card); padding: 40px; border-radius: var(--radius); width: 100%; max-width: 400px; border: 1px solid var(--border); box-shadow: var(--shadow); text-align: center; }
+/* LOGIN SCREEN STYLES */
+#loginScreen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+    background: var(--bg-card); padding: 40px; border-radius: var(--radius);
+    width: 100%; max-width: 400px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); text-align: center;
+}
 .login-box h2 { margin-bottom: 20px; color: var(--primary-light); }
 .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
 
@@ -136,7 +140,7 @@ textarea.form-control { resize:vertical; }
 .avoid-card h4 { color:var(--success); font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
 .avoid-card p { font-size:12px; color:var(--text-muted); line-height:1.5; }
 
-/* Employee Card */
+/* Стили для карточки сотрудника */
 .emp-card { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; text-align:center; transition:transform 0.2s; display: flex; flex-direction: column; align-items: center; }
 .emp-card:hover { transform:translateY(-2px); }
 .emp-avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; }
@@ -155,19 +159,56 @@ textarea.form-control { resize:vertical; }
 .qr-wrapper { margin-top: 12px; padding: 4px; background: #fff; border-radius: 4px; display: inline-block; }
 .qr-wrapper canvas, .qr-wrapper img { display: block; width: 60px !important; height: 60px !important; }
 
-/* WMS & Scanner Styles */
-.wms-editor-panel { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+/* LIVE WMS MAP STYLES & EDITOR */
+.wms-editor-panel {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
 .editor-group { display: flex; flex-direction: column; gap: 5px; }
 .editor-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 .editor-inputs { display: flex; gap: 8px; }
 .editor-inputs input { width: 80px; }
+
 .wms-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .wms-stats { display: flex; gap: 15px; font-size: 12px; }
 .wms-stat-item { display: flex; align-items: center; gap: 5px; }
+
 .wms-zone-container { margin-bottom: 30px; }
-.wms-zone-title { font-size: 14px; font-weight: 700; color: var(--primary-light); margin-bottom: 10px; padding-left: 5px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-.wms-map-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px; padding: 15px; background: #0f172a; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-.wms-cell { aspect-ratio: 1; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; user-select: none; }
+.wms-zone-title { 
+    font-size: 14px; font-weight: 700; color: var(--primary-light); 
+    margin-bottom: 10px; padding-left: 5px; border-left: 3px solid var(--primary);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.wms-map-container { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
+    gap: 12px; 
+    padding: 15px; 
+    background: #0f172a; 
+    border-radius: var(--radius-sm); 
+    border: 1px solid var(--border);
+}
+.wms-cell { 
+    aspect-ratio: 1; 
+    background: var(--bg-card); 
+    border: 2px solid var(--border); 
+    border-radius: 8px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+    position: relative; 
+    user-select: none;
+}
 .wms-cell:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 .wms-cell.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--primary); transform: scale(1.05); z-index: 10; }
 .wms-cell.free { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
@@ -176,12 +217,6 @@ textarea.form-control { resize:vertical; }
 .cell-id { font-size: 10px; font-weight: 700; color: var(--text-muted); position: absolute; top: 4px; left: 6px; opacity: 0.7; }
 .cell-content { font-size: 11px; text-align: center; padding: 0 4px; word-break: break-all; font-weight: 500; color: var(--text); }
 .cell-icon { font-size: 16px; margin-bottom: 4px; }
-
-/* Scanner Specifics */
-#reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: var(--radius); overflow: hidden; border: 2px solid var(--primary); }
-.scan-result { text-align: center; margin-top: 20px; padding: 20px; background: var(--bg-input); border-radius: var(--radius-sm); }
-.scan-success { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
-.scan-error { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.1); }
 
 .rate-input { width:70px; padding:5px 8px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--success); font-family:inherit; font-size:13px; font-weight:700; text-align:center; }
 .rate-input:focus { outline:none; border-color:var(--primary); }
@@ -199,6 +234,7 @@ textarea.form-control { resize:vertical; }
 .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
 @keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-5px); opacity:1; } }
 
+/* Integration Styles */
 .integration-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 .integration-card-edit { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; position: relative; }
 .integration-card-edit h4 { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -208,6 +244,7 @@ textarea.form-control { resize:vertical; }
 .btn-add-integration { width: 100%; padding: 20px; border: 2px dashed var(--border); background: transparent; color: var(--text-muted); border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; transition: all 0.2s; }
 .btn-add-integration:hover { border-color: var(--primary); color: var(--primary); background: rgba(99,102,241,0.05); }
 
+/* Печать */
 @media print {
     body * { visibility: hidden; }
     #badgePrintContainer, #badgePrintContainer * { visibility: visible; }
@@ -266,7 +303,7 @@ textarea.form-control { resize:vertical; }
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <h2>📦 СкладКонтроль</h2>
-    <p id="appVersion">PRO версия + QR Scan</p>
+    <p id="appVersion">PRO версия + Auth</p>
   </div>
   
   <div class="user-profile-mini">
@@ -284,6 +321,7 @@ textarea.form-control { resize:vertical; }
       Дашборд
     </div>
     
+    <!-- Admin Only Items -->
     <div class="admin-only">
         <div class="nav-item" data-section="employees" onclick="showSection('employees',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -305,7 +343,7 @@ textarea.form-control { resize:vertical; }
 
     <div class="nav-item" data-section="timetracking" onclick="showSection('timetracking',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      ⏱️ Учёт времени (Scan)
+      Моё время
     </div>
     
     <div class="nav-item" data-section="myfines" onclick="showSection('myfines',this)">
@@ -381,7 +419,9 @@ textarea.form-control { resize:vertical; }
 
       <div class="panel employee-only" style="display:none;">
          <div class="panel-header"><h3>👤 Личная сводка</h3></div>
-         <div class="panel-body" id="personalDashboard"></div>
+         <div class="panel-body" id="personalDashboard">
+             <!-- Personal stats will go here -->
+         </div>
       </div>
     </div>
  
@@ -410,9 +450,14 @@ textarea.form-control { resize:vertical; }
             </div>
             <div class="panel-body">
                 <p style="color:var(--text-muted); margin-bottom:20px; font-size:13px;">
-                    Настройка подключений к внешним системам (1С, WB, Ozon, CRM).
+                    Здесь вы можете настроить подключение к любым внешним системам (1С, WB, Ozon, CRM, WMS). 
+                    Данные сохраняются локально.
                 </p>
-                <div class="integration-list" id="integrationList"></div>
+                
+                <div class="integration-list" id="integrationList">
+                    <!-- Cards will be rendered here -->
+                </div>
+                
                 <button class="btn-add-integration" onclick="openAddIntegrationModal()" style="margin-top:20px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Добавить новую интеграцию
@@ -432,6 +477,7 @@ textarea.form-control { resize:vertical; }
           </div>
         </div>
         <div class="panel-body">
+          
           <div class="wms-editor-panel">
              <div class="editor-group">
                 <label>Название зоны / ряда</label>
@@ -449,6 +495,7 @@ textarea.form-control { resize:vertical; }
                 <button class="btn btn-danger btn-sm" onclick="clearWMSData()">🗑️ Очистить весь склад</button>
              </div>
           </div>
+
           <div class="wms-toolbar">
              <div class="wms-stats">
                 <div class="wms-stat-item"><div class="dot" style="background:var(--success)"></div> Свободно: <span id="countFree">0</span></div>
@@ -459,55 +506,39 @@ textarea.form-control { resize:vertical; }
                 💡 <strong>Как переместить:</strong> Кликните на товар ➔ Кликните на пустую ячейку
              </div>
           </div>
+          
           <div id="wmsCanvas"></div>
         </div>
       </div>
     </div>
  
-    <!-- TIME TRACKING WITH SCANNER -->
+    <!-- TIME TRACKING -->
     <div class="section" id="sec-timetracking">
       <div class="panel">
-        <div class="panel-header">
-            <h3>⏱️ Учёт времени через QR</h3>
-            <div class="btn-group">
-                <button class="btn btn-primary" id="startScanBtn" onclick="startScanner()">📷 Сканировать бейдж</button>
-                <button class="btn btn-danger" id="stopScanBtn" onclick="stopScanner()" style="display:none;">⏹ Остановить</button>
-            </div>
-        </div>
+        <div class="panel-header"><h3>⏱️ Учёт времени</h3></div>
         <div class="panel-body">
-            
-            <!-- Scanner Area -->
-            <div id="scannerArea" style="display:none; margin-bottom: 20px;">
-                <div id="reader"></div>
-                <div id="scanResult" class="scan-result" style="display:none;"></div>
+          <div class="form-group">
+            <label>Сотрудник</label>
+            <select class="form-control" id="ttEmployee" onchange="loadTTInfo()"></select>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Приход</div>
+              <div class="stat-value" id="ttCheckIn" style="font-size:20px;">—</div>
             </div>
-
-            <!-- Manual Override (Fallback) -->
-            <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
-                <h4 style="margin-bottom:10px; color:var(--text-muted);">Ручной ввод (если камера недоступна)</h4>
-                <div class="form-group">
-                    <label>Сотрудник</label>
-                    <select class="form-control" id="ttEmployee" onchange="loadTTInfo()"></select>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
-                    <div class="stat-card" style="margin:0;padding:14px;">
-                    <div class="stat-label">Приход</div>
-                    <div class="stat-value" id="ttCheckIn" style="font-size:20px;">—</div>
-                    </div>
-                    <div class="stat-card" style="margin:0;padding:14px;">
-                    <div class="stat-label">Уход</div>
-                    <div class="stat-value" id="ttCheckOut" style="font-size:20px;">—</div>
-                    </div>
-                    <div class="stat-card" style="margin:0;padding:14px;">
-                    <div class="stat-label">Отработано</div>
-                    <div class="stat-value" id="ttHoursWorked" style="font-size:20px;">—</div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-success" onclick="manualCheckIn()">✅ Приход</button>
-                    <button class="btn btn-danger" onclick="manualCheckOut()">🚪 Уход</button>
-                </div>
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Уход</div>
+              <div class="stat-value" id="ttCheckOut" style="font-size:20px;">—</div>
             </div>
+            <div class="stat-card" style="margin:0;padding:14px;">
+              <div class="stat-label">Отработано</div>
+              <div class="stat-value" id="ttHoursWorked" style="font-size:20px;">—</div>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-success" onclick="checkIn()">✅ Приход</button>
+            <button class="btn btn-danger" onclick="checkOut()">🚪 Уход</button>
+          </div>
         </div>
       </div>
       <div class="panel">
@@ -673,14 +704,13 @@ textarea.form-control { resize:vertical; }
  
 <script>
 // ===== GLOBAL STATE =====
-let currentUser = null;
+let currentUser = null; // { id, name, role, access, login, pass }
 let employees = [];
 let timeRecords = [];
 let fines = [];
 let integrations = [];
 let wmsZones = [];
 let nextEmpId = 1;
-let html5QrcodeScanner = null;
 
 // ===== AUTH LOGIC =====
 function attemptLogin() {
@@ -688,6 +718,7 @@ function attemptLogin() {
     const p = document.getElementById('loginPass').value;
     const err = document.getElementById('loginError');
 
+    // Default Admin Creation if empty DB
     if(employees.length === 0) {
         employees.push({
             id: 1, name: 'Администратор', role: 'Администратор', access: 'Администратор',
@@ -710,7 +741,6 @@ function attemptLogin() {
 }
 
 function logout() {
-    stopScanner();
     currentUser = null;
     location.reload();
 }
@@ -719,9 +749,15 @@ function checkPermissions() {
     if(!currentUser) return;
     const isAdmin = currentUser.access === 'Администратор';
     
-    document.querySelectorAll('.admin-only').forEach(el => { el.style.display = isAdmin ? '' : 'none'; });
-    document.querySelectorAll('.employee-only').forEach(el => { el.style.display = !isAdmin ? '' : 'none'; });
+    // Toggle UI elements
+    document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = isAdmin ? '' : 'none';
+    });
+    document.querySelectorAll('.employee-only').forEach(el => {
+        el.style.display = !isAdmin ? '' : 'none';
+    });
 
+    // Update Profile Mini
     document.getElementById('miniName').textContent = currentUser.name;
     document.getElementById('miniRole').textContent = currentUser.role;
     document.getElementById('miniAvatar').textContent = currentUser.name.charAt(0);
@@ -733,16 +769,19 @@ function initApp() {
     loadFromLocalStorage();
     checkPermissions();
     
+    // If employee, redirect to personal dashboard or limit view
     if(currentUser.access !== 'Администратор') {
+        // Pre-select current user in time tracking
         const ttSelect = document.getElementById('ttEmployee');
         for(let i=0; i<ttSelect.options.length; i++) {
             if(parseInt(ttSelect.options[i].value) === currentUser.id) {
                 ttSelect.selectedIndex = i;
-                ttSelect.disabled = true;
+                ttSelect.disabled = true; // Lock selection
                 break;
             }
         }
     }
+
     init();
 }
 
@@ -774,18 +813,23 @@ function loadFromLocalStorage() {
     if (w) wmsZones = JSON.parse(w);
     
     if(!e || employees.length === 0) {
+        // Initial Data Seeding
         const defaultEmps = [
             {name:'Алексей', role:'Кладовщик', access:'Старший смены', login:'alexey', pass:'1234', rate:550, color:'#6366f1'},
             {name:'Наза', role:'Сборщик', access:'Сотрудник', login:'naza', pass:'1234', rate:450, color:'#10b981'},
             {name:'Лариса', role:'Администратор', access:'Администратор', login:'larisa', pass:'1234', rate:700, color:'#ec4899'}
         ];
-        defaultEmps.forEach(emp => { employees.push({ id: nextEmpId++, ...emp }); });
+        defaultEmps.forEach(emp => {
+            employees.push({ id: nextEmpId++, ...emp });
+        });
         
+        // Default Integrations
         integrations = [
             { id: 1, name: 'Wildberries API', type: 'api', url: 'https://suppliers-api.wildberries.ru', key: 'eyJhbGciOiJIUzI1NiIs...', desc: 'Основной токен поставщика', active: true },
             { id: 2, name: '1C Server', type: 'db', url: 'http://192.168.1.50:8080', key: '', desc: 'Локальный сервер 1С', active: false }
         ];
 
+        // Default WMS
         wmsZones = [
             { name: "Ряд A (Основной)", cells: [] },
             { name: "Ряд B (Скоропорт)", cells: [] }
@@ -804,108 +848,11 @@ function loadFromLocalStorage() {
   } catch(ex) { console.error('Storage load error:', ex); }
 }
 
-// ===== QR SCANNER LOGIC =====
-function startScanner() {
-    document.getElementById('scannerArea').style.display = 'block';
-    document.getElementById('startScanBtn').style.display = 'none';
-    document.getElementById('stopScanBtn').style.display = 'inline-flex';
-    document.getElementById('scanResult').style.display = 'none';
-
-    html5QrcodeScanner = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    
-    html5QrcodeScanner.start(
-        { facingMode: "environment" }, // Use back camera
-        config,
-        onScanSuccess,
-        onScanFailure
-    ).catch(err => {
-        showToast("Ошибка камеры: " + err, "error");
-        stopScanner();
-    });
-}
-
-function stopScanner() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(() => {
-            html5QrcodeScanner.clear();
-            document.getElementById('scannerArea').style.display = 'none';
-            document.getElementById('startScanBtn').style.display = 'inline-flex';
-            document.getElementById('stopScanBtn').style.display = 'none';
-        }).catch(err => console.log(err));
-    }
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-    // Stop scanning temporarily to process
-    html5QrcodeScanner.pause();
-    
-    // Parse QR Data: Format "EMP:ID|NAME"
-    let empId = null;
-    if(decodedText.startsWith("EMP:")) {
-        empId = parseInt(decodedText.split('|')[0].replace("EMP:", ""));
-    } else {
-        // Try just number
-        empId = parseInt(decodedText);
-    }
-
-    processScan(empId);
-    
-    // Resume after delay
-    setTimeout(() => {
-        html5QrcodeScanner.resume();
-    }, 3000);
-}
-
-function onScanFailure(error) {
-    // handle scan failure, usually better to ignore and keep scanning.
-}
-
-function processScan(empId) {
-    const resultDiv = document.getElementById('scanResult');
-    const emp = getEmpById(empId);
-    const now = new Date();
-    const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-
-    resultDiv.style.display = 'block';
-
-    if (!emp) {
-        resultDiv.className = 'scan-result scan-error';
-        resultDiv.innerHTML = `<h3>❌ Сотрудник не найден</h3><p>ID: ${empId}</p>`;
-        speak("Сотрудник не найден");
-        return;
-    }
-
-    const rec = getTodayRecord(emp.id);
-
-    if (!rec.checkIn || (rec.checkIn && rec.checkOut)) {
-        // Check In
-        rec.checkIn = timeStr;
-        rec.checkOut = null;
-        resultDiv.className = 'scan-result scan-success';
-        resultDiv.innerHTML = `<h3>✅ ПРИХОД ЗАФИКСИРОВАН</h3><p>${emp.name} (${emp.role})</p><p>Время: ${timeStr}</p>`;
-        speak(`${emp.name}, приход зафиксирован`);
-        showToast(`${emp.name}: Приход ${timeStr}`, 'success');
-    } else {
-        // Check Out
-        rec.checkOut = timeStr;
-        const hours = calcHours(rec.checkIn, rec.checkOut);
-        resultDiv.className = 'scan-result scan-success';
-        resultDiv.innerHTML = `<h3>🚪 УХОД ЗАФИКСИРОВАН</h3><p>${emp.name} (${emp.role})</p><p>Время: ${timeStr}<br>Отработано: ${hours} ч.</p>`;
-        speak(`${emp.name}, уход зафиксирован. Отработано ${hours} часов`);
-        showToast(`${emp.name}: Уход ${timeStr}`, 'warning');
-    }
-    
-    saveToStorage();
-    renderDashboard();
-    renderTimeHistory();
-    loadTTInfo(); // Update manual view if same user
-}
-
 // ===== INTEGRATION EDITOR LOGIC =====
 function renderIntegrations() {
     const list = document.getElementById('integrationList');
     list.innerHTML = '';
+    
     integrations.forEach((item, index) => {
         const card = document.createElement('div');
         card.className = 'integration-card-edit';
@@ -918,33 +865,70 @@ function renderIntegrations() {
                 </div>
             </h4>
             <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Тип: ${item.type.toUpperCase()}</div>
-            <div class="form-group" style="margin-bottom:8px;"><label>URL</label><input type="text" class="form-control" value="${item.url}" onchange="updateIntegration(${index}, 'url', this.value)"></div>
-            <div class="form-group" style="margin-bottom:8px;"><label>API Key</label><input type="password" class="form-control" value="${item.key}" onchange="updateIntegration(${index}, 'key', this.value)"></div>
-             <div class="form-group" style="margin-bottom:0;"><label>Примечание</label><input type="text" class="form-control" value="${item.desc}" onchange="updateIntegration(${index}, 'desc', this.value)"></div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label>URL</label>
+                <input type="text" class="form-control" value="${item.url}" onchange="updateIntegration(${index}, 'url', this.value)">
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label>API Key</label>
+                <input type="password" class="form-control" value="${item.key}" onchange="updateIntegration(${index}, 'key', this.value)">
+            </div>
+             <div class="form-group" style="margin-bottom:0;">
+                <label>Примечание</label>
+                <input type="text" class="form-control" value="${item.desc}" onchange="updateIntegration(${index}, 'desc', this.value)">
+            </div>
         `;
         list.appendChild(card);
     });
 }
+
 function openAddIntegrationModal() {
-    document.getElementById('intName').value = ''; document.getElementById('intUrl').value = '';
-    document.getElementById('intKey').value = ''; document.getElementById('intDesc').value = '';
+    document.getElementById('intName').value = '';
+    document.getElementById('intUrl').value = '';
+    document.getElementById('intKey').value = '';
+    document.getElementById('intDesc').value = '';
     openModal('modalAddIntegration');
 }
+
 function saveNewIntegration() {
-    const name = document.getElementById('intName').value; if(!name) return;
+    const name = document.getElementById('intName').value;
+    if(!name) return;
+    
     integrations.push({
-        id: Date.now(), name: name, type: document.getElementById('intType').value,
-        url: document.getElementById('intUrl').value, key: document.getElementById('intKey').value,
-        desc: document.getElementById('intDesc').value, active: true
+        id: Date.now(),
+        name: name,
+        type: document.getElementById('intType').value,
+        url: document.getElementById('intUrl').value,
+        key: document.getElementById('intKey').value,
+        desc: document.getElementById('intDesc').value,
+        active: true
     });
-    saveToStorage(); renderIntegrations(); closeModal('modalAddIntegration');
+    saveToStorage();
+    renderIntegrations();
+    closeModal('modalAddIntegration');
     showToast('Интеграция добавлена', 'success');
 }
-function updateIntegration(index, field, value) { integrations[index][field] = value; saveToStorage(); }
-function toggleIntegration(index) { integrations[index].active = !integrations[index].active; saveToStorage(); renderIntegrations(); }
-function deleteIntegration(index) { if(confirm('Удалить?')) { integrations.splice(index, 1); saveToStorage(); renderIntegrations(); } }
 
-// ===== WMS LOGIC =====
+function updateIntegration(index, field, value) {
+    integrations[index][field] = value;
+    saveToStorage();
+}
+
+function toggleIntegration(index) {
+    integrations[index].active = !integrations[index].active;
+    saveToStorage();
+    renderIntegrations();
+}
+
+function deleteIntegration(index) {
+    if(confirm('Удалить эту интеграцию?')) {
+        integrations.splice(index, 1);
+        saveToStorage();
+        renderIntegrations();
+    }
+}
+
+// ===== WMS LOGIC (Simplified for brevity, same as before) =====
 let selectedCellId = null; 
 function addNewZone() {
     const name = document.getElementById('newZoneName').value.trim();
@@ -952,12 +936,16 @@ function addNewZone() {
     if(!name || count < 1) return;
     const newZone = { name: name, cells: [] };
     for(let i=1; i<=count; i++) newZone.cells.push({ id: `${name.split(' ')[0].substring(0,1)}${i}`, status: 'free', content: '' });
-    wmsZones.push(newZone); saveToStorage(); initWMSMap();
+    wmsZones.push(newZone);
+    saveToStorage();
+    initWMSMap();
 }
 function deleteZone(zoneIndex) { if(confirm('Удалить зону?')) { wmsZones.splice(zoneIndex, 1); saveToStorage(); initWMSMap(); } }
 function clearWMSData() { if(confirm('Очистить весь склад?')) { wmsZones = []; saveToStorage(); initWMSMap(); } }
 function initWMSMap() {
-    const canvas = document.getElementById('wmsCanvas'); canvas.innerHTML = ''; selectedCellId = null;
+    const canvas = document.getElementById('wmsCanvas');
+    canvas.innerHTML = '';
+    selectedCellId = null;
     let totalFree = 0, totalOccupied = 0, totalReserved = 0;
     if(wmsZones.length === 0) { canvas.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">Склад пуст.</div>'; return; }
     wmsZones.forEach((zone, zIndex) => {
@@ -1024,6 +1012,7 @@ function showSection(id, navEl) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
   
+  // Permission Check for Sections
   if(id === 'employees' || id === 'integrations' || id === 'wms' || id === 'importexport') {
       if(currentUser.access !== 'Администратор') {
           showToast('Доступ запрещен', 'error');
@@ -1031,11 +1020,8 @@ function showSection(id, navEl) {
           return;
       }
   }
-  
-  // Stop scanner if leaving time tracking
-  if(id !== 'timetracking') stopScanner();
 
-  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Учёт времени (Scan)',myfines:'Мои штрафы',chatbot:'Бот',integrations:'Интеграции',wms:'Склад',importexport:'Бэкап'};
+  var titles = {dashboard:'Дашборд',employees:'Сотрудники',timetracking:'Моё время',myfines:'Мои штрафы',chatbot:'Бот',integrations:'Интеграции',wms:'Склад',importexport:'Бэкап'};
   document.getElementById('pageTitle').textContent = titles[id] || '';
  
   if (id === 'dashboard') renderDashboard();
@@ -1160,7 +1146,7 @@ function populateSelects() {
   });
   if(currentUser.access !== 'Администратор') tt.disabled = true;
 }
-function manualCheckIn() {
+function checkIn() {
   var empId = parseInt(document.getElementById('ttEmployee').value);
   var rec = getTodayRecord(empId);
   var now = new Date(); var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
@@ -1169,7 +1155,7 @@ function manualCheckIn() {
   showToast(getEmpName(empId) + ' — приход: ' + time, 'success');
   loadTTInfo(); renderTimeHistory(); renderDashboard(); saveToStorage();
 }
-function manualCheckOut() {
+function checkOut() {
   var empId = parseInt(document.getElementById('ttEmployee').value);
   var rec = getTodayRecord(empId);
   if (!rec.checkIn) { showToast('Сначала приход!', 'error'); return; }
@@ -1189,7 +1175,10 @@ function loadTTInfo() {
 function renderTimeHistory() {
   var tbody = document.getElementById('timeHistoryTable'); tbody.innerHTML = '';
   var sorted = timeRecords.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
-  if(currentUser.access !== 'Администратор') { sorted = sorted.filter(r => r.employeeId === currentUser.id); }
+  // Filter for non-admins
+  if(currentUser.access !== 'Администратор') {
+      sorted = sorted.filter(r => r.employeeId === currentUser.id);
+  }
   sorted.forEach(function(rec) {
     var h = rec.checkIn ? calcHours(rec.checkIn, rec.checkOut) : '—';
     tbody.innerHTML += '<tr><td>'+rec.date+'</td><td>'+getEmpName(rec.employeeId)+'</td><td>'+(rec.checkIn||'—')+'</td><td>'+(rec.checkOut||'—')+'</td><td><strong>'+h+' ч.</strong></td></tr>';
@@ -1209,6 +1198,7 @@ function renderDashboard() {
   document.getElementById('statTotalEmps').textContent = employees.length;
   document.getElementById('statOnline').textContent = employees.filter(e => isEmployeeOnline(e.id)).length;
   
+  // Calc hours for current user or all
   let totalHours = 0;
   let month = getCurrentMonth();
   if(currentUser.access === 'Администратор') {
@@ -1226,6 +1216,7 @@ function renderDashboard() {
   }
   document.getElementById('statFines').textContent = totalFines;
 
+  // Render Table for Admin
   if(currentUser.access === 'Администратор') {
       var tbody = document.getElementById('dashEmpTable'); tbody.innerHTML = '';
       employees.forEach(function(emp) {
@@ -1235,11 +1226,13 @@ function renderDashboard() {
         tbody.innerHTML += '<tr><td><strong>'+emp.name+'</strong></td><td>'+emp.role+'</td><td>'+accessBadge+'</td><td>'+ (isEmployeeOnline(emp.id) ? '<span class="badge badge-success">🟢</span>' : '<span class="badge badge-danger">⚫</span>') +'</td><td>'+(rec.checkIn||'—')+'</td><td>'+(rec.checkOut||'—')+'</td><td><strong>'+h+' ч.</strong></td></tr>';
       });
   } else {
+      // Personal Dashboard for Employee
       const pd = document.getElementById('personalDashboard');
       let earned = 0;
       timeRecords.forEach(rec => { if (rec.employeeId === currentUser.id && rec.date.startsWith(month) && rec.checkIn) earned += parseFloat(calcHours(rec.checkIn, rec.checkOut)) * currentUser.rate; });
       let fineSum = 0;
       fines.forEach(f => { if (f.employeeId === currentUser.id && f.date.startsWith(month)) fineSum += f.amount; });
+      
       pd.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; text-align:center;">
             <div><h3 style="color:var(--success);">${Math.round(earned).toLocaleString()} ₽</h3><p>Начислено за месяц</p></div>
@@ -1298,7 +1291,7 @@ function exportJSON() {
   var data = { employees, timeRecords, fines, nextEmpId, integrations, wmsZones };
   downloadFile(JSON.stringify(data, null, 2), 'warehouse_backup_' + getToday() + '.json', 'application/json');
 }
-function exportFullBackup() { exportJSON(); }
+function exportFullBackup() { exportJSON(); } // Alias
 function downloadFile(content, filename, mime) {
   var blob = new Blob([content], {type: mime}); var url = URL.createObjectURL(blob);
   var a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -1328,8 +1321,9 @@ function init() {
   updateLiveTime(); setInterval(updateLiveTime, 1000);
   populateSelects();
   renderDashboard();
+  // Welcome message
   var container = document.getElementById('chatMessages');
-  container.innerHTML += '<div class="chat-msg bot"><div class="chat-avatar">🤖</div><div class="chat-bubble">Здравствуйте, '+currentUser.name+'! Используйте сканер в разделе "Учёт времени" для фиксации прихода по бейджу.</div></div>';
+  container.innerHTML += '<div class="chat-msg bot"><div class="chat-avatar">🤖</div><div class="chat-bubble">Здравствуйте, '+currentUser.name+'! Чем могу помочь?</div></div>';
 }
 
 // Start Login Screen
