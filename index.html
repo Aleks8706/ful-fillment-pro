@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
         tailwind.config = {
@@ -25,7 +26,7 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        * { font-family: 'Inter', sans-serif; }
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
@@ -36,6 +37,7 @@
         @keyframes fadeIn { from{opacity:0} to{opacity:1} }
         @keyframes spin-slow { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        @keyframes scanLine { 0%{top:0} 50%{top:calc(100% - 2px)} 100%{top:0} }
         .animate-slideUp { animation: slideUp 0.5s ease-out; }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         .animate-float { animation: float 3s ease-in-out infinite; }
@@ -63,10 +65,14 @@
         .timeline-item::before { content: ''; position: absolute; left: 8px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
         .timeline-item::after { content: ''; position: absolute; left: 11px; top: 24px; width: 2px; height: calc(100% - 16px); background: #334155; }
         .timeline-item:last-child::after { display: none; }
-        .label-58x40 { width: 58mm; height: 40mm; padding: 2mm; font-size: 8pt; }
-        .tooltip { position: relative; }
-        .tooltip::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-        .tooltip:hover::after { opacity: 1; }
+        .scan-line { position: absolute; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, transparent, #22c55e, transparent); animation: scanLine 2s ease-in-out infinite; }
+        .scanner-frame { position: relative; border: 2px solid rgba(34,197,94,0.3); border-radius: 12px; overflow: hidden; }
+        .scanner-frame::before { content: ''; position: absolute; top: 0; left: 0; width: 30px; height: 30px; border-top: 3px solid #22c55e; border-left: 3px solid #22c55e; z-index: 10; }
+        .scanner-frame::after { content: ''; position: absolute; top: 0; right: 0; width: 30px; height: 30px; border-top: 3px solid #22c55e; border-right: 3px solid #22c55e; z-index: 10; }
+        .scanner-frame .bl { position: absolute; bottom: 0; left: 0; width: 30px; height: 30px; border-bottom: 3px solid #22c55e; border-left: 3px solid #22c55e; z-index: 10; }
+        .scanner-frame .br { position: absolute; bottom: 0; right: 0; width: 30px; height: 30px; border-bottom: 3px solid #22c55e; border-right: 3px solid #22c55e; z-index: 10; }
+        #qr-reader__scan_region { border-radius: 12px; overflow: hidden; }
+        #qr-reader__dashboard { display: none !important; }
     </style>
 </head>
 <body class="theme-transition bg-dark-900 text-dark-100 dark:bg-dark-900 dark:text-dark-100 light:bg-gray-50 light:text-gray-900 min-h-screen">
@@ -166,6 +172,12 @@
             <button onclick="navigate('employees')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="employees">
                 <i class="fas fa-users w-5 text-center"></i><span>Сотрудники</span>
             </button>
+            <button onclick="navigate('scanner')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="scanner">
+                <i class="fas fa-qrcode w-5 text-center"></i><span>Сканер QR</span>
+            </button>
+            <button onclick="navigate('attendance')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="attendance">
+                <i class="fas fa-clock w-5 text-center"></i><span>Посещаемость</span>
+            </button>
             <button onclick="navigate('inventory')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="inventory">
                 <i class="fas fa-clipboard-check w-5 text-center"></i><span>Инвентаризация</span>
             </button>
@@ -206,6 +218,9 @@
             <h2 id="pageTitle" class="text-lg font-semibold text-white">Дашборд</h2>
         </div>
         <div class="flex items-center gap-3">
+            <button onclick="navigate('scanner')" class="bg-primary-600 hover:bg-primary-500 text-white px-3 py-2 rounded-lg text-sm transition lg:hidden" title="Сканер QR">
+                <i class="fas fa-qrcode mr-1"></i><span class="hidden sm:inline">Сканер</span>
+            </button>
             <button onclick="toggleTheme()" class="w-9 h-9 rounded-lg bg-dark-800 flex items-center justify-center text-dark-400 hover:text-yellow-400 transition" title="Сменить тему">
                 <i class="fas fa-moon" id="themeIcon"></i>
             </button>
@@ -392,6 +407,120 @@
                 <button onclick="openModal('addEmployee')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Добавить сотрудника</button>
             </div>
             <div id="employeesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- QR SCANNER -->
+        <section id="page-scanner" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="max-w-2xl mx-auto">
+                <div class="glass rounded-2xl p-6 mb-6">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-3">
+                            <i class="fas fa-qrcode text-white text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Сканер QR-кодов сотрудников</h3>
+                        <p class="text-dark-400 text-sm mt-1">Наведите камеру на QR-код сотрудника для фиксации прихода/ухода</p>
+                    </div>
+                    <div class="flex justify-center gap-3 mb-4">
+                        <button id="btnStartScan" onclick="startScanner()" class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition shadow-lg shadow-primary-500/20">
+                            <i class="fas fa-camera mr-2"></i>Включить камеру
+                        </button>
+                        <button id="btnStopScan" onclick="stopScanner()" class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition hidden">
+                            <i class="fas fa-stop mr-2"></i>Выключить
+                        </button>
+                    </div>
+                    <div id="scannerContainer" class="hidden">
+                        <div class="scanner-frame max-w-sm mx-auto relative">
+                            <div id="qr-reader"></div>
+                            <div class="bl"></div>
+                            <div class="br"></div>
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-dark-800 rounded-lg">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-keyboard text-dark-500"></i>
+                            <span class="text-sm text-dark-400">Или введите код вручную:</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="manualQRCode" placeholder="EMP-..." class="flex-1 bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-primary-500">
+                            <button onclick="manualQRScan()" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scanner Result -->
+                <div id="scanResult" class="hidden glass rounded-2xl p-6 animate-slideUp">
+                    <div class="flex items-center gap-4 mb-4">
+                        <img id="scanResultPhoto" class="w-16 h-16 rounded-xl object-cover border-2 border-primary-500">
+                        <div>
+                            <h4 id="scanResultName" class="text-lg font-bold text-white"></h4>
+                            <p id="scanResultPosition" class="text-sm text-dark-400"></p>
+                            <div id="scanResultStatus"></div>
+                        </div>
+                        <div class="ml-auto text-right">
+                            <div id="scanResultTime" class="text-2xl font-bold text-primary-400 font-mono"></div>
+                            <div id="scanResultDate" class="text-xs text-dark-500"></div>
+                        </div>
+                    </div>
+                    <div id="scanResultAction" class="text-center py-2 rounded-lg text-sm font-semibold"></div>
+                    <div id="scanResultRate" class="mt-3 text-center text-dark-400 text-sm"></div>
+                </div>
+
+                <!-- Today's Log -->
+                <div class="glass rounded-2xl p-6 mt-4">
+                    <h4 class="font-semibold text-white mb-4"><i class="fas fa-history mr-2"></i>Лог сегодня</h4>
+                    <div id="scanLogToday" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ATTENDANCE -->
+        <section id="page-attendance" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex gap-2">
+                    <input type="date" id="attendanceDate" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="renderAttendance()">
+                </div>
+                <button onclick="exportAttendance()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Экспорт</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div class="glass rounded-xl p-4">
+                    <p class="text-dark-400 text-sm">Всего сотрудников</p>
+                    <p class="text-2xl font-bold text-white" id="attTotal">0</p>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <p class="text-dark-400 text-sm">Пришло</p>
+                    <p class="text-2xl font-bold text-green-400" id="attPresent">0</p>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <p class="text-dark-400 text-sm">Не пришло</p>
+                    <p class="text-2xl font-bold text-red-400" id="attAbsent">0</p>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <p class="text-dark-400 text-sm">На смене</p>
+                    <p class="text-2xl font-bold text-blue-400" id="attOnShift">0</p>
+                </div>
+            </div>
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50">
+                            <tr>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Сотрудник</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Должность</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Приход</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Уход</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Часы</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Ставка</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Сумма</th>
+                                <th class="text-left px-4 py-3 text-dark-400 font-medium">Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- INVENTORY -->
@@ -587,6 +716,7 @@ function getDefaultData() {
         shipping: [],
         tasks: [],
         employees: [],
+        attendance: [],
         inventory: [],
         penalties: [],
         clients: [],
@@ -594,7 +724,7 @@ function getDefaultData() {
         settings: { companyName: 'FulFillPro', address: '', phone: '', warehouseCols: 6, warehouseRows: 4 },
         operations: [],
         warehouseCells: {},
-        nextId: { product: 1, receiving: 1, shipping: 1, task: 1, employee: 1, inventory: 1, penalty: 1, client: 1 }
+        nextId: { product: 1, receiving: 1, shipping: 1, task: 1, employee: 1, attendance: 1, inventory: 1, penalty: 1, client: 1 }
     };
 }
 
@@ -637,6 +767,11 @@ function formatDateShort(d) {
     return new Date(d).toLocaleDateString('ru-RU');
 }
 
+function formatTime(d) {
+    if (!d) return '--:--';
+    return new Date(d).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
 function generateBarcode() {
     return '200' + String(Math.floor(Math.random() * 90000000)).padStart(8, '0');
 }
@@ -665,13 +800,17 @@ function statusBadge(status) {
         'active': ['Активна', 'bg-green-500/20 text-green-400'],
         'done': ['Выполнена', 'bg-blue-500/20 text-blue-400'],
         'overdue': ['Просрочена', 'bg-red-500/20 text-red-400'],
-        'online': ['Онлайн', 'bg-green-500/20 text-green-400'],
+        'online': ['На смене', 'bg-green-500/20 text-green-400'],
         'offline': ['Оффлайн', 'bg-dark-500/20 text-dark-400'],
         'active_client': ['Активен', 'bg-green-500/20 text-green-400'],
         'inactive_client': ['Не активен', 'bg-dark-500/20 text-dark-400'],
         'fine': ['Штраф', 'bg-red-500/20 text-red-400'],
         'forgiveness': ['Прощение', 'bg-green-500/20 text-green-400'],
-        'pending': ['Ожидает', 'bg-yellow-500/20 text-yellow-400']
+        'pending': ['Ожидает', 'bg-yellow-500/20 text-yellow-400'],
+        'clock_in': ['Приход', 'bg-green-500/20 text-green-400'],
+        'clock_out': ['Уход', 'bg-red-500/20 text-red-400'],
+        'present': ['Присутствует', 'bg-green-500/20 text-green-400'],
+        'absent': ['Отсутствует', 'bg-red-500/20 text-red-400']
     };
     const s = map[status] || [status, 'bg-dark-500/20 text-dark-400'];
     return `<span class="status-badge ${s[1]}">${s[0]}</span>`;
@@ -694,10 +833,208 @@ function fileToBase64(file) {
 function showToast(msg, type = 'success') {
     const toast = document.createElement('div');
     const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600' };
+    const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
     toast.className = `fixed top-20 right-4 z-[9999] ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg animate-slideUp flex items-center gap-2`;
-    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>${msg}`;
+    toast.innerHTML = `<i class="fas fa-${icons[type]}"></i>${msg}`;
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// ==================== QR SCANNER ====================
+let qrScanner = null;
+let isScanning = false;
+
+function startScanner() {
+    const container = document.getElementById('scannerContainer');
+    const btnStart = document.getElementById('btnStartScan');
+    const btnStop = document.getElementById('btnStopScan');
+
+    container.classList.remove('hidden');
+    btnStart.classList.add('hidden');
+    btnStop.classList.remove('hidden');
+
+    try {
+        qrScanner = new Html5Qrcode("qr-reader");
+        qrScanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+                onQRCodeScanned(decodedText);
+                // Vibrate if available
+                if (navigator.vibrate) navigator.vibrate(200);
+            },
+            (errorMessage) => {
+                // Ignore scan errors
+            }
+        ).then(() => {
+            isScanning = true;
+        }).catch((err) => {
+            showToast('Ошибка камеры: ' + err, 'error');
+            stopScanner();
+        });
+    } catch(e) {
+        showToast('Библиотека сканера не загружена', 'error');
+        stopScanner();
+    }
+}
+
+function stopScanner() {
+    const container = document.getElementById('scannerContainer');
+    const btnStart = document.getElementById('btnStartScan');
+    const btnStop = document.getElementById('btnStopScan');
+
+    if (qrScanner && isScanning) {
+        qrScanner.stop().then(() => {
+            qrScanner.clear();
+        }).catch(() => {});
+        isScanning = false;
+    }
+
+    container.classList.add('hidden');
+    btnStart.classList.remove('hidden');
+    btnStop.classList.add('hidden');
+}
+
+function onQRCodeScanned(qrCode) {
+    const emp = db.employees.find(e => e.qrCode === qrCode);
+    if (!emp) {
+        showToast('QR-код не найден: ' + qrCode, 'error');
+        return;
+    }
+    processEmployeeScan(emp);
+}
+
+function manualQRScan() {
+    const input = document.getElementById('manualQRCode');
+    const qrCode = input.value.trim();
+    if (!qrCode) { showToast('Введите код', 'error'); return; }
+
+    const emp = db.employees.find(e => e.qrCode === qrCode);
+    if (!emp) { showToast('Сотрудник не найден', 'error'); return; }
+
+    processEmployeeScan(emp);
+    input.value = '';
+}
+
+function processEmployeeScan(emp) {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Find or create today's attendance record
+    let attRecord = db.attendance.find(a => a.employeeId === emp.id && a.date === todayStr);
+    if (!attRecord) {
+        attRecord = {
+            id: genId('attendance'),
+            employeeId: emp.id,
+            date: todayStr,
+            clockIn: null,
+            clockOut: null,
+            hoursWorked: 0
+        };
+        db.attendance.push(attRecord);
+    }
+
+    const isCurrentlyOnShift = emp.status === 'online';
+
+    if (!isCurrentlyOnShift) {
+        // Clock IN
+        emp.status = 'online';
+        emp.shiftStart = now.toISOString();
+        attRecord.clockIn = now.toISOString();
+
+        showScanResult(emp, 'clock_in', now);
+        addOperation(`🟢 ${emp.name} пришёл на смену (${formatTime(now)})`, 'attendance');
+        showToast(`${emp.name} — приход зафиксирован!`);
+    } else {
+        // Clock OUT
+        emp.status = 'offline';
+        if (emp.shiftStart) {
+            const hours = (now.getTime() - new Date(emp.shiftStart).getTime()) / (1000 * 60 * 60);
+            attRecord.clockOut = now.toISOString();
+            attRecord.hoursWorked = parseFloat((attRecord.hoursWorked + hours).toFixed(2));
+            emp.totalHours = (emp.totalHours || 0) + hours;
+        }
+        emp.shiftStart = null;
+
+        showScanResult(emp, 'clock_out', now);
+        addOperation(`🔴 ${emp.name} ушёл со смены (${formatTime(now)})`, 'attendance');
+        showToast(`${emp.name} — уход зафиксирован!`);
+    }
+
+    saveData();
+    renderScanLogToday();
+}
+
+function showScanResult(emp, action, time) {
+    const container = document.getElementById('scanResult');
+    container.classList.remove('hidden');
+
+    const photoEl = document.getElementById('scanResultPhoto');
+    photoEl.src = emp.photo || '';
+    photoEl.className = emp.photo ? 'w-16 h-16 rounded-xl object-cover border-2 border-primary-500' : 'w-16 h-16 rounded-xl bg-dark-800 flex items-center justify-center';
+    if (!emp.photo) {
+        photoEl.outerHTML = `<div id="scanResultPhoto" class="w-16 h-16 rounded-xl bg-dark-800 flex items-center justify-center border-2 border-primary-500"><i class="fas fa-user text-dark-500 text-2xl"></i></div>`;
+    }
+
+    document.getElementById('scanResultName').textContent = emp.name;
+    document.getElementById('scanResultPosition').textContent = emp.position || 'Сотрудник';
+    document.getElementById('scanResultStatus').innerHTML = statusBadge(emp.status);
+    document.getElementById('scanResultTime').textContent = time.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('scanResultDate').textContent = time.toLocaleDateString('ru-RU');
+
+    const actionEl = document.getElementById('scanResultAction');
+    if (action === 'clock_in') {
+        actionEl.className = 'text-center py-3 rounded-lg text-sm font-semibold bg-green-500/20 text-green-400';
+        actionEl.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>ПРИХОД — Смена начата';
+    } else {
+        actionEl.className = 'text-center py-3 rounded-lg text-sm font-semibold bg-red-500/20 text-red-400';
+        actionEl.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>УХОД — Смена завершена';
+    }
+
+    const rateEl = document.getElementById('scanResultRate');
+    if (emp.shiftStart) {
+        const hours = (Date.now() - new Date(emp.shiftStart).getTime()) / (1000 * 60 * 60);
+        const earned = hours * emp.rate;
+        rateEl.innerHTML = `Ставка: ${emp.rate}₽/час • На смене: ${hours.toFixed(2)}ч • Заработано: ${earned.toFixed(2)}₽`;
+    } else {
+        const total = emp.totalHours || 0;
+        rateEl.innerHTML = `Ставка: ${emp.rate}₽/час • Всего часов: ${total.toFixed(2)}ч`;
+    }
+}
+
+function renderScanLogToday() {
+    const container = document.getElementById('scanLogToday');
+    if (!container) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayAtt = db.attendance.filter(a => a.date === todayStr).reverse();
+
+    if (todayAtt.length === 0) {
+        container.innerHTML = '<div class="text-center text-dark-500 py-4 text-sm">Нет записей за сегодня</div>';
+        return;
+    }
+
+    container.innerHTML = todayAtt.map(a => {
+        const emp = db.employees.find(e => e.id === a.employeeId);
+        if (!emp) return '';
+        return `
+        <div class="flex items-center gap-3 p-3 bg-dark-800/50 rounded-lg">
+            ${emp.photo ? `<img src="${emp.photo}" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-dark-800 flex items-center justify-center"><i class="fas fa-user text-dark-500"></i></div>`}
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-white font-medium truncate">${emp.name}</p>
+                <p class="text-xs text-dark-500">${emp.position || ''}</p>
+            </div>
+            <div class="text-right">
+                ${a.clockIn ? `<div class="text-xs"><span class="text-green-400">●</span> ${formatTime(a.clockIn)}</div>` : ''}
+                ${a.clockOut ? `<div class="text-xs"><span class="text-red-400">●</span> ${formatTime(a.clockOut)}</div>` : ''}
+                ${emp.status === 'online' ? '<div class="text-xs text-green-400">На смене</div>' : '<div class="text-xs text-dark-500">Ушёл</div>'}
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-dark-400">${a.hoursWorked.toFixed(1)}ч</div>
+                <div class="text-xs text-green-400">${(a.hoursWorked * emp.rate).toFixed(0)}₽</div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 // ==================== THEME ====================
@@ -763,12 +1100,21 @@ function navigate(page) {
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
     const link = document.querySelector(`[data-nav="${page}"]`);
     if (link) link.classList.add('active');
-    const titles = { dashboard:'Дашборд', warehouse:'Склад', receiving:'Приёмка', shipping:'Отгрузка', tasks:'Задачи', employees:'Сотрудники', inventory:'Инвентаризация', labels:'Этикетки', penalties:'Штрафы', clients:'Клиенты', integrations:'Интеграции', settings:'Настройки' };
+    const titles = {
+        dashboard:'Дашборд', warehouse:'Склад', receiving:'Приёмка', shipping:'Отгрузка',
+        tasks:'Задачи', employees:'Сотрудники', scanner:'Сканер QR-кодов',
+        attendance:'Посещаемость', inventory:'Инвентаризация', labels:'Этикетки',
+        penalties:'Штрафы', clients:'Клиенты', integrations:'Интеграции', settings:'Настройки'
+    };
     document.getElementById('pageTitle').textContent = titles[page] || page;
-    // Render page
-    const renders = { dashboard: renderDashboard, warehouse: renderProducts, receiving: renderReceiving, shipping: renderShipping, tasks: renderTasks, employees: renderEmployees, inventory: renderInventory, labels: renderLabels, penalties: renderPenalties, clients: renderClients };
+
+    // Stop scanner when leaving scanner page
+    if (page !== 'scanner' && isScanning) {
+        stopScanner();
+    }
+
+    const renders = { dashboard: renderDashboard, warehouse: renderProducts, receiving: renderReceiving, shipping: renderShipping, tasks: renderTasks, employees: renderEmployees, scanner: renderScanner, attendance: renderAttendance, inventory: renderInventory, labels: renderLabels, penalties: renderPenalties, clients: renderClients };
     if (renders[page]) renders[page]();
-    // Close mobile sidebar
     if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
 }
 
@@ -895,7 +1241,7 @@ function openModal(type, data = null) {
                                 <div class="receiving-item flex gap-2">
                                     <select name="product" class="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
                                         <option value="">Выберите товар</option>
-                                        ${db.products.map(p => `<option value="${p.id}">${p.sku} - ${p.name}</option>`).join('')}
+                                        ${db.products.map(prod => `<option value="${prod.id}">${prod.sku} - ${prod.name}</option>`).join('')}
                                     </select>
                                     <input type="number" name="qty" placeholder="Кол-во" min="1" value="1" class="w-20 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
                                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400"><i class="fas fa-times"></i></button>
@@ -931,7 +1277,7 @@ function openModal(type, data = null) {
                                 <div class="shipping-item flex gap-2">
                                     <select name="product" class="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
                                         <option value="">Выберите товар</option>
-                                        ${db.products.map(p => `<option value="${p.id}">${p.sku} - ${p.name} (ост: ${p.quantity})</option>`).join('')}
+                                        ${db.products.map(prod => `<option value="${prod.id}">${prod.sku} - ${prod.name} (ост: ${prod.quantity})</option>`).join('')}
                                     </select>
                                     <input type="number" name="qty" placeholder="Кол-во" min="1" value="1" class="w-20 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
                                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400"><i class="fas fa-times"></i></button>
@@ -1034,11 +1380,11 @@ function openModal(type, data = null) {
                         <div class="border border-dark-700 rounded-lg p-4">
                             <h4 class="text-sm font-medium text-white mb-2">Проверка товаров</h4>
                             <div id="inventoryItems" class="space-y-2">
-                                ${db.products.map(p => `
+                                ${db.products.map(prod => `
                                 <div class="flex items-center gap-2 p-2 bg-dark-800 rounded-lg">
-                                    <span class="flex-1 text-sm text-white truncate">${p.sku} - ${p.name}</span>
-                                    <span class="text-xs text-dark-500">Система: ${p.quantity}</span>
-                                    <input type="number" name="inv_${p.id}" placeholder="Факт" class="w-20 bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white">
+                                    <span class="flex-1 text-sm text-white truncate">${prod.sku} - ${prod.name}</span>
+                                    <span class="text-xs text-dark-500">Система: ${prod.quantity}</span>
+                                    <input type="number" name="inv_${prod.id}" placeholder="Факт" class="w-20 bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white">
                                 </div>`).join('')}
                             </div>
                         </div>
@@ -1065,7 +1411,7 @@ function openModal(type, data = null) {
                             <label class="block text-sm text-dark-400 mb-1">Товар</label>
                             <select id="labelProduct" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="updateLabelPreview()">
                                 <option value="">Выберите товар</option>
-                                ${db.products.map(p => `<option value="${p.id}">${p.sku} - ${p.name}</option>`).join('')}
+                                ${db.products.map(prod => `<option value="${prod.id}">${prod.sku} - ${prod.name}</option>`).join('')}
                             </select>
                         </div>
                         <div>
@@ -1156,9 +1502,9 @@ function openModal(type, data = null) {
                             <label class="block text-sm text-dark-400 mb-1">Штраф для прощения</label>
                             <select name="penaltyId" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
                                 <option value="">Новое прощение (без привязки)</option>
-                                ${db.penalties.filter(p => p.type === 'fine' && !p.forgiven).map(p => {
-                                    const emp = db.employees.find(e => e.id === p.employeeId);
-                                    return `<option value="${p.id}">Штраф #${p.id} - ${emp ? emp.name : '?'} - ${p.amount}₽</option>`;
+                                ${db.penalties.filter(pen => pen.type === 'fine' && !pen.forgiven).map(pen => {
+                                    const emp = db.employees.find(e => e.id === pen.employeeId);
+                                    return `<option value="${pen.id}">Штраф #${pen.id} - ${emp ? emp.name : '?'} - ${pen.amount}₽</option>`;
                                 }).join('')}
                             </select>
                         </div>
@@ -1224,6 +1570,7 @@ function openModal(type, data = null) {
                     <div class="flex flex-col items-center">
                         <div id="empQRCode" class="p-4 bg-white rounded-lg mb-4"></div>
                         <p class="text-sm text-dark-400 mb-1">Сканируйте для начала/окончания смены</p>
+                        <p class="text-xs font-mono text-dark-500 mb-4">${emp.qrCode}</p>
                         <button onclick="printEmployeeQR(${data})" class="mt-2 bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Распечатать QR</button>
                     </div>
                 </div>
@@ -1257,12 +1604,13 @@ function previewImage(input) {
 
 function addReceivingItem() {
     const container = document.getElementById('receivingItems');
+    if (!container) return;
     const div = document.createElement('div');
     div.className = 'receiving-item flex gap-2';
     div.innerHTML = `
         <select name="product" class="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
             <option value="">Выберите товар</option>
-            ${db.products.map(p => `<option value="${p.id}">${p.sku} - ${p.name}</option>`).join('')}
+            ${db.products.map(prod => `<option value="${prod.id}">${prod.sku} - ${prod.name}</option>`).join('')}
         </select>
         <input type="number" name="qty" placeholder="Кол-во" min="1" value="1" class="w-20 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400"><i class="fas fa-times"></i></button>`;
@@ -1271,12 +1619,13 @@ function addReceivingItem() {
 
 function addShippingItem() {
     const container = document.getElementById('shippingItems');
+    if (!container) return;
     const div = document.createElement('div');
     div.className = 'shipping-item flex gap-2';
     div.innerHTML = `
         <select name="product" class="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
             <option value="">Выберите товар</option>
-            ${db.products.map(p => `<option value="${p.id}">${p.sku} - ${p.name} (ост: ${p.quantity})</option>`).join('')}
+            ${db.products.map(prod => `<option value="${prod.id}">${prod.sku} - ${prod.name} (ост: ${prod.quantity})</option>`).join('')}
         </select>
         <input type="number" name="qty" placeholder="Кол-во" min="1" value="1" class="w-20 bg-dark-800 border border-dark-700 rounded-lg px-2 py-2 text-sm text-white">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400"><i class="fas fa-times"></i></button>`;
@@ -1318,7 +1667,7 @@ async function saveProduct(e) {
 async function updateProduct(e, id) {
     e.preventDefault();
     const form = e.target;
-    const idx = db.products.findIndex(p => p.id === id);
+    const idx = db.products.findIndex(prod => prod.id === id);
     if (idx === -1) return;
 
     const photoFile = form.photo.files[0];
@@ -1346,10 +1695,10 @@ async function updateProduct(e, id) {
 
 function deleteProduct(id) {
     if (!confirm('Удалить товар?')) return;
-    const p = db.products.find(x => x.id === id);
-    if (p && p.cell) db.warehouseCells[p.cell] = (db.warehouseCells[p.cell] || 0) - p.quantity;
+    const prod = db.products.find(x => x.id === id);
+    if (prod && prod.cell) db.warehouseCells[prod.cell] = (db.warehouseCells[prod.cell] || 0) - prod.quantity;
     db.products = db.products.filter(x => x.id !== id);
-    addOperation(`Товар удалён: ${p ? p.name : id}`, 'product');
+    addOperation(`Товар удалён: ${prod ? prod.name : id}`, 'product');
     saveData();
     closeModal();
     renderProducts();
@@ -1358,32 +1707,32 @@ function deleteProduct(id) {
 
 function renderProducts() {
     const search = document.getElementById('searchProducts')?.value?.toLowerCase() || '';
-    const filtered = db.products.filter(p =>
-        p.name.toLowerCase().includes(search) ||
-        p.sku.toLowerCase().includes(search) ||
-        p.barcode.includes(search)
+    const filtered = db.products.filter(prod =>
+        prod.name.toLowerCase().includes(search) ||
+        prod.sku.toLowerCase().includes(search) ||
+        prod.barcode.includes(search)
     );
 
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = filtered.map(p => `
+    tbody.innerHTML = filtered.map(prod => `
         <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
-            <td class="px-4 py-3">${p.photo ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg">` : '<div class="w-10 h-10 bg-dark-800 rounded-lg flex items-center justify-center"><i class="fas fa-image text-dark-600"></i></div>'}</td>
-            <td class="px-4 py-3 font-mono text-sm text-primary-400">${p.sku}</td>
-            <td class="px-4 py-3 text-white">${p.name}</td>
+            <td class="px-4 py-3">${prod.photo ? `<img src="${prod.photo}" class="w-10 h-10 object-cover rounded-lg">` : '<div class="w-10 h-10 bg-dark-800 rounded-lg flex items-center justify-center"><i class="fas fa-image text-dark-600"></i></div>'}</td>
+            <td class="px-4 py-3 font-mono text-sm text-primary-400">${prod.sku}</td>
+            <td class="px-4 py-3 text-white">${prod.name}</td>
             <td class="px-4 py-3">
-                <div class="text-xs font-mono">${p.barcode}</div>
-                ${p.kiz ? `<div class="text-xs font-mono text-dark-500">${p.kiz}</div>` : ''}
+                <div class="text-xs font-mono">${prod.barcode}</div>
+                ${prod.kiz ? `<div class="text-xs font-mono text-dark-500">${prod.kiz}</div>` : ''}
             </td>
-            <td class="px-4 py-3 text-sm">${p.cell || '-'}</td>
-            <td class="px-4 py-3 font-semibold text-white">${p.quantity}</td>
-            <td class="px-4 py-3 text-sm">${p.expiry ? formatDateShort(p.expiry) : '-'}</td>
-            <td class="px-4 py-3 text-sm"><button onclick="printProductDocs(${p.id})" class="text-blue-400 hover:text-blue-300"><i class="fas fa-file-pdf"></i></button></td>
+            <td class="px-4 py-3 text-sm">${prod.cell || '-'}</td>
+            <td class="px-4 py-3 font-semibold text-white">${prod.quantity}</td>
+            <td class="px-4 py-3 text-sm">${prod.expiry ? formatDateShort(prod.expiry) : '-'}</td>
+            <td class="px-4 py-3 text-sm"><button onclick="printProductDocs(${prod.id})" class="text-blue-400 hover:text-blue-300"><i class="fas fa-file-pdf"></i></button></td>
             <td class="px-4 py-3">
-                <button onclick="openModal('editProduct', ${p.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Редактировать"><i class="fas fa-edit"></i></button>
-                <button onclick="printLabelForProduct(${p.id})" class="text-green-400 hover:text-green-300 mr-2" title="Печать этикетки"><i class="fas fa-print"></i></button>
-                <button onclick="printBarcodeAndKIZ(${p.id})" class="text-purple-400 hover:text-purple-300" title="Печать ШК+КИЗ"><i class="fas fa-barcode"></i></button>
+                <button onclick="openModal('editProduct', ${prod.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Редактировать"><i class="fas fa-edit"></i></button>
+                <button onclick="printLabelForProduct(${prod.id})" class="text-green-400 hover:text-green-300 mr-2" title="Печать этикетки"><i class="fas fa-print"></i></button>
+                <button onclick="printBarcodeAndKIZ(${prod.id})" class="text-purple-400 hover:text-purple-300" title="Печать ШК+КИЗ"><i class="fas fa-barcode"></i></button>
             </td>
         </tr>`).join('');
 }
@@ -1445,8 +1794,8 @@ function renderReceiving() {
 
     tbody.innerHTML = filtered.map(r => {
         const itemNames = r.items.map(i => {
-            const p = db.products.find(x => x.id === i.productId);
-            return p ? `${p.name} ×${i.qty}` : '?';
+            const prod = db.products.find(x => x.id === i.productId);
+            return prod ? `${prod.name} ×${i.qty}` : '?';
         }).join(', ');
         return `
         <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
@@ -1524,8 +1873,8 @@ function renderShipping() {
 
     tbody.innerHTML = filtered.map(s => {
         const itemNames = s.items.map(i => {
-            const p = db.products.find(x => x.id === i.productId);
-            return p ? `${p.name} ×${i.qty}` : '?';
+            const prod = db.products.find(x => x.id === i.productId);
+            return prod ? `${prod.name} ×${i.qty}` : '?';
         }).join(', ');
         return `
         <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
@@ -1650,28 +1999,7 @@ async function saveEmployee(e) {
 function toggleEmployeeShift(id) {
     const emp = db.employees.find(e => e.id === id);
     if (!emp) return;
-
-    if (emp.status === 'offline') {
-        emp.status = 'online';
-        emp.shiftStart = new Date().toISOString();
-        showToast(`${emp.name} начал смену`, 'success');
-    } else {
-        emp.status = 'offline';
-        if (emp.shiftStart) {
-            const hours = (Date.now() - new Date(emp.shiftStart).getTime()) / (1000 * 60 * 60);
-            emp.totalHours = (emp.totalHours || 0) + hours;
-        }
-        emp.shiftStart = null;
-        showToast(`${emp.name} закончил смену`, 'info');
-    }
-    saveData();
-    renderEmployees();
-}
-
-function scanEmployeeQR(qrCode) {
-    const emp = db.employees.find(e => e.qrCode === qrCode);
-    if (!emp) { showToast('QR-код не найден', 'error'); return; }
-    toggleEmployeeShift(emp.id);
+    processEmployeeScan(emp);
 }
 
 function renderEmployees() {
@@ -1739,7 +2067,15 @@ function viewEmployeeHistory(id) {
     const emp = db.employees.find(e => e.id === id);
     if (!emp) return;
     const penalties = db.penalties.filter(p => p.employeeId === id);
-    const history = penalties.map(p => `${p.type === 'fine' ? 'Штраф' : 'Прощение'}: ${p.reason} - ${p.amount}₽ - ${formatDate(p.date)}`).join('\n');
+    const attendanceRecs = db.attendance.filter(a => a.employeeId === id);
+    let history = 'Посещаемость:\n';
+    attendanceRecs.forEach(a => {
+        history += `  ${a.date}: приход ${formatTime(a.clockIn)}, уход ${formatTime(a.clockOut)}, ${a.hoursWorked.toFixed(1)}ч\n`;
+    });
+    history += '\nШтрафы/Прощения:\n';
+    penalties.forEach(p => {
+        history += `  ${p.type === 'fine' ? 'Штраф' : 'Прощение'}: ${p.reason} - ${p.amount}₽ - ${formatDate(p.date)}\n`;
+    });
     alert(`История: ${emp.name}\n\n${history || 'Нет записей'}`);
 }
 
@@ -1755,6 +2091,7 @@ function printEmployeeQR(id) {
         <body><div class="qr-container">
         <h2>${emp.name}</h2>
         <p>${emp.qrCode}</p>
+        <p>${emp.position || 'Сотрудник'} | ${emp.rate}₽/час</p>
         <div id="qr"></div>
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
         <script>new QRCode(document.getElementById('qr'),{text:'${emp.qrCode}',width:200,height:200});<\/script>
@@ -1763,15 +2100,93 @@ function printEmployeeQR(id) {
     setTimeout(() => printWindow.print(), 500);
 }
 
+// ==================== SCANNER PAGE ====================
+function renderScanner() {
+    renderScanLogToday();
+    document.getElementById('scanResult').classList.add('hidden');
+    // Auto stop if scanning
+    if (!isScanning) {
+        document.getElementById('scannerContainer').classList.add('hidden');
+        document.getElementById('btnStartScan').classList.remove('hidden');
+        document.getElementById('btnStopScan').classList.add('hidden');
+    }
+}
+
+// ==================== ATTENDANCE ====================
+function renderAttendance() {
+    const dateFilter = document.getElementById('attendanceDate')?.value || new Date().toISOString().split('T')[0];
+    const todayAtt = db.attendance.filter(a => a.date === dateFilter);
+
+    const presentCount = todayAtt.filter(a => a.clockIn).length;
+    const absentCount = db.employees.length - presentCount;
+    const onShiftCount = db.employees.filter(e => e.status === 'online').length;
+
+    document.getElementById('attTotal').textContent = db.employees.length;
+    document.getElementById('attPresent').textContent = presentCount;
+    document.getElementById('attAbsent').textContent = absentCount;
+    document.getElementById('attOnShift').textContent = onShiftCount;
+
+    const tbody = document.getElementById('attendanceTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = db.employees.map(e => {
+        const att = todayAtt.find(a => a.employeeId === e.id);
+        const hours = att ? att.hoursWorked.toFixed(1) : '0';
+        const earned = (att ? att.hoursWorked : 0) * e.rate;
+        const status = att && att.clockIn ? 'present' : 'absent';
+
+        return `
+        <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                    ${e.photo ? `<img src="${e.photo}" class="w-8 h-8 rounded-lg object-cover">` : `<div class="w-8 h-8 rounded-lg bg-dark-800 flex items-center justify-center"><i class="fas fa-user text-dark-500 text-xs"></i></div>`}
+                    <span class="text-white text-sm">${e.name}</span>
+                </div>
+            </td>
+            <td class="px-4 py-3 text-sm text-dark-400">${e.position || '-'}</td>
+            <td class="px-4 py-3 text-sm">${att && att.clockIn ? formatTime(att.clockIn) : '-'}</td>
+            <td class="px-4 py-3 text-sm">${att && att.clockOut ? formatTime(att.clockOut) : '-'}</td>
+            <td class="px-4 py-3 text-sm font-semibold text-white">${hours}ч</td>
+            <td class="px-4 py-3 text-sm">${e.rate}₽</td>
+            <td class="px-4 py-3 text-sm font-semibold text-green-400">${earned.toFixed(0)}₽</td>
+            <td class="px-4 py-3">${statusBadge(status)}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="8" class="px-4 py-8 text-center text-dark-500">Нет сотрудников</td></tr>';
+}
+
+function exportAttendance() {
+    const dateFilter = document.getElementById('attendanceDate')?.value || new Date().toISOString().split('T')[0];
+    const todayAtt = db.attendance.filter(a => a.date === dateFilter);
+
+    const rows = db.employees.map(e => {
+        const att = todayAtt.find(a => a.employeeId === e.id);
+        return {
+            'ФИО': e.name,
+            'Должность': e.position || '',
+            'Приход': att && att.clockIn ? formatTime(att.clockIn) : '-',
+            'Уход': att && att.clockOut ? formatTime(att.clockOut) : '-',
+            'Часы': att ? att.hoursWorked.toFixed(2) : '0',
+            'Ставка/час': e.rate,
+            'Сумма': ((att ? att.hoursWorked : 0) * e.rate).toFixed(2)
+        };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Посещаемость');
+    XLSX.writeFile(wb, `attendance_${dateFilter}.xlsx`);
+    showToast('Отчёт экспортирован');
+}
+
 // ==================== INVENTORY ====================
 function saveInventory(e) {
     e.preventDefault();
     const form = e.target;
     const items = [];
-    db.products.forEach(p => {
-        const val = form[`inv_${p.id}`]?.value;
+    db.products.forEach(prod => {
+        const val = form[`inv_${prod.id}`]?.value;
         if (val !== undefined && val !== '') {
-            items.push({ productId: p.id, systemQty: p.quantity, actualQty: parseInt(val) || 0, diff: (parseInt(val) || 0) - p.quantity });
+            items.push({ productId: prod.id, systemQty: prod.quantity, actualQty: parseInt(val) || 0, diff: (parseInt(val) || 0) - prod.quantity });
         }
     });
 
@@ -1813,8 +2228,8 @@ function renderInventory() {
             ${discrepancies.length > 0 ? `<div class="text-xs text-red-400 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>Расхождений: ${discrepancies.length}</div>` : '<div class="text-xs text-green-400 mb-2"><i class="fas fa-check-circle mr-1"></i>Без расхождений</div>'}
             <div class="space-y-1">
                 ${discrepancies.slice(0, 5).map(d => {
-                    const p = db.products.find(x => x.id === d.productId);
-                    return `<div class="flex justify-between text-xs"><span class="text-dark-400">${p ? p.name : '?'}</span><span class="${d.diff > 0 ? 'text-green-400' : 'text-red-400'}">${d.diff > 0 ? '+' : ''}${d.diff}</span></div>`;
+                    const prod = db.products.find(x => x.id === d.productId);
+                    return `<div class="flex justify-between text-xs"><span class="text-dark-400">${prod ? prod.name : '?'}</span><span class="${d.diff > 0 ? 'text-green-400' : 'text-red-400'}">${d.diff > 0 ? '+' : ''}${d.diff}</span></div>`;
                 }).join('')}
             </div>
         </div>`;
@@ -2261,8 +2676,8 @@ function printReceivingDoc(id) {
     if (!r) return;
     const printWindow = window.open('', '_blank');
     let itemsHtml = r.items.map(i => {
-        const p = db.products.find(x => x.id === i.productId);
-        return `<tr><td>${p ? p.sku : '-'}</td><td>${p ? p.name : '-'}</td><td>${i.qty}</td></tr>`;
+        const prod = db.products.find(x => x.id === i.productId);
+        return `<tr><td>${prod ? prod.sku : '-'}</td><td>${prod ? prod.name : '-'}</td><td>${i.qty}</td></tr>`;
     }).join('');
     printWindow.document.write(`
         <html><head><title>Приёмка #${r.id}</title>
@@ -2286,8 +2701,8 @@ function printShippingDoc(id) {
     if (!s) return;
     const printWindow = window.open('', '_blank');
     let itemsHtml = s.items.map(i => {
-        const p = db.products.find(x => x.id === i.productId);
-        return `<tr><td>${p ? p.sku : '-'}</td><td>${p ? p.name : '-'}</td><td>${i.qty}</td></tr>`;
+        const prod = db.products.find(x => x.id === i.productId);
+        return `<tr><td>${prod ? prod.sku : '-'}</td><td>${prod ? prod.name : '-'}</td><td>${i.qty}</td></tr>`;
     }).join('');
     printWindow.document.write(`
         <html><head><title>Отгрузка #${s.id}</title>
@@ -2310,8 +2725,8 @@ function printInventoryReport(id) {
     if (!inv) return;
     const printWindow = window.open('', '_blank');
     let itemsHtml = inv.items.map(i => {
-        const p = db.products.find(x => x.id === i.productId);
-        return `<tr><td>${p ? p.sku : '-'}</td><td>${p ? p.name : '-'}</td><td>${i.systemQty}</td><td>${i.actualQty}</td><td style="color:${i.diff !== 0 ? 'red' : 'green'}">${i.diff > 0 ? '+' : ''}${i.diff}</td></tr>`;
+        const prod = db.products.find(x => x.id === i.productId);
+        return `<tr><td>${prod ? prod.sku : '-'}</td><td>${prod ? prod.name : '-'}</td><td>${i.systemQty}</td><td>${i.actualQty}</td><td style="color:${i.diff !== 0 ? 'red' : 'green'}">${i.diff > 0 ? '+' : ''}${i.diff}</td></tr>`;
     }).join('');
     printWindow.document.write(`
         <html><head><title>Инвентаризация: ${inv.name}</title>
@@ -2376,7 +2791,6 @@ function renderDashboard() {
     document.getElementById('dashOnline').textContent = db.employees.filter(e => e.status === 'online').length;
     document.getElementById('dashTotalEmp').textContent = db.employees.length;
 
-    // Recent operations
     const recentOps = document.getElementById('recentOps');
     if (recentOps) {
         recentOps.innerHTML = db.operations.slice(0, 10).map(o => `
@@ -2386,15 +2800,11 @@ function renderDashboard() {
             </div>`).join('') || '<p class="text-dark-500 text-center py-4">Нет операций</p>';
     }
 
-    // Warehouse map
     renderWarehouseMap('dashWarehouseMap');
-
-    // Charts
     renderDashCharts();
 }
 
 function renderDashCharts() {
-    // Line chart
     const lineCtx = document.getElementById('dashChart');
     if (lineCtx) {
         if (lineCtx.chart) lineCtx.chart.destroy();
@@ -2429,7 +2839,6 @@ function renderDashCharts() {
         });
     }
 
-    // Pie chart
     const pieCtx = document.getElementById('warehousePieChart');
     if (pieCtx) {
         if (pieCtx.chart) pieCtx.chart.destroy();
@@ -2457,12 +2866,6 @@ function updateClock() {
     if (el) {
         el.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
-    // Update online employees hours
-    db.employees.forEach(e => {
-        if (e.status === 'online' && e.shiftStart) {
-            // hours are calculated on render
-        }
-    });
 }
 
 // ==================== INIT ====================
@@ -2472,9 +2875,11 @@ function initApp() {
     loadIntegrations();
     renderWarehouseMap('dashWarehouseMap');
 
-    // Set task date filter to today
     const taskDate = document.getElementById('taskDateFilter');
     if (taskDate) taskDate.value = new Date().toISOString().split('T')[0];
+
+    const attDate = document.getElementById('attendanceDate');
+    if (attDate) attDate.value = new Date().toISOString().split('T')[0];
 }
 
 // ==================== STARTUP ====================
@@ -2497,6 +2902,7 @@ window.addEventListener('load', () => {
     setInterval(() => {
         if (currentPage === 'dashboard') renderDashboard();
         if (currentPage === 'employees') renderEmployees();
+        if (currentPage === 'attendance') renderAttendance();
     }, 30000);
 });
 </script>
