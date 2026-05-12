@@ -1,490 +1,431 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏭 WMS AI Pro | Единая система</title>
-    <style>
-        :root {
-            --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
-            --primary: #6366f1; --primary-glow: rgba(99,102,241,0.3);
-            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-            --text: #f8fafc; --text-muted: #94a3b8; --border: #475569;
-            --radius: 12px; --shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
-        body { background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; }
-
-        /* LAYOUT */
-        .sidebar { width:260px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:16px; gap:8px; overflow-y:auto; }
-        .logo { font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; margin-bottom:20px; padding:0 8px; }
-        .nav-item { padding:10px 14px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:0.2s; font-size:14px; }
-        .nav-item:hover { background:var(--surface2); }
-        .nav-item.active { background:var(--primary); color:white; box-shadow:0 4px 12px var(--primary-glow); }
-        .nav-item.disabled { opacity:0.4; pointer-events:none; }
-        .nav-divider { height:1px; background:var(--border); margin:8px 0; }
-        .ai-gen-btn { background:linear-gradient(135deg, #8b5cf6, #ec4899); color:white; font-weight:600; }
-
-        .main-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-        .header { background:var(--surface); padding:12px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-        .header h2 { font-size:18px; }
-        .header-controls { display:flex; gap:12px; align-items:center; }
-        .mic-toggle { padding:8px 16px; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:8px; }
-        .mic-toggle.listening { background:var(--danger); border-color:var(--danger); animation: pulse 1.5s infinite; }
-
-        .content { flex:1; padding:24px; overflow-y:auto; position:relative; }
-
-        /* AI PANEL */
-        .ai-panel { position:fixed; right:-380px; top:0; width:360px; height:100vh; background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow); transition:0.3s; display:flex; flex-direction:column; z-index:100; }
-        .ai-panel.open { right:0; }
-        .ai-header { padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-        .ai-chat { flex:1; padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
-        .ai-msg { max-width:90%; padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.5; animation:pop 0.2s; }
-        .ai-msg.user { background:var(--primary); color:white; align-self:flex-end; }
-        .ai-msg.bot { background:var(--surface2); border:1px solid var(--border); }
-        .ai-input { padding:16px; border-top:1px solid var(--border); display:flex; gap:8px; }
-        .ai-input input { flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:8px; outline:none; }
-        .ai-input button { background:var(--primary); border:none; color:white; padding:0 16px; border-radius:8px; cursor:pointer; font-weight:600; }
-
-        @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)} 70%{box-shadow:0 0 0 10px transparent} 100%{box-shadow:0 0 0 0 transparent} }
-        @keyframes pop { from{transform:scale(0.95);opacity:0} to{transform:scale(1);opacity:1} }
-
-        /* TOASTS */
-        .toast-box { position:fixed; top:20px; right:20px; z-index:2000; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
-        .toast { background:var(--surface); border-left:4px solid var(--primary); padding:12px 18px; border-radius:8px; box-shadow:var(--shadow); color:var(--text); font-size:14px; animation:slideIn 0.3s; pointer-events:auto; }
-        .toast.warn { border-color:var(--warning); } .toast.err { border-color:var(--danger); } .toast.ok { border-color:var(--success); }
-        @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
-
-        /* UTILS */
-        .btn { padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:600; transition:0.2s; }
-        .btn-primary { background:var(--primary); color:white; } .btn-primary:hover{background:#4f46e5}
-        .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
-        .card { background:var(--surface); padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:16px; }
-        .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
-        .stat { text-align:center; padding:16px; background:var(--surface2); border-radius:10px; }
-        .stat-val { font-size:28px; font-weight:800; } .stat-lbl { font-size:13px; color:var(--text-muted); margin-top:4px; }
-        table { width:100%; border-collapse:collapse; } th { background:var(--surface2); padding:12px; text-align:left; font-size:12px; text-transform:uppercase; color:var(--text-muted); border-bottom:2px solid var(--border); }
-        td { padding:12px; border-bottom:1px solid var(--border); font-size:14px; } tr:hover{background:rgba(255,255,255,0.03)}
-        .badge { padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-        .b-ok { background:rgba(16,185,129,0.2); color:#10b981; } .b-warn { background:rgba(245,158,11,0.2); color:#f59e0b; } .b-err { background:rgba(239,68,68,0.2); color:#ef4444; }
-        .empty-state { text-align:center; padding:40px; color:var(--text-muted); }
-        .gen-progress { margin-top:12px; padding:12px; background:var(--surface2); border-radius:8px; display:none; }
-        .gen-progress.active { display:block; }
-        .gen-bar { height:6px; background:#475569; border-radius:3px; overflow:hidden; margin-top:8px; }
-        .gen-fill { height:100%; background:var(--primary); width:0%; transition:width 0.3s; }
-
-        @media(max-width:768px) { .sidebar{position:fixed;left:-260px;z-index:90;height:100%;transition:0.3s} .sidebar.open{left:0} .ai-panel{width:100%} }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Фулфилмент PRO</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #fff; --text: #1e293b; --text2: #64748b;
+  --primary: #6366f1; --primary-hover: #4f46e5; --danger: #ef4444;
+  --success: #22c55e; --warning: #f59e0b; --border: #e2e8f0;
+  --shadow: 0 4px 12px rgba(0,0,0,0.08); --radius: 14px;
+  --gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #3b82f6);
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+[data-theme="dark"] {
+  --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text2: #94a3b8;
+  --border: #334155; --shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; transition: background .3s, color .3s; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+/* SPLASH */
+#splash { position: fixed; inset: 0; z-index: 9999; background: var(--gradient); display: flex; align-items: center; justify-content: center; flex-direction: column; color: #fff; transition: opacity .6s, transform .6s; }
+#splash.hide { opacity: 0; transform: scale(1.05); pointer-events: none; }
+#splash h1 { font-size: 2.5rem; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,.2); }
+#splash p { opacity: .9; margin-bottom: 24px; }
+#splash .bar { width: 180px; height: 4px; background: rgba(255,255,255,.3); border-radius: 2px; overflow: hidden; }
+#splash .fill { height: 100%; background: #fff; border-radius: 2px; animation: load 2s ease forwards; }
+@keyframes load { from { width: 0 } to { width: 100% } }
+/* LOGIN */
+#login { display: none; min-height: 100vh; align-items: center; justify-content: center; background: var(--gradient); padding: 20px; }
+#login .card { background: var(--card); padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center; }
+#login h2 { margin-bottom: 12px; color: var(--primary); }
+#login input { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px; margin-bottom: 12px; background: var(--bg); color: var(--text); outline: none; transition: .2s; }
+#login input:focus { border-color: var(--primary); }
+#login .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: 600; font-size: 1rem; transition: .2s; }
+#login .btn.primary { background: var(--gradient); color: #fff; }
+#login .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,.4); }
+#login .btn.outline { background: transparent; border: 2px solid var(--border); color: var(--text); margin-top: 10px; }
+#login .err { color: var(--danger); margin-top: 8px; display: none; font-size: .9rem; }
+/* APP LAYOUT */
+#app { display: none; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; background: var(--card); border-right: 1px solid var(--border); padding: 20px 0; z-index: 100; transition: transform .3s; overflow-y: auto; }
+.sidebar .brand { padding: 0 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.sidebar .icon { width: 40px; height: 40px; background: var(--gradient); border-radius: 10px; display: grid; place-items: center; color: #fff; font-size: 1.2rem; }
+.sidebar nav a { display: flex; align-items: center; gap: 12px; padding: 10px 20px; color: var(--text2); text-decoration: none; transition: .2s; border-left: 3px solid transparent; }
+.sidebar nav a:hover, .sidebar nav a.active { background: rgba(99,102,241,.08); color: var(--primary); border-left-color: var(--primary); }
+.sidebar nav a span { font-size: 1.1rem; }
+.sidebar .user { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 20px; border-top: 1px solid var(--border); background: var(--card); display: flex; align-items: center; gap: 10px; }
+.sidebar .user .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 1rem; }
+.sidebar .user .info { flex: 1; }
+.sidebar .user .info .name { font-weight: 600; font-size: .9rem; }
+.sidebar .user .info .role { font-size: .75rem; color: var(--text2); }
+.main { margin-left: 250px; padding: 24px; min-height: 100vh; transition: margin .3s; }
+/* TOPBAR */
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.topbar h1 { font-size: 1.5rem; }
+.topbar .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn { padding: 8px 14px; border-radius: 8px; border: none; font-weight: 600; font-size: .85rem; transition: .2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn.p { background: var(--primary); color: #fff; }
+.btn.p:hover { background: var(--primary-hover); }
+.btn.g { background: var(--success); color: #fff; }
+.btn.d { background: var(--danger); color: #fff; }
+.btn.o { background: transparent; border: 2px solid var(--border); color: var(--text); }
+.btn.o:hover { border-color: var(--primary); color: var(--primary); }
+.btn.sm { padding: 6px 10px; font-size: .8rem; }
+.theme-btn { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); display: grid; place-items: center; font-size: 1.1rem; transition: .2s; }
+.theme-btn:hover { border-color: var(--primary); }
+/* CARDS & STATS */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat { background: var(--card); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
+.stat .val { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
+.stat .lbl { color: var(--text2); font-size: .85rem; margin-top: 4px; }
+/* TABLES */
+.panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
+.panel .head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.panel table { width: 100%; border-collapse: collapse; }
+.panel th, .panel td { padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.panel th { background: rgba(99,102,241,.05); color: var(--primary); font-weight: 600; white-space: nowrap; }
+.panel tr:hover { background: rgba(99,102,241,.02); }
+.badge { padding: 4px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+.b-s { background: rgba(34,197,94,.15); color: var(--success); }
+.b-w { background: rgba(245,158,11,.2); color: #d97706; }
+.b-d { background: rgba(239,68,68,.15); color: var(--danger); }
+.b-i { background: rgba(59,130,246,.15); color: #2563eb; }
+/* FORMS */
+.form { display: grid; gap: 14px; }
+.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form label { display: block; margin-bottom: 4px; font-weight: 600; font-size: .85rem; color: var(--text2); }
+.form input, .form select, .form textarea { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); outline: none; transition: .2s; }
+.form input:focus, .form select:focus, .form textarea:focus { border-color: var(--primary); }
+.photo-box { width: 100px; height: 100px; border-radius: 10px; border: 2px dashed var(--border); display: grid; place-items: center; cursor: pointer; overflow: hidden; background: var(--bg); position: relative; }
+.photo-box img { width: 100%; height: 100%; object-fit: cover; }
+.photo-box span { font-size: .7rem; color: var(--text2); text-align: center; padding: 4px; }
+.photo-box input { display: none; }
+/* MODAL */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal.show { display: flex; }
+.modal .box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+.modal .hd { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal .bd { padding: 20px; }
+.modal .ft { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+.close { width: 32px; height: 32px; border-radius: 6px; border: none; background: var(--bg); display: grid; place-items: center; cursor: pointer; }
+/* MAP */
+.map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 12px; }
+.cell { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: .75rem; font-weight: 600; cursor: pointer; transition: .2s; border: 2px solid transparent; }
+.cell:hover { transform: scale(1.04); }
+.cell.e { background: rgba(34,197,94,.1); border-color: var(--success); color: var(--success); }
+.cell.w { background: rgba(245,158,11,.15); border-color: var(--warning); color: #d97706; }
+.cell.f { background: rgba(239,68,68,.1); border-color: var(--danger); color: var(--danger); }
+/* LABELS */
+.label-58 { width: 58mm; height: 40mm; border: 1px solid #000; padding: 3mm; font-family: monospace; font-size: 9pt; background: #fff; color: #000; page-break-after: always; display: inline-block; margin: 2mm; vertical-align: top; }
+/* TOAST */
+#toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; box-shadow: var(--shadow); z-index: 2000; transform: translateY(100px); opacity: 0; transition: .3s; }
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.ok { border-left: 4px solid var(--success); }
+#toast.err { border-left: 4px solid var(--danger); }
+/* PRINT */
+@media print {
+  .sidebar, .topbar, .btn, .photo-box, .theme-btn, #toast { display: none !important; }
+  .main { margin-left: 0 !important; padding: 10px !important; }
+  .panel { box-shadow: none !important; border: 1px solid #ccc !important; }
+  .no-print { display: none !important; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .form .row { grid-template-columns: 1fr; }
+}
+.fade { animation: fadeIn .4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px; } to { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
 
-<aside class="sidebar" id="sidebar">
-    <div class="logo">🏭 WMS AI Pro</div>
-    <div id="navList"></div>
-    <div class="nav-divider"></div>
-    <div class="nav-item ai-gen-btn" onclick="App.AI.openPanel()">🤖 Создать модуль с ИИ</div>
-</aside>
+<div id="splash"><h1>📦 Фулфилмент PRO</h1><p>Загрузка системы...</p><div class="bar"><div class="fill"></div></div></div>
 
-<div class="main-wrapper">
-    <header class="header">
-        <div style="display:flex;align-items:center;gap:12px;">
-            <button class="btn-secondary" onclick="document.getElementById('sidebar').classList.toggle('open')" style="padding:6px 10px;display:none" id="menuBtn">☰</button>
-            <h2 id="pageTitle">Дашборд</h2>
-        </div>
-        <div class="header-controls">
-            <span id="sysTime" style="font-family:monospace;font-weight:600;"></span>
-            <button class="mic-toggle" id="micBtn" onclick="App.Voice.toggle()">🎤 Голос</button>
-        </div>
-    </header>
-
-    <main class="content" id="mainContent">
-        <!-- Dynamic Module Content -->
-    </main>
+<div id="login">
+  <div class="card">
+    <h2>🔐 Вход в систему</h2>
+    <p style="color:var(--text2);margin-bottom:16px;font-size:.9rem">Введите учетные данные</p>
+    <input type="text" id="u-login" placeholder="Логин" autocomplete="username">
+    <input type="password" id="u-pass" placeholder="Пароль" autocomplete="current-password">
+    <button class="btn primary" onclick="Auth.login()">Войти</button>
+    <p class="err" id="login-err">Неверный логин или пароль</p>
+    <button class="btn outline" onclick="Auth.reset()">🔄 Сбросить данные и войти</button>
+    <p style="margin-top:12px;font-size:.8rem;color:var(--text2)">По умолчанию: <b>admin</b> / <b>admin123</b></p>
+  </div>
 </div>
 
-<div class="ai-panel" id="aiPanel">
-    <div class="ai-header"><span>🤖 ИИ-Конструктор</span><button class="btn-secondary" onclick="App.AI.closePanel()">✕</button></div>
-    <div class="ai-chat" id="aiChat">
-        <div class="ai-msg bot">Привет! Опишите модуль, который нужен. Например: "Создай модуль учета возвратов с таблицей, статусами и печатью" или "Нужен реестр поставщиков с рейтингом".</div>
+<div id="app">
+  <div class="sidebar" id="sb">
+    <div class="brand"><div class="icon">📦</div><h3>Фулфилмент PRO</h3></div>
+    <nav id="nav">
+      <a href="#" data-p="dash" class="active"><span>📊</span> Дашборд</a>
+      <a href="#" data-p="wh"><span>🏭</span> Склад</a>
+      <a href="#" data-p="recv"><span>📥</span> Приемка</a>
+      <a href="#" data-p="ship"><span>📤</span> Отгрузка</a>
+      <a href="#" data-p="inv"><span>📋</span> Инвентаризация</a>
+      <a href="#" data-p="tasks"><span>✅</span> Задачи</a>
+      <a href="#" data-p="emp"><span>👥</span> Сотрудники</a>
+      <a href="#" data-p="fines"><span>⚠️</span> Штрафы</a>
+      <a href="#" data-p="lbl"><span>🏷️</span> Этикетки</a>
+      <a href="#" data-p="map"><span>🗺️</span> Карта склада</a>
+      <a href="#" data-p="int"><span>🔗</span> Интеграции</a>
+      <a href="#" data-p="set"><span>⚙️</span> Настройки</a>
+    </nav>
+    <div class="user">
+      <div class="avatar" id="u-av">👤</div>
+      <div class="info"><div class="name" id="u-name">Админ</div><div class="role" id="u-role">Администратор</div></div>
+      <button class="btn d sm" onclick="Auth.logout()" title="Выйти">🚪</button>
     </div>
-    <div class="ai-input">
-        <input type="text" id="aiInput" placeholder="Опишите модуль или задайте вопрос...">
-        <button onclick="App.AI.processInput()">➤</button>
+  </div>
+  <div class="main" id="main">
+    <div class="topbar">
+      <h1 id="page-title">Дашборд</h1>
+      <div class="actions">
+        <button class="theme-btn" onclick="UI.theme()" title="День/Ночь">🌓</button>
+      </div>
     </div>
-    <div class="gen-progress" id="genProgress">
-        <div id="genStatus">Анализ запроса...</div>
-        <div class="gen-bar"><div class="gen-fill" id="genFill"></div></div>
-    </div>
+    <div id="content" class="fade"></div>
+  </div>
 </div>
 
-<div class="toast-box" id="toastBox"></div>
+<div class="modal" id="mdl">
+  <div class="box">
+    <div class="hd"><h3 id="mdl-t">Заголовок</h3><button class="close" onclick="UI.closeMdl()">✕</button></div>
+    <div class="bd" id="mdl-b"></div>
+    <div class="ft" id="mdl-f"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="print-area" style="display:none"></div>
 
 <script>
-/**
- * 🏗️ WMS AI Pro CORE
- * Единая архитектура: модульный регистр, общее хранилище, ИИ-генератор, голосовой ассистент
- */
-const App = {
-    modules: {},
-    active: 'dashboard',
-    data: {
-        get(key) { try { return JSON.parse(localStorage.getItem(`wms_${key}`)) || []; } catch { return []; } },
-        set(key, val) { localStorage.setItem(`wms_${key}`, JSON.stringify(val)); }
-    },
-    init() {
-        this.DataLayer.bootstrap();
-        this.ModuleRegistry.registerBuiltin();
-        this.UI.renderNav();
-        this.Router.switch('dashboard');
-        setInterval(() => document.getElementById('sysTime').textContent = new Date().toLocaleTimeString('ru-RU'), 1000);
-        this.Voice.init();
-        this.AI.loadHistory();
-        
-        // Responsive
-        if(window.innerWidth < 768) document.getElementById('menuBtn').style.display = 'block';
-    }
+// === MODULE: STORAGE ===
+const DB = {
+  _p: 'ff_',
+  _mem: {},
+  get(k) { try { const v=localStorage.getItem(this._p+k); return v?JSON.parse(v):this._mem[k]??null; } catch(e){ return this._mem[k]??null; } },
+  set(k,v) { try { localStorage.setItem(this._p+k, JSON.stringify(v)); } catch(e) { this._mem[k]=v; } },
+  init() {
+    if(!this.get('users')) this.set('users', [{id:1,login:'admin',pass:'admin123',name:'Администратор',role:'admin',rate:500}]);
+    if(!this.get('products')) this.set('products',[]);
+    if(!this.get('locations')) this.set('locations',[{id:'A1',zone:'A',name:'Ряд A-1',cap:100,used:0},{id:'A2',zone:'A',name:'Ряд A-2',cap:100,used:0},{id:'B1',zone:'B',name:'Ряд B-1',cap:150,used:0}]);
+    ['recv','ship','inv','tasks','emp','fines','logs','int'].forEach(k=>{if(!this.get(k))this.set(k,k==='int'?{dd:{e:0,k:''},c1:{e:0,k:''},wms:{e:0,k:''},clients:[]}:[]);});
+  },
+  expAll(){ return JSON.stringify({users:this.get('users'),products:this.get('products'),locations:this.get('locations'),recv:this.get('recv'),ship:this.get('ship'),inv:this.get('inv'),tasks:this.get('tasks'),emp:this.get('emp'),fines:this.get('fines'),int:this.get('int')},null,2); },
+  impAll(j){ try{const d=JSON.parse(j);Object.keys(d).forEach(k=>this.set(k,d[k]));return true;}catch{return false;} },
+  log(a,d){ const l=this.get('logs')||[]; l.unshift({id:Date.now(),t:new Date().toISOString(),a,d,u:App.user?.name||'sys'}); if(l.length>2000)l.length=2000; this.set('logs',l); },
+  id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 };
 
-/** DATA LAYER */
-App.DataLayer = {
-    bootstrap() {
-        if(!App.data.get('receiving').length) {
-            App.data.set('receiving', [
-                {id:'r1', num:'ПР-2026-001', date:'2026-05-11', supplier:'ООО Альфа', status:'complete', items:[{name:'Монитор',qty:10,price:15000}]},
-                {id:'r2', num:'ПР-2026-002', date:'2026-05-10', supplier:'ИП Петров', status:'pending', items:[{name:'Клавиатура',qty:50,price:1200}]}
-            ]);
-        }
-        if(!App.data.get('warehouse').length) {
-            App.data.set('warehouse', [
-                {id:'w1', code:'A-01-1-1', zone:'Приемка', cap:100, curr:65, items:[{name:'Монитор',qty:65}]},
-                {id:'w2', code:'B-02-3-2', zone:'Хранение', cap:200, curr:12, items:[{name:'Сервер',qty:12}]}
-            ]);
-        }
-        if(!App.data.get('hr').length) {
-            App.data.set('hr', [
-                {id:'e1', name:'Иванов А.П.', pos:'Кладовщик', dept:'Склад', status:'active', shift:'5/2', session:{start:Date.now()-7200000}},
-                {id:'e2', name:'Смирнова М.В.', pos:'Оператор', dept:'Бухгалтерия', status:'vacation', shift:'5/2', session:null}
-            ]);
-        }
-    }
+// === MODULE: AUTH ===
+const Auth = {
+  login(){
+    const l=document.getElementById('u-login').value.trim(), p=document.getElementById('u-pass').value.trim();
+    const u=(DB.get('users')||[]).find(x=>x.login===l&&x.pass===p);
+    if(u){ App.user=u; sessionStorage.setItem('ff_sid',u.id); document.getElementById('login').style.display='none'; document.getElementById('app').style.display='block'; UI.setUser(u); UI.nav('dash'); DB.log('Вход',u.name); UI.toast('Успешный вход','ok'); }
+    else { const e=document.getElementById('login-err'); e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
+  },
+  logout(){ DB.log('Выход',App.user?.name); sessionStorage.removeItem('ff_sid'); App.user=null; document.getElementById('app').style.display='none'; document.getElementById('login').style.display='flex'; },
+  reset(){ try{localStorage.clear();}catch{} Object.keys(DB._mem).forEach(k=>delete DB._mem[k]); DB.init(); document.getElementById('u-login').value='admin'; document.getElementById('u-pass').value='admin123'; document.getElementById('login-err').style.display='none'; UI.toast('Данные сброшены. Нажмите Войти','ok'); },
+  check(){ const sid=sessionStorage.getItem('ff_sid'); if(sid){ const u=(DB.get('users')||[]).find(x=>x.id==sid); if(u){ App.user=u; document.getElementById('login').style.display='none'; document.getElementById('app').style.display='block'; UI.setUser(u); UI.nav('dash'); return; } } document.getElementById('login').style.display='flex'; }
 };
 
-/** MODULE REGISTRY */
-App.ModuleRegistry = {
-    register(id, config) { App.modules[id] = {id, enabled:true, ...config}; },
-    enable(id) { if(App.modules[id]) { App.modules[id].enabled=true; App.UI.renderNav(); App.Toast.ok(`Модуль "${App.modules[id].name}" включен`); } },
-    disable(id) { if(App.modules[id] && id!=='dashboard') { App.modules[id].enabled=false; App.UI.renderNav(); App.Toast.warn(`Модуль "${App.modules[id].name}" отключен`); } },
-    registerBuiltin() {
-        this.register('dashboard', { name:'📊 Дашборд', icon:'📈', render:App.Modules.Dashboard.render });
-        this.register('receiving', { name:'📥 Приёмка', icon:'📦', render:App.Modules.Receiving.render });
-        this.register('inventory', { name:'📋 Инвентаризация', icon:'🔍', render:App.Modules.Inventory.render });
-        this.register('warehouse', { name:'🗺️ Склад и ячейки', icon:'📍', render:App.Modules.Warehouse.render });
-        this.register('hr', { name:'👥 Сотрудники и табель', icon:'🆔', render:App.Modules.HR.render });
-    }
+// === MODULE: UI ===
+const UI = {
+  theme(){ const h=document.documentElement, d=h.dataset.theme==='dark'; h.dataset.theme=d?'light':'dark'; try{localStorage.setItem('ff_th',d?'light':'dark');}catch{} },
+  toast(m,t='ok'){ const el=document.getElementById('toast'); el.textContent=m; el.className=`show ${t}`; setTimeout(()=>el.className='',3000); },
+  setUser(u){ document.getElementById('u-name').textContent=u.name; document.getElementById('u-role').textContent=u.role==='admin'?'Администратор':'Сотрудник'; document.getElementById('u-av').textContent=u.name[0].toUpperCase(); },
+  openMdl(t,b,f){ document.getElementById('mdl-t').textContent=t; document.getElementById('mdl-b').innerHTML=b; document.getElementById('mdl-f').innerHTML=f||'<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>'; document.getElementById('mdl').classList.add('show'); },
+  closeMdl(){ document.getElementById('mdl').classList.remove('show'); },
+  badge(s){ const m={new:'b-i',progress:'b-w',done:'b-s',cancelled:'b-d',recv:'b-s',ship:'b-i',pending:'b-w',counting:'b-w',counted:'b-s'}; return `<span class="badge ${m[s]||'b-i'}">${s||'—'}</span>`; },
+  photo(id,val){ return `<div class="photo-box" onclick="document.getElementById('${id}').click()">${val?`<img src="${val}" id="${id}-p">`:`<span id="${id}-p">📷<br>Фото</span>`}<input type="file" id="${id}" accept="image/*" onchange="UI.preview(this,'${id}-p')"></div>`; },
+  preview(inp,prev){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const el=document.getElementById(prev); if(el.tagName==='IMG')el.src=e.target.result; else el.outerHTML=`<img src="${e.target.result}" id="${prev}">`; }; r.readAsDataURL(f); },
+  fileBase(f){ return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);}); },
+  nav(p){ document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.p===p)); document.getElementById('page-title').textContent={dash:'Дашборд',wh:'Склад',recv:'Приемка',ship:'Отгрузка',inv:'Инвентаризация',tasks:'Задачи',emp:'Сотрудники',fines:'Штрафы',lbl:'Этикетки',map:'Карта склада',int:'Интеграции',set:'Настройки'}[p]; Pages[p](); }
 };
 
-/** ROUTER */
-App.Router = {
-    switch(id) {
-        App.active = id;
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.id===id));
-        document.getElementById('pageTitle').textContent = App.modules[id]?.name || id;
-        const container = document.getElementById('mainContent');
-        container.innerHTML = '<div class="empty-state">⏳ Загрузка...</div>';
-        setTimeout(() => App.modules[id]?.render(container), 50);
-        if(window.innerWidth<768) document.getElementById('sidebar').classList.remove('open');
-    }
+// === MODULE: PAGES ===
+const Pages = {
+  dash(){ const p=DB.get('products')||[], r=DB.get('recv')||[], s=DB.get('ship')||[], t=DB.get('tasks')||[], e=DB.get('emp')||[], f=DB.get('fines')||[]; 
+    document.getElementById('content').innerHTML=`
+    <div class="stats fade">
+      <div class="stat"><div class="lbl">Товаров на складе</div><div class="val">${p.reduce((a,x)=>a+x.qty,0)}</div></div>
+      <div class="stat"><div class="lbl">Ожидает приемки</div><div class="val">${r.filter(x=>x.s!=='recv').length}</div></div>
+      <div class="stat"><div class="lbl">Ожидает отгрузки</div><div class="val">${s.filter(x=>x.s!=='ship').length}</div></div>
+      <div class="stat"><div class="lbl">Активных задач</div><div class="val">${t.filter(x=>x.s!=='done').length}</div></div>
+      <div class="stat"><div class="lbl">Сотрудников онлайн</div><div class="val">${e.filter(x=>x.act).length}</div></div>
+      <div class="stat"><div class="lbl">Сумма штрафов</div><div class="val">${f.reduce((a,x)=>a+(x.am||0),0).toLocaleString()} ₽</div></div>
+    </div>
+    <div class="panel fade"><div class="head"><h3>📋 Последние действия</h3></div><table><thead><tr><th>Время</th><th>Действие</th><th>Пользователь</th></tr></thead><tbody>${(DB.get('logs')||[]).slice(0,10).map(l=>`<tr><td>${new Date(l.t).toLocaleString()}</td><td>${l.a}</td><td>${l.u}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text2)">Нет записей</td></tr>'}</tbody></table></div>`; },
+  
+  wh(){ const p=DB.get('products')||[], l=DB.get('locations')||[];
+    document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.whMdl()">➕ Добавить</button><button class="btn o" onclick="Pages.whExp()">📊 Экспорт CSV</button><button class="btn o" onclick="document.getElementById('wh-csv').click()">📤 Импорт</button><input type="file" id="wh-csv" style="display:none" accept=".csv" onchange="Pages.whImp(this)"></div></div>
+    <div class="panel fade"><div class="head"><h3>Товары (${p.length})</h3><input type="text" placeholder="Поиск..." oninput="this.closest('.panel').querySelectorAll('tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;"></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Фото</th><th>ШК</th><th>Название</th><th>Арт</th><th>Кат</th><th>Кол-во</th><th>Место</th><th>Годен до</th><th>Цена</th><th></th></tr></thead><tbody>
+    ${p.map(x=>`<tr><td>${x.ph?`<img src="${x.ph}" style="width:32px;height:32px;border-radius:6px;object-fit:cover">`:'📦'}</td><td>${x.bc||'—'}</td><td>${x.nm}</td><td>${x.art||'—'}</td><td>${x.cat||'—'}</td><td>${x.qty}</td><td><span class="badge b-i">${x.loc||'—'}</span></td><td>${x.exp||'—'}</td><td>${x.prc}₽</td><td><button class="btn o sm" onclick="Pages.whMdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('products','${x.id}','wh')">🗑️</button><button class="btn o sm" onclick="Pages.lblPrint('${x.id}')">🏷️</button></td></tr>`).join('')}
+    ${p.length===0?'<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text2)">Нет товаров. Добавьте или импортируйте CSV.</td></tr>':''}
+    </tbody></table></div></div>`; },
+  whMdl(id){ const p=DB.get('products')||[], x=id?p.find(v=>v.id===id):null, l=DB.get('locations')||[]; UI.openMdl(x?'Редактировать':'Новый товар',`<div class="form">${UI.photo('w-ph',x?.ph||'')}<div class="row"><div><label>Штрих-код</label><input id="w-bc" value="${x?.bc||''}"></div><div><label>Артикул</label><input id="w-art" value="${x?.art||''}"></div></div><label>Название</label><input id="w-nm" value="${x?.nm||''}"><div class="row"><div><label>Категория</label><input id="w-cat" value="${x?.cat||''}"></div><div><label>Количество</label><input type="number" id="w-qty" value="${x?.qty||0}" min="0"></div></div><div class="row"><div><label>Место</label><select id="w-loc"><option value="">—</option>${l.map(v=>`<option value="${v.id}" ${x?.loc===v.id?'selected':''}>${v.id} ${v.nm}</option>`).join('')}</select></div><div><label>Срок годности</label><input type="date" id="w-exp" value="${x?.exp||''}"></div></div><label>Цена (₽)</label><input type="number" id="w-prc" value="${x?.prc||0}" min="0"><label>Документы/Заметки</label><textarea id="w-doc" rows="2">${x?.doc||''}</textarea></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.whSave('${id||''}')">💾 Сохранить</button>`); },
+  async whSave(id){ const p=DB.get('products')||[], phInp=document.getElementById('w-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=p.find(v=>v.id===id)?.ph||'';
+    const d={nm:document.getElementById('w-nm').value,bc:document.getElementById('w-bc').value,art:document.getElementById('w-art').value,cat:document.getElementById('w-cat').value,qty:+document.getElementById('w-qty').value||0,loc:document.getElementById('w-loc').value,exp:document.getElementById('w-exp').value,prc:+document.getElementById('w-prc').value||0,doc:document.getElementById('w-doc').value,ph};
+    if(!d.nm)return UI.toast('Введите название','err');
+    if(id){const i=p.findIndex(v=>v.id===id);if(i>=0)Object.assign(p[i],d);}else{d.id=DB.id();d.ts=Date.now();p.push(d);}
+    DB.set('products',p); UI.closeMdl(); Pages.wh(); DB.log(id?'Товар ред.':'Товар доб.',d.nm); },
+  whExp(){ const p=DB.get('products')||[], h=['bc','nm','art','cat','qty','loc','exp','prc']; let c=h.join(';')+'\n'+p.map(x=>h.map(k=>x[k]??'').join(';')).join('\n'); UI.dl(new Blob(['\ufeff'+c],{type:'text/csv'}),'Товары.csv'); },
+  whImp(inp){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const ls=e.target.result.split('\n').filter(l=>l.trim()), hs=ls[0].split(';').map(h=>h.trim()), dt=ls.slice(1).map(l=>{const v=l.split(';');return{bc:v[0]||'',nm:v[1]||'Без имени',art:v[2]||'',cat:v[3]||'',qty:+v[4]||0,loc:v[5]||'',exp:v[6]||'',prc:+v[7]||0};});
+    const p=DB.get('products')||[]; dt.forEach(v=>{v.id=DB.id();v.ts=Date.now();v.ph='';p.push(v);}); DB.set('products',p); Pages.wh(); UI.toast(`Импортировано ${dt.length} товаров`,'ok'); DB.log('Импорт товаров',`${dt.length} шт`); }; r.readAsText(f,'UTF-8'); },
+  
+  recv(){ const r=DB.get('recv')||[]; Pages._table('recv','Приемка',r,[['Дата','d'],['Поставщик','sup'],['ШК','bc'],['Товар','nm'],['Кол-во','qty'],['Статус','s'],['Коммент','cm']],['bc','qty','s','recv']); },
+  ship(){ const s=DB.get('ship')||[]; Pages._table('ship','Отгрузка',s,[['Дата','d'],['Клиент','cl'],['ШК','bc'],['Товар','nm'],['Кол-во','qty'],['Статус','s'],['Коммент','cm']],['bc','qty','s','ship']); },
+  _table(key,title,data,cols,acts){ 
+    document.getElementById('content').innerHTML=`<div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.${key}Mdl()">➕ Добавить</button><button class="btn o" onclick="Pages.exp('${key}')">📊 Экспорт</button></div></div>
+    <div class="panel fade"><div class="head"><h3>${title} (${data.length})</h3></div><div style="overflow-x:auto"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}<th>Действия</th></tr></thead><tbody>
+    ${data.map(x=>`<tr>${cols.map(c=>`<td>${c[1]==='s'?UI.badge(x.s):(x[c[1]]||'—')}</td>`).join('')}<td><button class="btn o sm" onclick="Pages.${key}Mdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('${key}','${x.id}','${key}')">🗑️</button>${acts.includes('recv')&&x.s!=='recv'?`<button class="btn g sm" onclick="Pages.upd('${key}','${x.id}','recv')">✅</button>`:''}${acts.includes('ship')&&x.s!=='ship'?`<button class="btn g sm" onclick="Pages.upd('${key}','${x.id}','ship')">🚚</button>`:''}</td></tr>`).join('')}
+    ${data.length===0?`<tr><td colspan="${cols.length+1}" style="text-align:center;padding:30px;color:var(--text2)">Нет записей</td></tr>`:''}
+    </tbody></table></div></div>`; },
+  recvMdl(id){ Pages._docMdl('recv','Приемка',id,['sup','bc','nm','qty','cm']); },
+  shipMdl(id){ Pages._docMdl('ship','Отгрузка',id,['cl','bc','nm','qty','cm']); },
+  _docMdl(key,title,id,fields){ const data=DB.get(key)||[], x=id?data.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':`Новая ${title}`,`<div class="form">${UI.photo(key+'-ph',x?.ph||'')}
+    ${fields.includes('sup')?`<label>Поставщик</label><input id="${key}-sup" value="${x?.sup||''}">`:''}${fields.includes('cl')?`<label>Клиент</label><input id="${key}-cl" value="${x?.cl||''}">`:''}
+    <label>Штрих-код</label><input id="${key}-bc" value="${x?.bc||''}"><label>Название</label><input id="${key}-nm" value="${x?.nm||''}">
+    <label>Количество</label><input type="number" id="${key}-qty" value="${x?.qty||1}" min="1"><label>Комментарий</label><textarea id="${key}-cm" rows="2">${x?.cm||''}</textarea></div>`,
+    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages._saveDoc('${key}','${id||''}')">💾 Сохранить</button>`); },
+  async _saveDoc(key,id){ const data=DB.get(key)||[], phInp=document.getElementById(key+'-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=data.find(v=>v.id===id)?.ph||'';
+    const d={sup:document.getElementById(key+'-sup')?.value||'',cl:document.getElementById(key+'-cl')?.value||'',bc:document.getElementById(key+'-bc').value,nm:document.getElementById(key+'-nm').value,qty:+document.getElementById(key+'-qty').value||1,cm:document.getElementById(key+'-cm').value,ph,s:id?'data[id].s':'new'};
+    if(!d.nm)return UI.toast('Введите название','err');
+    if(id){const i=data.findIndex(v=>v.id===id);if(i>=0)Object.assign(data[i],d);}else{d.id=DB.id();d.d=Date.now();d.s='new';data.push(d);}
+    DB.set(key,data); UI.closeMdl(); Pages[key](); DB.log(`Документ ${key}`,(id?'Ред.':'Нов.')+' '+d.nm); },
+  upd(key,id,s){ const data=DB.get(key)||[], x=data.find(v=>v.id===id); if(!x)return; x.s=s; DB.set(key,data); Pages[key](); DB.log(`Статус ${key}`,`${x.nm} → ${s}`); 
+    if(key==='recv'&&s==='recv'){ const p=DB.get('products')||[], ex=p.find(v=>v.bc===x.bc); if(ex)ex.qty+=x.qty; else{p.push({id:DB.id(),bc:x.bc,nm:x.nm,art:x.bc,cat:'',qty:x.qty,loc:'',exp:'',prc:0,ph:'',doc:'',ts:Date.now()});} DB.set('products',p); } },
+  
+  inv(){ const i=DB.get('inv')||[]; Pages._table('inv','Инвентаризация',i,[['Дата','d'],['ШК','bc'],['Товар','nm'],['Ожидалось','exp'],['Факт','act'],['Разница','dif'],['Статус','s']],['bc','qty','s','inv']); },
+  invMdl(id){ const i=DB.get('inv')||[], p=DB.get('products')||[], x=id?i.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Новая инвентаризация',`<div class="form"><label>Товар</label><select id="inv-prd" onchange="document.getElementById('inv-exp').value=this.selectedOptions[0].dataset.qty||0;document.getElementById('inv-bc').value=this.selectedOptions[0].dataset.bc||'';document.getElementById('inv-nm').value=this.selectedOptions[0].text"><option value="">—</option>${p.map(v=>`<option value="${v.id}" data-qty="${v.qty}" data-bc="${v.bc}">${v.nm}</option>`).join('')}</select>
+    <div class="row"><div><label>ШК</label><input id="inv-bc" value="${x?.bc||''}"></div><div><label>Название</label><input id="inv-nm" value="${x?.nm||''}"></div></div>
+    <div class="row"><div><label>Ожидалось</label><input type="number" id="inv-exp" value="${x?.exp||0}"></div><div><label>Факт</label><input type="number" id="inv-act" value="${x?.act||0}"></div></div></div>`,
+    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.invSave('${id||''}')">💾 Сохранить</button>`); },
+  invSave(id){ const i=DB.get('inv')||[], exp=+document.getElementById('inv-exp').value||0, act=+document.getElementById('inv-act').value||0, d={bc:document.getElementById('inv-bc').value,nm:document.getElementById('inv-nm').value,exp,act,dif:act-exp,s:'counted'};
+    if(!d.nm)return UI.toast('Укажите товар','err');
+    if(id){const idx=i.findIndex(v=>v.id===id);if(idx>=0)Object.assign(i[idx],d);}else{d.id=DB.id();d.d=Date.now();i.push(d);}
+    DB.set('inv',i); UI.closeMdl(); Pages.inv(); DB.log('Инвентаризация',`${d.nm} (${d.dif>0?'+':''}${d.dif})`); },
+  invPrint(){ let h=`<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:6px;font-size:12px}</style></head><body><h2>Отчет инвентаризации</h2><p>Дата: ${new Date().toLocaleString()}</p><table><tr><th>Дата</th><th>ШК</th><th>Товар</th><th>Ожидалось</th><th>Факт</th><th>Разница</th></tr>`+(DB.get('inv')||[]).map(v=>`<tr><td>${new Date(v.d).toLocaleString()}</td><td>${v.bc}</td><td>${v.nm}</td><td>${v.exp}</td><td>${v.act}</td><td style="color:${v.dif===0?'green':'red'}">${v.dif>0?'+':''}${v.dif}</td></tr>`).join('')+`</table></body></html>`; const w=window.open('','_blank'); w.document.write(h); w.document.close(); w.print(); },
+  
+  tasks(){ const t=DB.get('tasks')||[], e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.taskMdl()">➕ Задача</button></div></div>
+    <div class="stats fade"><div class="stat"><div class="lbl">Выполнено</div><div class="val">${t.filter(x=>x.s==='done').length}</div></div><div class="stat"><div class="lbl">В работе</div><div class="val">${t.filter(x=>x.s==='progress').length}</div></div><div class="stat"><div class="lbl">Новые</div><div class="val">${t.filter(x=>x.s==='new').length}</div></div></div>
+    <div class="panel fade"><div class="head"><h3>Задачи (${t.length})</h3></div><table><thead><tr><th>Дата</th><th>Задача</th><th>Сотрудник</th><th>Приоритет</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${t.map(x=>{const em=e.find(v=>v.id===x.emp);return`<tr><td>${new Date(x.d).toLocaleString()}</td><td>${x.nm}</td><td>${em?em.nm:'—'}</td><td><span class="badge ${x.pr==='high'?'b-d':x.pr==='med'?'b-w':'b-i'}">${x.pr==='high'?'Высокий':x.pr==='med'?'Средний':'Низкий'}</span></td><td>${UI.badge(x.s)}</td><td><button class="btn o sm" onclick="Pages.taskMdl('${x.id}')">✏️</button><button class="btn g sm" onclick="Pages.taskUpd('${x.id}','done')" ${x.s==='done'?'disabled':''}>✅</button><button class="btn d sm" onclick="Pages.del('tasks','${x.id}','tasks')">🗑️</button></td></tr>`}).join('')}
+    ${t.length===0?'<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">Нет задач</td></tr>':''}</tbody></table></div>`; },
+  taskMdl(id){ const t=DB.get('tasks')||[], e=DB.get('emp')||[], x=id?t.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Задача',`<div class="form"><label>Название</label><input id="t-nm" value="${x?.nm||''}">
+    <div class="row"><div><label>Сотрудник</label><select id="t-emp">${e.map(v=>`<option value="${v.id}" ${x?.emp===v.id?'selected':''}>${v.nm}</option>`).join('')}</select></div><div><label>Приоритет</label><select id="t-pr"><option value="low" ${x?.pr==='low'?'selected':''}>Низкий</option><option value="med" ${x?.pr==='med'?'selected':''}>Средний</option><option value="high" ${x?.pr==='high'?'selected':''}>Высокий</option></select></div></div>
+    <label>Дата</label><input type="datetime-local" id="t-d" value="${x?new Date(x.d).toISOString().slice(0,16):new Date().toISOString().slice(0,16)}">
+    <label>Статус</label><select id="t-s"><option value="new" ${x?.s==='new'?'selected':''}>Новый</option><option value="progress" ${x?.s==='progress'?'selected':''}>В работе</option><option value="done" ${x?.s==='done'?'selected':''}>Выполнен</option><option value="cancel" ${x?.s==='cancel'?'selected':''}>Отменён</option></select></div>`,
+    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.taskSave('${id||''}')">💾 Сохранить</button>`); },
+  taskSave(id){ const t=DB.get('tasks')||[], d={nm:document.getElementById('t-nm').value,emp:document.getElementById('t-emp').value,pr:document.getElementById('t-pr').value,d:new Date(document.getElementById('t-d').value).getTime(),s:document.getElementById('t-s').value};
+    if(!d.nm)return UI.toast('Введите название','err');
+    if(id){const i=t.findIndex(v=>v.id===id);if(i>=0)Object.assign(t[i],d);}else{d.id=DB.id();d.ts=Date.now();t.push(d);}
+    DB.set('tasks',t); UI.closeMdl(); Pages.tasks(); },
+  taskUpd(id,s){ const t=DB.get('tasks')||[], x=t.find(v=>v.id===id); if(x){x.s=s;DB.set('tasks',t);Pages.tasks();} },
+
+  emp(){ const e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.empMdl()">➕ Сотрудник</button></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px" class="fade">
+    ${e.map(x=>`<div class="stat"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${x.ph?`<img src="${x.ph}" style="width:50px;height:50px;border-radius:50%;object-fit:cover">`:`<div style="width:50px;height:50px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:1.2rem">👤</div>`}<div><div style="font-weight:600">${x.nm}</div><div style="font-size:.85rem;color:var(--text2)">${x.pos||'—'}</div></div></div>
+    <div style="font-size:.85rem;color:var(--text2);margin-bottom:8px">📱 ${x.tel||'—'} | 💰 ${x.rate||300}₽/ч</div>
+    <div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-align:center" id="tm-${x.id}">${Pages._tm(x)}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button class="btn ${x.act?'d':'g'} sm" onclick="Pages.empToggle('${x.id}')">${x.act?'⏹ Стоп':'▶ Старт'}</button><button class="btn o sm" onclick="Pages.empMdl('${x.id}')">✏️</button><button class="btn o sm" onclick="Pages.empQR('${x.id}')">📱 QR</button><button class="btn d sm" onclick="Pages.del('emp','${x.id}','emp')">🗑️</button></div></div>`).join('')}
+    ${e.length===0?'<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">Нет сотрудников</div>':''}</div>`; },
+  _tm(x){ if(!x.act)return '00:00:00'; const s=(x.tot||0)+Math.floor((Date.now()-x.st)/1000); return new Date(s*1000).toISOString().substr(11,8); },
+  empToggle(id){ const e=DB.get('emp')||[], x=e.find(v=>v.id===id); if(!x)return; if(x.act){x.tot=(x.tot||0)+Math.floor((Date.now()-x.st)/1000);x.act=false;}else{x.st=Date.now();x.act=true;} DB.set('emp',e); Pages.emp(); DB.log('Сотрудник',`${x.nm} ${x.act?'начал':'закончил'} работу`); },
+  empMdl(id){ const e=DB.get('emp')||[], x=id?e.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Сотрудник',`<div class="form"><div style="display:flex;gap:16px;align-items:start">${UI.photo('e-ph',x?.ph||'')}<div style="flex:1"><div class="row"><div><label>ФИО</label><input id="e-nm" value="${x?.nm||''}"></div><div><label>Должность</label><input id="e-pos" value="${x?.pos||''}"></div></div><div class="row"><div><label>Телефон</label><input id="e-tel" value="${x?.tel||''}"></div><div><label>Ставка/ч (₽)</label><input type="number" id="e-rate" value="${x?.rate||300}"></div></div></div></div></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.empSave('${id||''}')">💾 Сохранить</button>`); },
+  async empSave(id){ const e=DB.get('emp')||[], phInp=document.getElementById('e-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=e.find(v=>v.id===id)?.ph||'';
+    const d={nm:document.getElementById('e-nm').value,pos:document.getElementById('e-pos').value,tel:document.getElementById('e-tel').value,rate:+document.getElementById('e-rate').value||300,ph};
+    if(!d.nm)return UI.toast('Введите ФИО','err');
+    if(id){const i=e.findIndex(v=>v.id===id);if(i>=0)Object.assign(e[i],d);}else{d.id=DB.id();d.act=false;d.tot=0;e.push(d);}
+    DB.set('emp',e); UI.closeMdl(); Pages.emp(); },
+  empQR(id){ const e=DB.get('emp')||[], x=e.find(v=>v.id===id); if(!x)return; UI.openMdl(`QR: ${x.nm}`,`<div style="text-align:center"><div id="qr-box" style="margin:10px auto"></div><p style="font-family:monospace;font-size:.9rem;color:var(--text2)">ID: ${x.id}</p><button class="btn p" style="margin-top:12px" onclick="Pages.qrPrint('${x.nm}','${x.id}')">🖨️ Печать QR</button></div>`,`<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>`); Pages._qr(x.id,'qr-box'); },
+  _qr(txt,box){ const c=document.getElementById(box); if(!c)return; const s=150, cv=document.createElement('canvas'); cv.width=cv.height=s; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,s,s); g.fillStyle='#000'; const m=21, cs=s/m; for(let i=0;i<m;i++)for(let j=0;j<m;j++){const h=Math.abs((i*j+txt.charCodeAt(0))%3);if(h<2)g.fillRect(i*cs,j*cs,cs,cs);} c.innerHTML=''; c.appendChild(cv); },
+  qrPrint(nm,id){ const w=window.open('','_blank'); w.document.write(`<html><head><meta charset="utf-8"><style>body{text-align:center;padding:20px;font-family:Arial}h2{margin-bottom:5px}p{color:#666}</style></head><body><h2>${nm}</h2><p>QR-код для учёта рабочего времени</p><div style="width:200px;height:200px;border:2px solid #000;display:inline-flex;align-items:center;justify-content:center;font-size:14px;margin:20px 0">QR: ${id}</div><br><script>window.print();<\/script></body></html>`); w.document.close(); },
+
+  fines(){ const f=DB.get('fines')||[], e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.fineMdl()">➕ Штраф</button><button class="btn o" onclick="Pages.exp('fines')">📊 Экспорт</button></div></div>
+    <div class="panel fade" style="margin-bottom:16px"><div style="padding:16px"><h3 style="margin-bottom:8px">📖 Правила</h3><ul style="padding-left:20px;line-height:1.8;color:var(--text2)"><li>✅ Сканируйте QR при начале/окончании работы</li><li>✅ Проверяйте товар при приемке</li><li>✅ Размещайте в назначенные места</li><li>❌ Не оставляйте товары без оформления</li></ul></div></div>
+    <div class="panel fade"><div class="head"><h3>Штрафы (${f.length})</h3></div><table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Фото</th><th></th></tr></thead><tbody>
+    ${f.map(x=>{const em=e.find(v=>v.id===x.emp);return`<tr><td>${new Date(x.d).toLocaleString()}</td><td>${em?em.nm:'—'}</td><td>${x.rs||'—'}</td><td style="color:${x.tp==='fine'?'var(--danger)':'var(--success)'};font-weight:600">${x.tp==='fine'?'-':''}${x.am}₽</td><td>${x.fgv?'<span class="badge b-s">Прощён</span>':'<span class="badge b-d">Активен</span>'}</td><td>${x.ph?`<img src="${x.ph}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer" onclick="window.open('${x.ph}')">`:'—'}</td><td>${!x.fgv?`<button class="btn g sm" onclick="Pages.fgv('${x.id}')">🤝</button>`:''}<button class="btn o sm" onclick="Pages.fineMdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('fines','${x.id}','fines')">🗑️</button></td></tr>`}).join('')}
+    ${f.length===0?'<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">Нет штрафов</td></tr>':''}</tbody></table></div>`; },
+  fineMdl(id){ const f=DB.get('fines')||[], e=DB.get('emp')||[], x=id?f.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Штраф/Бонус',`<div class="form"><label>Сотрудник</label><select id="fn-emp">${e.map(v=>`<option value="${v.id}" ${x?.emp===v.id?'selected':''}>${v.nm}</option>`).join('')}</select>
+    <div class="row"><div><label>Тип</label><select id="fn-tp"><option value="fine" ${x?.tp==='fine'?'selected':''}>Штраф</option><option value="bonus" ${x?.tp==='bonus'?'selected':''}>Премия</option></select></div><div><label>Сумма</label><input type="number" id="fn-am" value="${x?.am||1000}"></div></div><label>Причина</label><textarea id="fn-rs" rows="2">${x?.rs||''}</textarea>${UI.photo('fn-ph',x?.ph||'')}</div>`,
+    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.fnSave('${id||''}')">💾 Сохранить</button>`); },
+  async fnSave(id){ const f=DB.get('fines')||[], phInp=document.getElementById('fn-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=f.find(v=>v.id===id)?.ph||'';
+    const d={emp:document.getElementById('fn-emp').value,tp:document.getElementById('fn-tp').value,am:+document.getElementById('fn-am').value||0,rs:document.getElementById('fn-rs').value,ph};
+    if(!d.emp||!d.rs)return UI.toast('Заполните все поля','err');
+    if(id){const i=f.findIndex(v=>v.id===id);if(i>=0)Object.assign(f[i],d);}else{d.id=DB.id();d.d=Date.now();d.fgv=false;f.push(d);}
+    DB.set('fines',f); UI.closeMdl(); Pages.fines(); },
+  fgv(id){ const f=DB.get('fines')||[], x=f.find(v=>v.id===id); if(x){x.fgv=true;DB.set('fines',f);Pages.fines();} },
+
+  lbl(){ const p=DB.get('products')||[]; document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.lblAll()">🖨️ Печать всех</button></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="fade">
+    <div class="panel"><div class="head"><h3>Выбор товаров</h3></div><div style="padding:16px;max-height:400px;overflow-y:auto">${p.map(x=>`<label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" class="lc" value="${x.id}" data-bc="${x.bc}" data-nm="${x.nm}" data-art="${x.art}" data-exp="${x.exp}" data-kiz="${x.kiz}"> ${x.ph?`<img src="${x.ph}" style="width:28px;height:28px;border-radius:6px;object-fit:cover">`:'📦'} <span style="flex:1">${x.nm}</span></label>`).join('')}</div><div style="padding:16px;border-top:1px solid var(--border)"><label>Копий на товар:</label><input type="number" id="lb-cp" value="1" min="1" style="width:80px;padding:6px;margin:6px 0"><button class="btn p" style="width:100%" onclick="Pages.lblPr()">Печать выбранных</button></div></div>
+    <div class="panel"><div class="head"><h3>Предпросмотр 58×40</h3></div><div style="padding:20px;display:flex;justify-content:center"><div id="lb-prev" class="label-58"></div></div></div></div>`; },
+  lblAll(){ document.querySelectorAll('.lc').forEach(c=>c.checked=true); Pages.lblPr(); },
+  lblPr(){ const cps=document.getElementById('lb-cp').value||1, ar=document.getElementById('print-area'), h=document.querySelectorAll('.lc:checked').map(c=>{let s=''; for(let i=0;i<cps;i++){s+=`<div class="label-58"><div style="text-align:center;font-weight:bold;font-size:10pt;margin-bottom:2mm">${c.dataset.nm}</div><div style="text-align:center;margin:2mm 0"><svg viewBox="0 0 200 60" style="width:50mm;height:15mm">${Pages._svgBar(c.dataset.bc||c.dataset.art||c.dataset.nm)}</svg></div><div style="text-align:center;font-size:8pt;color:#666">Арт: ${c.dataset.art||'—'}</div><div style="text-align:center;font-size:8pt;color:#666">ШК: ${c.dataset.bc||'—'}</div>${c.dataset.kiz?`<div style="text-align:center;font-size:7pt;color:#e74c3c;margin-top:1mm">КИЗ: ${c.dataset.kiz}</div>`:''}${c.dataset.exp?`<div style="text-align:center;font-size:8pt;color:red;font-weight:bold;margin-top:1mm">Годен до: ${c.dataset.exp}</div>`:''}</div>`;}return s;}).join(''); ar.innerHTML=h; ar.style.display='block'; setTimeout(()=>{window.print();setTimeout(()=>ar.style.display='none',500);},300); },
+  lblPrint(id){ document.querySelectorAll('.lc').forEach(c=>c.checked=c.value===id); Pages.lblPr(); },
+  _svgBar(t){ let b='',x=5,h=0; for(let i=0;i<t.length;i++)h=((h<<5)-h)+t.charCodeAt(i); let s=Math.abs(h); for(let i=0;i<t.length*5+20;i++){s=(s*1103515245+12345)&0x7fffffff;const w=(s%3)+1;if(i%2===0)b+=`<rect x="${x}" y="5" width="${w*2}" height="45" fill="black"/>`;x+=w*2;if(x>190)break;} return b+`<text x="100" y="58" text-anchor="middle" font-size="8" font-family="monospace">${t}</text>`; },
+
+  map(){ const l=DB.get('locations')||[], p=DB.get('products')||[]; document.getElementById('content').innerHTML=`
+    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.locMdl()">➕ Место</button><button class="btn o" onclick="Pages.map()">🔄 Обновить</button></div></div>
+    <div class="panel fade"><div style="padding:16px"><div style="display:flex;gap:12px;margin-bottom:12px"><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(34,197,94,.2);border:2px solid var(--success)"></div> Свободно</span><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(245,158,11,.2);border:2px solid var(--warning)"></div> Частично</span><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(239,68,68,.2);border:2px solid var(--danger)"></div> Заполнено</span></div>
+    <div class="map-grid">${l.map(x=>{const pr=p.filter(v=>v.loc===x.id),u=pr.reduce((a,v)=>a+v.qty,0),pct=x.cap?Math.min(100,(u/x.cap)*100):0,cl=pct===0?'e':pct>=90?'f':'w';return`<div class="cell ${cl}" onclick="Pages.locDet('${x.id}')" title="${x.nm}: ${u}/${x.cap}"><span style="font-size:.9rem">${x.id}</span><span style="font-size:.65rem;margin-top:2px">${u}/${x.cap}</span><div style="width:80%;height:4px;background:rgba(0,0,0,.1);border-radius:2px;margin-top:4px"><div style="width:${pct}%;height:100%;background:${pct>=90?'var(--danger)':pct>0?'var(--warning)':'var(--success)'};border-radius:2px"></div></div></div>`}).join('')}</div></div></div>`; },
+  locMdl(id){ const l=DB.get('locations')||[], x=id?l.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Место хранения',`<div class="form"><div class="row"><div><label>ID</label><input id="lc-id" value="${x?.id||''}" ${id?'readonly':''}></div><div><label>Зона</label><input id="lc-z" value="${x?.z||''}"></div></div><label>Название</label><input id="lc-nm" value="${x?.nm||''}"><label>Ёмкость</label><input type="number" id="lc-cap" value="${x?.cap||100}"></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.locSave('${id||''}')">💾 Сохранить</button>`); },
+  locSave(id){ const l=DB.get('locations')||[], d={id:document.getElementById('lc-id').value,z:document.getElementById('lc-z').value,nm:document.getElementById('lc-nm').value,cap:+document.getElementById('lc-cap').value||100}; if(!d.id||!d.nm)return UI.toast('Заполните поля','err'); if(id){const i=l.findIndex(v=>v.id===id);if(i>=0)Object.assign(l[i],d);}else{l.push(d);} DB.set('locations',l); UI.closeMdl(); Pages.map(); },
+  locDet(id){ const l=DB.get('locations')||[], p=DB.get('products')||[], x=l.find(v=>v.id===id), pr=p.filter(v=>v.loc===id), u=pr.reduce((a,v)=>a+v.qty,0); UI.openMdl(`📍 ${x?.nm||id}`,`<p style="margin-bottom:10px">Ёмкость: ${x?.cap} шт | Занято: ${u} шт</p><table><thead><tr><th>Товар</th><th>ШК</th><th>Кол-во</th></tr></thead><tbody>${pr.map(v=>`<tr><td>${v.nm}</td><td>${v.bc||'—'}</td><td>${v.qty}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text2)">Свободно</td></tr>'}</tbody></table>`,`<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>`); },
+
+  int(){ const i=DB.get('int')||{dd:{e:0,k:''},c1:{e:0,k:''},wms:{e:0,k:''},clients:[]}; document.getElementById('content').innerHTML=`
+    <div class="topbar"><h1>🔗 Интеграции</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px" class="fade">
+    ${['dd|Диадок','c1|1С','wms|WMS'].map(k=>{const [k,nm]=k.split('|');return`<div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">${nm}</h3><div style="margin-bottom:10px"><label><input type="checkbox" id="i-${k}-e" ${i[k]?.e?'checked':''}> Включить</label></div><div style="margin-bottom:10px"><input type="text" id="i-${k}-k" value="${i[k]?.k||''}" placeholder="API ключ"></div><button class="btn p sm" onclick="Pages.intSave('${k}')">Сохранить</button></div>`}).join('')}
+    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">👥 Клиенты (IP ключи)</h3><div id="cl-list">${(i.clients||[]).map((c,idx)=>`<div style="display:flex;gap:6px;margin-bottom:8px"><input type="text" value="${c.nm||''}" placeholder="Название" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"><input type="text" value="${c.k||''}" placeholder="IP ключ" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"><button class="btn d sm" onclick="Pages.rmCl(${idx})">✕</button></div>`).join('')}</div><button class="btn o sm" style="margin-top:6px" onclick="Pages.addCl()">➕ Клиент</button><button class="btn p sm" style="margin-top:6px" onclick="Pages.saveCl()">💾 Сохранить</button></div>
+    </div>
+    <div class="panel fade" style="margin-top:16px"><div class="head"><h3>📊 Логи</h3></div><div style="padding:16px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:var(--text2)">${(DB.get('logs')||[]).filter(l=>l.a.startsWith('int_')).slice(0,30).map(l=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">${new Date(l.t).toLocaleString()} — ${l.a}: ${l.d}</div>`).join('')||'<div style="padding:10px;text-align:center">Нет логов</div>'}</div></div>`; },
+  intSave(k){ const i=DB.get('int')||{}; i[k]={e:document.getElementById(`i-${k}-e`).checked,k:document.getElementById(`i-${k}-k`).value}; DB.set('int',i); UI.toast('Сохранено'); },
+  addCl(){ const i=DB.get('int')||{}; if(!i.clients)i.clients=[]; i.clients.push({nm:'',k:''}); DB.set('int',i); Pages.int(); },
+  rmCl(idx){ const i=DB.get('int')||{}; i.clients.splice(idx,1); DB.set('int',i); Pages.int(); },
+  saveCl(){ const i=DB.get('int')||{}; i.clients=[]; document.querySelectorAll('#cl-list div').forEach(d=>{const inp=d.querySelectorAll('input');i.clients.push({nm:inp[0].value,k:inp[1].value});}); DB.set('int',i); UI.toast('Клиенты сохранены'); },
+
+  set(){ const u=DB.get('users')||[]; document.getElementById('content').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px" class="fade">
+    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">👤 Пользователи</h3>${u.map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span><b>${x.nm}</b> <span class="badge b-i">${x.role}</span></span><button class="btn d sm" ${x.id===1?'disabled':''} onclick="Pages.delU(${x.id})">🗑️</button></div>`).join('')}<button class="btn p sm" style="margin-top:8px" onclick="Pages.userMdl()">➕ Добавить</button></div>
+    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">💾 Данные</h3><button class="btn p" style="width:100%;margin-bottom:10px" onclick="Pages.expAll()">📥 Скачать бэкап</button><button class="btn o" style="width:100%;margin-bottom:10px" onclick="document.getElementById('imp-json').click()">📤 Загрузить бэкап</button><input type="file" id="imp-json" style="display:none" accept=".json" onchange="Pages.impAll(this)"><button class="btn d" style="width:100%" onclick="Pages.clearAll()">⚠️ Очистить всё</button></div>
+    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">ℹ️ Система</h3><p style="color:var(--text2);line-height:1.6">Фулфилмент PRO v2.0<br>Хранение: LocalStorage + RAM<br>Печать: 58×40 мм, QR, ШК<br>Интеграции: Диадок, 1С, WMS<br>Обновление: Данные сохраняются автоматически</p></div></div>`; },
+  userMdl(){ UI.openMdl('Новый пользователь',`<div class="form"><div class="row"><div><label>Логин</label><input id="nu-l"></div><div><label>Пароль</label><input type="password" id="nu-p"></div></div><div class="row"><div><label>Имя</label><input id="nu-n"></div><div><label>Роль</label><select id="nu-r"><option value="user">Сотрудник</option><option value="admin">Админ</option></select></div></div></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.saveU()">Сохранить</button>`); },
+  saveU(){ const u=DB.get('users')||[], d={id:Date.now(),login:document.getElementById('nu-l').value.trim(),pass:document.getElementById('nu-p').value.trim(),nm:document.getElementById('nu-n').value.trim(),role:document.getElementById('nu-r').value}; if(!d.login||!d.pass||!d.nm)return UI.toast('Заполните все поля','err'); if(u.find(x=>x.login===d.login))return UI.toast('Логин занят','err'); u.push(d); DB.set('users',u); UI.closeMdl(); Pages.set(); UI.toast('Пользователь добавлен'); },
+  delU(id){ if(!confirm('Удалить?'))return; let u=DB.get('users')||[]; u=u.filter(x=>x.id!==id); DB.set('users',u); Pages.set(); },
+  expAll(){ UI.dl(new Blob([DB.expAll()],{type:'application/json'}),`backup_${Date.now()}.json`); },
+  impAll(inp){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{if(DB.impAll(e.target.result)){Pages.dash();UI.toast('Импорт успешен');}else UI.toast('Ошибка формата','err');}; r.readAsText(f); },
+  clearAll(){ if(!confirm('Удалить ВСЕ данные?'))return; if(!confirm('Точно?'))return; ['users','products','locations','recv','ship','inv','tasks','emp','fines','logs','int'].forEach(k=>localStorage.removeItem(DB._p+k)); DB.init(); Pages.dash(); UI.toast('Система очищена'); },
+
+  del(k,id,p){ if(!confirm('Удалить?'))return; let d=DB.get(k)||[]; d=d.filter(x=>x.id!==id); DB.set(k,d); Pages[p](); },
+  exp(k){ const d=DB.get(k)||[], h=Object.keys(d[0]||{}), c=h.join(';')+'\n'+d.map(x=>h.map(k=>x[k]??'').join(';')).join('\n'); UI.dl(new Blob(['\ufeff'+c],{type:'text/csv'}),`${k}.csv`); }
 };
 
-/** UI HELPERS */
-App.UI = {
-    renderNav() {
-        const list = document.getElementById('navList');
-        list.innerHTML = '';
-        Object.values(App.modules).forEach(m => {
-            const div = document.createElement('div');
-            div.className = `nav-item ${m.enabled?'':'disabled'} ${App.active===m.id?'active':''}`;
-            div.dataset.id = m.id;
-            div.innerHTML = `<span>${m.icon}</span> <span>${m.name}</span>`;
-            if(m.enabled) div.onclick = () => App.Router.switch(m.id);
-            list.appendChild(div);
-        });
-    }
+// === MODULE: APP INIT ===
+const App = { user: null };
+const UI_helpers = {
+  dl(b,n){ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=n; a.click(); URL.revokeObjectURL(a); },
+  toast(m,t='ok'){ const el=document.getElementById('toast'); el.textContent=m; el.className=`show ${t}`; setTimeout(()=>el.className='',3000); }
 };
-App.Toast = {
-    show(msg, type='ok') {
-        const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
-        document.getElementById('toastBox').appendChild(t);
-        setTimeout(()=>t.remove(), 4000);
-    },
-    ok(m){this.show(m)}, warn(m){this.show(m,'warn')}, err(m){this.show(m,'err')}
-};
+Object.assign(UI, UI_helpers);
 
-/** BUILTIN MODULES (COMPRESSED BUT FULLY FUNCTIONAL) */
-App.Modules = {
-    Dashboard: {
-        render(el) {
-            const r = App.data.get('receiving').length;
-            const w = App.data.get('warehouse');
-            const e = App.data.get('hr');
-            const occ = w.length ? Math.round(w.reduce((s,x)=>s+x.curr,0)/w.reduce((s,x)=>s+x.cap,0)*100) : 0;
-            const activeEmp = e.filter(x=>x.session).length;
-            
-            el.innerHTML = `
-                <div class="stat-grid">
-                    <div class="stat"><div class="stat-val">${r}</div><div class="stat-lbl">Приёмок</div></div>
-                    <div class="stat"><div class="stat-val">${occ}%</div><div class="stat-lbl">Заполненность склада</div></div>
-                    <div class="stat"><div class="stat-val">${activeEmp}</div><div class="stat-lbl">Сотрудников на смене</div></div>
-                    <div class="stat"><div class="stat-val">${Object.keys(App.modules).filter(k=>App.modules[k].enabled).length}</div><div class="stat-lbl">Активных модулей</div></div>
-                </div>
-                <div class="card"><h3>📈 Последние операции</h3><p style="margin-top:8px;color:var(--text-muted)">Система работает стабильно. Используйте голосовые команды или создайте новый модуль через ИИ-конструктор.</p></div>
-                <div class="card"><h3>🔔 Рекомендации ИИ</h3><ul style="margin:12px 0 0 16px;line-height:1.6">
-                    <li>Проверьте ячейки с заполненностью >80%</li>
-                    <li>Назначьте ответственных за зону приемки</li>
-                    <li>Запустите плановую инвентаризацию</li>
-                </ul></div>
-            `;
-        }
-    },
-    Receiving: {
-        render(el) {
-            const data = App.data.get('receiving');
-            el.innerHTML = `
-                <div style="display:flex;justify-content:space-between;margin-bottom:16px">
-                    <h2>📥 Журнал приёмки</h2>
-                    <button class="btn btn-primary" onclick="App.Modules.Receiving.create()">➕ Новая приёмка</button>
-                </div>
-                <div class="card" style="padding:0;overflow:hidden">
-                    <table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody>${data.map(d=>`<tr><td>${d.num}</td><td>${d.date}</td><td>${d.supplier}</td>
-                        <td><span class="badge ${d.status==='complete'?'b-ok':'b-warn'}">${d.status}</span></td>
-                        <td><button class="btn-secondary" onclick="alert('Детали: ${d.num}')">👁️</button></td></tr>`).join('')}</tbody>
-                    </table>
-                    ${data.length? '': '<div class="empty-state">Нет данных</div>'}
-                </div>
-            `;
-        },
-        create() { App.Toast.warn('Модуль приёмки активирован. В полной версии откроется форма создания.'); }
-    },
-    Inventory: {
-        render(el) {
-            el.innerHTML = `
-                <div style="display:flex;justify-content:space-between;margin-bottom:16px"><h2>📋 Инвентаризация</h2><button class="btn btn-primary" onclick="App.Toast.info('Запуск новой инвентаризации...')">🚀 Начать</button></div>
-                <div class="card"><h3>📊 Отклонения (сводка)</h3>
-                    <p style="margin-top:8px">Недостача: <span style="color:var(--danger)">12 шт (-18 400 ₽)</span> | Излишек: <span style="color:var(--success)">3 шт (+2 100 ₽)</span></p>
-                    <p style="margin-top:4px;color:var(--text-muted)">Последняя проверка: 10.05.2026</p>
-                </div>`;
-        }
-    },
-    Warehouse: {
-        render(el) {
-            const w = App.data.get('warehouse');
-            el.innerHTML = `
-                <h2>🗺️ Карта ячеек</h2>
-                <div class="stat-grid" style="margin-top:16px">
-                    ${w.map(x=>`<div class="stat"><div class="stat-val">${x.curr}/${x.cap}</div><div class="stat-lbl">${x.code} (${x.zone})</div></div>`).join('')}
-                </div>
-                <div class="card" style="padding:0;overflow:hidden">
-                    <table><thead><tr><th>Код</th><th>Зона</th><th>Заполн.</th><th>Статус</th></tr></thead>
-                    <tbody>${w.map(x=>{
-                        const p=Math.round(x.curr/x.cap*100);
-                        return `<tr><td>${x.code}</td><td>${x.zone}</td><td>${p}%</td>
-                        <td><span class="badge ${p>80?'b-err':p>50?'b-warn':'b-ok'}">${p>80?'Переполн':'Норма'}</span></td></tr>`;
-                    }).join('')}</tbody></table>
-                </div>`;
-        }
-    },
-    HR: {
-        render(el) {
-            const e = App.data.get('hr');
-            el.innerHTML = `
-                <h2>👥 Сотрудники</h2>
-                <div class="card" style="padding:0;overflow:hidden;margin-top:16px">
-                    <table><thead><tr><th>ФИО</th><th>Должность</th><th>Отдел</th><th>Статус</th><th>Смена</th></tr></thead>
-                    <tbody>${e.map(x=>`<tr><td>${x.name}</td><td>${x.pos}</td><td>${x.dept}</td>
-                        <td><span class="badge ${x.status==='active'?'b-ok':'b-warn'}">${x.status}</span></td>
-                        <td>${x.session?'⏱️ В работе':'🔴 Оффлайн'}</td></tr>`).join('')}</tbody>
-                    </table>
-                </div>`;
-        }
-    }
-};
+// NAV EVENTS
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();UI.nav(a.dataset.p);if(window.innerWidth<768)document.getElementById('sb').classList.remove('open');}));
+document.getElementById('u-pass').addEventListener('keydown',e=>{if(e.key==='Enter')Auth.login();});
 
-/** 🤖 AI ENGINE & MODULE GENERATOR */
-App.AI = {
-    chat: [],
-    openPanel() { document.getElementById('aiPanel').classList.add('open'); },
-    closePanel() { document.getElementById('aiPanel').classList.remove('open'); },
-    loadHistory() { this.chat = JSON.parse(localStorage.getItem('ai_chat')||'[]'); this.renderChat(); },
-    renderChat() {
-        const box = document.getElementById('aiChat');
-        box.innerHTML = this.chat.map(c=>`<div class="ai-msg ${c.role}">${c.text.replace(/\n/g,'<br>')}</div>`).join('');
-        box.scrollTop = box.scrollHeight;
-    },
-    saveChat() { localStorage.setItem('ai_chat', JSON.stringify(this.chat)); },
-    addMsg(role, text) { this.chat.push({role, text}); this.saveChat(); this.renderChat(); },
-    
-    async processInput() {
-        const input = document.getElementById('aiInput');
-        const text = input.value.trim();
-        if(!text) return;
-        this.addMsg('user', text);
-        input.value = '';
-        
-        // Simulate AI thinking
-        const prog = document.getElementById('genProgress');
-        const fill = document.getElementById('genFill');
-        const status = document.getElementById('genStatus');
-        prog.classList.add('active'); fill.style.width='0%';
-        
-        const steps = ['🔍 Анализ запроса...','🧠 Генерация структуры...','🎨 Создание интерфейса...','🔌 Интеграция в систему...','✅ Деплой модуля'];
-        for(let i=0;i<steps.length;i++) {
-            status.textContent = steps[i]; fill.style.width = ((i+1)/steps.length*100)+'%';
-            await new Promise(r=>setTimeout(r,600));
-        }
-        prog.classList.remove('active');
-        
-        // NLP Parsing & Generation
-        const intent = this.parseIntent(text);
-        let response = '';
-        
-        if(intent.type === 'create_module') {
-            response = this.generateModule(intent);
-        } else if(intent.type === 'control') {
-            response = this.controlModule(intent);
-        } else {
-            response = App.Voice.handleNLP(text);
-        }
-        
-        this.addMsg('bot', response);
-        App.Voice.speak(response);
-    },
-    
-    parseIntent(text) {
-        const t = text.toLowerCase();
-        if(/создай|добавь|сгенерируй|нужен модуль|хочу.*реестр|хочу.*учет/.test(t)) return {type:'create_module', text:t};
-        if(/включи|отключи|активируй|деактивируй|выключи/.test(t)) return {type:'control', text:t};
-        return {type:'query', text:t};
-    },
-    
-    generateModule(intent) {
-        const t = intent.text;
-        const nameMatch = t.match(/создай\s+(?:модуль\s+)?(.+?)(?:\s+с|\s+для|\s+в|\s+\.|$)/i) || t.match(/нужен\s+(.+?)(?:\s+с|\s+для|\s+\.|$)/i);
-        const rawName = nameMatch ? nameMatch[1].replace(/учет|реестр|модуль|с\s|для\s/gi,'').trim() : 'Новый модуль';
-        const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        const id = 'mod_' + name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
-        
-        // Auto-generate functional CRUD module
-        const modConfig = {
-            id, name: `📂 ${name}`, icon: '📊', enabled: true,
-            dataKey: id.replace('mod_',''),
-            render: (el) => {
-                const data = App.data.get(this.dataKey);
-                el.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;margin-bottom:16px">
-                        <h2>📂 ${name}</h2>
-                        <button class="btn btn-primary" onclick="App.Modules['${id}'].add()">➕ Добавить запись</button>
-                    </div>
-                    <div class="card" style="padding:0;overflow:hidden">
-                        <table><thead><tr><th>ID</th><th>Название</th><th>Статус</th><th>Дата</th><th>Действия</th></tr></thead>
-                        <tbody>${data.map((d,i)=>`<tr><td>#${i+1}</td><td>${d.name}</td><td><span class="badge b-ok">${d.status||'Актив'}</span></td>
-                        <td>${d.date||new Date().toISOString().split('T')[0]}</td>
-                        <td><button class="btn-secondary" onclick="App.Modules['${id}'].delete(${i})">🗑️</button></td></tr>`).join('')}
-                        ${data.length?'':'<tr><td colspan="5" style="text-align:center;padding:20px">Нет данных</td></tr>'}
-                        </tbody></table>
-                    </div>`;
-            },
-            add: function() {
-                const d = App.data.get(this.dataKey);
-                d.push({name:'Новая запись', status:'Актив', date:new Date().toISOString().split('T')[0]});
-                App.data.set(this.dataKey, d);
-                App.Toast.ok('Запись добавлена');
-                App.Router.switch(this.id);
-            },
-            delete: function(i) {
-                const d = App.data.get(this.dataKey); d.splice(i,1);
-                App.data.set(this.dataKey, d);
-                App.Toast.warn('Запись удалена');
-                App.Router.switch(this.id);
-            }
-        };
-        
-        App.ModuleRegistry.register(id, modConfig);
-        App.ModuleRegistry.enable(id);
-        App.UI.renderNav();
-        
-        return `✅ Модуль «${name}» успешно создан и подключен к системе. Он доступен в меню. Вы можете включать/отключать его по запросу.`;
-    },
-    
-    controlModule(intent) {
-        const t = intent.text;
-        const act = /включи|активируй/.test(t) ? 'enable' : 'disable';
-        // Find module by partial match
-        const target = Object.keys(App.modules).find(k => App.modules[k].name.toLowerCase().includes(t.replace(/включи|отключи|активируй|деактивируй|модуль\s/gi,'').trim()));
-        if(!target) return `❌ Модуль не найден. Доступные: ${Object.values(App.modules).map(m=>m.name).join(', ')}`;
-        App.ModuleRegistry[act](target);
-        return `${act==='enable'?'✅ Включён':'🔴 Отключён'} модуль "${App.modules[target].name}".`;
-    }
-};
-
-/** 🎙️ VOICE ASSISTANT (SYSTEM-WIDE) */
-App.Voice = {
-    rec: null, listening: false, speaking: false,
-    init() {
-        if(!window.SpeechRecognition && !window.webkitSpeechRecognition) {
-            document.getElementById('micBtn').textContent = '🎤 Нет API'; return;
-        }
-        this.rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        this.rec.lang = 'ru-RU'; this.rec.interimResults = false;
-        this.rec.onresult = e => this.process(e.results[0][0].transcript);
-        this.rec.onstart = () => { this.listening=true; this.updateUI('🎤 Слушаю...'); document.getElementById('micBtn').classList.add('listening'); };
-        this.rec.onend = () => { this.listening=false; this.updateUI('🎤 Голос'); document.getElementById('micBtn').classList.remove('listening'); };
-        this.rec.onerror = () => { this.listening=false; this.updateUI('🎤 Ошибка'); };
-    },
-    toggle() {
-        if(this.speaking) { window.speechSynthesis.cancel(); this.speaking=false; return; }
-        this.listening ? this.rec.stop() : this.rec.start();
-    },
-    process(text) {
-        this.updateUI('🎤 Обработка...');
-        const res = this.handleNLP(text);
-        this.updateUI('🎤 Готово');
-        this.speak(res);
-    },
-    handleNLP(text) {
-        const t = text.toLowerCase();
-        if(/где.*лежит|найди.*товар/.test(t)) {
-            const q = t.replace(/где.*лежит|найди|товар/gi,'').trim();
-            const w = App.data.get('warehouse');
-            const found = w.filter(x=>x.items?.some(i=>i.name.toLowerCase().includes(q)));
-            return found.length ? `Нашёл в ячейках: ${found.map(f=>`${f.code} (${f.items.find(i=>i.name.toLowerCase().includes(q)).qty} шт)`).join(', ')}` : `Товар "${q}" не найден на складе.`;
-        }
-        if(/статистик|сводк|отчет/.test(t)) {
-            const r = App.data.get('receiving').length, e = App.data.get('hr').filter(x=>x.session).length;
-            return `Статистика: Приёмок ${r}, на смене ${e} сотрудников. Заполненность склада ${Math.round(App.data.get('warehouse').reduce((s,x)=>s+x.curr,0)/App.data.get('warehouse').reduce((s,x)=>s+x.cap,0)*100)}%.`;
-        }
-        if(/кто.*смен|на смен/.test(t)) {
-            const on = App.data.get('hr').filter(x=>x.session).map(x=>x.name);
-            return on.length ? `Сейчас на смене: ${on.join(', ')}` : 'Никого на смене нет.';
-        }
-        if(/привет|здравствуй/.test(t)) return 'Привет! Готов помочь со складом, персоналом или создать новый модуль. Спрашивайте.';
-        if(/как.*сделай|инструкция/.test(t)) return 'Для создания нового модуля откройте ИИ-конструктор и напишите: "Создай модуль учета возвратов". Я сгенерирую и подключу его автоматически.';
-        return `Понял: "${text}". Попробуйте спросить: "Где лежит монитор?", "Статистика", "Кто на смене?" или создайте модуль через ИИ.`;
-    },
-    speak(text) {
-        if(!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text); u.lang='ru-RU'; u.rate=1;
-        u.onstart = () => { this.speaking=true; document.getElementById('micBtn').classList.add('listening'); };
-        u.onend = () => { this.speaking=false; document.getElementById('micBtn').classList.remove('listening'); };
-        window.speechSynthesis.speak(u);
-    },
-    updateUI(txt) { document.getElementById('micBtn').textContent = txt; }
-};
-
-// BOOT
-document.getElementById('aiInput').addEventListener('keydown', e => { if(e.key==='Enter') App.AI.processInput(); });
-App.init();
+// INIT
+window.addEventListener('DOMContentLoaded',()=>{
+  try{const t=localStorage.getItem('ff_th');if(t)document.documentElement.dataset.theme=t;}catch{}
+  DB.init();
+  setTimeout(()=>{document.getElementById('splash').classList.add('hide');setTimeout(()=>{document.getElementById('splash').style.display='none';Auth.check();},800);},2200);
+  setInterval(()=>{ if(App.user && document.querySelector('[data-p="emp"]').classList.contains('active')) { document.querySelectorAll('[id^="tm-"]').forEach(el=>{ const id=el.id.split('-')[1]; const e=(DB.get('emp')||[]).find(v=>v.id===id); if(e?.act)el.textContent=Pages._tm(e); }); } },1000);
+});
 </script>
 </body>
 </html>
