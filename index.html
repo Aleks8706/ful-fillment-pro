@@ -260,6 +260,8 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .badge-process { background:#fef3c7; color:#92400e; }
 .badge-done { background:#d1fae5; color:#065f46; }
 .badge-error { background:#fee2e2; color:#991b1b; }
+.badge-barcode-invalid { background:#fee2e2; color:#991b1b; animation: shake 0.5s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
 /* MODAL */
 .modal-overlay {
@@ -383,7 +385,9 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .toast.error { border-left:4px solid var(--danger); }
 .toast.info { border-left:4px solid var(--info); }
 .toast.voice { border-left:4px solid #a855f7; }
+.toast.barcode-error { border-left:4px solid #ef4444; animation: toastShake 0.5s; }
 @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes toastShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
 
 @media(max-width:768px) {
   .sidebar { position:fixed; left:-260px; z-index:4000; height:100vh; }
@@ -445,9 +449,33 @@ textarea.form-control { resize:vertical; min-height:80px; }
 }
 .voice-result-item:hover { background: var(--hover); }
 .voice-result-item:last-child { border-bottom: none; }
+
+/* Barcode Validation Styles */
+.barcode-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 8px;
+  margin-top: 8px; font-size: 13px;
+}
+.barcode-status.valid { background: rgba(16,185,129,0.15); color: var(--success); }
+.barcode-status.invalid { background: rgba(239,68,68,0.15); color: var(--danger); }
+.barcode-scanner {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 20px; text-align: center; margin: 16px 0;
+  background: var(--bg-input);
+}
+.barcode-scanner.active { border-color: var(--primary); background: rgba(99,102,241,0.1); }
+.barcode-scanner.error { border-color: var(--danger); background: rgba(239,68,68,0.1); animation: shake 0.5s; }
 </style>
 </head>
 <body>
+
+<!-- AUDIO SIGNALS -->
+<audio id="sound-success" preload="auto">
+  <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
+</audio>
+<audio id="sound-error" preload="auto">
+  <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
+</audio>
 
 <!-- SPLASH -->
 <div id="splash">
@@ -800,6 +828,54 @@ const DB = {
   }
 };
 
+// ==================== AUDIO MANAGER ====================
+const AudioManager = {
+  play(type) {
+    try {
+      // Generate simple beep sounds using Web Audio API
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      if(type === 'success') {
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.2);
+      } else if(type === 'error') {
+        oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        oscillator.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.4);
+      }
+    } catch(e) {
+      console.warn('Audio play error:', e);
+    }
+  },
+  
+  playBarcodeSuccess() {
+    this.play('success');
+  },
+  
+  playBarcodeError() {
+    this.play('error');
+    // Visual feedback
+    const scanner = document.querySelector('.barcode-scanner');
+    if(scanner) {
+      scanner.classList.add('error');
+      setTimeout(() => scanner.classList.remove('error'), 500);
+    }
+  }
+};
+
 // ==================== INIT DEFAULTS ====================
 function initDefaults() {
   if(!DB.get('initialized')) {
@@ -808,19 +884,30 @@ function initDefaults() {
       { id:2, login:'manager', password:'1234', name:'Менеджер', role:'manager', photo:'' }
     ]);
     DB.set('warehouse_cells', [
-      { id:'A1', zone:'Зона A', product:'Молоко', sku:'MILK-001', qty:24, expiry:'2026-06-15', photo:'', status:'occupied' },
-      { id:'A2', zone:'Зона A', product:'Хлеб белый', sku:'BRD-001', qty:50, expiry:'2026-05-12', photo:'', status:'occupied' },
-      { id:'A3', zone:'Зона A', product:'Сыр Российский', sku:'CHS-001', qty:15, expiry:'2026-07-01', photo:'', status:'occupied' },
-      { id:'B1', zone:'Зона B', product:'Кофе Nescafe', sku:'COF-001', qty:30, expiry:'2027-01-01', photo:'', status:'occupied' },
-      { id:'B2', zone:'Зона B', product:'Чай Greenfield', sku:'TEA-001', qty:40, expiry:'2027-06-01', photo:'', status:'occupied' },
-      { id:'B3', zone:'Зона B', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
-      { id:'C1', zone:'Зона C', product:'Шампунь Head&Shoulders', sku:'SHP-001', qty:20, expiry:'2028-01-01', photo:'', status:'occupied' },
-      { id:'C2', zone:'Зона C', product:'Мыло Dove', sku:'SOP-001', qty:35, expiry:'2028-06-01', photo:'', status:'occupied' },
-      { id:'C3', zone:'Зона C', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
-      { id:'D1', zone:'Зона D', product:'Бумага А4 SvetoCopy', sku:'PAP-001', qty:100, expiry:'', photo:'', status:'occupied' },
-      { id:'D2', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
-      { id:'D3', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' }
+      { id:'A1', zone:'Зона A', product:'Молоко', sku:'MILK-001', qty:24, expiry:'2026-06-15', photo:'', status:'occupied', barcode:'4601234567890' },
+      { id:'A2', zone:'Зона A', product:'Хлеб белый', sku:'BRD-001', qty:50, expiry:'2026-05-12', photo:'', status:'occupied', barcode:'4601234567891' },
+      { id:'A3', zone:'Зона A', product:'Сыр Российский', sku:'CHS-001', qty:15, expiry:'2026-07-01', photo:'', status:'occupied', barcode:'4601234567892' },
+      { id:'B1', zone:'Зона B', product:'Кофе Nescafe', sku:'COF-001', qty:30, expiry:'2027-01-01', photo:'', status:'occupied', barcode:'4601234567893' },
+      { id:'B2', zone:'Зона B', product:'Чай Greenfield', sku:'TEA-001', qty:40, expiry:'2027-06-01', photo:'', status:'occupied', barcode:'4601234567894' },
+      { id:'B3', zone:'Зона B', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty', barcode:'' },
+      { id:'C1', zone:'Зона C', product:'Шампунь Head&Shoulders', sku:'SHP-001', qty:20, expiry:'2028-01-01', photo:'', status:'occupied', barcode:'4601234567895' },
+      { id:'C2', zone:'Зона C', product:'Мыло Dove', sku:'SOP-001', qty:35, expiry:'2028-06-01', photo:'', status:'occupied', barcode:'4601234567896' },
+      { id:'C3', zone:'Зона C', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty', barcode:'' },
+      { id:'D1', zone:'Зона D', product:'Бумага А4 SvetoCopy', sku:'PAP-001', qty:100, expiry:'', photo:'', status:'occupied', barcode:'4601234567897' },
+      { id:'D2', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty', barcode:'' },
+      { id:'D3', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty', barcode:'' }
     ]);
+    // Registry of valid barcodes with product info
+    DB.set('barcodes', {
+      '4601234567890': { name:'Молоко', sku:'MILK-001', category:'Молочные' },
+      '4601234567891': { name:'Хлеб белый', sku:'BRD-001', category:'Хлеб' },
+      '4601234567892': { name:'Сыр Российский', sku:'CHS-001', category:'Молочные' },
+      '4601234567893': { name:'Кофе Nescafe', sku:'COF-001', category:'Напитки' },
+      '4601234567894': { name:'Чай Greenfield', sku:'TEA-001', category:'Напитки' },
+      '4601234567895': { name:'Шампунь Head&Shoulders', sku:'SHP-001', category:'Косметика' },
+      '4601234567896': { name:'Мыло Dove', sku:'SOP-001', category:'Косметика' },
+      '4601234567897': { name:'Бумага А4 SvetoCopy', sku:'PAP-001', category:'Канцтовары' }
+    });
     DB.set('receivings', []);
     DB.set('shippings', []);
     DB.set('tasks', []);
@@ -851,7 +938,6 @@ const VoiceAssistant = {
   voicePitch: 1,
 
   init() {
-    // Check browser support
     if('speechSynthesis' in window) {
       this.synth = window.speechSynthesis;
       console.log('🔊 SpeechSynthesis available');
@@ -912,7 +998,6 @@ const VoiceAssistant = {
       console.warn('⚠️ SpeechRecognition not supported');
     }
 
-    // Speak greeting
     this.speak('Добро пожаловать в систему FulFill Pro. Нажмите на микрофон для голосового управления.');
   },
 
@@ -932,7 +1017,6 @@ const VoiceAssistant = {
     try {
       this.recognition.start();
     } catch(e) {
-      // Already listening, restart
       this.recognition.stop();
       setTimeout(() => this.recognition.start(), 100);
     }
@@ -954,7 +1038,7 @@ const VoiceAssistant = {
 
   speak(text) {
     if(!this.synth) return;
-    this.synth.cancel(); // Cancel any current speech
+    this.synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ru-RU';
@@ -962,117 +1046,71 @@ const VoiceAssistant = {
     utterance.pitch = this.voicePitch;
     utterance.volume = this.voiceVolume;
 
-    // Try to find Russian voice
     const voices = this.synth.getVoices();
     const ruVoice = voices.find(v => v.lang.startsWith('ru'));
     if(ruVoice) utterance.voice = ruVoice;
 
     this.synth.speak(utterance);
-
-    // Update voice response panel
     document.getElementById('voice-response').innerHTML = `<strong></strong> ${text}`;
   },
 
   processCommand(cmd) {
     const lower = cmd.toLowerCase().trim();
     console.log('🎤 Command:', lower);
-
-    // Stop listening
     this.stopListening();
-
-    // Show voice panel
     document.getElementById('voice-panel').classList.add('active');
 
     // Navigation commands
-    if(lower.includes('открой склад') || lower.includes('открыть склад') || lower.includes('склад') || lower.includes('куда положить')) {
-      this.speak('Открываю раздел склад.');
-      this.navigateTo('warehouse');
-      return;
-    }
-    if(lower.includes('открой приемк') || lower.includes('открыть приемк') || lower.includes('приемк')) {
-      this.speak('Открываю раздел приемка.');
-      this.navigateTo('receiving');
-      return;
-    }
-    if(lower.includes('открой отгрузк') || lower.includes('открыть отгрузк') || lower.includes('отгрузк')) {
-      this.speak('Открываю раздел отгрузка.');
-      this.navigateTo('shipping');
-      return;
-    }
-    if(lower.includes('открой задач') || lower.includes('открыть задач') || lower.includes('задач')) {
-      this.speak('Открываю раздел задачи.');
-      this.navigateTo('tasks');
-      return;
-    }
-    if(lower.includes('открой сотрудник') || lower.includes('открыть сотрудник') || lower.includes('сотрудник')) {
-      this.speak('Открываю раздел сотрудники.');
-      this.navigateTo('employees');
-      return;
-    }
-    if(lower.includes('открой инвентаризац') || lower.includes('открыть инвентаризац') || lower.includes('инвентаризац')) {
-      this.speak('Открываю раздел инвентаризация.');
-      this.navigateTo('inventory');
-      return;
-    }
-    if(lower.includes('открой штраф') || lower.includes('открыть штраф') || lower.includes('штраф')) {
-      this.speak('Открываю раздел штрафы.');
-      this.navigateTo('fines');
-      return;
-    }
-    if(lower.includes('открой печат') || lower.includes('открыть печат') || lower.includes('печать') || lower.includes('этикетк')) {
-      this.speak('Открываю раздел печать этикеток.');
-      this.navigateTo('printing');
-      return;
-    }
-    if(lower.includes('открой интеграц') || lower.includes('открыть интеграц') || lower.includes('интеграц')) {
-      this.speak('Открываю раздел интеграции.');
-      this.navigateTo('integrations');
-      return;
-    }
-    if(lower.includes('открой настройк') || lower.includes('открыть настройк') || lower.includes('настройк')) {
-      this.speak('Открываю раздел настройки.');
-      this.navigateTo('settings');
-      return;
+    const navMap = {
+      'склад': 'warehouse', 'приемк': 'receiving', 'отгрузк': 'shipping',
+      'задач': 'tasks', 'сотрудник': 'employees', 'инвентаризац': 'inventory',
+      'штраф': 'fines', 'печать': 'printing', 'этикетк': 'printing',
+      'интеграц': 'integrations', 'настройк': 'settings'
+    };
+    
+    for(const [key, page] of Object.entries(navMap)) {
+      if(lower.includes(key)) {
+        this.speak(`Открываю раздел ${page}.`);
+        this.navigateTo(page);
+        return;
+      }
     }
 
-    // Cell query: "ячейка A1" / "что в A1" / "где A1"
+    // Cell query
     const cellMatch = lower.match(/ячейк[ае]?\s*([A-Z]\d)/) || lower.match(/в\s*([A-Z]\d)/) || lower.match(/где\s*([A-Z]\d)/i);
     if(cellMatch) {
-      const cellId = cellMatch[1].toUpperCase();
-      this.queryCell(cellId);
+      this.queryCell(cellMatch[1].toUpperCase());
       return;
     }
 
-    // Product search: "где молоко" / "найди сыр" / "где найти хлеб"
-    const whereMatch = lower.match(/где\s+(.+)/) || lower.match(/найди\s+(.+)/) || lower.match(/поиск\s+(.+)/) || lower.match(/расположение\s+(.+)/);
+    // Product search
+    const whereMatch = lower.match(/где\s+(.+)/) || lower.match(/найди\s+(.+)/) || lower.match(/поиск\s+(.+)/);
     if(whereMatch) {
-      const productName = whereMatch[1].trim();
-      this.searchProduct(productName);
+      this.searchProduct(whereMatch[1].trim());
       return;
     }
 
-    // Zone query: "что в зоне A" / "зона B"
+    // Zone query
     const zoneMatch = lower.match(/зон[ае]?\s+([A-Z])/i);
     if(zoneMatch) {
-      const zone = 'Зона ' + zoneMatch[1].toUpperCase();
-      this.queryZone(zone);
+      this.queryZone('Зона ' + zoneMatch[1].toUpperCase());
       return;
     }
 
-    // Statistics: "сколько товаров" / "статистика" / "отчет"
-    if(lower.includes('сколько') || lower.includes('статистик') || lower.includes('отчет') || lower.includes('сколько товаров') || lower.includes('сколько всего')) {
+    // Statistics
+    if(lower.includes('сколько') || lower.includes('статистик') || lower.includes('отчет')) {
       this.reportStatistics();
       return;
     }
 
-    // List all products
+    // List products
     if(lower.includes('список') || lower.includes('перечень') || lower.includes('все товары')) {
       this.listAllProducts();
       return;
     }
 
     // Empty cells
-    if(lower.includes('пустые') || lower.includes('свободные') || lower.includes('где пусто')) {
+    if(lower.includes('пустые') || lower.includes('свободные')) {
       this.listEmptyCells();
       return;
     }
@@ -1085,24 +1123,14 @@ const VoiceAssistant = {
       return;
     }
 
-    // New shipping
-    if(lower.includes('новая отгрузк') || lower.includes('создать отгрузк')) {
-      this.speak('Создаю новую отгрузку.');
-      this.navigateTo('shipping');
-      setTimeout(() => Shipping.createNew(), 500);
+    // Barcode validation query
+    if(lower.includes('проверить штрих') || lower.includes('валидация') || lower.includes('код товара')) {
+      this.speak('Для проверки штрих-кода используйте раздел приемки и кнопку сканирования.');
+      this.navigateTo('receiving');
       return;
     }
 
-    // Inventory
-    if(lower.includes('начать инвентаризац') || lower.includes('инвентаризация')) {
-      this.speak('Запускаю инвентаризацию.');
-      this.navigateTo('inventory');
-      setTimeout(() => Inventory.start(), 500);
-      return;
-    }
-
-    // Unknown command
-    this.speak('Не поняла команду. Скажите например: "Где молоко" или "Что в ячейке A1" или "Сколько товаров на складе".');
+    this.speak('Не поняла команду. Скажите например: "Где молоко" или "Что в ячейке A1".');
   },
 
   searchProduct(name) {
@@ -1113,27 +1141,13 @@ const VoiceAssistant = {
     );
 
     if(results.length === 0) {
-      // Try partial match
-      const partialResults = cells.filter(c =>
-        c.status === 'occupied' &&
-        (c.product.toLowerCase().includes(name.toLowerCase().substring(0,3)) ||
-         c.sku.toLowerCase().includes(name.toLowerCase()))
-      );
-
-      if(partialResults.length === 0) {
-        this.speak(`Товар "${name}" не найден на складе.`);
-        return;
-      }
-
-      const result = partialResults[0];
-      this.speak(`Товар ${result.product} находится в ячейке ${result.id}, ${result.zone}. Количество: ${result.qty} штук.`);
-      this.highlightCell(result.id);
+      this.speak(`Товар "${name}" не найден на складе.`);
       return;
     }
 
     if(results.length === 1) {
       const r = results[0];
-      this.speak(`Товар ${r.product} находится в ячейке ${r.id}, ${r.zone}. Количество: ${r.qty} штук. Срок годности: ${r.expiry || 'не указан'}.`);
+      this.speak(`Товар ${r.product} находится в ячейке ${r.id}, ${r.zone}. Количество: ${r.qty} штук.`);
       this.highlightCell(r.id);
     } else {
       const locations = results.map(r => `${r.product} в ячейке ${r.id}, ${r.zone}, ${r.qty} шт.`).join('. ');
@@ -1152,7 +1166,7 @@ const VoiceAssistant = {
     }
 
     if(cell.status === 'empty') {
-      this.speak(`Ячейка ${cell.id} в ${cell.zone} свободна. Туда можно положить товар.`);
+      this.speak(`Ячейка ${cell.id} в ${cell.zone} свободна.`);
       this.highlightCell(cell.id);
       return;
     }
@@ -1164,23 +1178,16 @@ const VoiceAssistant = {
   queryZone(zone) {
     const cells = DB.get('warehouse_cells', []);
     const zoneCells = cells.filter(c => c.zone === zone);
-
-    if(zoneCells.length === 0) {
-      this.speak(`Зона ${zone} не найдена.`);
-      return;
-    }
-
     const occupied = zoneCells.filter(c => c.status === 'occupied');
     const empty = zoneCells.filter(c => c.status === 'empty');
 
     if(occupied.length === 0) {
-      this.speak(`В зоне ${zone} нет товаров. Все ячейки свободны.`);
+      this.speak(`В зоне ${zone} нет товаров.`);
       return;
     }
 
     const products = occupied.map(c => `${c.product} в ${c.id}, ${c.qty} шт`).join(', ');
-    this.speak(`В зоне ${zone} находится: ${products}. Всего ${occupied.length} товаров. Свободных ячеек: ${empty.length}.`);
-
+    this.speak(`В зоне ${zone}: ${products}. Всего ${occupied.length} товаров.`);
     occupied.forEach(c => this.highlightCell(c.id));
   },
 
@@ -1189,19 +1196,13 @@ const VoiceAssistant = {
     const occupied = cells.filter(c => c.status === 'occupied');
     const empty = cells.filter(c => c.status === 'empty');
     const totalQty = cells.reduce((s, c) => s + (c.qty || 0), 0);
-
-    this.speak(`На складе ${cells.length} ячеек. Занято ${occupied.length}, свободно ${empty.length}. Общее количество товаров: ${totalQty} штук.`);
+    this.speak(`На складе ${cells.length} ячеек. Занято ${occupied.length}, свободно ${empty.length}. Товаров: ${totalQty} штук.`);
   },
 
   listAllProducts() {
     const cells = DB.get('warehouse_cells', []);
     const occupied = cells.filter(c => c.status === 'occupied');
-
-    if(occupied.length === 0) {
-      this.speak('Склад пуст. Нет товаров.');
-      return;
-    }
-
+    if(occupied.length === 0) { this.speak('Склад пуст.'); return; }
     const list = occupied.map(c => `${c.product}, ячейка ${c.id}, ${c.qty} шт`).join('. ');
     this.speak(`На складе ${occupied.length} товаров. ${list}`);
   },
@@ -1209,21 +1210,11 @@ const VoiceAssistant = {
   listEmptyCells() {
     const cells = DB.get('warehouse_cells', []);
     const empty = cells.filter(c => c.status === 'empty');
-
-    if(empty.length === 0) {
-      this.speak('Нет свободных ячеек. Склад полностью заполнен.');
-      return;
-    }
-
-    const list = empty.map(c => c.id).join(', ');
-    this.speak(`Свободные ячейки: ${list}. Всего ${empty.length} ячеек доступно.`);
+    if(empty.length === 0) { this.speak('Нет свободных ячеек.'); return; }
+    this.speak(`Свободные ячейки: ${empty.map(c => c.id).join(', ')}.`);
   },
 
   highlightCell(cellId) {
-    const cell = document.querySelector(`.cell[onclick*="${cellId}"]`) ||
-                 document.querySelector(`.cell:has(.cell-label:contains('${cellId}'))`);
-
-    // Find and highlight
     document.querySelectorAll('.cell').forEach(c => {
       const label = c.querySelector('.cell-label');
       if(label && label.textContent === cellId) {
@@ -1250,28 +1241,20 @@ const App = {
   init() {
     try {
       initDefaults();
-
-      // Load theme
       const theme = DB.get('theme', 'dark');
       document.documentElement.setAttribute('data-theme', theme);
       document.getElementById('theme-btn').textContent = theme === 'dark' ? '☀️' : '🌙';
 
-      // Splash screen
       setTimeout(() => {
         const splash = document.getElementById('splash');
         if(splash) {
           splash.classList.add('hide');
-          setTimeout(() => {
-            splash.style.display = 'none';
-            this.checkAuth();
-          }, 800);
+          setTimeout(() => { splash.style.display = 'none'; this.checkAuth(); }, 800);
         }
       }, 2500);
 
-      // Init Voice Assistant
       VoiceAssistant.init();
 
-      // Navigation
       document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
           document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1280,15 +1263,11 @@ const App = {
           document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
           document.getElementById('page-'+page).classList.add('active');
           this.refreshPage(page);
-          // Voice announcement
           const names = { dashboard:'Дашборд', warehouse:'Склад', receiving:'Приемка', shipping:'Отгрузка', tasks:'Задачи', employees:'Сотрудники', inventory:'Инвентаризация', fines:'Штрафы', printing:'Печать этикеток', integrations:'Интеграции', settings:'Настройки' };
-          if(VoiceAssistant.synth && names[page]) {
-            VoiceAssistant.speak(names[page]);
-          }
+          if(VoiceAssistant.synth && names[page]) VoiceAssistant.speak(names[page]);
         });
       });
 
-      // Tabs
       document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
           const parent = tab.closest('.page');
@@ -1304,21 +1283,14 @@ const App = {
       window.addEventListener('resize', () => this.updateResponsive());
       setInterval(() => Employees.checkAutoCheckout(), 60000);
       this.updateBadges();
-
-      console.log('✅ App initialized with Voice Assistant');
-    } catch(err) {
-      console.error('Init error:', err);
-    }
+      console.log('✅ App initialized with Barcode Validation');
+    } catch(err) { console.error('Init error:', err); }
   },
 
   updateResponsive() {
     const btn = document.getElementById('menu-btn');
-    if(window.innerWidth <= 768) {
-      btn.style.display = 'flex';
-    } else {
-      btn.style.display = 'none';
-      document.getElementById('sidebar').classList.remove('open');
-    }
+    if(window.innerWidth <= 768) { btn.style.display = 'flex'; }
+    else { btn.style.display = 'none'; document.getElementById('sidebar').classList.remove('open'); }
   },
 
   toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); },
@@ -1343,9 +1315,7 @@ const App = {
       DB.set('session', { userId: user.id });
       this.showApp();
       VoiceAssistant.speak(`Добро пожаловать, ${user.name}!`);
-    } else {
-      App.toast('Неверный логин или пароль', 'error');
-    }
+    } else { App.toast('Неверный логин или пароль', 'error'); }
   },
 
   logout() {
@@ -1411,7 +1381,7 @@ const App = {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = 'toast ' + type;
-    const icons = { success:'✅', error:'❌', info:'️', warning:'⚠️', voice:'🎤' };
+    const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️', voice:'🎤', 'barcode-error':'🔴' };
     toast.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${message}</span>`;
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
@@ -1422,9 +1392,7 @@ const App = {
     document.getElementById('modal-overlay').classList.add('active');
   },
 
-  closeModal() {
-    document.getElementById('modal-overlay').classList.remove('active');
-  },
+  closeModal() { document.getElementById('modal-overlay').classList.remove('active'); },
 
   genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); },
 
@@ -1443,6 +1411,49 @@ const App = {
     };
     const [label, cls] = map[status] || [status,''];
     return `<span class="badge-status ${cls}">${label}</span>`;
+  }
+};
+
+// ==================== BARCODE VALIDATOR ====================
+const BarcodeValidator = {
+  /**
+   * Проверка штрих-кода в реестре системы
+   * @param {string} barcode - штрих-код для проверки
+   * @returns {object|null} - данные товара или null если не найден
+   */
+  validate(barcode) {
+    if(!barcode || barcode.trim() === '') return { valid: false, error: 'Пустой штрих-код' };
+    
+    const barcodes = DB.get('barcodes', {});
+    const product = barcodes[barcode.trim()];
+    
+    if(product) {
+      return { valid: true, product };
+    }
+    return { valid: false, error: `Штрих-код "${barcode}" не найден в реестре` };
+  },
+  
+  /**
+   * Добавить новый штрих-код в реестр (только для админов)
+   */
+  register(barcode, productData) {
+    const barcodes = DB.get('barcodes', {});
+    barcodes[barcode] = {
+      name: productData.name,
+      sku: productData.sku,
+      category: productData.category || 'Без категории',
+      registeredAt: new Date().toISOString(),
+      registeredBy: App.currentUser?.id
+    };
+    DB.set('barcodes', barcodes);
+    return true;
+  },
+  
+  /**
+   * Получить список всех зарегистрированных штрих-кодов
+   */
+  getList() {
+    return DB.get('barcodes', {});
   }
 };
 
@@ -1522,7 +1533,7 @@ const Warehouse = {
         <td>${c.sku||'—'}</td>
         <td>${c.qty||0}</td>
         <td>${c.expiry||'—'}</td>
-        <td>${c.photo ? `<img src="${c.photo}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '—'}</td>
+        <td>${c.barcode ? `<code style="font-size:10px;background:var(--bg-input);padding:2px 6px;border-radius:4px;">${c.barcode}</code>` : '—'}</td>
         <td>
           <button class="btn btn-sm btn-outline" onclick="Warehouse.editCell('${c.id}')">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="Warehouse.deleteCell('${c.id}')">🗑️</button>
@@ -1538,10 +1549,10 @@ const Warehouse = {
         <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <strong>${c.product}</strong> — ${c.id} (${c.zone})<br>
-            <small style="color:var(--text-secondary);">Артикул: ${c.sku} | Кол-во: ${c.qty} | Срок: ${c.expiry||'—'}</small>
+            <small style="color:var(--text-secondary);">Артикул: ${c.sku} | Код: ${c.barcode||'—'} | Кол-во: ${c.qty} | Срок: ${c.expiry||'—'}</small>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-sm btn-outline" onclick="Printing.printProduct('${c.id}')">️</button>
+            <button class="btn btn-sm btn-outline" onclick="Printing.printProduct('${c.id}')">🏷️</button>
             <button class="btn btn-sm btn-outline" onclick="Warehouse.printDoc('${c.id}')">📄</button>
           </div>
         </div>
@@ -1555,6 +1566,7 @@ const Warehouse = {
       <div class="form-group"><label>Зона</label>
         <select class="form-control" id="cell-zone"><option>Зона A</option><option>Зона B</option><option>Зона C</option><option>Зона D</option></select>
       </div>
+      <div class="form-group"><label>Штрих-код товара (опционально)</label><input type="text" class="form-control" id="cell-barcode" placeholder="4601234567890"></div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
         <button class="btn btn-primary" onclick="Warehouse.saveCell()">Сохранить</button>
@@ -1566,20 +1578,22 @@ const Warehouse = {
     const cells = DB.get('warehouse_cells',[]);
     const cellId = document.getElementById('cell-id').value.trim() || id;
     const zone = document.getElementById('cell-zone').value;
+    const barcode = document.getElementById('cell-barcode')?.value?.trim();
 
     if(id) {
       const idx = cells.findIndex(c => c.id === id);
       if(idx >= 0) {
-        cells[idx].product = document.getElementById('cell-product').value.trim();
-        cells[idx].sku = document.getElementById('cell-sku').value.trim();
-        cells[idx].qty = parseInt(document.getElementById('cell-qty').value) || 0;
-        cells[idx].expiry = document.getElementById('cell-expiry').value;
+        cells[idx].product = document.getElementById('cell-product')?.value.trim() || cells[idx].product;
+        cells[idx].sku = document.getElementById('cell-sku')?.value.trim() || cells[idx].sku;
+        cells[idx].qty = parseInt(document.getElementById('cell-qty')?.value) || cells[idx].qty;
+        cells[idx].expiry = document.getElementById('cell-expiry')?.value || cells[idx].expiry;
         cells[idx].zone = zone;
+        if(barcode !== undefined) cells[idx].barcode = barcode;
         cells[idx].status = cells[idx].qty > 0 ? 'occupied' : 'empty';
       }
     } else {
       if(cells.find(c => c.id === cellId)) { App.toast('Ячейка существует','error'); return; }
-      cells.push({ id:cellId, zone, product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' });
+      cells.push({ id:cellId, zone, product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty', barcode: barcode||'' });
     }
 
     DB.set('warehouse_cells', cells);
@@ -1597,12 +1611,10 @@ const Warehouse = {
       <h3>✏️ Редактирование ячейки ${c.id}</h3>
       <div class="form-group"><label>Товар</label><input type="text" class="form-control" id="cell-product" value="${c.product||''}"></div>
       <div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="cell-sku" value="${c.sku||''}"></div>
+      <div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="cell-barcode" value="${c.barcode||''}" placeholder="4601234567890"></div>
       <div class="form-row">
         <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="cell-qty" value="${c.qty||0}"></div>
         <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="cell-expiry" value="${c.expiry||''}"></div>
-      </div>
-      <div class="form-group"><label>Фото</label><input type="file" class="form-control" id="cell-photo" accept="image/*">
-        ${c.photo ? `<img src="${c.photo}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;">` : ''}
       </div>
       <div class="form-group"><label>Зона</label>
         <select class="form-control" id="cell-zone">
@@ -1642,6 +1654,7 @@ const Warehouse = {
           if(existing) {
             existing.product = row['Товар'] || row['Product'] || '';
             existing.sku = row['Артикул'] || row['SKU'] || '';
+            existing.barcode = row['Штрих-код'] || row['Barcode'] || existing.barcode;
             existing.qty = parseInt(row['Количество'] || row['Qty'] || 0);
             existing.expiry = row['Срок'] || row['Expiry'] || '';
             existing.status = existing.qty > 0 ? 'occupied' : 'empty';
@@ -1659,7 +1672,7 @@ const Warehouse = {
 
   exportExcel() {
     const cells = DB.get('warehouse_cells',[]);
-    const data = cells.map(c => ({'Ячейка':c.id,'Зона':c.zone,'Товар':c.product,'Артикул':c.sku,'Количество':c.qty,'Срок':c.expiry,'Статус':c.status}));
+    const data = cells.map(c => ({'Ячейка':c.id,'Зона':c.zone,'Товар':c.product,'Артикул':c.sku,'Штрих-код':c.barcode||'','Количество':c.qty,'Срок':c.expiry,'Статус':c.status}));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Склад');
@@ -1672,7 +1685,7 @@ const Warehouse = {
     const c = cells.find(x => x.id === id);
     if(!c) return;
     const win = window.open('','_blank');
-    win.document.write(`<html><head><title>${c.product}</title><style>body{font-family:Arial;padding:40px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1>📦 ${c.product}</h1><table><tr><th>Параметр</th><th>Значение</th></tr><tr><td>Ячейка</td><td>${c.id}</td></tr><tr><td>Зона</td><td>${c.zone}</td></tr><tr><td>Артикул</td><td>${c.sku}</td></tr><tr><td>Количество</td><td>${c.qty} шт</td></tr><tr><td>Срок</td><td>${c.expiry||'—'}</td></tr></table></body></html>`);
+    win.document.write(`<html><head><title>${c.product}</title><style>body{font-family:Arial;padding:40px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1>📦 ${c.product}</h1><table><tr><th>Параметр</th><th>Значение</th></tr><tr><td>Ячейка</td><td>${c.id}</td></tr><tr><td>Зона</td><td>${c.zone}</td></tr><tr><td>Артикул</td><td>${c.sku}</td></tr><tr><td>Штрих-код</td><td>${c.barcode||'—'}</td></tr><tr><td>Количество</td><td>${c.qty} шт</td></tr><tr><td>Срок</td><td>${c.expiry||'—'}</td></tr></table></body></html>`);
   }
 };
 
@@ -1697,7 +1710,6 @@ const Receiving = {
   },
 
   createNew() {
-    const employees = DB.get('employees',[]);
     const number = 'RCV-' + Date.now().toString().slice(-6);
     App.modal(`
       <h3>📥 Новая приемка</h3>
@@ -1706,7 +1718,10 @@ const Receiving = {
         <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="recv-date" value="${new Date().toISOString().slice(0,16)}"></div>
       </div>
       <div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="recv-supplier" placeholder="Название"></div>
-      <div class="form-group"><label>Товары (JSON)</label><textarea class="form-control" id="recv-items" placeholder='[{"name":"Товар","sku":"SKU-001","qty":10}]'>[]</textarea></div>
+      <div class="form-group"><label>Товары (формат: [{"name":"Товар","sku":"SKU","qty":10,"barcode":"460..."}])</label>
+        <textarea class="form-control" id="recv-items" placeholder='[{"name":"Молоко","sku":"MILK-001","qty":24,"barcode":"4601234567890"}]'>[]</textarea>
+      </div>
+      <div class="barcode-status" id="recv-barcode-status" style="display:none;"></div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
         <button class="btn btn-primary" onclick="Receiving.save()">Сохранить</button>
@@ -1714,22 +1729,87 @@ const Receiving = {
     `);
   },
 
+  /**
+   * 🔍 ВАЛИДАЦИЯ ШТРИХ-КОДА ПРИ ПРИЕМКЕ
+   * Проверяет каждый товар в приемке на наличие валидного штрих-кода
+   */
+  validateReceivingItems(items) {
+    const errors = [];
+    const validatedItems = [];
+    
+    for(const item of items) {
+      if(!item.barcode || item.barcode.trim() === '') {
+        errors.push(`Товар "${item.name}" не имеет штрих-кода`);
+        continue;
+      }
+      
+      const validation = BarcodeValidator.validate(item.barcode);
+      
+      if(!validation.valid) {
+        // 🚨 ЗВУКОВОЙ СИГНАЛ ОБ ОШИБКЕ
+        AudioManager.playBarcodeError();
+        errors.push(`${validation.error} — товар "${item.name}"`);
+        // Останавливаем приемку при первой ошибке
+        return { success: false, errors, validatedItems: [] };
+      }
+      
+      // ✅ ЗВУКОВОЙ СИГНАЛ УСПЕХА
+      AudioManager.playBarcodeSuccess();
+      validatedItems.push({
+        ...item,
+        validatedProduct: validation.product
+      });
+    }
+    
+    return { success: errors.length === 0, errors, validatedItems };
+  },
+
   save(id) {
     const recv = DB.get('receivings',[]);
+    let items = [];
+    
+    try {
+      items = JSON.parse(document.getElementById('recv-items').value || '[]');
+    } catch(e) {
+      App.toast('Ошибка в формате JSON товаров', 'error');
+      return;
+    }
+    
+    // 🔍 ВАЛИДАЦИЯ ШТРИХ-КОДОВ
+    const validation = this.validateReceivingItems(items);
+    
+    if(!validation.success) {
+      // Показываем ошибку в модалке
+      const statusEl = document.getElementById('recv-barcode-status');
+      if(statusEl) {
+        statusEl.className = 'barcode-status invalid';
+        statusEl.innerHTML = `<strong>❌ Ошибка валидации:</strong><br>${validation.errors.join('<br>')}`;
+        statusEl.style.display = 'block';
+      }
+      // 🔊 Звуковой сигнал уже проигран в validateReceivingItems
+      // 🛑 ОСТАНАВЛИВАЕМ приемку
+      App.toast('Приемка остановлена: неизвестный штрих-код', 'barcode-error');
+      return;
+    }
+    
     const data = {
       id: id || App.genId(),
       number: document.getElementById('recv-number').value,
       date: document.getElementById('recv-date').value,
       supplier: document.getElementById('recv-supplier').value,
-      items: JSON.parse(document.getElementById('recv-items').value || '[]'),
-      status: id ? (recv.find(r=>r.id===id)?.status || 'new') : 'new'
+      items: validation.validatedItems,
+      status: id ? (recv.find(r=>r.id===id)?.status || 'new') : 'new',
+      validated: true
     };
+    
     if(id) { const idx = recv.findIndex(r => r.id === id); if(idx>=0) recv[idx]=data; }
     else recv.push(data);
+    
     DB.set('receivings', recv);
     App.closeModal();
     this.render();
     App.toast(id?'Обновлено':'Создано','success');
+    VoiceAssistant.speak('Приемка сохранена. Все штрих-коды проверены.');
   },
 
   edit(id) {
@@ -1762,14 +1842,27 @@ const Receiving = {
     const recv = DB.get('receivings',[]);
     const r = recv.find(x => x.id === id);
     if(!r) return;
+    
+    // Дополнительная валидация при завершении
+    if(r.items && r.items.length > 0) {
+      const validation = this.validateReceivingItems(r.items);
+      if(!validation.success) {
+        AudioManager.playBarcodeError();
+        App.toast('Нельзя завершить: есть товары с неизвестными штрих-кодами', 'barcode-error');
+        return;
+      }
+    }
+    
     r.status = 'done';
     r.completedAt = new Date().toISOString();
+    
     const cells = DB.get('warehouse_cells',[]);
     (r.items||[]).forEach(item => {
       const emptyCell = cells.find(c => c.status === 'empty');
       if(emptyCell) {
         emptyCell.product = item.name;
         emptyCell.sku = item.sku;
+        emptyCell.barcode = item.barcode;
         emptyCell.qty = item.qty;
         emptyCell.status = 'occupied';
       }
@@ -1787,44 +1880,178 @@ const Receiving = {
     this.render();
   },
 
+  /**
+   * 📷 СКАНИРОВАНИЕ ШТРИХ-КОДА С ВАЛИДАЦИЕЙ
+   * При сканировании проверяет код в реестре и автоматически добавляет товар
+   */
   scanBarcode() {
+    const barcodes = BarcodeValidator.getList();
+    const barcodeList = Object.keys(barcodes).map(bc => `${bc} — ${barcodes[bc].name}`).join('\n');
+    
     App.modal(`
-      <h3>📷 Сканирование</h3>
-      <div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="scan-barcode" placeholder="Отсканируйте..." autofocus></div>
-      <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="scan-qty" value="1"></div>
+      <h3>📷 Сканирование штрих-кода</h3>
+      <div class="barcode-scanner" id="barcode-scanner">
+        <div style="font-size:32px;margin-bottom:12px;">🔍</div>
+        <p style="color:var(--text-secondary);margin-bottom:12px;">Наведите сканер или введите код вручную</p>
+        <input type="text" class="form-control" id="scan-barcode" placeholder="Штрих-код..." autofocus style="font-size:18px;text-align:center;">
+        <div id="scan-status" style="margin-top:8px;font-size:13px;"></div>
+      </div>
+      <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="scan-qty" value="1" min="1"></div>
+      <details style="margin-top:12px;font-size:12px;color:var(--text-secondary);">
+        <summary>📋 Зарегистрированные штрих-коды (${Object.keys(barcodes).length})</summary>
+        <pre style="background:var(--bg-input);padding:8px;border-radius:6px;max-height:100px;overflow-y:auto;font-size:10px;">${barcodeList}</pre>
+      </details>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
-        <button class="btn btn-primary" onclick="Receiving.processScan()">Добавить</button>
+        <button class="btn btn-primary" onclick="Receiving.processScan()">✅ Добавить</button>
       </div>
     `);
-    setTimeout(() => document.getElementById('scan-barcode')?.focus(), 100);
+    
+    // Автофокус и обработка Enter
+    setTimeout(() => {
+      const input = document.getElementById('scan-barcode');
+      if(input) {
+        input.focus();
+        input.addEventListener('keypress', (e) => {
+          if(e.key === 'Enter') Receiving.processScan();
+        });
+        // Для сканеров, которые эмулируют ввод с Enter в конце
+        input.addEventListener('input', () => {
+          const val = input.value.trim();
+          if(val.length >= 8) { // Минимальная длина штрих-кода
+            const validation = BarcodeValidator.validate(val);
+            const statusEl = document.getElementById('scan-status');
+            if(validation.valid) {
+              statusEl.className = 'barcode-status valid';
+              statusEl.innerHTML = `✅ ${validation.product.name} (${validation.product.sku})`;
+              AudioManager.playBarcodeSuccess();
+            } else {
+              statusEl.className = 'barcode-status invalid';
+              statusEl.innerHTML = `❌ ${validation.error}`;
+              // Не играем ошибку здесь, чтобы не спамить при вводе
+            }
+          }
+        });
+      }
+    }, 100);
   },
 
   processScan() {
-    const barcode = document.getElementById('scan-barcode').value.trim();
-    const qty = parseInt(document.getElementById('scan-qty').value) || 1;
-    if(!barcode) { App.toast('Введите штрих-код','error'); return; }
+    const barcode = document.getElementById('scan-barcode')?.value.trim();
+    const qty = parseInt(document.getElementById('scan-qty')?.value) || 1;
+    
+    if(!barcode) { 
+      App.toast('Введите штрих-код','error'); 
+      return; 
+    }
+    
+    // 🔍 ВАЛИДАЦИЯ ШТРИХ-КОДА
+    const validation = BarcodeValidator.validate(barcode);
+    
+    if(!validation.valid) {
+      // 🚨 ЗВУКОВОЙ СИГНАЛ ОБ ОШИБКЕ
+      AudioManager.playBarcodeError();
+      
+      // Визуальная индикация
+      const scanner = document.getElementById('barcode-scanner');
+      if(scanner) {
+        scanner.classList.add('error');
+        setTimeout(() => scanner.classList.remove('error'), 500);
+      }
+      
+      // Показываем детальную ошибку
+      const statusEl = document.getElementById('scan-status');
+      if(statusEl) {
+        statusEl.className = 'barcode-status invalid';
+        statusEl.innerHTML = `<strong>❌ ОШИБКА:</strong><br>${validation.error}<br><small style="display:block;margin-top:4px;">Приемка остановлена. Добавьте товар в реестр через Настройки.</small>`;
+      }
+      
+      // 🔊 Голосовое оповещение
+      if(VoiceAssistant.synth) {
+        VoiceAssistant.speak(`Внимание: штрих-код ${barcode} не найден в реестре. Приемка остановлена.`);
+      }
+      
+      // 🛑 ОСТАНАВЛИВАЕМ процесс
+      App.toast(`Штрих-код "${barcode}" не в реестре! Приемка остановлена.`, 'barcode-error');
+      return;
+    }
+    
+    // ✅ Штрих-код валиден — добавляем товар
+    AudioManager.playBarcodeSuccess();
+    
     const cells = DB.get('warehouse_cells',[]);
-    const cell = cells.find(c => c.sku === barcode || c.id === barcode);
-    if(cell) {
+    const product = validation.product;
+    
+    // Ищем ячейку с таким же SKU или barcode
+    let cell = cells.find(c => c.sku === product.sku || c.barcode === barcode);
+    
+    if(cell && cell.status === 'occupied') {
+      // Обновляем количество в существующей ячейке
       cell.qty += qty;
       DB.set('warehouse_cells', cells);
-      VoiceAssistant.speak(`Добавлено ${qty} штук товара в ячейку ${cell.id}. Товар: ${cell.product}.`);
-      App.toast(`+${qty} шт в ${cell.id}`, 'success');
+      VoiceAssistant.speak(`Добавлено ${qty} штук товара ${product.name} в ячейку ${cell.id}.`);
+      App.toast(`+${qty} шт: ${product.name} → ${cell.id}`, 'success');
     } else {
+      // Ищем свободную ячейку
       const emptyCell = cells.find(c => c.status === 'empty');
       if(emptyCell) {
-        emptyCell.sku = barcode;
+        emptyCell.product = product.name;
+        emptyCell.sku = product.sku;
+        emptyCell.barcode = barcode;
         emptyCell.qty = qty;
         emptyCell.status = 'occupied';
-        emptyCell.product = 'Товар ' + barcode;
         DB.set('warehouse_cells', cells);
-        VoiceAssistant.speak(`Новый товар размещен в ячейку ${emptyCell.id}.`);
-        App.toast(`Новый товар в ${emptyCell.id}`, 'success');
+        VoiceAssistant.speak(`Новый товар ${product.name} размещен в ячейку ${emptyCell.id}.`);
+        App.toast(`${product.name} размещен в ${emptyCell.id}`, 'success');
+      } else {
+        App.toast('Нет свободных ячеек на складе!', 'error');
+        return;
       }
     }
-    App.closeModal();
-    Warehouse.render();
+    
+    // Автоматически закрываем модалку после успешного добавления
+    setTimeout(() => {
+      App.closeModal();
+      Warehouse.render();
+      // Если есть активная приемка — обновляем её список
+      if(document.getElementById('page-receiving')?.classList.contains('active')) {
+        Receiving.render();
+      }
+    }, 800);
+  },
+  
+  /**
+   * Быстрое добавление товара через штрих-код (для ТСД)
+   */
+  quickAddByBarcode(barcode, qty = 1) {
+    const validation = BarcodeValidator.validate(barcode);
+    if(!validation.valid) {
+      AudioManager.playBarcodeError();
+      App.toast(`❌ ${validation.error}`, 'barcode-error');
+      return false;
+    }
+    
+    AudioManager.playBarcodeSuccess();
+    const cells = DB.get('warehouse_cells',[]);
+    const product = validation.product;
+    
+    let cell = cells.find(c => c.barcode === barcode && c.status === 'occupied');
+    if(!cell) cell = cells.find(c => c.status === 'empty');
+    
+    if(cell) {
+      if(cell.status === 'empty') {
+        cell.product = product.name;
+        cell.sku = product.sku;
+        cell.barcode = barcode;
+        cell.status = 'occupied';
+      }
+      cell.qty = (cell.qty || 0) + qty;
+      DB.set('warehouse_cells', cells);
+      App.toast(`+${qty} ${product.name}`, 'success');
+      return true;
+    }
+    App.toast('Нет свободных ячеек', 'error');
+    return false;
   }
 };
 
@@ -1857,7 +2084,7 @@ const Shipping = {
         <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="shp-date" value="${new Date().toISOString().slice(0,16)}"></div>
       </div>
       <div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="shp-client" placeholder="Клиент"></div>
-      <div class="form-group"><label>Товары</label><textarea class="form-control" id="shp-items" placeholder='[{"name":"Товар","sku":"SKU-001","qty":5}]'>[]</textarea></div>
+      <div class="form-group"><label>Товары (с штрих-кодами)</label><textarea class="form-control" id="shp-items" placeholder='[{"name":"Товар","sku":"SKU-001","qty":5,"barcode":"4601234567890"}]'>[]</textarea></div>
       <div class="form-group"><label>Адрес</label><input type="text" class="form-control" id="shp-address" placeholder="Адрес"></div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
@@ -1922,11 +2149,11 @@ const Shipping = {
     (s.items||[]).forEach(item => {
       let remaining = item.qty;
       for(const cell of cells) {
-        if(cell.sku === item.sku && cell.qty > 0) {
+        if((cell.sku === item.sku || cell.barcode === item.barcode) && cell.qty > 0) {
           const take = Math.min(remaining, cell.qty);
           cell.qty -= take;
           remaining -= take;
-          if(cell.qty <= 0) { cell.qty=0; cell.status='empty'; cell.product=''; cell.sku=''; }
+          if(cell.qty <= 0) { cell.qty=0; cell.status='empty'; cell.product=''; cell.sku=''; cell.barcode=''; }
         }
         if(remaining <= 0) break;
       }
@@ -1960,7 +2187,7 @@ const Tasks = {
           <div class="task-meta">👤 ${emp?.name||'—'} | ⏰ ${t.deadline||'—'}</div>
           <div style="margin-top:8px;display:flex;gap:4px;">
             ${status!=='new'?`<button class="btn btn-sm btn-outline" onclick="Tasks.move('${t.id}','${status==='process'?'done':'new'}')">⬅️</button>`:''}
-            ${status!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${t.id}','${status==='new'?'process':'done'}')">️</button>`:''}
+            ${status!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${t.id}','${status==='new'?'process':'done'}')">➡️</button>`:''}
             <button class="btn btn-sm btn-danger" onclick="Tasks.remove('${t.id}')">🗑️</button>
           </div>
         </div>`;
@@ -2180,7 +2407,7 @@ const Inventory = {
         <td>${c.id} (${c.zone})</td>
         <td>${c.qty}</td>
         <td><input type="number" class="form-control" style="width:100px;" value="${invItem?.fact||''}" onchange="Inventory.updateFact('${c.id}',this.value)" ${!inv.active?'disabled':''}></td>
-        <td style="color:${diff>0?'var(--success)':diff<0?'var(--danger)':'inherit'}">${diff!==null?(diff>0?'+'+diff:diff):'—'}</td>
+        <td style="color:${diff>0?'var(--success)':diff<0?'var(--danger)':'inherit'}">${diff!==null?(diff>0?'+':'')+diff:0}</td>
         <td>${invItem ? App.statusBadge(diff===0?'done':'error') : '—'}</td>
       </tr>`;
     }).join('');
@@ -2191,7 +2418,7 @@ const Inventory = {
     const items = cells.filter(c=>c.status==='occupied').map(c=>({cellId:c.id, system:c.qty, fact:null}));
     DB.set('inventory', {active:true, items, startedAt: new Date().toISOString()});
     this.render();
-    VoiceAssistant.speak('Инвентаризация начата. Озвучивайте номер ячейки и количество.');
+    VoiceAssistant.speak('Инвентаризация начата.');
     App.toast('Инвентаризация начата', 'success');
   },
 
@@ -2206,11 +2433,8 @@ const Inventory = {
   printReport() {
     const inv = DB.get('inventory', {items:[]});
     const cells = DB.get('warehouse_cells',[]);
-    const total = inv.items.length;
-    const matched = inv.items.filter(i => i.fact === cells.find(c=>c.id===i.cellId)?.qty).length;
-    const diff = total - matched;
     const win = window.open('','_blank');
-    win.document.write(`<html><head><title>Отчет инвентаризации</title><style>body{font-family:Arial;padding:30px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1> Отчет</h1><p>Дата: ${App.formatDate(inv.startedAt||Date.now())}</p><table><tr><th>Ячейка</th><th>Система</th><th>Факт</th><th>Расхождение</th></tr>${inv.items.map(i=>{const c=cells.find(x=>x.id===i.cellId);const d=i.fact-(c?.qty||0);return `<tr><td>${i.cellId}</td><td>${c?.qty||0}</td><td>${i.fact||'—'}</td><td>${d!==0?(d>0?'+':'')+d:'0'}</td></tr>`;}).join('')}</table></body></html>`);
+    win.document.write(`<html><head><title>Отчет инвентаризации</title><style>body{font-family:Arial;padding:30px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1>📋 Отчет</h1><p>Дата: ${App.formatDate(inv.startedAt||Date.now())}</p><table><tr><th>Ячейка</th><th>Система</th><th>Факт</th><th>Расхождение</th></tr>${inv.items.map(i=>{const c=cells.find(x=>x.id===i.cellId);const d=i.fact-(c?.qty||0);return `<tr><td>${i.cellId}</td><td>${c?.qty||0}</td><td>${i.fact||'—'}</td><td>${d!==0?(d>0?'+':'')+d:0}</td></tr>`;}).join('')}</table></body></html>`);
   }
 };
 
@@ -2236,7 +2460,7 @@ const Fines = {
           </div>
           <div style="display:flex;gap:4px;">
             ${!f.forgiven?`<button class="btn btn-sm btn-success" onclick="Fines.forgive('${f.id}')">🙏</button>`:''}
-            <button class="btn btn-sm btn-danger" onclick="Fines.remove('${f.id}')">️</button>
+            <button class="btn btn-sm btn-danger" onclick="Fines.remove('${f.id}')">🗑️</button>
           </div>
         </div>`;
       }).join('') : '<p style="color:var(--text-secondary);">Штрафов нет 🎉</p>';
@@ -2308,6 +2532,19 @@ const Printing = {
     const qr = document.getElementById('print-qr').value.trim();
     const copies = parseInt(document.getElementById('print-copies').value) || 1;
     if(!name && !sku && !barcode) { App.toast('Заполните поля','error'); return; }
+    
+    // Валидация штрих-кода если указан
+    if(barcode) {
+      const validation = BarcodeValidator.validate(barcode);
+      if(!validation.valid) {
+        AudioManager.playBarcodeError();
+        App.toast(`⚠️ ${validation.error}. Продолжить печать?`, 'warning');
+        // Не блокируем печать, только предупреждаем
+      } else {
+        AudioManager.playBarcodeSuccess();
+      }
+    }
+    
     for(let i=0; i<copies; i++) this.printLabelHTML(name,sku,barcode,expiry,qr);
   },
 
@@ -2347,7 +2584,7 @@ const Printing = {
     if(!c) return;
     document.getElementById('print-name').value = c.product;
     document.getElementById('print-sku').value = c.sku;
-    document.getElementById('print-barcode').value = c.sku || c.id;
+    document.getElementById('print-barcode').value = c.barcode || c.sku || c.id;
     document.getElementById('print-expiry').value = c.expiry || '';
     document.getElementById('print-copies').value = c.qty || 1;
     this.previewLabel();
@@ -2355,22 +2592,44 @@ const Printing = {
 
   createFromWarehouse() {
     App.modal(`
-      <h3> Печать со склада</h3>
+      <h3>🖨️ Печать со склада</h3>
       <div class="form-group"><label>Товар</label>
         <select class="form-control" id="print-select-cell">
           <option value="">— Выберите —</option>
-          ${DB.get('warehouse_cells',[]).filter(c=>c.status==='occupied').map(c=>`<option value="${c.id}">${c.id} — ${c.product} (${c.qty} шт)</option>`).join('')}
+          ${DB.get('warehouse_cells',[]).filter(c=>c.status==='occupied').map(c=>`<option value="${c.id}" data-barcode="${c.barcode||''}">${c.id} — ${c.product} (${c.qty} шт)</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Копий</label><input type="number" class="form-control" id="print-copies" value="1"></div>
         <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="print-expiry"></div>
       </div>
+      <div id="print-barcode-info" style="font-size:12px;color:var(--text-secondary);margin:8px 0;"></div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
         <button class="btn btn-primary" onclick="Printing.generateLabel()">🖨️ Печать</button>
       </div>
     `);
+    
+    // Показ штрих-кода при выборе товара
+    setTimeout(() => {
+      const select = document.getElementById('print-select-cell');
+      const info = document.getElementById('print-barcode-info');
+      if(select && info) {
+        select.addEventListener('change', () => {
+          const option = select.options[select.selectedIndex];
+          const barcode = option.dataset.barcode;
+          if(barcode) {
+            const validation = BarcodeValidator.validate(barcode);
+            info.innerHTML = validation.valid 
+              ? `✅ Штрих-код: ${barcode} — ${validation.product.name}` 
+              : `⚠️ Код ${barcode} не в реестре`;
+            info.style.color = validation.valid ? 'var(--success)' : 'var(--warning)';
+          } else {
+            info.textContent = '';
+          }
+        });
+      }
+    }, 100);
   }
 };
 
@@ -2455,12 +2714,44 @@ const Integrations = {
 const Settings = {
   render() {
     const users = DB.get('users',[]);
+    const barcodes = BarcodeValidator.getList();
+    
     document.getElementById('settings-users').innerHTML = users.map(u => `
       <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
         <div><strong>${u.name}</strong> (${u.login})<br><small style="color:var(--text-secondary);">${u.role}</small></div>
         <button class="btn btn-sm btn-outline" onclick="Settings.editUser(${u.id})">✏️</button>
       </div>
     `).join('');
+    
+    // Добавляем секцию управления штрих-кодами
+    const barcodeSection = document.createElement('div');
+    barcodeSection.className = 'card';
+    barcodeSection.style.marginTop = '16px';
+    barcodeSection.innerHTML = `
+      <h3 style="margin-bottom:16px;">🏷️ Реестр штрих-кодов</h3>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" class="form-control" id="new-barcode-code" placeholder="Штрих-код (460...)" style="flex:1;min-width:150px;">
+        <input type="text" class="form-control" id="new-barcode-name" placeholder="Название товара" style="flex:2;min-width:200px;">
+        <input type="text" class="form-control" id="new-barcode-sku" placeholder="Артикул" style="flex:1;min-width:100px;">
+        <button class="btn btn-primary" onclick="Settings.addBarcode()">➕ Добавить</button>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;">
+        ${Object.entries(barcodes).map(([code, data]) => `
+          <div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+            <div>
+              <strong style="font-family:monospace;">${code}</strong><br>
+              <small style="color:var(--text-secondary);">${data.name} • ${data.sku} • ${data.category}</small>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="Settings.removeBarcode('${code}')">🗑️</button>
+          </div>
+        `).join('') || '<p style="color:var(--text-secondary);font-size:13px;">Нет зарегистрированных штрих-кодов</p>'}
+      </div>
+    `;
+    
+    const container = document.getElementById('settings-users')?.parentElement;
+    if(container && !container.querySelector('.card:last-child')?.innerHTML?.includes('Реестр штрих-кодов')) {
+      container.appendChild(barcodeSection);
+    }
   },
 
   editUser(id) {
@@ -2500,6 +2791,64 @@ const Settings = {
       this.render();
       App.toast('Сохранено','success');
     }
+  },
+  
+  /**
+   * Добавить новый штрих-код в реестр (только для админов)
+   */
+  addBarcode() {
+    if(App.currentUser?.role !== 'admin') {
+      App.toast('Только администратор может управлять реестром', 'error');
+      return;
+    }
+    
+    const code = document.getElementById('new-barcode-code')?.value?.trim();
+    const name = document.getElementById('new-barcode-name')?.value?.trim();
+    const sku = document.getElementById('new-barcode-sku')?.value?.trim();
+    
+    if(!code || !name || !sku) {
+      App.toast('Заполните все поля', 'error');
+      return;
+    }
+    
+    if(!/^\d{8,14}$/.test(code)) {
+      App.toast('Штрих-код должен содержать 8-14 цифр', 'error');
+      return;
+    }
+    
+    const barcodes = DB.get('barcodes', {});
+    if(barcodes[code]) {
+      App.toast('Такой штрих-код уже в реестре', 'error');
+      return;
+    }
+    
+    BarcodeValidator.register(code, { name, sku, category: 'Новый' });
+    
+    // Очистка полей
+    document.getElementById('new-barcode-code').value = '';
+    document.getElementById('new-barcode-name').value = '';
+    document.getElementById('new-barcode-sku').value = '';
+    
+    this.render();
+    AudioManager.playBarcodeSuccess();
+    App.toast(`Штрих-код ${code} добавлен в реестр`, 'success');
+    VoiceAssistant.speak(`Товар ${name} добавлен в реестр штрих-кодов.`);
+  },
+  
+  removeBarcode(code) {
+    if(App.currentUser?.role !== 'admin') {
+      App.toast('Только администратор может управлять реестром', 'error');
+      return;
+    }
+    
+    if(!confirm(`Удалить штрих-код ${code} из реестра?`)) return;
+    
+    const barcodes = DB.get('barcodes', {});
+    delete barcodes[code];
+    DB.set('barcodes', barcodes);
+    
+    this.render();
+    App.toast('Штрих-код удалён', 'success');
   }
 };
 
@@ -2526,7 +2875,7 @@ const IO = {
           Object.keys(data).forEach(key => DB.set(key, data[key]));
           App.toast('Импортировано','success');
           setTimeout(() => location.reload(), 1500);
-        } catch(err) { App.toast('Ошибка','error'); }
+        } catch(err) { App.toast('Ошибка формата','error'); }
       };
       reader.readAsText(file);
     }
@@ -2534,16 +2883,24 @@ const IO = {
 
   resetAll() {
     if(!confirm('Удалить все данные?')) return;
-    if(!confirm('Точно удалить?')) return;
+    if(!confirm('Точно удалить? Это необратимо.')) return;
     DB.clearAll();
-    App.toast('Сброшено','warning');
+    App.toast('Система сброшена','warning');
     setTimeout(() => location.reload(), 1500);
   }
 };
 
 // ==================== INITIALIZE ====================
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 FulFill Pro with Voice Assistant loading...');
+  console.log('🚀 FulFill Pro with Barcode Validation loading...');
+  
+  // Инициализация AudioContext при первом взаимодействии (политика браузеров)
+  document.addEventListener('click', () => {
+    try {
+      new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {}
+  }, { once: true });
+  
   App.init();
 });
 </script>
