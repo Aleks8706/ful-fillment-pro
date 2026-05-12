@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FulFill Pro — Синхронизация + Ручное управление</title>
+<title>FulFill Pro — Фото товаров + Синхронизация</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -73,7 +73,7 @@ body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(
 .sidebar-close-btn:hover { background: var(--danger); color: #fff; }
 
 /* CARDS */
-.stats-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:12px; margin-bottom:20px; }
+.stats-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
 .stat-card { background: var(--bg-card); border-radius: var(--radius); padding:20px; border:1px solid var(--border); transition: var(--transition); }
 .stat-card .icon { font-size:28px; margin-bottom:8px; }
 .stat-card .value { font-size:24px; font-weight:700; }
@@ -117,13 +117,35 @@ tr:hover td { background: var(--hover); }
 textarea.form-control { resize:vertical; min-height:60px; }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
+/* PHOTO UPLOAD */
+.photo-upload {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px; border: 2px dashed var(--border); border-radius: 12px;
+  cursor: pointer; transition: var(--transition); position: relative;
+  background: var(--bg-input); text-align: center;
+}
+.photo-upload:hover { border-color: var(--primary); background: rgba(99,102,241,0.1); }
+.photo-upload.has-photo { border-style: solid; border-color: var(--success); }
+.photo-upload input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.photo-preview {
+  width: 100px; height: 100px; border-radius: 12px; object-fit: cover;
+  border: 2px solid var(--border); background: var(--bg);
+}
+.photo-placeholder { font-size: 36px; color: var(--text-secondary); }
+.photo-remove {
+  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--danger); color: #fff;
+  border: none; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
 /* BADGES */
 .badge-status { padding:3px 8px; border-radius:4px; font-size:11px; font-weight:500; display:inline-block; }
 .badge-new { background:#dbeafe; color:#1d4ed8; }
 .badge-process { background:#fef3c7; color:#92400e; }
 .badge-done { background:#d1fae5; color:#065f46; }
 .badge-error { background:#fee2e2; color:#991b1b; }
-.badge-sync { background:#e0e7ff; color:#4338ca; }
+.badge-photo { background: rgba(99,102,241,0.15); color: var(--primary); }
 
 /* MODAL */
 .modal-overlay { position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:16px; }
@@ -138,29 +160,37 @@ textarea.form-control { resize:vertical; min-height:60px; }
 
 /* WAREHOUSE MAP */
 .warehouse-map { display:grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap:8px; }
-.cell { aspect-ratio:1; border-radius:8px; border:2px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition: var(--transition); font-size:11px; position:relative; }
+.cell { aspect-ratio:1; border-radius:8px; border:2px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition: var(--transition); font-size:11px; position:relative; overflow: hidden; }
 .cell:hover { border-color:var(--primary); transform:scale(1.05); }
 .cell.occupied { background: rgba(99,102,241,0.15); border-color:var(--primary); }
 .cell.empty { background: rgba(16,185,129,0.1); border-color:var(--success); }
 .cell .cell-label { font-weight:600; }
 .cell .cell-qty { font-size:10px; color: var(--text-secondary); }
-
-/* SYNC */
-.sync-status { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:12px; font-size:13px; }
-.sync-dot { width:8px; height:8px; border-radius:50%; background:var(--success); animation: blink 1.5s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.qr-container { display:flex; flex-direction:column; align-items:center; gap:12px; }
-.qr-code { border:4px solid var(--bg-card); border-radius:12px; }
+.cell img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
 
 /* PRODUCTS GRID */
-.products-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap:16px; }
-.product-card { background: var(--bg-card); border-radius: var(--radius); border:1px solid var(--border); padding:16px; transition: var(--transition); }
-.product-card:hover { box-shadow: var(--shadow); }
-.product-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.products-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
+.product-card { background: var(--bg-card); border-radius: var(--radius); border:1px solid var(--border); overflow: hidden; transition: var(--transition); }
+.product-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.product-photo {
+  width: 100%; height: 160px; object-fit: cover; background: var(--bg-input);
+  display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 48px;
+}
+.product-info { padding: 16px; }
+.product-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
 .product-name { font-weight:600; font-size:15px; }
 .product-sku { font-size:12px; color: var(--text-secondary); }
-.product-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; }
+.product-meta { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:12px; }
 .product-meta-item { background: var(--bg-input); padding:6px 8px; border-radius:6px; }
+.product-actions { display:flex; gap:6px; margin-top:12px; }
+
+/* PHOTO MODAL */
+.photo-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.9);
+  display: none; align-items: center; justify-content: center; cursor: zoom-out;
+}
+.photo-modal-overlay.active { display: flex; }
+.photo-modal-overlay img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
 
 /* TASKS */
 .task-board { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
@@ -210,6 +240,22 @@ textarea.form-control { resize:vertical; min-height:60px; }
 .tab-content.active { display:block; }
 
 .live-dot { width:6px; height:6px; border-radius:50%; background:var(--success); display:inline-block; animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* SYNC */
+.sync-status { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:12px; font-size:13px; flex-wrap: wrap; }
+.sync-dot { width:8px; height:8px; border-radius:50%; background:var(--success); animation: blink 1.5s infinite; }
+.qr-container { display:flex; flex-direction:column; align-items:center; gap:12px; }
+
+/* BARCODE SCANNER */
+.barcode-scanner { border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; margin: 12px 0; background: var(--bg-input); }
+.barcode-scanner.error { border-color: var(--danger); background: rgba(239,68,68,0.1); animation: shake 0.5s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+/* INTEGRATION CARDS */
+.integ-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.integ-card { background: var(--bg-card); border-radius: var(--radius); border:1px solid var(--border); padding:16px; text-align:center; }
+.integ-card .icon { font-size:32px; margin-bottom:8px; }
 
 /* RESPONSIVE */
 @media(max-width:768px) {
@@ -223,28 +269,18 @@ textarea.form-control { resize:vertical; min-height:60px; }
   .content { padding: 12px; }
   .warehouse-map { grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); }
   .products-grid { grid-template-columns: 1fr; }
+  .modal { padding: 16px; max-height: 95vh; }
 }
-
-/* BARCODE SCANNER */
-.barcode-scanner { border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; margin: 12px 0; background: var(--bg-input); }
-.barcode-scanner.error { border-color: var(--danger); background: rgba(239,68,68,0.1); animation: shake 0.5s; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
-
-/* INTEGRATION CARDS */
-.integ-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-.integ-card { background: var(--bg-card); border-radius: var(--radius); border:1px solid var(--border); padding:16px; text-align:center; }
-.integ-card .icon { font-size:32px; margin-bottom:8px; }
 </style>
 </head>
 <body>
 
 <audio id="snd-ok"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
-<audio id="snd-err"><source src="audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
 
 <div id="splash">
   <div class="logo">📦</div>
   <h1>FulFill Pro</h1>
-  <p>Синхронизация + Ручное управление товарами</p>
+  <p>Фото товаров + Синхронизация</p>
   <div class="splash-loader"><div class="splash-loader-bar"></div></div>
 </div>
 
@@ -302,31 +338,24 @@ textarea.form-control { resize:vertical; min-height:60px; }
     </header>
 
     <div class="content">
-      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <h2 style="margin-bottom:16px;">📊 Панель управления</h2>
         <div class="stats-grid" id="d-stats"></div>
-        <div class="card"><h3>📥 Последние приемки</h3><div id="d-recv" style="margin-top:8px;"></div></div>
-        <div class="card"><h3>📤 Последние отгрузки</h3><div id="d-ship" style="margin-top:8px;"></div></div>
       </div>
 
-      <!-- PRODUCTS (НОВЫЙ РАЗДЕЛ) -->
       <div class="page" id="page-products">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>🏷️ Товары</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="Products.add()">➕ Добавить товар</button>
+            <button class="btn btn-primary" onclick="Products.add()">➕ Добавить</button>
             <button class="btn btn-outline" onclick="Products.importExcel()">📥 Импорт</button>
             <button class="btn btn-outline" onclick="Products.exportExcel()">📤 Экспорт</button>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <input type="text" class="form-control" placeholder="Поиск товара..." oninput="Products.filter(this.value)">
-        </div>
+        <div class="form-group"><input type="text" class="form-control" placeholder="Поиск товара..." oninput="Products.filter(this.value)"></div>
         <div class="products-grid" id="products-grid"></div>
       </div>
 
-      <!-- WAREHOUSE -->
       <div class="page" id="page-warehouse">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>🏭 Склад</h2>
@@ -337,10 +366,9 @@ textarea.form-control { resize:vertical; min-height:60px; }
           <div class="tab" data-tab="wh-list">📋 Список</div>
         </div>
         <div class="tab-content active" id="tab-wh-map"><div class="warehouse-map" id="wh-map"></div></div>
-        <div class="tab-content" id="tab-wh-list"><div class="table-wrap"><table><thead><tr><th>Ячейка</th><th>Зона</th><th>Товар</th><th>Кол-во</th><th>Действия</th></tr></thead><tbody id="wh-tbody"></tbody></table></div></div>
+        <div class="tab-content" id="tab-wh-list"><div class="table-wrap"><table><thead><tr><th>Фото</th><th>Ячейка</th><th>Зона</th><th>Товар</th><th>Кол-во</th><th>Действия</th></tr></thead><tbody id="wh-tbody"></tbody></table></div></div>
       </div>
 
-      <!-- RECEIVING -->
       <div class="page" id="page-receiving">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>📥 Приемка</h2>
@@ -352,7 +380,6 @@ textarea.form-control { resize:vertical; min-height:60px; }
         <div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Позиций</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="recv-tbody"></tbody></table></div>
       </div>
 
-      <!-- SHIPPING -->
       <div class="page" id="page-shipping">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>📤 Отгрузка</h2>
@@ -361,7 +388,6 @@ textarea.form-control { resize:vertical; min-height:60px; }
         <div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Клиент</th><th>Позиций</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="ship-tbody"></tbody></table></div>
       </div>
 
-      <!-- TASKS -->
       <div class="page" id="page-tasks">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>📋 Задачи</h2>
@@ -374,7 +400,6 @@ textarea.form-control { resize:vertical; min-height:60px; }
         </div>
       </div>
 
-      <!-- EMPLOYEES -->
       <div class="page" id="page-employees">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <h2>👥 Сотрудники</h2>
@@ -383,88 +408,45 @@ textarea.form-control { resize:vertical; min-height:60px; }
         <div class="emp-grid" id="emp-grid"></div>
       </div>
 
-      <!-- FINES -->
       <div class="page" id="page-fines">
         <h2>💰 Штрафы</h2>
         <button class="btn btn-danger" onclick="Fines.add()" style="margin:12px 0;">➕ Начислить</button>
         <div id="fines-list"></div>
       </div>
 
-      <!-- PRINTING -->
       <div class="page" id="page-printing">
         <h2>🖨️ Печать этикеток</h2>
         <div class="card">
           <div class="form-row"><div class="form-group"><label>Товар</label><input type="text" class="form-control" id="p-name"></div><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="p-sku"></div></div>
           <div class="form-row"><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="p-bc"></div><div class="form-group"><label>Срок</label><input type="date" class="form-control" id="p-exp"></div></div>
-          <div class="form-row"><div class="form-group"><label>Копий</label><input type="number" class="form-control" id="p-copies" value="1"></div></div>
+          <div class="form-group"><label>Копий</label><input type="number" class="form-control" id="p-copies" value="1"></div>
           <button class="btn btn-primary" onclick="Printing.print()">🖨️ Печать</button>
           <div id="p-preview" style="margin-top:12px;border:1px solid var(--border);border-radius:8px;padding:16px;display:inline-block;"></div>
         </div>
       </div>
 
-      <!-- SYNC -->
       <div class="page" id="page-sync">
-        <h2>🔄 Синхронизация между устройствами</h2>
-        
-        <div class="sync-status">
-          <div class="sync-dot"></div>
-          <span>Последняя синхронизация: <b id="sync-last">—</b></span>
-          <span style="margin-left:auto;font-size:11px;color:var(--text-secondary);" id="sync-dev">Устройство: <span id="dev-id"></span></span>
-        </div>
-
-        <div class="card">
-          <h3>📱 Метод 1: QR-код (быстрый обмен)</h3>
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Отсканируйте QR-код на другом устройстве для мгновенной передачи всех данных.</p>
+        <h2>🔄 Синхронизация</h2>
+        <div class="sync-status"><div class="sync-dot"></div><span>Устройство: <b id="dev-id"></b></span><span style="margin-left:auto;">Последняя: <b id="sync-last">—</b></span></div>
+        <div class="card"><h3>📱 QR-код</h3><p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Сканируйте на другом устройстве</p>
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:200px;">
-              <button class="btn btn-primary" onclick="Sync.generateQR()">📤 Создать QR-код для передачи</button>
-              <div id="sync-qr-export" class="qr-container" style="margin-top:12px;"></div>
-            </div>
-            <div style="flex:1;min-width:200px;">
-              <div class="form-group"><label>Вставьте данные из QR/JSON</label>
-                <textarea class="form-control" id="sync-import-data" placeholder="Вставьте сюда JSON или отсканируйте QR..."></textarea>
-              </div>
-              <button class="btn btn-success" onclick="Sync.importFromText()">📥 Импортировать данные</button>
-            </div>
+            <div style="flex:1;min-width:200px;"><button class="btn btn-primary" onclick="Sync.generateQR()">📤 Создать QR</button><div id="sync-qr-export" class="qr-container" style="margin-top:12px;"></div></div>
+            <div style="flex:1;min-width:200px;"><div class="form-group"><label>Вставьте данные</label><textarea class="form-control" id="sync-import-data" placeholder="JSON..."></textarea></div><button class="btn btn-success" onclick="Sync.importFromText()">📥 Импортировать</button></div>
           </div>
         </div>
-
-        <div class="card" style="margin-top:16px;">
-          <h3>💾 Метод 2: Файл (надежный)</h3>
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Экспорт в файл и передача через мессенджер/почту.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="Sync.exportFile()">📤 Экспорт в файл</button>
-            <button class="btn btn-outline" onclick="document.getElementById('sync-file').click()">📥 Импорт из файла</button>
-            <input type="file" id="sync-file" accept=".json" style="display:none;" onchange="Sync.importFile(this)">
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <h3>☁️ Метод 3: Облако (Firebase)</h3>
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Автоматическая синхронизация через облако.</p>
-          <div class="form-group"><label>API ключ Firebase</label><input type="text" class="form-control" id="fb-key" placeholder="AIzaSy..."></div>
-          <div class="form-group"><label>URL базы данных</label><input type="text" class="form-control" id="fb-url" placeholder="https://your-project.firebaseio.com"></div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-success" onclick="Sync.connectFirebase()">🔗 Подключить облако</button>
-            <button class="btn btn-primary" onclick="Sync.pushToCloud()">☁️ Отправить в облако</button>
-            <button class="btn btn-outline" onclick="Sync.pullFromCloud()">📥 Загрузить из облака</button>
-          </div>
+        <div class="card" style="margin-top:12px;"><h3>💾 Файл</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="Sync.exportFile()">📤 Экспорт</button><button class="btn btn-outline" onclick="document.getElementById('sync-file').click()">📥 Импорт</button><input type="file" id="sync-file" accept=".json" style="display:none;" onchange="Sync.importFile(this)"></div></div>
+        <div class="card" style="margin-top:12px;"><h3>☁️ Firebase</h3>
+          <div class="form-row"><div class="form-group"><label>API ключ</label><input type="text" class="form-control" id="fb-key" placeholder="AIza..."></div><div class="form-group"><label>URL</label><input type="text" class="form-control" id="fb-url" placeholder="https://..."></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-success" onclick="Sync.connectFirebase()">🔗 Подключить</button><button class="btn btn-primary" onclick="Sync.pushToCloud()">☁️ Отправить</button><button class="btn btn-outline" onclick="Sync.pullFromCloud()">📥 Загрузить</button></div>
           <div id="fb-status" style="margin-top:8px;font-size:12px;color:var(--text-secondary);"></div>
         </div>
-
-        <div class="card" style="margin-top:16px;">
-          <h3>📋 История изменений</h3>
-          <div id="sync-log" style="max-height:200px;overflow-y:auto;font-size:12px;"></div>
-        </div>
+        <div class="card" style="margin-top:12px;"><h3>📋 Лог</h3><div id="sync-log" style="max-height:150px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
 
-      <!-- SETTINGS -->
       <div class="page" id="page-settings">
         <h2>⚙️ Настройки</h2>
         <div class="card"><h3>👤 Пользователи</h3><div id="set-users"></div></div>
-        <div class="card"><h3>🗑️ Данные</h3>
-          <button class="btn btn-danger" onclick="if(confirm('Удалить ВСЕ данные?')){DB.clearAll();location.reload();}">Сбросить всё</button>
-        </div>
+        <div class="card"><h3>🗑️ Данные</h3><button class="btn btn-danger" onclick="if(confirm('Удалить ВСЕ?')){DB.clearAll();location.reload();}">Сбросить всё</button></div>
       </div>
     </div>
   </div>
@@ -473,6 +455,7 @@ textarea.form-control { resize:vertical; min-height:60px; }
 <div class="modal-overlay" id="modal"><div class="modal" id="modal-box"></div></div>
 <div class="toast-container" id="toasts"></div>
 <div class="print-area" id="print-area" style="display:none;"></div>
+<div class="photo-modal-overlay" id="photo-modal" onclick="this.classList.remove('active')"><img id="photo-full"></div>
 
 <script>
 // ==================== DATA LAYER ====================
@@ -482,214 +465,173 @@ const DB = {
   getAll(){const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ff_'))d[k.slice(3)]=JSON.parse(localStorage.getItem(k));}return d;},
   importAll(data){Object.entries(data).forEach(([k,v])=>this.set(k,v));},
   clearAll(){Object.keys(this.getAll()).forEach(k=>localStorage.removeItem('ff_'+k));},
-  exportCompact(){const d=this.getAll();d._meta={exported:new Date().toISOString(),version:'2.0',device:Sync.getDeviceId()};return JSON.stringify(d);}
+  exportCompact(){const d=this.getAll();d._meta={exported:new Date().toISOString(),version:'3.0',device:Sync.getDeviceId()};return JSON.stringify(d);}
+};
+
+// ==================== PHOTO MANAGER ====================
+const PhotoManager = {
+  MAX_SIZE: 150 * 1024, // 150KB limit per photo
+  MAX_WIDTH: 400,
+  MAX_HEIGHT: 400,
+
+  async compress(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          
+          if (w > this.MAX_WIDTH) { h = (h * this.MAX_WIDTH) / w; w = this.MAX_WIDTH; }
+          if (h > this.MAX_HEIGHT) { w = (w * this.MAX_HEIGHT) / h; h = this.MAX_HEIGHT; }
+          
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          // Compress with quality reduction
+          let quality = 0.85;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          while (dataUrl.length > this.MAX_SIZE && quality > 0.1) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+      reader.readAsDataURL(file);
+    });
+  },
+
+  showUploadModal(currentPhoto, onSave) {
+    App.modal(`
+      <h3>📸 Фото товара</h3>
+      <div class="photo-upload" id="photo-drop-zone">
+        <input type="file" id="photo-file-input" accept="image/*" capture="environment">
+        ${currentPhoto ? `<img src="${currentPhoto}" class="photo-preview" id="photo-current-preview"><button class="photo-remove" onclick="PhotoManager.removePhoto(event)" title="Удалить фото">✕</button>` : `<div class="photo-placeholder">📷</div><div style="font-size:12px;color:var(--text-secondary);">Нажмите или перетащите фото</div>`}
+      </div>
+      <div id="photo-new-preview" style="margin-top:12px;display:none;text-align:center;">
+        <img src="" class="photo-preview" id="photo-new-img" style="width:150px;height:150px;border-radius:12px;object-fit:cover;">
+        <p style="font-size:11px;color:var(--text-secondary);margin-top:4px;" id="photo-size-info"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="PhotoManager.saveCurrent()">💾 Сохранить</button>
+      </div>
+    `);
+
+    const fileInput = document.getElementById('photo-file-input');
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { App.toast('Выберите изображение', 'error'); return; }
+      try {
+        const compressed = await this.compress(file);
+        document.getElementById('photo-new-img').src = compressed;
+        document.getElementById('photo-new-preview').style.display = 'block';
+        const sizeKB = (compressed.length * 0.75 / 1024).toFixed(1);
+        document.getElementById('photo-size-info').textContent = `Сжато до: ${sizeKB} KB`;
+        this._pendingPhoto = compressed;
+      } catch(err) { App.toast('Ошибка сжатия: ' + err.message, 'error'); }
+    });
+
+    // Drag & drop
+    const zone = document.getElementById('photo-drop-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--primary)'; });
+    zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+    zone.addEventListener('drop', async e => {
+      e.preventDefault(); zone.style.borderColor = '';
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const compressed = await this.compress(file);
+        document.getElementById('photo-new-img').src = compressed;
+        document.getElementById('photo-new-preview').style.display = 'block';
+        this._pendingPhoto = compressed;
+      }
+    });
+
+    this._onSave = onSave;
+    this._pendingPhoto = null;
+  },
+
+  removePhoto(e) {
+    e.stopPropagation();
+    this._pendingPhoto = ''; // Empty string = remove photo
+    document.getElementById('photo-current-preview')?.remove();
+    document.getElementById('photo-new-preview').style.display = 'none';
+    const zone = document.getElementById('photo-drop-zone');
+    zone.innerHTML = '<input type="file" id="photo-file-input" accept="image/*" capture="environment"><div class="photo-placeholder">📷</div><div style="font-size:12px;color:var(--text-secondary);">Нажмите для загрузки</div>';
+    document.getElementById('photo-file-input').addEventListener('change', async (ev) => {
+      const file = ev.target.files[0];
+      if (file) {
+        const compressed = await this.compress(file);
+        document.getElementById('photo-new-img').src = compressed;
+        document.getElementById('photo-new-preview').style.display = 'block';
+        this._pendingPhoto = compressed;
+      }
+    });
+  },
+
+  saveCurrent() {
+    if (this._pendingPhoto !== null) {
+      this._onSave(this._pendingPhoto);
+    }
+    App.closeModal();
+  },
+
+  viewPhoto(src) {
+    if (!src) return;
+    document.getElementById('photo-full').src = src;
+    document.getElementById('photo-modal').classList.add('active');
+  },
+
+  getStorageUsed() {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('ff_')) {
+        total += (localStorage.getItem(key)?.length || 0) * 2; // UTF-16
+      }
+    }
+    return (total / 1024).toFixed(1);
+  }
 };
 
 // ==================== SYNC MANAGER ====================
 const Sync = {
-  getDeviceId(){
-    let id=localStorage.getItem('ff_device_id');
-    if(!id){id='DEV-'+Math.random().toString(36).substr(2,8).toUpperCase();localStorage.setItem('ff_device_id',id);}
-    return id;
-  },
-  log(action,details){
-    const logs=DB.get('sync_logs',[]);
-    logs.unshift({time:new Date().toISOString(),device:this.getDeviceId(),action,details});
-    if(logs.length>100)logs.length=100;
-    DB.set('sync_logs',logs);
-    this.renderLogs();
-  },
-  renderLogs(){
-    const logs=DB.get('sync_logs',[]);
-    const el=document.getElementById('sync-log');
-    if(!el)return;
-    el.innerHTML=logs.slice(0,20).map(l=>`<div style="padding:4px;border-bottom:1px solid var(--border);">${new Date(l.time).toLocaleString()} — <b>${l.device}</b> — ${l.action}${l.details?' ('+l.details+')':''}</div>`).join('');
-  },
-  generateQR(){
-    const data=DB.exportCompact();
-    const container=document.getElementById('sync-qr-export');
-    container.innerHTML='<p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Отсканируйте этот код на другом устройстве:</p><div id="qr-box"></div><textarea class="form-control" style="margin-top:8px;font-size:10px;height:60px;" readonly>'+data+'</textarea>';
-    // Split large data into chunks for QR if needed
-    if(data.length>1500){
-      container.innerHTML+=`<p style="font-size:11px;color:var(--warning);margin-top:8px;">⚠️ Данные большие. Используйте экспорт в файл или скопируйте JSON вручную.</p>`;
-      return;
-    }
-    try{new QRCode(document.getElementById('qr-box'),{text:data,width:200,height:200});}catch(e){container.innerHTML+='❌ Ошибка генерации QR';}
-    this.log('QR_GENERATED','Размер: '+data.length+' байт');
-  },
-  importFromText(){
-    const data=document.getElementById('sync-import-data').value.trim();
-    if(!data){App.toast('Вставьте данные','error');return;}
-    try{
-      const json=JSON.parse(data);
-      DB.importAll(json);
-      this.log('IMPORT_FROM_TEXT','Успешно');
-      App.toast('Данные импортированы! Перезагружаю...','success');
-      setTimeout(()=>location.reload(),1000);
-    }catch(e){App.toast('Ошибка формата JSON','error');}
-  },
-  exportFile(){
-    const blob=new Blob([DB.exportCompact()],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`fulfill_${new Date().toISOString().slice(0,10)}.json`;a.click();
-    this.log('EXPORT_FILE');
-  },
-  importFile(input){
-    const f=input.files[0];if(!f)return;
-    const r=new FileReader();r.onload=e=>{
-      try{DB.importAll(JSON.parse(e.target.result));this.log('IMPORT_FILE','Имя: '+f.name);App.toast('Импорт успешен!','success');setTimeout(()=>location.reload(),1000);}catch(ex){App.toast('Ошибка файла','error');}
-    };r.readAsText(f);
-  },
-  connectFirebase(){
-    const key=document.getElementById('fb-key').value.trim();
-    const url=document.getElementById('fb-url').value.trim();
-    if(!key||!url){App.toast('Заполните поля','error');return;}
-    DB.set('firebase',{key,url,connected:true});
-    this.log('FIREBASE_CONNECTED');
-    App.toast('Firebase подключен','success');
-    document.getElementById('fb-status').innerHTML='✅ Подключено к '+url;
-  },
-  async pushToCloud(){
-    const fb=DB.get('firebase');if(!fb?.connected){App.toast('Сначала подключите Firebase','error');return;}
-    try{
-      const res=await fetch(`${fb.url}/fulfill_data.json?auth=${fb.key}`,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:DB.exportCompact()
-      });
-      if(res.ok){this.log('CLOUD_PUSH');App.toast('Данные отправлены в облако','success');}
-      else throw new Error(res.statusText);
-    }catch(e){App.toast('Ошибка облака: '+e.message,'error');}
-  },
-  async pullFromCloud(){
-    const fb=DB.get('firebase');if(!fb?.connected){App.toast('Сначала подключите Firebase','error');return;}
-    try{
-      const res=await fetch(`${fb.url}/fulfill_data.json?auth=${fb.key}`);
-      if(res.ok){
-        const data=await res.json();
-        DB.importAll(data);
-        this.log('CLOUD_PULL');
-        App.toast('Данные загружены из облака!','success');
-        setTimeout(()=>location.reload(),1000);
-      }
-    }catch(e){App.toast('Ошибка загрузки: '+e.message,'error');}
-  },
-  init(){
-    document.getElementById('dev-id').textContent=this.getDeviceId();
-    const logs=DB.get('sync_logs',[]);
-    const last=logs[0];
-    document.getElementById('sync-last').textContent=last?new Date(last.time).toLocaleString():'—';
-    this.renderLogs();
-    // Restore Firebase settings
-    const fb=DB.get('firebase');
-    if(fb?.connected){
-      document.getElementById('fb-key').value=fb.key||'';
-      document.getElementById('fb-url').value=fb.url||'';
-      document.getElementById('fb-status').innerHTML='✅ Подключено';
-    }
-  }
+  getDeviceId(){let id=localStorage.getItem('ff_device_id');if(!id){id='DEV-'+Math.random().toString(36).substr(2,8).toUpperCase();localStorage.setItem('ff_device_id',id);}return id;},
+  log(action,details){const logs=DB.get('sync_logs',[]);logs.unshift({time:new Date().toISOString(),device:this.getDeviceId(),action,details});if(logs.length>100)logs.length=100;DB.set('sync_logs',logs);this.renderLogs();},
+  renderLogs(){const logs=DB.get('sync_logs',[]);const el=document.getElementById('sync-log');if(!el)return;el.innerHTML=logs.slice(0,20).map(l=>`<div style="padding:3px;border-bottom:1px solid var(--border);">${new Date(l.time).toLocaleString()} — <b>${l.device}</b> — ${l.action}</div>`).join('');},
+  generateQR(){const data=DB.exportCompact();const c=document.getElementById('sync-qr-export');c.innerHTML='<p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">Сканируйте на другом устройстве:</p><div id="qr-box"></div><details style="margin-top:8px;"><summary>📋 JSON данные</summary><textarea class="form-control" style="font-size:10px;height:60px;margin-top:4px;" readonly>'+data.substring(0,2000)+'...</textarea></details>';if(data.length>1500){c.innerHTML+='<p style="font-size:11px;color:var(--warning);margin-top:8px;">⚠️ Большие данные. Используйте файл или фото-экспорт.</p>';return;}try{new QRCode(document.getElementById('qr-box'),{text:data,width:180,height:180});}catch(e){c.innerHTML+='❌ Ошибка';}this.log('QR_GENERATED');},
+  importFromText(){const d=document.getElementById('sync-import-data').value.trim();if(!d){App.toast('Вставьте данные','error');return;}try{DB.importAll(JSON.parse(d));this.log('IMPORT_TEXT');App.toast('Импортировано!','success');setTimeout(()=>location.reload(),1000);}catch(e){App.toast('Ошибка JSON','error');}},
+  exportFile(){const b=new Blob([DB.exportCompact()],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`fulfill_${new Date().toISOString().slice(0,10)}.json`;a.click();this.log('EXPORT_FILE');},
+  importFile(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{DB.importAll(JSON.parse(e.target.result));this.log('IMPORT_FILE');App.toast('Успех!','success');setTimeout(()=>location.reload(),1000);}catch(ex){App.toast('Ошибка','error');}};r.readAsText(f);},
+  connectFirebase(){const k=document.getElementById('fb-key').value.trim(),u=document.getElementById('fb-url').value.trim();if(!k||!u){App.toast('Заполните','error');return;}DB.set('firebase',{key:k,url:u,connected:true});this.log('FB_CONNECT');App.toast('Firebase подключен','success');document.getElementById('fb-status').innerHTML='✅ Подключено';},
+  async pushToCloud(){const fb=DB.get('firebase');if(!fb?.connected){App.toast('Подключите Firebase','error');return;}try{const r=await fetch(`${fb.url}/fulfill_data.json?auth=${fb.key}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:DB.exportCompact()});if(r.ok){this.log('CLOUD_PUSH');App.toast('Отправлено','success');}else throw new Error(r.statusText);}catch(e){App.toast('Ошибка: '+e.message,'error');}},
+  async pullFromCloud(){const fb=DB.get('firebase');if(!fb?.connected){App.toast('Подключите Firebase','error');return;}try{const r=await fetch(`${fb.url}/fulfill_data.json?auth=${fb.key}`);if(r.ok){DB.importAll(await r.json());this.log('CLOUD_PULL');App.toast('Загружено!','success');setTimeout(()=>location.reload(),1000);}}catch(e){App.toast('Ошибка: '+e.message,'error');}},
+  init(){document.getElementById('dev-id').textContent=this.getDeviceId();const logs=DB.get('sync_logs',[]);document.getElementById('sync-last').textContent=logs[0]?new Date(logs[0].time).toLocaleString():'—';this.renderLogs();const fb=DB.get('firebase');if(fb?.connected){document.getElementById('fb-key').value=fb.key||'';document.getElementById('fb-url').value=fb.url||'';document.getElementById('fb-status').innerHTML='✅ Подключено';}}
 };
 
 // ==================== AUDIO ====================
-const Audio={
-  play(t){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);if(t==='ok'){o.frequency.setValueAtTime(800,c.currentTime);g.gain.setValueAtTime(0.2,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.1);o.start();o.stop(c.currentTime+0.1);}else{o.frequency.setValueAtTime(200,c.currentTime);g.gain.setValueAtTime(0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.3);o.start();o.stop(c.currentTime+0.3);}}catch(e){}}
-};
+const AudioMgr={play(t){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);if(t==='ok'){o.frequency.setValueAtTime(800,c.currentTime);g.gain.setValueAtTime(0.2,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.1);o.start();o.stop(c.currentTime+0.1);}else{o.frequency.setValueAtTime(200,c.currentTime);g.gain.setValueAtTime(0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.3);o.start();o.stop(c.currentTime+0.3);}}catch(e){}}};
 
-// ==================== INIT DEFAULTS ====================
-function init(){
-  if(!DB.get('initialized')){
-    DB.set('users',[{id:1,login:'admin',password:'admin',name:'Администратор',role:'admin'}]);
-    DB.set('products',[
-      {id:'P001',name:'Молоко 1л',sku:'MILK-001',barcode:'4601234567890',category:'Молочные',price:89,description:'Молоко пастеризованное',image:''},
-      {id:'P002',name:'Хлеб белый',sku:'BRD-001',barcode:'4601234567891',category:'Хлеб',price:45,description:'Хлеб пшеничный',image:''},
-      {id:'P003',name:'Кофе Nescafe 200г',sku:'COF-001',barcode:'4601234567892',category:'Напитки',price:399,description:'Растворимый кофе',image:''}
-    ]);
-    DB.set('barcodes',{'4601234567890':'P001','4601234567891':'P002','4601234567892':'P003'});
-    DB.set('warehouse_cells',[
-      {id:'A1',zone:'A',productId:'P001',qty:24,status:'occupied'},
-      {id:'A2',zone:'A',productId:'P002',qty:50,status:'occupied'},
-      {id:'B1',zone:'B',productId:'P003',qty:30,status:'occupied'},
-      {id:'B2',zone:'B',productId:'',qty:0,status:'empty'},
-      {id:'C1',zone:'C',productId:'',qty:0,status:'empty'}
-    ]);
-    DB.set('receivings',[]);DB.set('shippings',[]);DB.set('tasks',[]);
-    DB.set('employees',[{id:1,name:'Иванов Иван',role:'Кладовщик',rate:500,status:'offline',checkIn:null,totalHours:0}]);
-    DB.set('fines',[]);DB.set('fine_rules',[{rule:'Опоздание',amount:500}]);
-    DB.set('theme','dark');DB.set('initialized',true);DB.set('sync_logs',[]);
-  }
-}
+// ==================== INIT ====================
+function init(){if(!DB.get('initialized')){DB.set('users',[{id:1,login:'admin',password:'admin',name:'Администратор',role:'admin'}]);DB.set('products',[{id:'P001',name:'Молоко 1л',sku:'MILK-001',barcode:'4601234567890',category:'Молочные',price:89,description:'Молоко пастеризованное',image:''},{id:'P002',name:'Хлеб белый',sku:'BRD-001',barcode:'4601234567891',category:'Хлеб',price:45,description:'Хлеб пшеничный',image:''},{id:'P003',name:'Кофе Nescafe',sku:'COF-001',barcode:'4601234567892',category:'Напитки',price:399,description:'Кофе растворимый',image:''}]);DB.set('barcodes',{'4601234567890':'P001','4601234567891':'P002','4601234567892':'P003'});DB.set('warehouse_cells',[{id:'A1',zone:'A',productId:'P001',qty:24,status:'occupied'},{id:'A2',zone:'A',productId:'P002',qty:50,status:'occupied'},{id:'B1',zone:'B',productId:'P003',qty:30,status:'occupied'},{id:'B2',zone:'B',productId:'',qty:0,status:'empty'},{id:'C1',zone:'C',productId:'',qty:0,status:'empty'}]);DB.set('receivings',[]);DB.set('shippings',[]);DB.set('tasks',[]);DB.set('employees',[{id:1,name:'Иванов Иван',role:'Кладовщик',rate:500,status:'offline',checkIn:null,totalHours:0}]);DB.set('fines',[]);DB.set('fine_rules',[{rule:'Опоздание',amount:500}]);DB.set('theme','dark');DB.set('initialized',true);DB.set('sync_logs',[]);}}
 
 // ==================== VOICE ====================
-const Voice={
-  synth:null,rec:null,listening:false,
-  init(){
-    if('speechSynthesis' in window)this.synth=window.speechSynthesis;
-    if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){
-      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      this.rec=new SR();this.rec.lang='ru-RU';this.rec.continuous=false;this.rec.interimResults=false;
-      this.rec.onresult=e=>{const t=e.results[0][0].transcript;this.process(t);};
-      this.rec.onend=()=>{this.listening=false;document.querySelector('.voice-btn')?.classList.remove('listening');};
-    }
-  },
-  toggle(){
-    if(!this.rec){App.toast('Голос не поддерживается','error');return;}
-    if(this.listening){this.rec.stop();}else{this.rec.start();this.listening=true;document.querySelector('.voice-btn')?.classList.add('listening');}
-  },
-  process(t){
-    const l=t.toLowerCase();
-    if(l.includes('товар')||l.includes('продукт')){App.navigateTo('products');this.speak('Открываю товары');return;}
-    if(l.includes('склад')){App.navigateTo('warehouse');this.speak('Открываю склад');return;}
-    if(l.includes('приемк')){App.navigateTo('receiving');this.speak('Открываю приемку');return;}
-    if(l.includes('отгрузк')){App.navigateTo('shipping');this.speak('Открываю отгрузку');return;}
-    if(l.includes('синхрон')){App.navigateTo('sync');this.speak('Открываю синхронизацию');return;}
-    const m=l.match(/где\s+(.+)/);if(m){this.findProduct(m[1].trim());return;}
-    this.speak('Не поняла. Скажите: "товары", "склад", "где молоко"');
-  },
-  findProduct(n){
-    const p=DB.get('products',[]).find(x=>x.name.toLowerCase().includes(n.toLowerCase()));
-    if(p){
-      const w=DB.get('warehouse_cells',[]).find(c=>c.productId===p.id&&c.status==='occupied');
-      this.speak(`${p.name} находится в ячейке ${w?w.id:'—'}, количество ${w?w.qty:0}`);
-    }else this.speak(`${n} не найден`);
-  },
-  speak(t){if(this.synth){this.synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';this.synth.speak(u);}}
-};
+const Voice={synth:null,rec:null,listening:false,init(){if('speechSynthesis' in window)this.synth=window.speechSynthesis;if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;this.rec=new SR();this.rec.lang='ru-RU';this.rec.continuous=false;this.rec.interimResults=false;this.rec.onresult=e=>this.process(e.results[0][0].transcript);this.rec.onend=()=>{this.listening=false;document.querySelector('.voice-btn')?.classList.remove('listening');}}},toggle(){if(!this.rec){App.toast('Голос не поддерживается','error');return;}if(this.listening){this.rec.stop();}else{this.rec.start();this.listening=true;document.querySelector('.voice-btn')?.classList.add('listening');}},process(t){const l=t.toLowerCase();if(l.includes('товар')){App.navigateTo('products');return;}if(l.includes('склад')){App.navigateTo('warehouse');return;}if(l.includes('приемк')){App.navigateTo('receiving');return;}const m=l.match(/где\s+(.+)/);if(m){const p=DB.get('products',[]).find(x=>x.name.toLowerCase().includes(m[1]));if(p){const w=DB.get('warehouse_cells',[]).find(c=>c.productId===p.id);this.speak(`${p.name} в ${w?w.id:'—'}, ${w?w.qty:0} шт`);}else this.speak('Не найден');return;}this.speak('Скажите: "товары", "склад", "где молоко"');},speak(t){if(this.synth){this.synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';this.synth.speak(u);}}};
 
-// ==================== APP CORE ====================
-const App={
-  user:null,
-  init(){
-    init();
-    const t=DB.get('theme','dark');document.documentElement.setAttribute('data-theme',t);
-    document.getElementById('theme-btn').textContent=t==='dark'?'☀️':'🌙';
-    setTimeout(()=>{const s=document.getElementById('splash');if(s){s.classList.add('hide');setTimeout(()=>{s.style.display='none';this.checkAuth();},600);}},1500);
-    Voice.init();
-    document.querySelectorAll('.nav-item').forEach(n=>{n.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));n.classList.add('active');const p=n.dataset.page;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');this.refresh(p);if(window.innerWidth<=768)setTimeout(()=>this.closeSidebar(),200);});});
-    document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{const p=t.closest('.page');p.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const id=t.dataset.tab;p.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+id)?.classList.add('active');});});
-    this.updateResp();window.addEventListener('resize',()=>this.updateResp());
-    this.initSwipe();
-    console.log('✅ App init v2.0');
-  },
-  initSwipe(){let s=0,e=0;document.addEventListener('touchstart',t=>s=t.changedTouches[0].screenX,{passive:true});document.addEventListener('touchend',t=>{e=t.changedTouches[0].screenX;if(s-e>50&&window.innerWidth<=768)this.closeSidebar();},{passive:true});},
-  updateResp(){const b=document.getElementById('menu-btn');if(window.innerWidth<=768){b.style.display='flex';}else{b.style.display='none';this.closeSidebar();}},
-  toggleSidebar(){const s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay');if(s.classList.contains('open'))this.closeSidebar();else{s.classList.add('open');o.classList.add('active');document.body.style.overflow='hidden';}},
-  closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');document.body.style.overflow='';},
-  checkAuth(){if(DB.get('session')){this.user=DB.get('users').find(u=>u.id===DB.get('session').userId);if(this.user){this.showApp();return;}}document.getElementById('login-screen').style.display='flex';},
-  login(){const l=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value.trim(),u=DB.get('users').find(x=>x.login===l&&x.password===p);if(u){this.user=u;DB.set('session',{userId:u.id});this.showApp();}else{App.toast('Неверный логин','error');}},
-  logout(){DB.set('session',null);this.user=null;document.getElementById('app').classList.remove('active');document.getElementById('login-screen').style.display='flex';},
-  showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('u-name').textContent=this.user.name;document.getElementById('u-role').textContent=this.user.role;document.getElementById('u-avatar').textContent=this.user.name[0];this.refresh('dashboard');},
-  toggleTheme(){const c=document.documentElement.getAttribute('data-theme'),n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);DB.set('theme',n);document.getElementById('theme-btn').textContent=n==='dark'?'☀️':'🌙';},
-  refresh(p){const m={dashboard:Dashboard,products:Products,warehouse:Warehouse,receiving:Receiving,shipping:Shipping,tasks:Tasks,employees:Employees,fines:Fines,printing:Printing,sync:Sync,settings:Settings};if(m[p])m[p].render();},
-  navigateTo(p){document.querySelectorAll('.nav-item').forEach(n=>{n.classList.remove('active');if(n.dataset.page===p)n.classList.add('active');});document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p)?.classList.add('active');this.refresh(p);},
-  search(q){if(!q)return;q=q.toLowerCase();const p=DB.get('products',[]).filter(x=>x.name.toLowerCase().includes(q)||x.sku.toLowerCase().includes(q));if(p.length>0){this.navigateTo('products');Products.filter(q);}else{const w=DB.get('warehouse_cells',[]).filter(x=>x.productId&&DB.get('products',[]).find(pr=>pr.id===x.productId&&pr.name.toLowerCase().includes(q)));if(w.length>0)this.navigateTo('warehouse');}},
-  toast(m,t='info'){const c=document.getElementById('toasts'),d=document.createElement('div');d.className='toast '+t;d.innerHTML=`<span>${{success:'✅',error:'❌',info:'ℹ️',sync:'🔄'}[t]||'ℹ️'}</span><span>${m}</span>`;c.appendChild(d);setTimeout(()=>d.remove(),3000);},
-  modal(h){document.getElementById('modal-box').innerHTML=h;document.getElementById('modal').classList.add('active');},
-  closeModal(){document.getElementById('modal').classList.remove('active');},
-  genId(){return 'ID-'+Date.now().toString(36).substr(-8);},
-  date(d){if(!d)return'—';return new Date(d).toLocaleString('ru-RU');}
-};
+// ==================== APP ====================
+const App={user:null,init(){init();const t=DB.get('theme','dark');document.documentElement.setAttribute('data-theme',t);document.getElementById('theme-btn').textContent=t==='dark'?'☀️':'🌙';setTimeout(()=>{const s=document.getElementById('splash');if(s){s.classList.add('hide');setTimeout(()=>{s.style.display='none';this.checkAuth();},600);}},1200);Voice.init();document.querySelectorAll('.nav-item').forEach(n=>{n.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));n.classList.add('active');const p=n.dataset.page;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');this.refresh(p);if(window.innerWidth<=768)setTimeout(()=>this.closeSidebar(),200);});});document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{const p=t.closest('.page');p.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('tab-'+t.dataset.tab)?.classList.add('active');});});this.updateResp();window.addEventListener('resize',()=>this.updateResp());this.initSwipe();},initSwipe(){let s=0,e=0;document.addEventListener('touchstart',t=>s=t.changedTouches[0].screenX,{passive:true});document.addEventListener('touchend',t=>{e=t.changedTouches[0].screenX;if(s-e>50&&window.innerWidth<=768)this.closeSidebar();},{passive:true});},updateResp(){const b=document.getElementById('menu-btn');if(window.innerWidth<=768){b.style.display='flex';}else{b.style.display='none';this.closeSidebar();}},toggleSidebar(){const s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay');if(s.classList.contains('open'))this.closeSidebar();else{s.classList.add('open');o.classList.add('active');document.body.style.overflow='hidden';}},closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');document.body.style.overflow='';},checkAuth(){if(DB.get('session')){this.user=DB.get('users').find(u=>u.id===DB.get('session').userId);if(this.user){this.showApp();return;}}document.getElementById('login-screen').style.display='flex';},login(){const l=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value.trim(),u=DB.get('users').find(x=>x.login===l&&x.password===p);if(u){this.user=u;DB.set('session',{userId:u.id});this.showApp();}else App.toast('Неверный логин','error');},logout(){DB.set('session',null);this.user=null;document.getElementById('app').classList.remove('active');document.getElementById('login-screen').style.display='flex';},showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('u-name').textContent=this.user.name;document.getElementById('u-role').textContent=this.user.role;document.getElementById('u-avatar').textContent=this.user.name[0];this.refresh('dashboard');},toggleTheme(){const c=document.documentElement.getAttribute('data-theme'),n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);DB.set('theme',n);document.getElementById('theme-btn').textContent=n==='dark'?'☀️':'🌙';},refresh(p){const m={dashboard:Dashboard,products:Products,warehouse:Warehouse,receiving:Receiving,shipping:Shipping,tasks:Tasks,employees:Employees,fines:Fines,printing:Printing,sync:Sync,settings:Settings};if(m[p])m[p].render();},navigateTo(p){document.querySelectorAll('.nav-item').forEach(n=>{n.classList.remove('active');if(n.dataset.page===p)n.classList.add('active');});document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p)?.classList.add('active');this.refresh(p);},search(q){if(!q)return;q=q.toLowerCase();const p=DB.get('products',[]).filter(x=>x.name.toLowerCase().includes(q)||x.sku.toLowerCase().includes(q));if(p.length>0)this.navigateTo('products');},toast(m,t='info'){const c=document.getElementById('toasts'),d=document.createElement('div');d.className='toast '+t;d.innerHTML=`<span>${{success:'✅',error:'❌',info:'ℹ️',sync:'🔄'}[t]||'ℹ️'}</span><span>${m}</span>`;c.appendChild(d);setTimeout(()=>d.remove(),3000);},modal(h){document.getElementById('modal-box').innerHTML=h;document.getElementById('modal').classList.add('active');},closeModal(){document.getElementById('modal').classList.remove('active');},genId(){return 'ID-'+Date.now().toString(36).substr(-8);},date(d){if(!d)return'—';return new Date(d).toLocaleString('ru-RU');}};
 
-// ==================== MODULES ====================
+// ==================== PRODUCTS (С ФОТО) ====================
 const Products={
   render(){
     const p=DB.get('products',[]);
@@ -697,269 +639,97 @@ const Products={
     document.getElementById('products-grid').innerHTML=p.map(x=>{
       const wh=w.filter(c=>c.productId===x.id);
       const totalQty=wh.reduce((s,c)=>s+(c.qty||0),0);
+      const photoHtml=x.image?`<img src="${x.image}" class="product-photo" onclick="PhotoManager.viewPhoto('${x.id}')" alt="${x.name}">`:`<div class="product-photo">📷</div>`;
       return `<div class="product-card">
-        <div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku} | ${x.category||'Без категории'}</div></div><div style="display:flex;gap:4px;"><button class="btn btn-sm btn-outline" onclick="Products.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button></div></div>
-        <div class="product-meta">
-          <div class="product-meta-item">📦 Всего: <b>${totalQty} шт</b></div>
-          <div class="product-meta-item">🏷️ ШК: <code>${x.barcode||'—'}</code></div>
-          <div class="product-meta-item">💰 Цена: ${x.price||0}₽</div>
-          <div class="product-meta-item">📍 Ячеек: ${wh.filter(c=>c.status==='occupied').length}</div>
+        ${photoHtml}
+        <div class="product-info">
+          <div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku} | ${x.category||''}</div></div><span class="badge-status badge-photo">📦 ${totalQty} шт</span></div>
+          <div class="product-meta">
+            <div class="product-meta-item">🏷️ ${x.barcode||'—'}</div>
+            <div class="product-meta-item">💰 ${x.price||0}₽</div>
+          </div>
+          ${x.description?`<div style="margin-top:6px;font-size:11px;color:var(--text-secondary);line-height:1.4;">${x.description}</div>`:''}
+          <div class="product-actions">
+            <button class="btn btn-sm btn-primary" onclick="Products.edit('${x.id}')">✏️ Ред.</button>
+            <button class="btn btn-sm btn-outline" onclick="Products.changePhoto('${x.id}')">📸 Фото</button>
+            <button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button>
+          </div>
         </div>
-        ${x.description?`<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);">${x.description}</div>`:''}
       </div>`;
-    }).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--text-secondary);">Нет товаров. Нажмите ➕ Добавить</p>';
+    }).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:40px;">Нет товаров. Нажмите ➕ Добавить</p>';
   },
-  filter(q){
-    q=q.toLowerCase();const p=DB.get('products',[]).filter(x=>x.name.toLowerCase().includes(q)||x.sku.toLowerCase().includes(q)||(x.category||'').toLowerCase().includes(q));
-    document.getElementById('products-grid').innerHTML=p.map(x=>{
-      const w=DB.get('warehouse_cells',[]).filter(c=>c.productId===x.id);
-      const totalQty=w.reduce((s,c)=>s+(c.qty||0),0);
-      return `<div class="product-card"><div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku}</div></div><div style="display:flex;gap:4px;"><button class="btn btn-sm btn-outline" onclick="Products.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button></div></div><div class="product-meta"><div class="product-meta-item">📦 ${totalQty} шт</div><div class="product-meta-item">🏷️ ${x.barcode||'—'}</div></div></div>`;
-    }).join('')||'<p style="grid-column:1/-1;text-align:center;">Не найдено</p>';
-  },
+  filter(q){q=q.toLowerCase();const p=DB.get('products',[]).filter(x=>x.name.toLowerCase().includes(q)||x.sku.toLowerCase().includes(q)||(x.category||'').toLowerCase().includes(q));
+    document.getElementById('products-grid').innerHTML=p.map(x=>{const w=DB.get('warehouse_cells',[]).filter(c=>c.productId===x.id);const totalQty=w.reduce((s,c)=>s+(c.qty||0),0);const photoHtml=x.image?`<img src="${x.image}" class="product-photo" onclick="PhotoManager.viewPhoto('${x.id}')">`:`<div class="product-photo">📷</div>`;return `<div class="product-card">${photoHtml}<div class="product-info"><div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku}</div></div></div><div class="product-meta"><div class="product-meta-item">📦 ${totalQty} шт</div><div class="product-meta-item">🏷️ ${x.barcode||'—'}</div></div><div class="product-actions"><button class="btn btn-sm btn-primary" onclick="Products.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-outline" onclick="Products.changePhoto('${x.id}')">📸</button><button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button></div></div></div>`;}).join('')||'<p style="grid-column:1/-1;text-align:center;padding:20px;">Не найдено</p>';},
   add(){
-    const cats=['Молочные','Хлеб','Напитки','Косметика','Канцтовары','Другое'];
+    const cats=['Молочные','Хлеб','Напитки','Косметика','Канцтовары','Электроника','Другое'];
     App.modal(`<h3>➕ Новый товар</h3>
+      <div class="photo-upload" id="new-photo-upload" onclick="document.getElementById('new-photo-file').click()">
+        <input type="file" id="new-photo-file" accept="image/*" capture="environment" style="display:none;">
+        <div class="photo-placeholder" id="new-photo-placeholder">📷</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Нажмите для загрузки фото</div>
+        <img src="" class="photo-preview" id="new-photo-preview" style="display:none;">
+      </div>
       <div class="form-group"><label>Название *</label><input type="text" class="form-control" id="pr-name" placeholder="Молоко 1л"></div>
-      <div class="form-row"><div class="form-group"><label>Артикул (SKU)</label><input type="text" class="form-control" id="pr-sku" placeholder="MILK-001"></div><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="pr-bc" placeholder="4601234567890"></div></div>
-      <div class="form-row"><div class="form-group"><label>Категория</label><select class="form-control" id="pr-cat">${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div><div class="form-group"><label>Цена (₽)</label><input type="number" class="form-control" id="pr-price" placeholder="89"></div></div>
-      <div class="form-group"><label>Описание</label><textarea class="form-control" id="pr-desc" placeholder="Описание товара..."></textarea></div>
-      <div class="form-group"><label>URL фото (опционально)</label><input type="text" class="form-control" id="pr-img" placeholder="https://..."></div>
+      <div class="form-row"><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="pr-sku" placeholder="MILK-001"></div><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="pr-bc" placeholder="4601234567890"></div></div>
+      <div class="form-row"><div class="form-group"><label>Категория</label><select class="form-control" id="pr-cat">${cats.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="form-group"><label>Цена ₽</label><input type="number" class="form-control" id="pr-price"></div></div>
+      <div class="form-group"><label>Описание</label><textarea class="form-control" id="pr-desc"></textarea></div>
       <div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Products.save()">💾 Сохранить</button></div>`);
+    let pendingImg='';
+    document.getElementById('new-photo-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const d=await PhotoManager.compress(f);pendingImg=d;document.getElementById('new-photo-preview').src=d;document.getElementById('new-photo-preview').style.display='block';document.getElementById('new-photo-placeholder').style.display='none';});
+    this._pendingImage=()=>pendingImg;
   },
   save(editId){
-    const name=document.getElementById('pr-name')?.value.trim();
-    if(!name){App.toast('Введите название','error');return;}
+    const name=document.getElementById('pr-name')?.value.trim();if(!name){App.toast('Введите название','error');return;}
     const p=DB.get('products',[]);
-    const data={
-      name,
-      sku:document.getElementById('pr-sku')?.value.trim()||'',
-      barcode:document.getElementById('pr-bc')?.value.trim()||'',
-      category:document.getElementById('pr-cat')?.value||'Другое',
-      price:parseInt(document.getElementById('pr-price')?.value)||0,
-      description:document.getElementById('pr-desc')?.value||'',
-      image:document.getElementById('pr-img')?.value||'',
-      updatedAt:new Date().toISOString()
-    };
-    if(editId){
-      const i=p.findIndex(x=>x.id===editId);
-      if(i>=0){p[i]={...p[i],...data};}
-    }else{
-      data.id=App.genId();
-      data.createdAt=new Date().toISOString();
-      p.push(data);
-    }
-    DB.set('products',p);
-    // Update barcode registry
-    if(data.barcode){
-      const bc=DB.get('barcodes',{});
-      bc[data.barcode]=data.id;
-      DB.set('barcodes',bc);
-    }
-    App.closeModal();
-    this.render();
-    Sync.log(editId?'PRODUCT_UPDATED':'PRODUCT_CREATED',data.name);
-    App.toast(editId?'Обновлено':'Создано','success');
-    Audio.play('ok');
+    const image=editId?(this._pendingImage?.()||''):this._pendingImage?.()||'';
+    const data={name,sku:document.getElementById('pr-sku')?.value.trim()||'',barcode:document.getElementById('pr-bc')?.value.trim()||'',category:document.getElementById('pr-cat')?.value||'Другое',price:parseInt(document.getElementById('pr-price')?.value)||0,description:document.getElementById('pr-desc')?.value||'',updatedAt:new Date().toISOString()};
+    if(editId){const i=p.findIndex(x=>x.id===editId);if(i>=0){if(image!==undefined)p[i].image=image;p[i]={...p[i],...data};}}else{data.id=App.genId();data.image=image||'';data.createdAt=new Date().toISOString();p.push(data);}
+    DB.set('products',p);if(data.barcode){const bc=DB.get('barcodes',{});bc[data.barcode]=data.id;DB.set('barcodes',bc);}
+    App.closeModal();this.render();Sync.log(editId?'UPDATED':'CREATED',data.name);App.toast(editId?'Обновлено':'Создано','success');AudioMgr.play('ok');
   },
   edit(id){
     const p=DB.get('products',[]).find(x=>x.id===id);if(!p)return;
-    const cats=['Молочные','Хлеб','Напитки','Косметика','Канцтовары','Другое'];
-    App.modal(`<h3>✏️ Редактировать: ${p.name}</h3>
+    const cats=['Молочные','Хлеб','Напитки','Косметика','Канцтовары','Электроника','Другое'];
+    App.modal(`<h3>✏️ ${p.name}</h3>
+      <div class="photo-upload" id="edit-photo-upload">
+        <input type="file" id="edit-photo-file" accept="image/*" capture="environment" style="display:none;">
+        ${p.image?`<img src="${p.image}" class="photo-preview" id="edit-photo-preview"><button class="photo-remove" onclick="Products.removeEditPhoto(event)" title="Удалить">✕</button>`:`<div class="photo-placeholder">📷</div><div style="font-size:12px;color:var(--text-secondary);">Нажмите для загрузки</div>`}
+      </div>
       <div class="form-group"><label>Название *</label><input type="text" class="form-control" id="pr-name" value="${p.name}"></div>
       <div class="form-row"><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="pr-sku" value="${p.sku||''}"></div><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="pr-bc" value="${p.barcode||''}"></div></div>
       <div class="form-row"><div class="form-group"><label>Категория</label><select class="form-control" id="pr-cat">${cats.map(c=>`<option value="${c}" ${p.category===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="form-group"><label>Цена</label><input type="number" class="form-control" id="pr-price" value="${p.price||0}"></div></div>
       <div class="form-group"><label>Описание</label><textarea class="form-control" id="pr-desc">${p.description||''}</textarea></div>
-      <div class="form-group"><label>URL фото</label><input type="text" class="form-control" id="pr-img" value="${p.image||''}"></div>
       <div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Products.save('${p.id}')">💾 Сохранить</button></div>`);
+    this._editId=id;
+    this._editImage=p.image;
+    this._photoRemoved=false;
+    document.getElementById('edit-photo-upload').addEventListener('click',e=>{if(e.target.closest('.photo-remove'))return;document.getElementById('edit-photo-file').click();});
+    document.getElementById('edit-photo-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const d=await PhotoManager.compress(f);this._editImage=d;this._photoRemoved=false;document.getElementById('edit-photo-preview').src=d;});
   },
-  del(id){
-    if(!confirm('Удалить товар?'))return;
-    const p=DB.get('products',[]).filter(x=>x.id!==id);
-    DB.set('products',p);
-    Sync.log('PRODUCT_DELETED',id);
-    this.render();
-    App.toast('Удалено','success');
-  },
-  importExcel(){
-    const i=document.createElement('input');i.type='file';i.accept='.xlsx';
-    i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{
-      const wb=XLSX.read(ev.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const d=XLSX.utils.sheet_to_json(ws);
-      const p=DB.get('products',[]);const bc=DB.get('barcodes',{});
-      d.forEach(row=>{
-        const id=row['id']||row['ID']||App.genId();
-        const existing=p.findIndex(x=>x.id===id);
-        const prod={id,name:row['Название']||row['name']||'Без имени',sku:row['Артикул']||row['sku']||'',barcode:row['Штрих-код']||row['barcode']||'',category:row['Категория']||row['category']||'',price:parseInt(row['Цена']||row['price'])||0,description:row['Описание']||row['description']||''};
-        if(existing>=0)p[existing]={...p[existing],...prod};else p.push(prod);
-        if(prod.barcode)bc[prod.barcode]=prod.id;
-      });
-      DB.set('products',p);DB.set('barcodes',bc);
-      Sync.log('PRODUCTS_IMPORTED',d.length+' записей');
-      this.render();App.toast(`Импортировано ${d.length} товаров`,'success');
-    };r.readAsBinaryString(f);};i.click();
-  },
-  exportExcel(){
-    const p=DB.get('products',[]);const d=p.map(x=>({'ID':x.id,'Название':x.name,'Артикул':x.sku,'Штрих-код':x.barcode,'Категория':x.category,'Цена':x.price,'Описание':x.description}));
-    const ws=XLSX.utils.json_to_sheet(d);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Товары');XLSX.writeFile(wb,'products_'+new Date().toISOString().slice(0,10)+'.xlsx');
-    Sync.log('PRODUCTS_EXPORTED');
-  }
-};
+  removeEditPhoto(e){e.stopPropagation();e.preventDefault();this._editImage='';this._photoRemoved=true;const up=document.getElementById('edit-photo-upload');up.innerHTML='<input type="file" id="edit-photo-file" accept="image/*" capture="environment" style="display:none;"><div class="photo-placeholder">📷</div><div style="font-size:12px;color:var(--text-secondary);">Нажмите для загрузки</div>';document.getElementById('edit-photo-file').addEventListener('change',async ev=>{const f=ev.target.files[0];if(!f)return;const d=await PhotoManager.compress(f);this._editImage=d;this._photoRemoved=false;const img=document.createElement('img');img.className='photo-preview';img.id='edit-photo-preview';img.src=d;up.appendChild(img);});},
+  changePhoto(id){const p=DB.get('products',[]).find(x=>x.id===id);if(!p)return;PhotoManager.showUploadModal(p.image||null,(img)=>{const ps=DB.get('products',[]);const i=ps.findIndex(x=>x.id===id);if(i>=0){ps[i].image=img;DB.set('products',ps);Sync.log('PHOTO_CHANGED',p.name);this.render();App.toast('Фото обновлено','success');}});},
+  del(id){if(!confirm('Удалить товар?'))return;const p=DB.get('products',[]).filter(x=>x.id!==id);DB.set('products',p);Sync.log('DELETED',id);this.render();App.toast('Удалено','success');},
+  importExcel(){const i=document.createElement('input');i.type='file';i.accept='.xlsx';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const wb=XLSX.read(ev.target.result,{type:'binary'});const d=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);const p=DB.get('products',[]);const bc=DB.get('barcodes',{});d.forEach(row=>{const id=row['id']||row['ID']||App.genId();const prod={id,name:row['Название']||'Товар',sku:row['Артикул']||'',barcode:row['Штрих-код']||'',category:row['Категория']||'',price:parseInt(row['Цена'])||0,description:row['Описание']||'',image:''};const ex=p.findIndex(x=>x.id===id);if(ex>=0)p[ex]={...p[ex],...prod};else p.push(prod);if(prod.barcode)bc[prod.barcode]=prod.id;});DB.set('products',p);DB.set('barcodes',bc);Sync.log('IMPORTED',d.length+' товаров');this.render();App.toast(`Импортировано ${d.length}`,'success');};r.readAsBinaryString(f);};i.click();},
+  exportExcel(){const p=DB.get('products',[]);const d=p.map(x=>({'ID':x.id,'Название':x.name,'Артикул':x.sku,'Штрих-код':x.barcode,'Категория':x.category,'Цена':x.price}));const ws=XLSX.utils.json_to_sheet(d);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Товары');XLSX.writeFile(wb,'products_'+new Date().toISOString().slice(0,10)+'.xlsx');}};
 
-const Dashboard={
-  render(){
-    const p=DB.get('products',[]);const w=DB.get('warehouse_cells',[]);const r=DB.get('receivings',[]);const s=DB.get('shippings',[]);
-    const occupied=w.filter(x=>x.status==='occupied').length;const totalQty=w.reduce((s,x)=>s+(x.qty||0),0);
-    document.getElementById('d-stats').innerHTML=`
-      <div class="stat-card"><div class="icon">🏷️</div><div class="value">${p.length}</div><div class="label">Товаров</div></div>
-      <div class="stat-card"><div class="icon">📦</div><div class="value">${totalQty}</div><div class="label">Единиц на складе</div></div>
-      <div class="stat-card"><div class="icon">🏭</div><div class="value">${occupied}/${w.length}</div><div class="label">Ячеек занято</div></div>
-      <div class="stat-card"><div class="icon">📥</div><div class="value">${r.length}</div><div class="label">Приемок</div></div>
-      <div class="stat-card"><div class="icon">📤</div><div class="value">${s.length}</div><div class="label">Отгрузок</div></div>
-      <div class="stat-card"><div class="icon">🔄</div><div class="value">${DB.get('sync_logs',[]).length}</div><div class="label">Операций синхронизации</div></div>
-    `;
-    const showList=(id,data)=>{document.getElementById(id).innerHTML=data.length?data.slice(-5).reverse().map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;"><span>${x.supplier||x.client||'—'}</span><span>${x.items?.length||0} поз.</span></div>`).join(''):'<p style="font-size:12px;color:var(--text-secondary);">Нет данных</p>';};
-    showList('d-recv',r);showList('d-ship',s);
-  }
-};
+const Dashboard={render(){const p=DB.get('products',[]);const w=DB.get('warehouse_cells',[]);const r=DB.get('receivings',[]);const s=DB.get('shippings',[]);const occ=w.filter(x=>x.status==='occupied').length;const total=w.reduce((s,x)=>s+(x.qty||0),0);const photos=p.filter(x=>x.image).length;document.getElementById('d-stats').innerHTML=`<div class="stat-card"><div class="icon">🏷️</div><div class="value">${p.length}</div><div class="label">Товаров</div></div><div class="stat-card"><div class="icon">📸</div><div class="value">${photos}</div><div class="label">С фото</div></div><div class="stat-card"><div class="icon">📦</div><div class="value">${total}</div><div class="label">Единиц</div></div><div class="stat-card"><div class="icon">🏭</div><div class="value">${occ}/${w.length}</div><div class="label">Ячеек</div></div><div class="stat-card"><div class="icon">📥</div><div class="value">${r.length}</div><div class="label">Приемок</div></div><div class="stat-card"><div class="icon">💾</div><div class="value">${PhotoManager.getStorageUsed()}KB</div><div class="label">Занято памяти</div></div>`;}};
 
-const Warehouse={
-  render(){this.renderMap();this.renderList();},
-  renderMap(){
-    const w=DB.get('warehouse_cells',[]);const p=DB.get('products',[]);
-    document.getElementById('wh-map').innerHTML=w.map(x=>{
-      const pr=x.productId?p.find(pr=>pr.id===x.productId):null;
-      return `<div class="cell ${x.status}" onclick="Warehouse.edit('${x.id}')"><div class="cell-label">${x.id}</div><div class="cell-qty">${x.qty||0} шт</div>${pr?`<div style="font-size:9px;color:var(--text-secondary);">${pr.name.substring(0,12)}</div>`:''}</div>`;
-    }).join('');
-  },
-  renderList(){
-    const w=DB.get('warehouse_cells',[]);const p=DB.get('products',[]);
-    document.getElementById('wh-tbody').innerHTML=w.map(x=>{
-      const pr=x.productId?p.find(pr=>pr.id===x.productId):null;
-      return `<tr><td><b>${x.id}</b></td><td>${x.zone}</td><td>${pr?pr.name:'—'}</td><td>${x.qty||0}</td><td><button class="btn btn-sm btn-outline" onclick="Warehouse.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="Warehouse.del('${x.id}')">🗑️</button></td></tr>`;
-    }).join('');
-  },
-  addCell(){
-    const z=['A','B','C','D'];
-    App.modal(`<h3>➕ Ячейка</h3><div class="form-row"><div class="form-group"><label>ID</label><input type="text" class="form-control" id="w-id" placeholder="A3"></div><div class="form-group"><label>Зона</label><select class="form-control" id="w-zone">${z.map(x=>`<option value="${x}">Зона ${x}</option>`).join('')}</select></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.save()">Сохранить</button></div>`);
-  },
-  save(){
-    const id=document.getElementById('w-id').value.trim();if(!id){App.toast('Введите ID','error');return;}
-    const w=DB.get('warehouse_cells',[]);if(w.find(x=>x.id===id)){App.toast('Уже есть','error');return;}
-    w.push({id,zone:document.getElementById('w-zone').value,productId:'',qty:0,status:'empty'});
-    DB.set('warehouse_cells',w);App.closeModal();this.render();Sync.log('CELL_CREATED',id);
-  },
-  edit(id){
-    const w=DB.get('warehouse_cells',[]).find(x=>x.id===id);if(!w)return;
-    const p=DB.get('products',[]);
-    App.modal(`<h3>✏️ Ячейка ${w.id}</h3>
-      <div class="form-group"><label>Товар</label><select class="form-control" id="w-prod"><option value="">— Пусто —</option>${p.map(x=>`<option value="${x.id}" ${w.productId===x.id?'selected':''}>${x.name} (${x.sku})</option>`).join('')}</select></div>
-      <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="w-qty" value="${w.qty||0}"></div>
-      <div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.update('${w.id}')">Обновить</button></div>`);
-  },
-  update(id){
-    const w=DB.get('warehouse_cells',[]);const i=w.findIndex(x=>x.id===id);if(i<0)return;
-    const prodId=document.getElementById('w-prod').value;
-    const qty=parseInt(document.getElementById('w-qty').value)||0;
-    w[i].productId=prodId;w[i].qty=qty;w[i].status=prodId&&qty>0?'occupied':'empty';
-    DB.set('warehouse_cells',w);App.closeModal();this.render();Sync.log('CELL_UPDATED',id);
-  },
-  del(id){if(!confirm('Удалить ячейку?'))return;DB.set('warehouse_cells',DB.get('warehouse_cells',[]).filter(x=>x.id!==id));this.render();Sync.log('CELL_DELETED',id);}
-};
+const Warehouse={render(){this.renderMap();this.renderList();},renderMap(){const w=DB.get('warehouse_cells',[]);const p=DB.get('products',[]);document.getElementById('wh-map').innerHTML=w.map(x=>{const pr=x.productId?p.find(pr=>pr.id===x.productId):null;const photo=pr?.image?`<img src="${pr.image}" alt="">`:'';return `<div class="cell ${x.status}" onclick="Warehouse.edit('${x.id}')">${photo}<div class="cell-label">${x.id}</div><div class="cell-qty">${x.qty||0}</div></div>`;}).join('');},renderList(){const w=DB.get('warehouse_cells',[]);const p=DB.get('products',[]);document.getElementById('wh-tbody').innerHTML=w.map(x=>{const pr=x.productId?p.find(pr=>pr.id===x.productId):null;const photo=pr?.image?`<img src="${pr.image}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;" onclick="PhotoManager.viewPhoto('${pr.image}')">`:'<span style="color:var(--text-secondary);">—</span>';return `<tr><td>${photo}</td><td><b>${x.id}</b></td><td>${x.zone}</td><td>${pr?pr.name:'—'}</td><td>${x.qty||0}</td><td><button class="btn btn-sm btn-outline" onclick="Warehouse.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="Warehouse.del('${x.id}')">🗑️</button></td></tr>`;}).join('');},addCell(){App.modal(`<h3>➕ Ячейка</h3><div class="form-row"><div class="form-group"><label>ID</label><input type="text" class="form-control" id="w-id" placeholder="A3"></div><div class="form-group"><label>Зона</label><select class="form-control" id="w-zone"><option>A</option><option>B</option><option>C</option><option>D</option></select></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.save()">Сохранить</button></div>`);},save(){const id=document.getElementById('w-id').value.trim();if(!id){App.toast('Введите ID','error');return;}const w=DB.get('warehouse_cells',[]);if(w.find(x=>x.id===id)){App.toast('Уже есть','error');return;}w.push({id,zone:document.getElementById('w-zone').value,productId:'',qty:0,status:'empty'});DB.set('warehouse_cells',w);App.closeModal();this.render();Sync.log('CELL_CREATED',id);},edit(id){const w=DB.get('warehouse_cells',[]).find(x=>x.id===id);if(!w)return;const p=DB.get('products',[]);App.modal(`<h3>✏️ Ячейка ${w.id}</h3><div class="form-group"><label>Товар</label><select class="form-control" id="w-prod"><option value="">— Пусто —</option>${p.map(x=>`<option value="${x.id}" ${w.productId===x.id?'selected':''}>${x.name} (${x.sku})</option>`).join('')}</select></div><div class="form-group"><label>Количество</label><input type="number" class="form-control" id="w-qty" value="${w.qty||0}"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.update('${w.id}')">Обновить</button></div>`);},update(id){const w=DB.get('warehouse_cells',[]);const i=w.findIndex(x=>x.id===id);if(i<0)return;const prodId=document.getElementById('w-prod').value;const qty=parseInt(document.getElementById('w-qty').value)||0;w[i].productId=prodId;w[i].qty=qty;w[i].status=prodId&&qty>0?'occupied':'empty';DB.set('warehouse_cells',w);App.closeModal();this.render();Sync.log('CELL_UPDATED',id);},del(id){if(!confirm('Удалить?'))return;DB.set('warehouse_cells',DB.get('warehouse_cells',[]).filter(x=>x.id!==id));this.render();}};
 
-const Receiving={
-  render(){
-    const r=DB.get('receivings',[]);
-    document.getElementById('recv-tbody').innerHTML=r.map(x=>`<tr><td><b>${x.number}</b></td><td>${App.date(x.date)}</td><td>${x.supplier||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.status==='done'?'done':'new'}">${x.status==='done'?'Завершена':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Receiving.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Receiving.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет приемок</td></tr>';
-  },
-  add(){
-    const p=DB.get('products',[]);
-    App.modal(`<h3>📥 Приемка</h3>
-      <div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="r-sup"></div>
-      <div class="form-group"><label>Товары</label><textarea class="form-control" id="r-items" placeholder='[{"productId":"P001","qty":10},{"productId":"P002","qty":5}]'></textarea></div>
-      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">Доступные товары: ${p.map(x=>`${x.name} (ID: ${x.id})`).join(', ')}</div>
-      <div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-success" onclick="Receiving.save()">Создать</button></div>`);
-  },
-  save(){
-    const sup=document.getElementById('r-sup').value.trim();
-    let items=[];try{items=JSON.parse(document.getElementById('r-items').value||'[]');}catch(e){App.toast('Ошибка JSON','error');return;}
-    // Validate product IDs
-    const p=DB.get('products',[]);
-    const invalid=items.filter(it=>!p.find(x=>x.id===it.productId));
-    if(invalid.length){App.toast(`Неизвестные товары: ${invalid.map(x=>x.productId).join(', ')}`,'error');return;}
-    const r=DB.get('receivings',[]);
-    r.push({id:App.genId(),number:'RCV-'+Date.now().toString().slice(-6),date:new Date().toISOString(),supplier:sup,items,status:'new'});
-    DB.set('receivings',r);App.closeModal();this.render();Sync.log('RECEIVING_CREATED');
-  },
-  done(id){
-    const r=DB.get('receivings',[]);const i=r.findIndex(x=>x.id===id);if(i<0)return;
-    r[i].status='done';r[i].completedAt=new Date().toISOString();
-    const w=DB.get('warehouse_cells',[]);
-    r[i].items.forEach(it=>{const empty=w.find(x=>x.status==='empty');if(empty){empty.productId=it.productId;empty.qty=(empty.qty||0)+it.qty;empty.status='occupied';}});
-    DB.set('receivings',r);DB.set('warehouse_cells',w);this.render();Sync.log('RECEIVING_DONE',id);
-  },
-  del(id){DB.set('receivings',DB.get('receivings',[]).filter(x=>x.id!==id));this.render();},
-  scan(){
-    App.modal(`<h3>📷 Сканирование</h3><div class="barcode-scanner" id="bsc"><input type="text" class="form-control" id="s-code" placeholder="Штрих-код..." style="font-size:16px;text-align:center;"><div id="s-res" style="margin-top:8px;"></div></div><div class="form-group"><label>Кол-во</label><input type="number" class="form-control" id="s-qty" value="1"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Receiving.process()">Добавить</button></div>`);
-    setTimeout(()=>{const i=document.getElementById('s-code');if(i){i.focus();i.addEventListener('keypress',e=>{if(e.key==='Enter')Receiving.process();});i.addEventListener('input',()=>{const v=i.value.trim(),r=document.getElementById('s-res');if(v.length>=8){const bc=DB.get('barcodes',{});const pid=bc[v];if(pid){const p=DB.get('products',[]).find(x=>x.id===pid);r.innerHTML=`<div class="badge-status badge-done">✅ ${p?p.name:pid}</div>`;}else{r.innerHTML=`<div class="badge-status badge-error">❌ Не найден</div>`;Audio.play('err');}}});}},100);
-  },
-  process(){
-    const bc=document.getElementById('s-code')?.value.trim();const qty=parseInt(document.getElementById('s-qty')?.value)||1;
-    if(!bc){App.toast('Введите код','error');return;}
-    const bcs=DB.get('barcodes',{});const pid=bcs[bc];if(!pid){Audio.play('err');App.toast('Товар не в реестре','error');return;}
-    Audio.play('ok');
-    const w=DB.get('warehouse_cells',[]);let cell=w.find(x=>x.productId===pid&&x.status==='occupied');if(!cell)cell=w.find(x=>x.status==='empty');
-    if(cell){if(cell.status==='empty'){cell.productId=pid;cell.status='occupied';}cell.qty=(cell.qty||0)+qty;DB.set('warehouse_cells',w);App.closeModal();Warehouse.render();Sync.log('BARCODE_SCANNED',`${pid} +${qty}`);}
-    else App.toast('Нет ячеек','error');
-  }
-};
+const Receiving={render(){const r=DB.get('receivings',[]);document.getElementById('recv-tbody').innerHTML=r.map(x=>`<tr><td><b>${x.number}</b></td><td>${App.date(x.date)}</td><td>${x.supplier||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.status==='done'?'done':'new'}">${x.status==='done'?'Завершена':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Receiving.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Receiving.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет приемок</td></tr>';},add(){const p=DB.get('products',[]);App.modal(`<h3>📥 Приемка</h3><div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="r-sup"></div><div class="form-group"><label>Товары JSON</label><textarea class="form-control" id="r-items" placeholder='[{"productId":"P001","qty":10}]'></textarea></div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">Товары: ${p.map(x=>`${x.name} (ID: ${x.id})`).join(', ')}</div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-success" onclick="Receiving.save()">Создать</button></div>`);},save(){const sup=document.getElementById('r-sup').value.trim();let items=[];try{items=JSON.parse(document.getElementById('r-items').value||'[]');}catch(e){App.toast('Ошибка JSON','error');return;}const r=DB.get('receivings',[]);r.push({id:App.genId(),number:'RCV-'+Date.now().toString().slice(-6),date:new Date().toISOString(),supplier:sup,items,status:'new'});DB.set('receivings',r);App.closeModal();this.render();},done(id){const r=DB.get('receivings',[]);const i=r.findIndex(x=>x.id===id);if(i<0)return;r[i].status='done';const w=DB.get('warehouse_cells',[]);r[i].items.forEach(it=>{const empty=w.find(x=>x.status==='empty');if(empty){empty.productId=it.productId;empty.qty=(empty.qty||0)+it.qty;empty.status='occupied';}});DB.set('receivings',r);DB.set('warehouse_cells',w);this.render();},del(id){DB.set('receivings',DB.get('receivings',[]).filter(x=>x.id!==id));this.render();},scan(){App.modal(`<h3>📷 Сканирование</h3><div class="barcode-scanner" id="bsc"><input type="text" class="form-control" id="s-code" placeholder="Штрих-код..." style="font-size:16px;text-align:center;"><div id="s-res" style="margin-top:8px;"></div></div><div class="form-group"><label>Кол-во</label><input type="number" class="form-control" id="s-qty" value="1"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Receiving.process()">Добавить</button></div>`);setTimeout(()=>{const i=document.getElementById('s-code');if(i){i.focus();i.addEventListener('keypress',e=>{if(e.key==='Enter')Receiving.process();});}},100);},process(){const bc=document.getElementById('s-code')?.value.trim();const qty=parseInt(document.getElementById('s-qty')?.value)||1;if(!bc){App.toast('Введите код','error');return;}const bcs=DB.get('barcodes',{});const pid=bcs[bc];if(!pid){AudioMgr.play('err');App.toast('Товар не в реестре','error');return;}AudioMgr.play('ok');const w=DB.get('warehouse_cells',[]);let cell=w.find(x=>x.productId===pid&&x.status==='occupied');if(!cell)cell=w.find(x=>x.status==='empty');if(cell){if(cell.status==='empty'){cell.productId=pid;cell.status='occupied';}cell.qty=(cell.qty||0)+qty;DB.set('warehouse_cells',w);App.closeModal();Warehouse.render();}else App.toast('Нет ячеек','error');}};
 
-const Shipping={
-  render(){
-    const s=DB.get('shippings',[]);
-    document.getElementById('ship-tbody').innerHTML=s.map(x=>`<tr><td><b>${x.number}</b></td><td>${App.date(x.date)}</td><td>${x.client||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.status==='done'?'done':'new'}">${x.status==='done'?'Отгружена':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Shipping.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Shipping.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет отгрузок</td></tr>';
-  },
-  add(){App.modal(`<h3>📤 Отгрузка</h3><div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="s-cli"></div><div class="form-group"><label>Товары JSON</label><textarea class="form-control" id="s-items" placeholder='[{"productId":"P001","qty":2}]'></textarea></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Shipping.save()">Создать</button></div>`);},
-  save(){const c=document.getElementById('s-cli').value.trim();let items=[];try{items=JSON.parse(document.getElementById('s-items').value||'[]');}catch(e){App.toast('Ошибка','error');return;}const s=DB.get('shippings',[]);s.push({id:App.genId(),number:'SHP-'+Date.now().toString().slice(-6),date:new Date().toISOString(),client:c,items,status:'new'});DB.set('shippings',s);App.closeModal();this.render();Sync.log('SHIPPING_CREATED');},
-  done(id){const s=DB.get('shippings',[]);const i=s.findIndex(x=>x.id===id);if(i<0)return;s[i].status='done';s[i].completedAt=new Date().toISOString();const w=DB.get('warehouse_cells',[]);s[i].items.forEach(it=>{let rem=it.qty;for(const c of w){if(c.productId===it.productId&&c.qty>0){const t=Math.min(rem,c.qty);c.qty-=t;rem-=t;if(c.qty<=0){c.qty=0;c.productId='';c.status='empty';}}if(rem<=0)break;}});DB.set('shippings',s);DB.set('warehouse_cells',w);this.render();Sync.log('SHIPPING_DONE',id);},
-  del(id){DB.set('shippings',DB.get('shippings',[]).filter(x=>x.id!==id));this.render();}
-};
+const Shipping={render(){const s=DB.get('shippings',[]);document.getElementById('ship-tbody').innerHTML=s.map(x=>`<tr><td><b>${x.number}</b></td><td>${App.date(x.date)}</td><td>${x.client||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.status==='done'?'done':'new'}">${x.status==='done'?'Отгружена':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Shipping.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Shipping.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет отгрузок</td></tr>';},add(){App.modal(`<h3>📤 Отгрузка</h3><div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="s-cli"></div><div class="form-group"><label>Товары JSON</label><textarea class="form-control" id="s-items" placeholder='[{"productId":"P001","qty":2}]'></textarea></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Shipping.save()">Создать</button></div>`);},save(){const c=document.getElementById('s-cli').value.trim();let items=[];try{items=JSON.parse(document.getElementById('s-items').value||'[]');}catch(e){App.toast('Ошибка','error');return;}const s=DB.get('shippings',[]);s.push({id:App.genId(),number:'SHP-'+Date.now().toString().slice(-6),date:new Date().toISOString(),client:c,items,status:'new'});DB.set('shippings',s);App.closeModal();this.render();},done(id){const s=DB.get('shippings',[]);const i=s.findIndex(x=>x.id===id);if(i<0)return;s[i].status='done';const w=DB.get('warehouse_cells',[]);s[i].items.forEach(it=>{let rem=it.qty;for(const c of w){if(c.productId===it.productId&&c.qty>0){const t=Math.min(rem,c.qty);c.qty-=t;rem-=t;if(c.qty<=0){c.qty=0;c.productId='';c.status='empty';}}if(rem<=0)break;}});DB.set('shippings',s);DB.set('warehouse_cells',w);this.render();},del(id){DB.set('shippings',DB.get('shippings',[]).filter(x=>x.id!==id));this.render();}};
 
-const Tasks={
-  render(){const t=DB.get('tasks',[]);['new','process','done'].forEach(s=>{document.getElementById('tk-'+(s==='new'?'new':s==='process'?'proc':'done')).innerHTML=t.filter(x=>x.status===s).map(x=>`<div class="task-item"><div>${x.title}</div><div style="margin-top:4px;display:flex;gap:4px;">${s!=='new'?`<button class="btn btn-sm btn-outline" onclick="Tasks.move('${x.id}','${s==='process'?'done':'new'}')">⬅️</button>`:''}${s!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${x.id}','${s==='new'?'process':'done'}')">➡️</button>`:''}</div></div>`).join('')||'<p style="font-size:11px;color:var(--text-secondary);padding:4px;">Пусто</p>';});},
-  add(){App.modal(`<h3>➕ Задача</h3><div class="form-group"><label>Название</label><input type="text" class="form-control" id="t-title"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Tasks.save()">Создать</button></div>`);},
-  save(){const t=DB.get('tasks',[]);t.push({id:App.genId(),title:document.getElementById('t-title').value,status:'new'});DB.set('tasks',t);App.closeModal();this.render();},
-  move(id,s){const t=DB.get('tasks',[]);const i=t.findIndex(x=>x.id===id);if(i>=0)t[i].status=s;DB.set('tasks',t);this.render();}
-};
+const Tasks={render(){const t=DB.get('tasks',[]);['new','process','done'].forEach(s=>{document.getElementById('tk-'+(s==='new'?'new':s==='process'?'proc':'done')).innerHTML=t.filter(x=>x.status===s).map(x=>`<div class="task-item"><div>${x.title}</div><div style="margin-top:4px;display:flex;gap:4px;">${s!=='new'?`<button class="btn btn-sm btn-outline" onclick="Tasks.move('${x.id}','${s==='process'?'done':'new'}')">⬅️</button>`:''}${s!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${x.id}','${s==='new'?'process':'done'}')">➡️</button>`:''}</div></div>`).join('')||'<p style="font-size:11px;color:var(--text-secondary);padding:4px;">Пусто</p>';});},add(){App.modal(`<h3>➕ Задача</h3><div class="form-group"><label>Название</label><input type="text" class="form-control" id="t-title"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Tasks.save()">Создать</button></div>`);},save(){const t=DB.get('tasks',[]);t.push({id:App.genId(),title:document.getElementById('t-title').value,status:'new'});DB.set('tasks',t);App.closeModal();this.render();},move(id,s){const t=DB.get('tasks',[]);const i=t.findIndex(x=>x.id===id);if(i>=0)t[i].status=s;DB.set('tasks',t);this.render();}};
 
-const Employees={
-  render(){const e=DB.get('employees',[]);document.getElementById('emp-grid').innerHTML=e.map(x=>{const h=x.checkIn?((Date.now()-new Date(x.checkIn).getTime())/3600000).toFixed(1):0;return `<div class="emp-card"><div class="emp-header"><div class="emp-avatar">${x.name[0]}</div><div><div class="emp-name">${x.name}</div><div class="emp-role">${x.role} | ${x.rate}₽/ч</div><span class="badge-status badge-${x.status==='online'?'done':'error'}">${x.status==='online'?'🟢':'🔴'}</span></div></div><div class="emp-stats"><div class="emp-stat"><div>${h}ч</div><div>Сегодня</div></div><div class="emp-stat"><div>${(h*x.rate).toFixed(0)}₽</div><div>Заработано</div></div></div><div style="margin-top:8px;">${x.status==='offline'?`<button class="btn btn-sm btn-success" onclick="Employees.in('${x.id}')">▶️</button>`:`<button class="btn btn-sm btn-warning" onclick="Employees.out('${x.id}')">⏹️</button>`}</div></div>`;}).join('');},
-  add(){App.modal(`<h3>➕ Сотрудник</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="e-name"></div><div class="form-row"><div class="form-group"><label>Должность</label><input type="text" class="form-control" id="e-role" value="Кладовщик"></div><div class="form-group"><label>Ставка</label><input type="number" class="form-control" id="e-rate" value="400"></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Employees.save()">Добавить</button></div>`);},
-  save(){const e=DB.get('employees',[]);e.push({id:App.genId(),name:document.getElementById('e-name').value,role:document.getElementById('e-role').value,rate:parseInt(document.getElementById('e-rate').value),status:'offline',checkIn:null,totalHours:0});DB.set('employees',e);App.closeModal();this.render();},
-  in(id){const e=DB.get('employees',[]);const i=e.findIndex(x=>x.id===id);if(i>=0){e[i].status='online';e[i].checkIn=new Date().toISOString();DB.set('employees',e);this.render();}},
-  out(id){const e=DB.get('employees',[]);const i=e.findIndex(x=>x.id===id);if(i>=0&&e[i].checkIn){const h=(Date.now()-new Date(e[i].checkIn).getTime())/3600000;e[i].totalHours+=h;e[i].status='offline';e[i].checkIn=null;DB.set('employees',e);this.render();}}
-};
+const Employees={render(){const e=DB.get('employees',[]);document.getElementById('emp-grid').innerHTML=e.map(x=>{const h=x.checkIn?((Date.now()-new Date(x.checkIn).getTime())/3600000).toFixed(1):0;return `<div class="emp-card"><div class="emp-header"><div class="emp-avatar">${x.name[0]}</div><div><div class="emp-name">${x.name}</div><div class="emp-role">${x.role} | ${x.rate}₽/ч</div></div></div><div class="emp-stats"><div class="emp-stat"><div>${h}ч</div><div>Сегодня</div></div><div class="emp-stat"><div>${(h*x.rate).toFixed(0)}₽</div><div>Заработано</div></div></div><div style="margin-top:8px;">${x.status==='offline'?`<button class="btn btn-sm btn-success" onclick="Employees.in('${x.id}')">▶️</button>`:`<button class="btn btn-sm btn-warning" onclick="Employees.out('${x.id}')">⏹️</button>`}</div></div>`;}).join('');},add(){App.modal(`<h3>➕ Сотрудник</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="e-name"></div><div class="form-row"><div class="form-group"><label>Должность</label><input type="text" class="form-control" id="e-role" value="Кладовщик"></div><div class="form-group"><label>Ставка</label><input type="number" class="form-control" id="e-rate" value="400"></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Employees.save()">Добавить</button></div>`);},save(){const e=DB.get('employees',[]);e.push({id:App.genId(),name:document.getElementById('e-name').value,role:document.getElementById('e-role').value,rate:parseInt(document.getElementById('e-rate').value),status:'offline',checkIn:null,totalHours:0});DB.set('employees',e);App.closeModal();this.render();},in(id){const e=DB.get('employees',[]);const i=e.findIndex(x=>x.id===id);if(i>=0){e[i].status='online';e[i].checkIn=new Date().toISOString();DB.set('employees',e);this.render();}},out(id){const e=DB.get('employees',[]);const i=e.findIndex(x=>x.id===id);if(i>=0&&e[i].checkIn){const h=(Date.now()-new Date(e[i].checkIn).getTime())/3600000;e[i].totalHours+=h;e[i].status='offline';e[i].checkIn=null;DB.set('employees',e);this.render();}}};
 
-const Fines={
-  render(){const f=DB.get('fines',[]);document.getElementById('fines-list').innerHTML=f.map(x=>`<div class="fine-card"><div class="fine-amount">-${x.amount}₽</div><div style="flex:1;"><div>${x.reason}</div><small style="color:var(--text-secondary);">${App.date(x.date)}</small></div><button class="btn btn-sm btn-danger" onclick="Fines.del('${x.id}')">🗑️</button></div>`).join('')||'<p style="color:var(--text-secondary);">Нет штрафов</p>';},
-  add(){const e=DB.get('employees',[]);App.modal(`<h3>💰 Штраф</h3><div class="form-group"><label>Сотрудник</label><select class="form-control" id="f-emp">${e.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div><div class="form-group"><label>Причина</label><input type="text" class="form-control" id="f-reason"></div><div class="form-group"><label>Сумма</label><input type="number" class="form-control" id="f-amount" value="500"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-danger" onclick="Fines.save()">Начислить</button></div>`);},
-  save(){const f=DB.get('fines',[]);f.push({id:App.genId(),employeeId:document.getElementById('f-emp').value,reason:document.getElementById('f-reason').value,amount:parseInt(document.getElementById('f-amount').value),date:new Date().toISOString()});DB.set('fines',f);App.closeModal();this.render();},
-  del(id){DB.set('fines',DB.get('fines',[]).filter(x=>x.id!==id));this.render();}
-};
+const Fines={render(){const f=DB.get('fines',[]);document.getElementById('fines-list').innerHTML=f.map(x=>`<div class="fine-card"><div class="fine-amount">-${x.amount}₽</div><div style="flex:1;"><div>${x.reason}</div><small style="color:var(--text-secondary);">${App.date(x.date)}</small></div><button class="btn btn-sm btn-danger" onclick="Fines.del('${x.id}')">🗑️</button></div>`).join('')||'<p style="color:var(--text-secondary);">Нет штрафов</p>';},add(){const e=DB.get('employees',[]);App.modal(`<h3>💰 Штраф</h3><div class="form-group"><label>Сотрудник</label><select class="form-control" id="f-emp">${e.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div><div class="form-group"><label>Причина</label><input type="text" class="form-control" id="f-reason"></div><div class="form-group"><label>Сумма</label><input type="number" class="form-control" id="f-amount" value="500"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-danger" onclick="Fines.save()">Начислить</button></div>`);},save(){const f=DB.get('fines',[]);f.push({id:App.genId(),employeeId:document.getElementById('f-emp').value,reason:document.getElementById('f-reason').value,amount:parseInt(document.getElementById('f-amount').value),date:new Date().toISOString()});DB.set('fines',f);App.closeModal();this.render();},del(id){DB.set('fines',DB.get('fines',[]).filter(x=>x.id!==id));this.render();}};
 
-const Printing={
-  render(){this.preview();},
-  print(){const n=document.getElementById('p-name').value,s=document.getElementById('p-sku').value,b=document.getElementById('p-bc').value,e=document.getElementById('p-exp').value,c=parseInt(document.getElementById('p-copies').value)||1;for(let i=0;i<c;i++)this.draw(n,s,b,e);},
-  draw(n,s,b,e){const p=document.getElementById('print-area');p.style.display='block';p.innerHTML=`<div class="print-label"><div class="product-name">${n||'Товар'}</div>${b?`<svg id="pb"></svg>`:''}${e?`<div style="font-size:6px;">До: ${e}</div>`:''}</div>`;if(b)try{JsBarcode('#pb',b,{width:1.5,height:25,fontSize:8,margin:0});}catch(ex){}setTimeout(()=>{window.print();p.style.display='none';},300);},
-  preview(){const n=document.getElementById('p-name')?.value||'Товар',b=document.getElementById('p-bc')?.value||'123456';document.getElementById('p-preview').innerHTML=`<div style="width:150px;height:100px;border:1px solid var(--border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-size:8px;font-weight:700;">${n}</div><svg id="prevb"></svg></div>`;setTimeout(()=>{try{JsBarcode('#prevb',b,{width:1.2,height:18,fontSize:8});}catch(e){}},100);}
-};
+const Printing={render(){this.preview();},print(){const n=document.getElementById('p-name').value,s=document.getElementById('p-sku').value,b=document.getElementById('p-bc').value,c=parseInt(document.getElementById('p-copies').value)||1;for(let i=0;i<c;i++)this.draw(n,s,b);},draw(n,s,b){const p=document.getElementById('print-area');p.style.display='block';p.innerHTML=`<div class="print-label"><div class="product-name">${n||'Товар'}</div>${b?`<svg id="pb"></svg>`:''}</div>`;if(b)try{JsBarcode('#pb',b,{width:1.5,height:25,fontSize:8,margin:0});}catch(ex){}setTimeout(()=>{window.print();p.style.display='none';},300);},preview(){const n=document.getElementById('p-name')?.value||'Товар',b=document.getElementById('p-bc')?.value||'123456';document.getElementById('p-preview').innerHTML=`<div style="width:150px;height:100px;border:1px solid var(--border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-size:8px;font-weight:700;">${n}</div><svg id="prevb"></svg></div>`;setTimeout(()=>{try{JsBarcode('#prevb',b,{width:1.2,height:18,fontSize:8});}catch(e){}},100);}};
 
-const Settings={
-  render(){const u=DB.get('users',[]);document.getElementById('set-users').innerHTML=u.map(x=>`<div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;"><span><b>${x.name}</b> (${x.role})</span><button class="btn btn-sm btn-outline" onclick="Settings.edit('${x.id}')">✏️</button></div>`).join('');},
-  edit(id){const u=DB.get('users',[]);const i=u.find(x=>x.id===id);if(!i)return;App.modal(`<h3>✏️ ${i.name}</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="su-name" value="${i.name}"></div><div class="form-group"><label>Роль</label><select class="form-control" id="su-role"><option value="admin" ${i.role==='admin'?'selected':''}>Админ</option><option value="manager" ${i.role==='manager'?'selected':''}>Менеджер</option></select></div><div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="su-pass"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Settings.save('${i.id}')">Сохранить</button></div>`);},
-  save(id){const u=DB.get('users',[]);const i=u.findIndex(x=>x.id===id);if(i<0)return;u[i].name=document.getElementById('su-name').value;u[i].role=document.getElementById('su-role').value;const p=document.getElementById('su-pass').value;if(p)u[i].password=p;DB.set('users',u);App.closeModal();this.render();}
-};
+const Settings={render(){const u=DB.get('users',[]);document.getElementById('set-users').innerHTML=u.map(x=>`<div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;"><span><b>${x.name}</b> (${x.role})</span><button class="btn btn-sm btn-outline" onclick="Settings.edit('${x.id}')">✏️</button></div>`).join('');},edit(id){const u=DB.get('users',[]).find(x=>x.id===id);if(!u)return;App.modal(`<h3>✏️ ${u.name}</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="su-name" value="${u.name}"></div><div class="form-group"><label>Роль</label><select class="form-control" id="su-role"><option value="admin" ${u.role==='admin'?'selected':''}>Админ</option><option value="manager" ${u.role==='manager'?'selected':''}>Менеджер</option></select></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Settings.save('${u.id}')">Сохранить</button></div>`);},save(id){const u=DB.get('users',[]);const i=u.findIndex(x=>x.id===id);if(i<0)return;u[i].name=document.getElementById('su-name').value;u[i].role=document.getElementById('su-role').value;DB.set('users',u);App.closeModal();this.render();}};
 
-// Init
 document.addEventListener('DOMContentLoaded',()=>{App.init();document.addEventListener('click',()=>{try{new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},{once:true});});
 </script>
 </body>
