@@ -6,425 +6,2444 @@
 <title>Фулфилмент PRO</title>
 <style>
 :root {
-  --bg: #f4f6f9; --card: #fff; --text: #1e293b; --text2: #64748b;
-  --primary: #6366f1; --primary-hover: #4f46e5; --danger: #ef4444;
-  --success: #22c55e; --warning: #f59e0b; --border: #e2e8f0;
-  --shadow: 0 4px 12px rgba(0,0,0,0.08); --radius: 14px;
-  --gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #3b82f6);
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --bg: #f0f2f5; --card: #fff; --text: #1a1a2e; --text2: #666;
+  --primary: #6c5ce7; --primary2: #a29bfe; --danger: #e74c3c;
+  --success: #00b894; --warning: #fdcb6e; --border: #dfe6e9;
+  --shadow: 0 8px 32px rgba(0,0,0,0.08); --radius: 16px;
+  --gradient: linear-gradient(135deg, #6c5ce7, #a29bfe, #74b9ff);
 }
 [data-theme="dark"] {
-  --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text2: #94a3b8;
-  --border: #334155; --shadow: 0 4px 12px rgba(0,0,0,0.3);
+  --bg: #0a0a1a; --card: #1a1a2e; --text: #eee; --text2: #aaa;
+  --border: #2d2d44; --shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; transition: background .3s, color .3s; }
-button { cursor: pointer; font-family: inherit; }
-input, select, textarea { font-family: inherit; }
-/* SPLASH */
-#splash { position: fixed; inset: 0; z-index: 9999; background: var(--gradient); display: flex; align-items: center; justify-content: center; flex-direction: column; color: #fff; transition: opacity .6s, transform .6s; }
-#splash.hide { opacity: 0; transform: scale(1.05); pointer-events: none; }
-#splash h1 { font-size: 2.5rem; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,.2); }
-#splash p { opacity: .9; margin-bottom: 24px; }
-#splash .bar { width: 180px; height: 4px; background: rgba(255,255,255,.3); border-radius: 2px; overflow: hidden; }
-#splash .fill { height: 100%; background: #fff; border-radius: 2px; animation: load 2s ease forwards; }
-@keyframes load { from { width: 0 } to { width: 100% } }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); transition:all .3s; }
+/* SPLASH SCREEN */
+#splash { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center;
+  background: var(--gradient); transition: opacity .8s, transform .8s; }
+#splash.hide { opacity:0; transform:scale(1.1); pointer-events:none; }
+#splash .logo { text-align:center; color:#fff; }
+#splash .logo h1 { font-size:3rem; margin-bottom:8px; text-shadow:0 4px 20px rgba(0,0,0,.3); }
+#splash .logo p { font-size:1.1rem; opacity:.9; }
+#splash .loader { width:200px; height:4px; background:rgba(255,255,255,.3); border-radius:2px; margin-top:30px; overflow:hidden; }
+#splash .loader-bar { height:100%; background:#fff; border-radius:2px; animation:load 2s ease forwards; }
+@keyframes load { from{width:0} to{width:100%} }
 /* LOGIN */
-#login { display: none; min-height: 100vh; align-items: center; justify-content: center; background: var(--gradient); padding: 20px; }
-#login .card { background: var(--card); padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center; }
-#login h2 { margin-bottom: 12px; color: var(--primary); }
-#login input { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px; margin-bottom: 12px; background: var(--bg); color: var(--text); outline: none; transition: .2s; }
-#login input:focus { border-color: var(--primary); }
-#login .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: 600; font-size: 1rem; transition: .2s; }
-#login .btn.primary { background: var(--gradient); color: #fff; }
-#login .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,.4); }
-#login .btn.outline { background: transparent; border: 2px solid var(--border); color: var(--text); margin-top: 10px; }
-#login .err { color: var(--danger); margin-top: 8px; display: none; font-size: .9rem; }
-/* APP LAYOUT */
-#app { display: none; }
-.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; background: var(--card); border-right: 1px solid var(--border); padding: 20px 0; z-index: 100; transition: transform .3s; overflow-y: auto; }
-.sidebar .brand { padding: 0 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-.sidebar .icon { width: 40px; height: 40px; background: var(--gradient); border-radius: 10px; display: grid; place-items: center; color: #fff; font-size: 1.2rem; }
-.sidebar nav a { display: flex; align-items: center; gap: 12px; padding: 10px 20px; color: var(--text2); text-decoration: none; transition: .2s; border-left: 3px solid transparent; }
-.sidebar nav a:hover, .sidebar nav a.active { background: rgba(99,102,241,.08); color: var(--primary); border-left-color: var(--primary); }
-.sidebar nav a span { font-size: 1.1rem; }
-.sidebar .user { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 20px; border-top: 1px solid var(--border); background: var(--card); display: flex; align-items: center; gap: 10px; }
-.sidebar .user .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 1rem; }
-.sidebar .user .info { flex: 1; }
-.sidebar .user .info .name { font-weight: 600; font-size: .9rem; }
-.sidebar .user .info .role { font-size: .75rem; color: var(--text2); }
-.main { margin-left: 250px; padding: 24px; min-height: 100vh; transition: margin .3s; }
-/* TOPBAR */
-.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-.topbar h1 { font-size: 1.5rem; }
-.topbar .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.btn { padding: 8px 14px; border-radius: 8px; border: none; font-weight: 600; font-size: .85rem; transition: .2s; display: inline-flex; align-items: center; gap: 6px; }
-.btn.p { background: var(--primary); color: #fff; }
-.btn.p:hover { background: var(--primary-hover); }
-.btn.g { background: var(--success); color: #fff; }
-.btn.d { background: var(--danger); color: #fff; }
-.btn.o { background: transparent; border: 2px solid var(--border); color: var(--text); }
-.btn.o:hover { border-color: var(--primary); color: var(--primary); }
-.btn.sm { padding: 6px 10px; font-size: .8rem; }
-.theme-btn { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); display: grid; place-items: center; font-size: 1.1rem; transition: .2s; }
-.theme-btn:hover { border-color: var(--primary); }
-/* CARDS & STATS */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.stat { background: var(--card); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
-.stat .val { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
-.stat .lbl { color: var(--text2); font-size: .85rem; margin-top: 4px; }
-/* TABLES */
-.panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
-.panel .head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.panel table { width: 100%; border-collapse: collapse; }
-.panel th, .panel td { padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: .9rem; }
-.panel th { background: rgba(99,102,241,.05); color: var(--primary); font-weight: 600; white-space: nowrap; }
-.panel tr:hover { background: rgba(99,102,241,.02); }
-.badge { padding: 4px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
-.b-s { background: rgba(34,197,94,.15); color: var(--success); }
-.b-w { background: rgba(245,158,11,.2); color: #d97706; }
-.b-d { background: rgba(239,68,68,.15); color: var(--danger); }
-.b-i { background: rgba(59,130,246,.15); color: #2563eb; }
-/* FORMS */
-.form { display: grid; gap: 14px; }
-.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form label { display: block; margin-bottom: 4px; font-weight: 600; font-size: .85rem; color: var(--text2); }
-.form input, .form select, .form textarea { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); outline: none; transition: .2s; }
-.form input:focus, .form select:focus, .form textarea:focus { border-color: var(--primary); }
-.photo-box { width: 100px; height: 100px; border-radius: 10px; border: 2px dashed var(--border); display: grid; place-items: center; cursor: pointer; overflow: hidden; background: var(--bg); position: relative; }
-.photo-box img { width: 100%; height: 100%; object-fit: cover; }
-.photo-box span { font-size: .7rem; color: var(--text2); text-align: center; padding: 4px; }
-.photo-box input { display: none; }
+#login-page { display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--gradient); }
+#login-page .login-card { background:var(--card); padding:40px; border-radius:var(--radius); box-shadow:var(--shadow); width:90%; max-width:420px; text-align:center; }
+#login-page h2 { margin-bottom:8px; color:var(--primary); }
+#login-page p { color:var(--text2); margin-bottom:24px; }
+#login-page input { width:100%; padding:14px 18px; border:2px solid var(--border); border-radius:12px; font-size:1rem; margin-bottom:14px; background:var(--bg); color:var(--text); outline:none; transition:.3s; }
+#login-page input:focus { border-color:var(--primary); }
+#login-page button { width:100%; padding:14px; background:var(--gradient); color:#fff; border:none; border-radius:12px; font-size:1.1rem; cursor:pointer; font-weight:600; transition:.3s; }
+#login-page button:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(108,92,231,.4); }
+#login-error { color:var(--danger); margin-top:10px; display:none; }
+/* MAIN APP */
+#app { display:none; }
+/* SIDEBAR */
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:260px; background:var(--card); border-right:1px solid var(--border); padding:20px 0; z-index:100; transition:.3s; overflow-y:auto; }
+.sidebar .brand { padding:0 20px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.sidebar .brand .icon { width:42px; height:42px; background:var(--gradient); border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.3rem; }
+.sidebar .brand h3 { font-size:1.1rem; color:var(--primary); }
+.sidebar nav a { display:flex; align-items:center; gap:12px; padding:12px 20px; color:var(--text2); text-decoration:none; transition:.2s; border-left:3px solid transparent; }
+.sidebar nav a:hover, .sidebar nav a.active { background:rgba(108,92,231,.08); color:var(--primary); border-left-color:var(--primary); }
+.sidebar nav a .nav-icon { width:20px; text-align:center; }
+.sidebar .user-box { padding:16px 20px; border-top:1px solid var(--border); position:absolute; bottom:0; left:0; right:0; background:var(--card); display:flex; align-items:center; gap:10px; }
+.sidebar .user-box img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+.sidebar .user-box .info { flex:1; }
+.sidebar .user-box .info .name { font-weight:600; font-size:.9rem; }
+.sidebar .user-box .info .role { font-size:.75rem; color:var(--text2); }
+/* CONTENT */
+.content { margin-left:260px; padding:24px; min-height:100vh; }
+/* TOP BAR */
+.topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+.topbar h1 { font-size:1.6rem; }
+.topbar-actions { display:flex; gap:10px; align-items:center; }
+.theme-toggle { width:44px; height:44px; border-radius:12px; border:2px solid var(--border); background:var(--card); cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; transition:.3s; }
+.theme-toggle:hover { border-color:var(--primary); }
+/* CARDS */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--card); padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); }
+.stat-card .stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin-bottom:12px; }
+.stat-card .stat-value { font-size:1.8rem; font-weight:700; }
+.stat-card .stat-label { color:var(--text2); font-size:.85rem; margin-top:4px; }
+/* TABLE */
+.table-container { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:hidden; }
+.table-header { padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+.table-header h3 { font-size:1.1rem; }
+.table-actions { display:flex; gap:8px; flex-wrap:wrap; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-size:.9rem; }
+th { background:rgba(108,92,231,.05); color:var(--primary); font-weight:600; white-space:nowrap; }
+tr:hover { background:rgba(108,92,231,.03); }
+/* BUTTONS */
+.btn { padding:8px 16px; border-radius:10px; border:none; cursor:pointer; font-size:.85rem; font-weight:600; transition:.2s; display:inline-flex; align-items:center; gap:6px; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:#5b4cdb; transform:translateY(-1px); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-warning { background:var(--warning); color:#333; }
+.btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+.btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+.btn-sm { padding:6px 12px; font-size:.8rem; }
+/* BADGES */
+.badge { padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; }
+.badge-success { background:rgba(0,184,148,.15); color:var(--success); }
+.badge-warning { background:rgba(253,203,110,.3); color:#e17055; }
+.badge-danger { background:rgba(231,76,60,.15); color:var(--danger); }
+.badge-info { background:rgba(116,185,255,.2); color:#0984e3; }
 /* MODAL */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-.modal.show { display: flex; }
-.modal .box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
-.modal .hd { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.modal .bd { padding: 20px; }
-.modal .ft { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
-.close { width: 32px; height: 32px; border-radius: 6px; border: none; background: var(--bg); display: grid; place-items: center; cursor: pointer; }
-/* MAP */
-.map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 12px; }
-.cell { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: .75rem; font-weight: 600; cursor: pointer; transition: .2s; border: 2px solid transparent; }
-.cell:hover { transform: scale(1.04); }
-.cell.e { background: rgba(34,197,94,.1); border-color: var(--success); color: var(--success); }
-.cell.w { background: rgba(245,158,11,.15); border-color: var(--warning); color: #d97706; }
-.cell.f { background: rgba(239,68,68,.1); border-color: var(--danger); color: var(--danger); }
-/* LABELS */
-.label-58 { width: 58mm; height: 40mm; border: 1px solid #000; padding: 3mm; font-family: monospace; font-size: 9pt; background: #fff; color: #000; page-break-after: always; display: inline-block; margin: 2mm; vertical-align: top; }
-/* TOAST */
-#toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; box-shadow: var(--shadow); z-index: 2000; transform: translateY(100px); opacity: 0; transition: .3s; }
-#toast.show { transform: translateY(0); opacity: 1; }
-#toast.ok { border-left: 4px solid var(--success); }
-#toast.err { border-left: 4px solid var(--danger); }
-/* PRINT */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.show { display:flex; }
+.modal { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); width:100%; max-width:700px; max-height:90vh; overflow-y:auto; }
+.modal-header { padding:20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:1.2rem; }
+.modal-close { width:36px; height:36px; border-radius:10px; border:none; background:var(--bg); cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; }
+.modal-body { padding:20px; }
+.modal-footer { padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+/* FORMS */
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; margin-bottom:6px; font-weight:600; font-size:.85rem; color:var(--text2); }
+.form-group input, .form-group select, .form-group textarea { width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:.9rem; background:var(--bg); color:var(--text); outline:none; transition:.3s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-row.three { grid-template-columns:1fr 1fr 1fr; }
+/* PHOTO */
+.photo-upload { width:120px; height:120px; border-radius:16px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; background:var(--bg); position:relative; }
+.photo-upload img { width:100%; height:100%; object-fit:cover; }
+.photo-upload .placeholder { text-align:center; color:var(--text2); font-size:.8rem; }
+.photo-upload input { display:none; }
+/* GRID */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+/* WAREHOUSE MAP */
+.warehouse-map { background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
+.map-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-top:12px; }
+.map-cell { aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:.7rem; font-weight:600; cursor:pointer; transition:.2s; border:2px solid transparent; }
+.map-cell:hover { transform:scale(1.05); }
+.map-cell.empty { background:rgba(0,184,148,.1); border-color:var(--success); color:var(--success); }
+.map-cell.full { background:rgba(231,76,60,.1); border-color:var(--danger); color:var(--danger); }
+.map-cell.partial { background:rgba(253,203,110,.2); border-color:var(--warning); color:#e17055; }
+/* PRINT STYLES */
 @media print {
-  .sidebar, .topbar, .btn, .photo-box, .theme-btn, #toast { display: none !important; }
-  .main { margin-left: 0 !important; padding: 10px !important; }
-  .panel { box-shadow: none !important; border: 1px solid #ccc !important; }
-  .no-print { display: none !important; }
+  .sidebar, .topbar, .btn, .table-actions { display:none !important; }
+  .content { margin-left:0 !important; padding:10px !important; }
+  .table-container { box-shadow:none !important; border:1px solid #ccc !important; }
 }
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; }
-  .form .row { grid-template-columns: 1fr; }
+/* LABEL PRINT */
+.label-58x40 { width:58mm; height:40mm; border:1px solid #000; padding:3mm; font-family:monospace; font-size:8pt; page-break-after:always; display:inline-block; margin:2mm; }
+.label-58x40 .label-barcode { text-align:center; margin:2mm 0; }
+.label-58x40 .label-name { font-weight:bold; font-size:9pt; }
+.label-58x40 .label-sku { color:#666; }
+.label-58x40 .label-exp { color:var(--danger); font-weight:bold; }
+/* QR CODE */
+.qr-display { text-align:center; margin:10px 0; }
+.qr-display canvas { border:4px solid var(--card); border-radius:12px; }
+/* RESPONSIVE */
+@media(max-width:768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .content { margin-left:0; }
+  .form-row, .grid-2, .grid-3 { grid-template-columns:1fr; }
+  .stats { grid-template-columns:1fr 1fr; }
 }
-.fade { animation: fadeIn .4s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px; } to { opacity: 1; transform: translateY(0); }
+/* ANIMATIONS */
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation:fadeIn .4s ease; }
+/* TABS */
+.tabs { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+.tab { padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:600; font-size:.85rem; transition:.2s; background:var(--card); border:1px solid var(--border); }
+.tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.tab:hover:not(.active) { border-color:var(--primary); }
+/* SCROLLBAR */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--primary2); border-radius:3px; }
+/* TIMER */
+.timer-display { font-size:2rem; font-weight:700; font-family:monospace; color:var(--primary); }
+/* SEARCH */
+.search-box { position:relative; }
+.search-box input { padding-left:40px; }
+.search-box .search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text2); }
 </style>
 </head>
 <body>
 
-<div id="splash"><h1>📦 Фулфилмент PRO</h1><p>Загрузка системы...</p><div class="bar"><div class="fill"></div></div></div>
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="logo">
+    <h1>📦 Фулфилмент PRO</h1>
+    <p>Система управления складом и логистикой</p>
+    <div class="loader"><div class="loader-bar"></div></div>
+  </div>
+</div>
 
-<div id="login">
-  <div class="card">
+<!-- LOGIN PAGE -->
+<div id="login-page">
+  <div class="login-card">
     <h2>🔐 Вход в систему</h2>
-    <p style="color:var(--text2);margin-bottom:16px;font-size:.9rem">Введите учетные данные</p>
-    <input type="text" id="u-login" placeholder="Логин" autocomplete="username">
-    <input type="password" id="u-pass" placeholder="Пароль" autocomplete="current-password">
-    <button class="btn primary" onclick="Auth.login()">Войти</button>
-    <p class="err" id="login-err">Неверный логин или пароль</p>
-    <button class="btn outline" onclick="Auth.reset()">🔄 Сбросить данные и войти</button>
-    <p style="margin-top:12px;font-size:.8rem;color:var(--text2)">По умолчанию: <b>admin</b> / <b>admin123</b></p>
+    <p>Введите логин и пароль для доступа</p>
+    <input type="text" id="login-user" placeholder="Логин" autocomplete="username">
+    <input type="password" id="login-pass" placeholder="Пароль" autocomplete="current-password">
+    <button onclick="doLogin()">Войти</button>
+    <p id="login-error">Неверный логин или пароль</p>
+    <p style="margin-top:16px;font-size:.8rem;color:var(--text2)">По умолчанию: admin / admin123</p>
   </div>
 </div>
 
+<!-- MAIN APP -->
 <div id="app">
-  <div class="sidebar" id="sb">
-    <div class="brand"><div class="icon">📦</div><h3>Фулфилмент PRO</h3></div>
-    <nav id="nav">
-      <a href="#" data-p="dash" class="active"><span>📊</span> Дашборд</a>
-      <a href="#" data-p="wh"><span>🏭</span> Склад</a>
-      <a href="#" data-p="recv"><span>📥</span> Приемка</a>
-      <a href="#" data-p="ship"><span>📤</span> Отгрузка</a>
-      <a href="#" data-p="inv"><span>📋</span> Инвентаризация</a>
-      <a href="#" data-p="tasks"><span>✅</span> Задачи</a>
-      <a href="#" data-p="emp"><span>👥</span> Сотрудники</a>
-      <a href="#" data-p="fines"><span>⚠️</span> Штрафы</a>
-      <a href="#" data-p="lbl"><span>🏷️</span> Этикетки</a>
-      <a href="#" data-p="map"><span>🗺️</span> Карта склада</a>
-      <a href="#" data-p="int"><span>🔗</span> Интеграции</a>
-      <a href="#" data-p="set"><span>⚙️</span> Настройки</a>
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="icon">📦</div>
+      <h3>Фулфилмент PRO</h3>
+    </div>
+    <nav id="main-nav">
+      <a href="#" data-page="dashboard" class="active"><span class="nav-icon">📊</span> Дашборд</a>
+      <a href="#" data-page="warehouse"><span class="nav-icon">🏭</span> Склад</a>
+      <a href="#" data-page="receiving"><span class="nav-icon">📥</span> Приемка</a>
+      <a href="#" data-page="shipping"><span class="nav-icon">📤</span> Отгрузка</a>
+      <a href="#" data-page="inventory"><span class="nav-icon">📋</span> Инвентаризация</a>
+      <a href="#" data-page="tasks"><span class="nav-icon">✅</span> Задачи</a>
+      <a href="#" data-page="employees"><span class="nav-icon">👥</span> Сотрудники</a>
+      <a href="#" data-page="fines"><span class="nav-icon">⚠️</span> Штрафы</a>
+      <a href="#" data-page="labels"><span class="nav-icon">🏷️</span> Этикетки</a>
+      <a href="#" data-page="map"><span class="nav-icon">🗺️</span> Карта склада</a>
+      <a href="#" data-page="integrations"><span class="nav-icon">🔗</span> Интеграции</a>
+      <a href="#" data-page="settings"><span class="nav-icon">⚙️</span> Настройки</a>
     </nav>
-    <div class="user">
-      <div class="avatar" id="u-av">👤</div>
-      <div class="info"><div class="name" id="u-name">Админ</div><div class="role" id="u-role">Администратор</div></div>
-      <button class="btn d sm" onclick="Auth.logout()" title="Выйти">🚪</button>
-    </div>
-  </div>
-  <div class="main" id="main">
-    <div class="topbar">
-      <h1 id="page-title">Дашборд</h1>
-      <div class="actions">
-        <button class="theme-btn" onclick="UI.theme()" title="День/Ночь">🌓</button>
+    <div class="user-box">
+      <img id="user-avatar" src="" alt="">
+      <div class="info">
+        <div class="name" id="user-name">Админ</div>
+        <div class="role" id="user-role">Администратор</div>
       </div>
+      <button class="btn btn-sm btn-danger" onclick="doLogout()" title="Выйти">🚪</button>
     </div>
-    <div id="content" class="fade"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+    <!-- Dynamic content loaded here -->
   </div>
 </div>
 
-<div class="modal" id="mdl">
-  <div class="box">
-    <div class="hd"><h3 id="mdl-t">Заголовок</h3><button class="close" onclick="UI.closeMdl()">✕</button></div>
-    <div class="bd" id="mdl-b"></div>
-    <div class="ft" id="mdl-f"></div>
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Заголовок</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- LABELS PRINT AREA (hidden, used for printing) -->
 <div id="print-area" style="display:none"></div>
 
 <script>
-// === MODULE: STORAGE ===
+// ==========================================
+// ХРАНИЛИЩЕ ДАННЫХ (localStorage persistence)
+// ==========================================
 const DB = {
-  _p: 'ff_',
-  _mem: {},
-  get(k) { try { const v=localStorage.getItem(this._p+k); return v?JSON.parse(v):this._mem[k]??null; } catch(e){ return this._mem[k]??null; } },
-  set(k,v) { try { localStorage.setItem(this._p+k, JSON.stringify(v)); } catch(e) { this._mem[k]=v; } },
+  get(key) { try { return JSON.parse(localStorage.getItem('ff_'+key)) || null; } catch { return null; } },
+  set(key, val) { localStorage.setItem('ff_'+key, JSON.stringify(val)); },
   init() {
-    if(!this.get('users')) this.set('users', [{id:1,login:'admin',pass:'admin123',name:'Администратор',role:'admin',rate:500}]);
-    if(!this.get('products')) this.set('products',[]);
-    if(!this.get('locations')) this.set('locations',[{id:'A1',zone:'A',name:'Ряд A-1',cap:100,used:0},{id:'A2',zone:'A',name:'Ряд A-2',cap:100,used:0},{id:'B1',zone:'B',name:'Ряд B-1',cap:150,used:0}]);
-    ['recv','ship','inv','tasks','emp','fines','logs','int'].forEach(k=>{if(!this.get(k))this.set(k,k==='int'?{dd:{e:0,k:''},c1:{e:0,k:''},wms:{e:0,k:''},clients:[]}:[]);});
+    if (!this.get('users')) this.set('users', [
+      {id:1, login:'admin', password:'admin123', name:'Администратор', role:'admin', photo:'', rate:500}
+    ]);
+    if (!this.get('products')) this.set('products', []);
+    if (!this.get('locations')) this.set('locations', [
+      {id:'A1', zone:'A', name:'Ряд A, Место 1', capacity:100, status:'empty'},
+      {id:'A2', zone:'A', name:'Ряд A, Место 2', capacity:100, status:'empty'},
+      {id:'B1', zone:'B', name:'Ряд B, Место 1', capacity:150, status:'empty'},
+      {id:'B2', zone:'B', name:'Ряд B, Место 2', capacity:150, status:'empty'},
+      {id:'C1', zone:'C', name:'Ряд C, Место 1', capacity:80, status:'empty'},
+      {id:'C2', zone:'C', name:'Ряд C, Место 2', capacity:80, status:'empty'},
+    ]);
+    if (!this.get('receiving')) this.set('receiving', []);
+    if (!this.get('shipping')) this.set('shipping', []);
+    if (!this.get('inventory')) this.set('inventory', []);
+    if (!this.get('tasks')) this.set('tasks', []);
+    if (!this.get('employees')) this.set('employees', []);
+    if (!this.get('fines')) this.set('fines', []);
+    if (!this.get('logs')) this.set('logs', []);
+    if (!this.get('integrations')) this.set('integrations', {diadoc:{enabled:false,key:''}, '1c':{enabled:false,key:''}, wms:{enabled:false,key:''}, clients:[]});
   },
-  expAll(){ return JSON.stringify({users:this.get('users'),products:this.get('products'),locations:this.get('locations'),recv:this.get('recv'),ship:this.get('ship'),inv:this.get('inv'),tasks:this.get('tasks'),emp:this.get('emp'),fines:this.get('fines'),int:this.get('int')},null,2); },
-  impAll(j){ try{const d=JSON.parse(j);Object.keys(d).forEach(k=>this.set(k,d[k]));return true;}catch{return false;} },
-  log(a,d){ const l=this.get('logs')||[]; l.unshift({id:Date.now(),t:new Date().toISOString(),a,d,u:App.user?.name||'sys'}); if(l.length>2000)l.length=2000; this.set('logs',l); },
-  id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-};
-
-// === MODULE: AUTH ===
-const Auth = {
-  login(){
-    const l=document.getElementById('u-login').value.trim(), p=document.getElementById('u-pass').value.trim();
-    const u=(DB.get('users')||[]).find(x=>x.login===l&&x.pass===p);
-    if(u){ App.user=u; sessionStorage.setItem('ff_sid',u.id); document.getElementById('login').style.display='none'; document.getElementById('app').style.display='block'; UI.setUser(u); UI.nav('dash'); DB.log('Вход',u.name); UI.toast('Успешный вход','ok'); }
-    else { const e=document.getElementById('login-err'); e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
+  exportAll() {
+    const data = {};
+    ['users','products','locations','receiving','shipping','inventory','tasks','employees','fines','logs','integrations'].forEach(k => {
+      data[k] = this.get(k);
+    });
+    return JSON.stringify(data, null, 2);
   },
-  logout(){ DB.log('Выход',App.user?.name); sessionStorage.removeItem('ff_sid'); App.user=null; document.getElementById('app').style.display='none'; document.getElementById('login').style.display='flex'; },
-  reset(){ try{localStorage.clear();}catch{} Object.keys(DB._mem).forEach(k=>delete DB._mem[k]); DB.init(); document.getElementById('u-login').value='admin'; document.getElementById('u-pass').value='admin123'; document.getElementById('login-err').style.display='none'; UI.toast('Данные сброшены. Нажмите Войти','ok'); },
-  check(){ const sid=sessionStorage.getItem('ff_sid'); if(sid){ const u=(DB.get('users')||[]).find(x=>x.id==sid); if(u){ App.user=u; document.getElementById('login').style.display='none'; document.getElementById('app').style.display='block'; UI.setUser(u); UI.nav('dash'); return; } } document.getElementById('login').style.display='flex'; }
+  importAll(json) {
+    try {
+      const data = JSON.parse(json);
+      Object.keys(data).forEach(k => this.set(k, data[k]));
+      return true;
+    } catch { return false; }
+  },
+  addLog(action, details) {
+    const logs = this.get('logs') || [];
+    logs.unshift({id:Date.now(), date:new Date().toISOString(), action, details, user:currentUser?.name||'system'});
+    if (logs.length > 5000) logs.length = 5000;
+    this.set('logs', logs);
+  },
+  genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 };
 
-// === MODULE: UI ===
-const UI = {
-  theme(){ const h=document.documentElement, d=h.dataset.theme==='dark'; h.dataset.theme=d?'light':'dark'; try{localStorage.setItem('ff_th',d?'light':'dark');}catch{} },
-  toast(m,t='ok'){ const el=document.getElementById('toast'); el.textContent=m; el.className=`show ${t}`; setTimeout(()=>el.className='',3000); },
-  setUser(u){ document.getElementById('u-name').textContent=u.name; document.getElementById('u-role').textContent=u.role==='admin'?'Администратор':'Сотрудник'; document.getElementById('u-av').textContent=u.name[0].toUpperCase(); },
-  openMdl(t,b,f){ document.getElementById('mdl-t').textContent=t; document.getElementById('mdl-b').innerHTML=b; document.getElementById('mdl-f').innerHTML=f||'<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>'; document.getElementById('mdl').classList.add('show'); },
-  closeMdl(){ document.getElementById('mdl').classList.remove('show'); },
-  badge(s){ const m={new:'b-i',progress:'b-w',done:'b-s',cancelled:'b-d',recv:'b-s',ship:'b-i',pending:'b-w',counting:'b-w',counted:'b-s'}; return `<span class="badge ${m[s]||'b-i'}">${s||'—'}</span>`; },
-  photo(id,val){ return `<div class="photo-box" onclick="document.getElementById('${id}').click()">${val?`<img src="${val}" id="${id}-p">`:`<span id="${id}-p">📷<br>Фото</span>`}<input type="file" id="${id}" accept="image/*" onchange="UI.preview(this,'${id}-p')"></div>`; },
-  preview(inp,prev){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const el=document.getElementById(prev); if(el.tagName==='IMG')el.src=e.target.result; else el.outerHTML=`<img src="${e.target.result}" id="${prev}">`; }; r.readAsDataURL(f); },
-  fileBase(f){ return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);}); },
-  nav(p){ document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.p===p)); document.getElementById('page-title').textContent={dash:'Дашборд',wh:'Склад',recv:'Приемка',ship:'Отгрузка',inv:'Инвентаризация',tasks:'Задачи',emp:'Сотрудники',fines:'Штрафы',lbl:'Этикетки',map:'Карта склада',int:'Интеграции',set:'Настройки'}[p]; Pages[p](); }
-};
+// ==========================================
+// АВТОРИЗАЦИЯ
+// ==========================================
+let currentUser = null;
 
-// === MODULE: PAGES ===
-const Pages = {
-  dash(){ const p=DB.get('products')||[], r=DB.get('recv')||[], s=DB.get('ship')||[], t=DB.get('tasks')||[], e=DB.get('emp')||[], f=DB.get('fines')||[]; 
-    document.getElementById('content').innerHTML=`
-    <div class="stats fade">
-      <div class="stat"><div class="lbl">Товаров на складе</div><div class="val">${p.reduce((a,x)=>a+x.qty,0)}</div></div>
-      <div class="stat"><div class="lbl">Ожидает приемки</div><div class="val">${r.filter(x=>x.s!=='recv').length}</div></div>
-      <div class="stat"><div class="lbl">Ожидает отгрузки</div><div class="val">${s.filter(x=>x.s!=='ship').length}</div></div>
-      <div class="stat"><div class="lbl">Активных задач</div><div class="val">${t.filter(x=>x.s!=='done').length}</div></div>
-      <div class="stat"><div class="lbl">Сотрудников онлайн</div><div class="val">${e.filter(x=>x.act).length}</div></div>
-      <div class="stat"><div class="lbl">Сумма штрафов</div><div class="val">${f.reduce((a,x)=>a+(x.am||0),0).toLocaleString()} ₽</div></div>
+function doLogin() {
+  const login = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const users = DB.get('users') || [];
+  const user = users.find(u => u.login === login && u.password === pass);
+  if (user) {
+    currentUser = user;
+    sessionStorage.setItem('ff_session', user.id);
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-name').textContent = user.name;
+    document.getElementById('user-role').textContent = user.role === 'admin' ? 'Администратор' : 'Сотрудник';
+    if (user.photo) document.getElementById('user-avatar').src = user.photo;
+    navigateTo('dashboard');
+    DB.addLog('login', `Вход: ${user.name}`);
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    setTimeout(() => document.getElementById('login-error').style.display = 'none', 3000);
+  }
+}
+
+function doLogout() {
+  DB.addLog('logout', `Выход: ${currentUser?.name}`);
+  currentUser = null;
+  sessionStorage.removeItem('ff_session');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+function checkSession() {
+  const sid = sessionStorage.getItem('ff_session');
+  if (sid) {
+    const users = DB.get('users') || [];
+    const user = users.find(u => u.id == sid);
+    if (user) {
+      currentUser = user;
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-role').textContent = user.role === 'admin' ? 'Администратор' : 'Сотрудник';
+      if (user.photo) document.getElementById('user-avatar').src = user.photo;
+      navigateTo('dashboard');
+      return;
+    }
+  }
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+// ==========================================
+// НАВИГАЦИЯ
+// ==========================================
+function navigateTo(page) {
+  document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
+  const link = document.querySelector(`#main-nav a[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  const renderers = {
+    dashboard: renderDashboard,
+    warehouse: renderWarehouse,
+    receiving: renderReceiving,
+    shipping: renderShipping,
+    inventory: renderInventory,
+    tasks: renderTasks,
+    employees: renderEmployees,
+    fines: renderFines,
+    labels: renderLabels,
+    map: renderMap,
+    integrations: renderIntegrations,
+    settings: renderSettings
+  };
+  if (renderers[page]) renderers[page]();
+  window.scrollTo(0,0);
+}
+
+document.querySelectorAll('#main-nav a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    navigateTo(a.dataset.page);
+    if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+  });
+});
+
+// ==========================================
+// ТЕМА (День/Ночь)
+// ==========================================
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('ff_theme', isDark ? 'light' : 'dark');
+}
+
+function loadTheme() {
+  const t = localStorage.getItem('ff_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+}
+
+// ==========================================
+// МОДАЛЬНОЕ ОКНО
+// ==========================================
+function openModal(title, bodyHtml, footerHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-footer').innerHTML = footerHtml || '';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ==========================================
+// УТИЛИТЫ
+// ==========================================
+function formatDate(d) { return d ? new Date(d).toLocaleString('ru') : '—'; }
+function formatMoney(n) { return Number(n||0).toLocaleString('ru') + ' ₽'; }
+function getStatusBadge(s) {
+  const map = {
+    'new':'<span class="badge badge-info">Новый</span>',
+    'progress':'<span class="badge badge-warning">В работе</span>',
+    'done':'<span class="badge badge-success">Выполнен</span>',
+    'cancelled':'<span class="badge badge-danger">Отменён</span>',
+    'received':'<span class="badge badge-success">Принят</span>',
+    'shipped':'<span class="badge badge-info">Отгружен</span>',
+    'pending':'<span class="badge badge-warning">Ожидание</span>',
+    'counting':'<span class="badge badge-warning">Подсчёт</span>',
+    'counted':'<span class="badge badge-success">Посчитан</span>'
+  };
+  return map[s] || s;
+}
+function photoInputHTML(id, currentPhoto) {
+  return `<div class="photo-upload" onclick="document.getElementById('${id}').click()">
+    ${currentPhoto ? `<img src="${currentPhoto}" id="${id}-preview">` : `<div class="placeholder" id="${id}-preview">📷 Фото</div>`}
+    <input type="file" id="${id}" accept="image/*" onchange="previewPhoto(this,'${id}-preview')">
+  </div>`;
+}
+function previewPhoto(input, previewId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const el = document.getElementById(previewId);
+    if (el.tagName === 'IMG') el.src = e.target.result;
+    else el.outerHTML = `<img src="${e.target.result}" id="${previewId}">`;
+  };
+  reader.readAsDataURL(file);
+}
+function fileToBase64(file) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+// ==========================================
+// QR CODE GENERATOR (simple implementation)
+// ==========================================
+function generateQR(text, containerId, size=150) {
+  // Simple QR-like visual (for production use qrcode.js library)
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  // Create a simple visual representation
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#000';
+  // Generate pattern based on text hash
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+  const modules = 21;
+  const cellSize = size / modules;
+  // Position patterns (corners)
+  function drawFinder(x, y) {
+    for (let r=0; r<7; r++) for (let c=0; c<7; c++) {
+      if (r===0||r===6||c===0||c===6||(r>=2&&r<=4&&c>=2&&c<=4))
+        ctx.fillRect((x+c)*cellSize, (y+r)*cellSize, cellSize, cellSize);
+    }
+  }
+  drawFinder(0, 0);
+  drawFinder(modules-7, 0);
+  drawFinder(0, modules-7);
+  // Data modules
+  let seed = Math.abs(hash);
+  for (let r=8; r<modules-8; r++) {
+    for (let c=8; c<modules; c++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      if (seed % 3 !== 0) ctx.fillRect(c*cellSize, r*cellSize, cellSize, cellSize);
+    }
+  }
+  for (let r=0; r<modules-8; r++) {
+    for (let c=8; c<modules-8; c++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      if (seed % 3 !== 0) ctx.fillRect(c*cellSize, r*cellSize, cellSize, cellSize);
+    }
+  }
+  container.innerHTML = '';
+  container.appendChild(canvas);
+}
+
+// ==========================================
+// BARCODE GENERATOR (Code128 simplified)
+// ==========================================
+function generateBarcode(text, containerId, width=200, height=60) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height + 20;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  // Simplified barcode pattern
+  const barWidth = 1;
+  let x = 10;
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+  let seed = Math.abs(hash);
+  for (let i = 0; i < text.length * 5 + 20; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const w = (seed % 3) + 1;
+    if (i % 2 === 0) ctx.fillRect(x, 5, w * barWidth, height);
+    x += w * barWidth;
+    if (x > width - 10) break;
+  }
+  // Start/End bars
+  ctx.fillRect(5, 5, 2*barWidth, height);
+  ctx.fillRect(7*barWidth, 5, 1*barWidth, height);
+  ctx.fillRect(width-12, 5, 1*barWidth, height);
+  ctx.fillRect(width-8, 5, 2*barWidth, height);
+  // Text
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, width/2, height + 16);
+  container.innerHTML = '';
+  container.appendChild(canvas);
+}
+
+// ==========================================
+// ЭКСПОРТ/ИМПОРТ EXCEL (CSV-based)
+// ==========================================
+function exportToCSV(data, headers, filename) {
+  let csv = headers.join(';') + '\n';
+  data.forEach(row => {
+    csv += headers.map(h => {
+      const val = row[h] ?? '';
+      return typeof val === 'string' && val.includes(';') ? `"${val}"` : val;
+    }).join(';') + '\n';
+  });
+  const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importCSV(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(';').map(h => h.replace(/"/g,'').trim());
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const vals = lines[i].split(';').map(v => v.replace(/"/g,'').trim());
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = vals[idx] || '');
+        data.push(obj);
+      }
+      resolve({headers, data});
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+// ==========================================
+// СТРАНИЦА: ДАШБОРД
+// ==========================================
+function renderDashboard() {
+  const products = DB.get('products') || [];
+  const receiving = DB.get('receiving') || [];
+  const shipping = DB.get('shipping') || [];
+  const tasks = DB.get('tasks') || [];
+  const employees = DB.get('employees') || [];
+  const fines = DB.get('fines') || [];
+  const totalFines = fines.reduce((s,f) => s + (f.amount||0), 0);
+
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>📊 Дашборд</h1>
+      <div class="topbar-actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="День/Ночь">🌓</button>
+        <button class="btn btn-outline" onclick="exportAllData()">📥 Экспорт</button>
+        <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">📤 Импорт</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllData(this)">
+      </div>
     </div>
-    <div class="panel fade"><div class="head"><h3>📋 Последние действия</h3></div><table><thead><tr><th>Время</th><th>Действие</th><th>Пользователь</th></tr></thead><tbody>${(DB.get('logs')||[]).slice(0,10).map(l=>`<tr><td>${new Date(l.t).toLocaleString()}</td><td>${l.a}</td><td>${l.u}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text2)">Нет записей</td></tr>'}</tbody></table></div>`; },
-  
-  wh(){ const p=DB.get('products')||[], l=DB.get('locations')||[];
-    document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.whMdl()">➕ Добавить</button><button class="btn o" onclick="Pages.whExp()">📊 Экспорт CSV</button><button class="btn o" onclick="document.getElementById('wh-csv').click()">📤 Импорт</button><input type="file" id="wh-csv" style="display:none" accept=".csv" onchange="Pages.whImp(this)"></div></div>
-    <div class="panel fade"><div class="head"><h3>Товары (${p.length})</h3><input type="text" placeholder="Поиск..." oninput="this.closest('.panel').querySelectorAll('tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;"></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Фото</th><th>ШК</th><th>Название</th><th>Арт</th><th>Кат</th><th>Кол-во</th><th>Место</th><th>Годен до</th><th>Цена</th><th></th></tr></thead><tbody>
-    ${p.map(x=>`<tr><td>${x.ph?`<img src="${x.ph}" style="width:32px;height:32px;border-radius:6px;object-fit:cover">`:'📦'}</td><td>${x.bc||'—'}</td><td>${x.nm}</td><td>${x.art||'—'}</td><td>${x.cat||'—'}</td><td>${x.qty}</td><td><span class="badge b-i">${x.loc||'—'}</span></td><td>${x.exp||'—'}</td><td>${x.prc}₽</td><td><button class="btn o sm" onclick="Pages.whMdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('products','${x.id}','wh')">🗑️</button><button class="btn o sm" onclick="Pages.lblPrint('${x.id}')">🏷️</button></td></tr>`).join('')}
-    ${p.length===0?'<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text2)">Нет товаров. Добавьте или импортируйте CSV.</td></tr>':''}
-    </tbody></table></div></div>`; },
-  whMdl(id){ const p=DB.get('products')||[], x=id?p.find(v=>v.id===id):null, l=DB.get('locations')||[]; UI.openMdl(x?'Редактировать':'Новый товар',`<div class="form">${UI.photo('w-ph',x?.ph||'')}<div class="row"><div><label>Штрих-код</label><input id="w-bc" value="${x?.bc||''}"></div><div><label>Артикул</label><input id="w-art" value="${x?.art||''}"></div></div><label>Название</label><input id="w-nm" value="${x?.nm||''}"><div class="row"><div><label>Категория</label><input id="w-cat" value="${x?.cat||''}"></div><div><label>Количество</label><input type="number" id="w-qty" value="${x?.qty||0}" min="0"></div></div><div class="row"><div><label>Место</label><select id="w-loc"><option value="">—</option>${l.map(v=>`<option value="${v.id}" ${x?.loc===v.id?'selected':''}>${v.id} ${v.nm}</option>`).join('')}</select></div><div><label>Срок годности</label><input type="date" id="w-exp" value="${x?.exp||''}"></div></div><label>Цена (₽)</label><input type="number" id="w-prc" value="${x?.prc||0}" min="0"><label>Документы/Заметки</label><textarea id="w-doc" rows="2">${x?.doc||''}</textarea></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.whSave('${id||''}')">💾 Сохранить</button>`); },
-  async whSave(id){ const p=DB.get('products')||[], phInp=document.getElementById('w-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=p.find(v=>v.id===id)?.ph||'';
-    const d={nm:document.getElementById('w-nm').value,bc:document.getElementById('w-bc').value,art:document.getElementById('w-art').value,cat:document.getElementById('w-cat').value,qty:+document.getElementById('w-qty').value||0,loc:document.getElementById('w-loc').value,exp:document.getElementById('w-exp').value,prc:+document.getElementById('w-prc').value||0,doc:document.getElementById('w-doc').value,ph};
-    if(!d.nm)return UI.toast('Введите название','err');
-    if(id){const i=p.findIndex(v=>v.id===id);if(i>=0)Object.assign(p[i],d);}else{d.id=DB.id();d.ts=Date.now();p.push(d);}
-    DB.set('products',p); UI.closeMdl(); Pages.wh(); DB.log(id?'Товар ред.':'Товар доб.',d.nm); },
-  whExp(){ const p=DB.get('products')||[], h=['bc','nm','art','cat','qty','loc','exp','prc']; let c=h.join(';')+'\n'+p.map(x=>h.map(k=>x[k]??'').join(';')).join('\n'); UI.dl(new Blob(['\ufeff'+c],{type:'text/csv'}),'Товары.csv'); },
-  whImp(inp){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const ls=e.target.result.split('\n').filter(l=>l.trim()), hs=ls[0].split(';').map(h=>h.trim()), dt=ls.slice(1).map(l=>{const v=l.split(';');return{bc:v[0]||'',nm:v[1]||'Без имени',art:v[2]||'',cat:v[3]||'',qty:+v[4]||0,loc:v[5]||'',exp:v[6]||'',prc:+v[7]||0};});
-    const p=DB.get('products')||[]; dt.forEach(v=>{v.id=DB.id();v.ts=Date.now();v.ph='';p.push(v);}); DB.set('products',p); Pages.wh(); UI.toast(`Импортировано ${dt.length} товаров`,'ok'); DB.log('Импорт товаров',`${dt.length} шт`); }; r.readAsText(f,'UTF-8'); },
-  
-  recv(){ const r=DB.get('recv')||[]; Pages._table('recv','Приемка',r,[['Дата','d'],['Поставщик','sup'],['ШК','bc'],['Товар','nm'],['Кол-во','qty'],['Статус','s'],['Коммент','cm']],['bc','qty','s','recv']); },
-  ship(){ const s=DB.get('ship')||[]; Pages._table('ship','Отгрузка',s,[['Дата','d'],['Клиент','cl'],['ШК','bc'],['Товар','nm'],['Кол-во','qty'],['Статус','s'],['Коммент','cm']],['bc','qty','s','ship']); },
-  _table(key,title,data,cols,acts){ 
-    document.getElementById('content').innerHTML=`<div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.${key}Mdl()">➕ Добавить</button><button class="btn o" onclick="Pages.exp('${key}')">📊 Экспорт</button></div></div>
-    <div class="panel fade"><div class="head"><h3>${title} (${data.length})</h3></div><div style="overflow-x:auto"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}<th>Действия</th></tr></thead><tbody>
-    ${data.map(x=>`<tr>${cols.map(c=>`<td>${c[1]==='s'?UI.badge(x.s):(x[c[1]]||'—')}</td>`).join('')}<td><button class="btn o sm" onclick="Pages.${key}Mdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('${key}','${x.id}','${key}')">🗑️</button>${acts.includes('recv')&&x.s!=='recv'?`<button class="btn g sm" onclick="Pages.upd('${key}','${x.id}','recv')">✅</button>`:''}${acts.includes('ship')&&x.s!=='ship'?`<button class="btn g sm" onclick="Pages.upd('${key}','${x.id}','ship')">🚚</button>`:''}</td></tr>`).join('')}
-    ${data.length===0?`<tr><td colspan="${cols.length+1}" style="text-align:center;padding:30px;color:var(--text2)">Нет записей</td></tr>`:''}
-    </tbody></table></div></div>`; },
-  recvMdl(id){ Pages._docMdl('recv','Приемка',id,['sup','bc','nm','qty','cm']); },
-  shipMdl(id){ Pages._docMdl('ship','Отгрузка',id,['cl','bc','nm','qty','cm']); },
-  _docMdl(key,title,id,fields){ const data=DB.get(key)||[], x=id?data.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':`Новая ${title}`,`<div class="form">${UI.photo(key+'-ph',x?.ph||'')}
-    ${fields.includes('sup')?`<label>Поставщик</label><input id="${key}-sup" value="${x?.sup||''}">`:''}${fields.includes('cl')?`<label>Клиент</label><input id="${key}-cl" value="${x?.cl||''}">`:''}
-    <label>Штрих-код</label><input id="${key}-bc" value="${x?.bc||''}"><label>Название</label><input id="${key}-nm" value="${x?.nm||''}">
-    <label>Количество</label><input type="number" id="${key}-qty" value="${x?.qty||1}" min="1"><label>Комментарий</label><textarea id="${key}-cm" rows="2">${x?.cm||''}</textarea></div>`,
-    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages._saveDoc('${key}','${id||''}')">💾 Сохранить</button>`); },
-  async _saveDoc(key,id){ const data=DB.get(key)||[], phInp=document.getElementById(key+'-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=data.find(v=>v.id===id)?.ph||'';
-    const d={sup:document.getElementById(key+'-sup')?.value||'',cl:document.getElementById(key+'-cl')?.value||'',bc:document.getElementById(key+'-bc').value,nm:document.getElementById(key+'-nm').value,qty:+document.getElementById(key+'-qty').value||1,cm:document.getElementById(key+'-cm').value,ph,s:id?'data[id].s':'new'};
-    if(!d.nm)return UI.toast('Введите название','err');
-    if(id){const i=data.findIndex(v=>v.id===id);if(i>=0)Object.assign(data[i],d);}else{d.id=DB.id();d.d=Date.now();d.s='new';data.push(d);}
-    DB.set(key,data); UI.closeMdl(); Pages[key](); DB.log(`Документ ${key}`,(id?'Ред.':'Нов.')+' '+d.nm); },
-  upd(key,id,s){ const data=DB.get(key)||[], x=data.find(v=>v.id===id); if(!x)return; x.s=s; DB.set(key,data); Pages[key](); DB.log(`Статус ${key}`,`${x.nm} → ${s}`); 
-    if(key==='recv'&&s==='recv'){ const p=DB.get('products')||[], ex=p.find(v=>v.bc===x.bc); if(ex)ex.qty+=x.qty; else{p.push({id:DB.id(),bc:x.bc,nm:x.nm,art:x.bc,cat:'',qty:x.qty,loc:'',exp:'',prc:0,ph:'',doc:'',ts:Date.now()});} DB.set('products',p); } },
-  
-  inv(){ const i=DB.get('inv')||[]; Pages._table('inv','Инвентаризация',i,[['Дата','d'],['ШК','bc'],['Товар','nm'],['Ожидалось','exp'],['Факт','act'],['Разница','dif'],['Статус','s']],['bc','qty','s','inv']); },
-  invMdl(id){ const i=DB.get('inv')||[], p=DB.get('products')||[], x=id?i.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Новая инвентаризация',`<div class="form"><label>Товар</label><select id="inv-prd" onchange="document.getElementById('inv-exp').value=this.selectedOptions[0].dataset.qty||0;document.getElementById('inv-bc').value=this.selectedOptions[0].dataset.bc||'';document.getElementById('inv-nm').value=this.selectedOptions[0].text"><option value="">—</option>${p.map(v=>`<option value="${v.id}" data-qty="${v.qty}" data-bc="${v.bc}">${v.nm}</option>`).join('')}</select>
-    <div class="row"><div><label>ШК</label><input id="inv-bc" value="${x?.bc||''}"></div><div><label>Название</label><input id="inv-nm" value="${x?.nm||''}"></div></div>
-    <div class="row"><div><label>Ожидалось</label><input type="number" id="inv-exp" value="${x?.exp||0}"></div><div><label>Факт</label><input type="number" id="inv-act" value="${x?.act||0}"></div></div></div>`,
-    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.invSave('${id||''}')">💾 Сохранить</button>`); },
-  invSave(id){ const i=DB.get('inv')||[], exp=+document.getElementById('inv-exp').value||0, act=+document.getElementById('inv-act').value||0, d={bc:document.getElementById('inv-bc').value,nm:document.getElementById('inv-nm').value,exp,act,dif:act-exp,s:'counted'};
-    if(!d.nm)return UI.toast('Укажите товар','err');
-    if(id){const idx=i.findIndex(v=>v.id===id);if(idx>=0)Object.assign(i[idx],d);}else{d.id=DB.id();d.d=Date.now();i.push(d);}
-    DB.set('inv',i); UI.closeMdl(); Pages.inv(); DB.log('Инвентаризация',`${d.nm} (${d.dif>0?'+':''}${d.dif})`); },
-  invPrint(){ let h=`<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:6px;font-size:12px}</style></head><body><h2>Отчет инвентаризации</h2><p>Дата: ${new Date().toLocaleString()}</p><table><tr><th>Дата</th><th>ШК</th><th>Товар</th><th>Ожидалось</th><th>Факт</th><th>Разница</th></tr>`+(DB.get('inv')||[]).map(v=>`<tr><td>${new Date(v.d).toLocaleString()}</td><td>${v.bc}</td><td>${v.nm}</td><td>${v.exp}</td><td>${v.act}</td><td style="color:${v.dif===0?'green':'red'}">${v.dif>0?'+':''}${v.dif}</td></tr>`).join('')+`</table></body></html>`; const w=window.open('','_blank'); w.document.write(h); w.document.close(); w.print(); },
-  
-  tasks(){ const t=DB.get('tasks')||[], e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.taskMdl()">➕ Задача</button></div></div>
-    <div class="stats fade"><div class="stat"><div class="lbl">Выполнено</div><div class="val">${t.filter(x=>x.s==='done').length}</div></div><div class="stat"><div class="lbl">В работе</div><div class="val">${t.filter(x=>x.s==='progress').length}</div></div><div class="stat"><div class="lbl">Новые</div><div class="val">${t.filter(x=>x.s==='new').length}</div></div></div>
-    <div class="panel fade"><div class="head"><h3>Задачи (${t.length})</h3></div><table><thead><tr><th>Дата</th><th>Задача</th><th>Сотрудник</th><th>Приоритет</th><th>Статус</th><th></th></tr></thead><tbody>
-    ${t.map(x=>{const em=e.find(v=>v.id===x.emp);return`<tr><td>${new Date(x.d).toLocaleString()}</td><td>${x.nm}</td><td>${em?em.nm:'—'}</td><td><span class="badge ${x.pr==='high'?'b-d':x.pr==='med'?'b-w':'b-i'}">${x.pr==='high'?'Высокий':x.pr==='med'?'Средний':'Низкий'}</span></td><td>${UI.badge(x.s)}</td><td><button class="btn o sm" onclick="Pages.taskMdl('${x.id}')">✏️</button><button class="btn g sm" onclick="Pages.taskUpd('${x.id}','done')" ${x.s==='done'?'disabled':''}>✅</button><button class="btn d sm" onclick="Pages.del('tasks','${x.id}','tasks')">🗑️</button></td></tr>`}).join('')}
-    ${t.length===0?'<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text2)">Нет задач</td></tr>':''}</tbody></table></div>`; },
-  taskMdl(id){ const t=DB.get('tasks')||[], e=DB.get('emp')||[], x=id?t.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Задача',`<div class="form"><label>Название</label><input id="t-nm" value="${x?.nm||''}">
-    <div class="row"><div><label>Сотрудник</label><select id="t-emp">${e.map(v=>`<option value="${v.id}" ${x?.emp===v.id?'selected':''}>${v.nm}</option>`).join('')}</select></div><div><label>Приоритет</label><select id="t-pr"><option value="low" ${x?.pr==='low'?'selected':''}>Низкий</option><option value="med" ${x?.pr==='med'?'selected':''}>Средний</option><option value="high" ${x?.pr==='high'?'selected':''}>Высокий</option></select></div></div>
-    <label>Дата</label><input type="datetime-local" id="t-d" value="${x?new Date(x.d).toISOString().slice(0,16):new Date().toISOString().slice(0,16)}">
-    <label>Статус</label><select id="t-s"><option value="new" ${x?.s==='new'?'selected':''}>Новый</option><option value="progress" ${x?.s==='progress'?'selected':''}>В работе</option><option value="done" ${x?.s==='done'?'selected':''}>Выполнен</option><option value="cancel" ${x?.s==='cancel'?'selected':''}>Отменён</option></select></div>`,
-    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.taskSave('${id||''}')">💾 Сохранить</button>`); },
-  taskSave(id){ const t=DB.get('tasks')||[], d={nm:document.getElementById('t-nm').value,emp:document.getElementById('t-emp').value,pr:document.getElementById('t-pr').value,d:new Date(document.getElementById('t-d').value).getTime(),s:document.getElementById('t-s').value};
-    if(!d.nm)return UI.toast('Введите название','err');
-    if(id){const i=t.findIndex(v=>v.id===id);if(i>=0)Object.assign(t[i],d);}else{d.id=DB.id();d.ts=Date.now();t.push(d);}
-    DB.set('tasks',t); UI.closeMdl(); Pages.tasks(); },
-  taskUpd(id,s){ const t=DB.get('tasks')||[], x=t.find(v=>v.id===id); if(x){x.s=s;DB.set('tasks',t);Pages.tasks();} },
-
-  emp(){ const e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.empMdl()">➕ Сотрудник</button></div></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px" class="fade">
-    ${e.map(x=>`<div class="stat"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${x.ph?`<img src="${x.ph}" style="width:50px;height:50px;border-radius:50%;object-fit:cover">`:`<div style="width:50px;height:50px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:1.2rem">👤</div>`}<div><div style="font-weight:600">${x.nm}</div><div style="font-size:.85rem;color:var(--text2)">${x.pos||'—'}</div></div></div>
-    <div style="font-size:.85rem;color:var(--text2);margin-bottom:8px">📱 ${x.tel||'—'} | 💰 ${x.rate||300}₽/ч</div>
-    <div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-align:center" id="tm-${x.id}">${Pages._tm(x)}</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button class="btn ${x.act?'d':'g'} sm" onclick="Pages.empToggle('${x.id}')">${x.act?'⏹ Стоп':'▶ Старт'}</button><button class="btn o sm" onclick="Pages.empMdl('${x.id}')">✏️</button><button class="btn o sm" onclick="Pages.empQR('${x.id}')">📱 QR</button><button class="btn d sm" onclick="Pages.del('emp','${x.id}','emp')">🗑️</button></div></div>`).join('')}
-    ${e.length===0?'<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text2)">Нет сотрудников</div>':''}</div>`; },
-  _tm(x){ if(!x.act)return '00:00:00'; const s=(x.tot||0)+Math.floor((Date.now()-x.st)/1000); return new Date(s*1000).toISOString().substr(11,8); },
-  empToggle(id){ const e=DB.get('emp')||[], x=e.find(v=>v.id===id); if(!x)return; if(x.act){x.tot=(x.tot||0)+Math.floor((Date.now()-x.st)/1000);x.act=false;}else{x.st=Date.now();x.act=true;} DB.set('emp',e); Pages.emp(); DB.log('Сотрудник',`${x.nm} ${x.act?'начал':'закончил'} работу`); },
-  empMdl(id){ const e=DB.get('emp')||[], x=id?e.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Сотрудник',`<div class="form"><div style="display:flex;gap:16px;align-items:start">${UI.photo('e-ph',x?.ph||'')}<div style="flex:1"><div class="row"><div><label>ФИО</label><input id="e-nm" value="${x?.nm||''}"></div><div><label>Должность</label><input id="e-pos" value="${x?.pos||''}"></div></div><div class="row"><div><label>Телефон</label><input id="e-tel" value="${x?.tel||''}"></div><div><label>Ставка/ч (₽)</label><input type="number" id="e-rate" value="${x?.rate||300}"></div></div></div></div></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.empSave('${id||''}')">💾 Сохранить</button>`); },
-  async empSave(id){ const e=DB.get('emp')||[], phInp=document.getElementById('e-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=e.find(v=>v.id===id)?.ph||'';
-    const d={nm:document.getElementById('e-nm').value,pos:document.getElementById('e-pos').value,tel:document.getElementById('e-tel').value,rate:+document.getElementById('e-rate').value||300,ph};
-    if(!d.nm)return UI.toast('Введите ФИО','err');
-    if(id){const i=e.findIndex(v=>v.id===id);if(i>=0)Object.assign(e[i],d);}else{d.id=DB.id();d.act=false;d.tot=0;e.push(d);}
-    DB.set('emp',e); UI.closeMdl(); Pages.emp(); },
-  empQR(id){ const e=DB.get('emp')||[], x=e.find(v=>v.id===id); if(!x)return; UI.openMdl(`QR: ${x.nm}`,`<div style="text-align:center"><div id="qr-box" style="margin:10px auto"></div><p style="font-family:monospace;font-size:.9rem;color:var(--text2)">ID: ${x.id}</p><button class="btn p" style="margin-top:12px" onclick="Pages.qrPrint('${x.nm}','${x.id}')">🖨️ Печать QR</button></div>`,`<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>`); Pages._qr(x.id,'qr-box'); },
-  _qr(txt,box){ const c=document.getElementById(box); if(!c)return; const s=150, cv=document.createElement('canvas'); cv.width=cv.height=s; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,s,s); g.fillStyle='#000'; const m=21, cs=s/m; for(let i=0;i<m;i++)for(let j=0;j<m;j++){const h=Math.abs((i*j+txt.charCodeAt(0))%3);if(h<2)g.fillRect(i*cs,j*cs,cs,cs);} c.innerHTML=''; c.appendChild(cv); },
-  qrPrint(nm,id){ const w=window.open('','_blank'); w.document.write(`<html><head><meta charset="utf-8"><style>body{text-align:center;padding:20px;font-family:Arial}h2{margin-bottom:5px}p{color:#666}</style></head><body><h2>${nm}</h2><p>QR-код для учёта рабочего времени</p><div style="width:200px;height:200px;border:2px solid #000;display:inline-flex;align-items:center;justify-content:center;font-size:14px;margin:20px 0">QR: ${id}</div><br><script>window.print();<\/script></body></html>`); w.document.close(); },
-
-  fines(){ const f=DB.get('fines')||[], e=DB.get('emp')||[]; document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.fineMdl()">➕ Штраф</button><button class="btn o" onclick="Pages.exp('fines')">📊 Экспорт</button></div></div>
-    <div class="panel fade" style="margin-bottom:16px"><div style="padding:16px"><h3 style="margin-bottom:8px">📖 Правила</h3><ul style="padding-left:20px;line-height:1.8;color:var(--text2)"><li>✅ Сканируйте QR при начале/окончании работы</li><li>✅ Проверяйте товар при приемке</li><li>✅ Размещайте в назначенные места</li><li>❌ Не оставляйте товары без оформления</li></ul></div></div>
-    <div class="panel fade"><div class="head"><h3>Штрафы (${f.length})</h3></div><table><thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Фото</th><th></th></tr></thead><tbody>
-    ${f.map(x=>{const em=e.find(v=>v.id===x.emp);return`<tr><td>${new Date(x.d).toLocaleString()}</td><td>${em?em.nm:'—'}</td><td>${x.rs||'—'}</td><td style="color:${x.tp==='fine'?'var(--danger)':'var(--success)'};font-weight:600">${x.tp==='fine'?'-':''}${x.am}₽</td><td>${x.fgv?'<span class="badge b-s">Прощён</span>':'<span class="badge b-d">Активен</span>'}</td><td>${x.ph?`<img src="${x.ph}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer" onclick="window.open('${x.ph}')">`:'—'}</td><td>${!x.fgv?`<button class="btn g sm" onclick="Pages.fgv('${x.id}')">🤝</button>`:''}<button class="btn o sm" onclick="Pages.fineMdl('${x.id}')">✏️</button><button class="btn d sm" onclick="Pages.del('fines','${x.id}','fines')">🗑️</button></td></tr>`}).join('')}
-    ${f.length===0?'<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text2)">Нет штрафов</td></tr>':''}</tbody></table></div>`; },
-  fineMdl(id){ const f=DB.get('fines')||[], e=DB.get('emp')||[], x=id?f.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Штраф/Бонус',`<div class="form"><label>Сотрудник</label><select id="fn-emp">${e.map(v=>`<option value="${v.id}" ${x?.emp===v.id?'selected':''}>${v.nm}</option>`).join('')}</select>
-    <div class="row"><div><label>Тип</label><select id="fn-tp"><option value="fine" ${x?.tp==='fine'?'selected':''}>Штраф</option><option value="bonus" ${x?.tp==='bonus'?'selected':''}>Премия</option></select></div><div><label>Сумма</label><input type="number" id="fn-am" value="${x?.am||1000}"></div></div><label>Причина</label><textarea id="fn-rs" rows="2">${x?.rs||''}</textarea>${UI.photo('fn-ph',x?.ph||'')}</div>`,
-    `<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.fnSave('${id||''}')">💾 Сохранить</button>`); },
-  async fnSave(id){ const f=DB.get('fines')||[], phInp=document.getElementById('fn-ph'); let ph=''; if(phInp.files[0])ph=await UI.fileBase(phInp.files[0]); else if(id)ph=f.find(v=>v.id===id)?.ph||'';
-    const d={emp:document.getElementById('fn-emp').value,tp:document.getElementById('fn-tp').value,am:+document.getElementById('fn-am').value||0,rs:document.getElementById('fn-rs').value,ph};
-    if(!d.emp||!d.rs)return UI.toast('Заполните все поля','err');
-    if(id){const i=f.findIndex(v=>v.id===id);if(i>=0)Object.assign(f[i],d);}else{d.id=DB.id();d.d=Date.now();d.fgv=false;f.push(d);}
-    DB.set('fines',f); UI.closeMdl(); Pages.fines(); },
-  fgv(id){ const f=DB.get('fines')||[], x=f.find(v=>v.id===id); if(x){x.fgv=true;DB.set('fines',f);Pages.fines();} },
-
-  lbl(){ const p=DB.get('products')||[]; document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.lblAll()">🖨️ Печать всех</button></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="fade">
-    <div class="panel"><div class="head"><h3>Выбор товаров</h3></div><div style="padding:16px;max-height:400px;overflow-y:auto">${p.map(x=>`<label style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" class="lc" value="${x.id}" data-bc="${x.bc}" data-nm="${x.nm}" data-art="${x.art}" data-exp="${x.exp}" data-kiz="${x.kiz}"> ${x.ph?`<img src="${x.ph}" style="width:28px;height:28px;border-radius:6px;object-fit:cover">`:'📦'} <span style="flex:1">${x.nm}</span></label>`).join('')}</div><div style="padding:16px;border-top:1px solid var(--border)"><label>Копий на товар:</label><input type="number" id="lb-cp" value="1" min="1" style="width:80px;padding:6px;margin:6px 0"><button class="btn p" style="width:100%" onclick="Pages.lblPr()">Печать выбранных</button></div></div>
-    <div class="panel"><div class="head"><h3>Предпросмотр 58×40</h3></div><div style="padding:20px;display:flex;justify-content:center"><div id="lb-prev" class="label-58"></div></div></div></div>`; },
-  lblAll(){ document.querySelectorAll('.lc').forEach(c=>c.checked=true); Pages.lblPr(); },
-  lblPr(){ const cps=document.getElementById('lb-cp').value||1, ar=document.getElementById('print-area'), h=document.querySelectorAll('.lc:checked').map(c=>{let s=''; for(let i=0;i<cps;i++){s+=`<div class="label-58"><div style="text-align:center;font-weight:bold;font-size:10pt;margin-bottom:2mm">${c.dataset.nm}</div><div style="text-align:center;margin:2mm 0"><svg viewBox="0 0 200 60" style="width:50mm;height:15mm">${Pages._svgBar(c.dataset.bc||c.dataset.art||c.dataset.nm)}</svg></div><div style="text-align:center;font-size:8pt;color:#666">Арт: ${c.dataset.art||'—'}</div><div style="text-align:center;font-size:8pt;color:#666">ШК: ${c.dataset.bc||'—'}</div>${c.dataset.kiz?`<div style="text-align:center;font-size:7pt;color:#e74c3c;margin-top:1mm">КИЗ: ${c.dataset.kiz}</div>`:''}${c.dataset.exp?`<div style="text-align:center;font-size:8pt;color:red;font-weight:bold;margin-top:1mm">Годен до: ${c.dataset.exp}</div>`:''}</div>`;}return s;}).join(''); ar.innerHTML=h; ar.style.display='block'; setTimeout(()=>{window.print();setTimeout(()=>ar.style.display='none',500);},300); },
-  lblPrint(id){ document.querySelectorAll('.lc').forEach(c=>c.checked=c.value===id); Pages.lblPr(); },
-  _svgBar(t){ let b='',x=5,h=0; for(let i=0;i<t.length;i++)h=((h<<5)-h)+t.charCodeAt(i); let s=Math.abs(h); for(let i=0;i<t.length*5+20;i++){s=(s*1103515245+12345)&0x7fffffff;const w=(s%3)+1;if(i%2===0)b+=`<rect x="${x}" y="5" width="${w*2}" height="45" fill="black"/>`;x+=w*2;if(x>190)break;} return b+`<text x="100" y="58" text-anchor="middle" font-size="8" font-family="monospace">${t}</text>`; },
-
-  map(){ const l=DB.get('locations')||[], p=DB.get('products')||[]; document.getElementById('content').innerHTML=`
-    <div class="topbar"><div class="actions"><button class="btn p" onclick="Pages.locMdl()">➕ Место</button><button class="btn o" onclick="Pages.map()">🔄 Обновить</button></div></div>
-    <div class="panel fade"><div style="padding:16px"><div style="display:flex;gap:12px;margin-bottom:12px"><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(34,197,94,.2);border:2px solid var(--success)"></div> Свободно</span><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(245,158,11,.2);border:2px solid var(--warning)"></div> Частично</span><span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:14px;border-radius:4px;background:rgba(239,68,68,.2);border:2px solid var(--danger)"></div> Заполнено</span></div>
-    <div class="map-grid">${l.map(x=>{const pr=p.filter(v=>v.loc===x.id),u=pr.reduce((a,v)=>a+v.qty,0),pct=x.cap?Math.min(100,(u/x.cap)*100):0,cl=pct===0?'e':pct>=90?'f':'w';return`<div class="cell ${cl}" onclick="Pages.locDet('${x.id}')" title="${x.nm}: ${u}/${x.cap}"><span style="font-size:.9rem">${x.id}</span><span style="font-size:.65rem;margin-top:2px">${u}/${x.cap}</span><div style="width:80%;height:4px;background:rgba(0,0,0,.1);border-radius:2px;margin-top:4px"><div style="width:${pct}%;height:100%;background:${pct>=90?'var(--danger)':pct>0?'var(--warning)':'var(--success)'};border-radius:2px"></div></div></div>`}).join('')}</div></div></div>`; },
-  locMdl(id){ const l=DB.get('locations')||[], x=id?l.find(v=>v.id===id):null; UI.openMdl(x?'Редактировать':'Место хранения',`<div class="form"><div class="row"><div><label>ID</label><input id="lc-id" value="${x?.id||''}" ${id?'readonly':''}></div><div><label>Зона</label><input id="lc-z" value="${x?.z||''}"></div></div><label>Название</label><input id="lc-nm" value="${x?.nm||''}"><label>Ёмкость</label><input type="number" id="lc-cap" value="${x?.cap||100}"></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.locSave('${id||''}')">💾 Сохранить</button>`); },
-  locSave(id){ const l=DB.get('locations')||[], d={id:document.getElementById('lc-id').value,z:document.getElementById('lc-z').value,nm:document.getElementById('lc-nm').value,cap:+document.getElementById('lc-cap').value||100}; if(!d.id||!d.nm)return UI.toast('Заполните поля','err'); if(id){const i=l.findIndex(v=>v.id===id);if(i>=0)Object.assign(l[i],d);}else{l.push(d);} DB.set('locations',l); UI.closeMdl(); Pages.map(); },
-  locDet(id){ const l=DB.get('locations')||[], p=DB.get('products')||[], x=l.find(v=>v.id===id), pr=p.filter(v=>v.loc===id), u=pr.reduce((a,v)=>a+v.qty,0); UI.openMdl(`📍 ${x?.nm||id}`,`<p style="margin-bottom:10px">Ёмкость: ${x?.cap} шт | Занято: ${u} шт</p><table><thead><tr><th>Товар</th><th>ШК</th><th>Кол-во</th></tr></thead><tbody>${pr.map(v=>`<tr><td>${v.nm}</td><td>${v.bc||'—'}</td><td>${v.qty}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text2)">Свободно</td></tr>'}</tbody></table>`,`<button class="btn o" onclick="UI.closeMdl()">Закрыть</button>`); },
-
-  int(){ const i=DB.get('int')||{dd:{e:0,k:''},c1:{e:0,k:''},wms:{e:0,k:''},clients:[]}; document.getElementById('content').innerHTML=`
-    <div class="topbar"><h1>🔗 Интеграции</h1></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px" class="fade">
-    ${['dd|Диадок','c1|1С','wms|WMS'].map(k=>{const [k,nm]=k.split('|');return`<div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">${nm}</h3><div style="margin-bottom:10px"><label><input type="checkbox" id="i-${k}-e" ${i[k]?.e?'checked':''}> Включить</label></div><div style="margin-bottom:10px"><input type="text" id="i-${k}-k" value="${i[k]?.k||''}" placeholder="API ключ"></div><button class="btn p sm" onclick="Pages.intSave('${k}')">Сохранить</button></div>`}).join('')}
-    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">👥 Клиенты (IP ключи)</h3><div id="cl-list">${(i.clients||[]).map((c,idx)=>`<div style="display:flex;gap:6px;margin-bottom:8px"><input type="text" value="${c.nm||''}" placeholder="Название" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"><input type="text" value="${c.k||''}" placeholder="IP ключ" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"><button class="btn d sm" onclick="Pages.rmCl(${idx})">✕</button></div>`).join('')}</div><button class="btn o sm" style="margin-top:6px" onclick="Pages.addCl()">➕ Клиент</button><button class="btn p sm" style="margin-top:6px" onclick="Pages.saveCl()">💾 Сохранить</button></div>
+    <div class="stats fade-in">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(108,92,231,.1);color:var(--primary)">📦</div>
+        <div class="stat-value">${products.length}</div>
+        <div class="stat-label">Товаров на складе</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(0,184,148,.1);color:var(--success)">📥</div>
+        <div class="stat-value">${receiving.filter(r=>r.status!=='received').length}</div>
+        <div class="stat-label">Ожидает приёмки</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(116,185,255,.1);color:#0984e3">📤</div>
+        <div class="stat-value">${shipping.filter(s=>s.status!=='shipped').length}</div>
+        <div class="stat-label">Ожидает отгрузки</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(253,203,110,.2);color:#e17055">✅</div>
+        <div class="stat-value">${tasks.filter(t=>t.status!=='done').length}</div>
+        <div class="stat-label">Активных задач</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(0,184,148,.1);color:var(--success)">👥</div>
+        <div class="stat-value">${employees.filter(e=>e.active).length}</div>
+        <div class="stat-label">Сотрудников онлайн</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(231,76,60,.1);color:var(--danger)">⚠️</div>
+        <div class="stat-value">${formatMoney(totalFines)}</div>
+        <div class="stat-label">Сумма штрафов</div>
+      </div>
     </div>
-    <div class="panel fade" style="margin-top:16px"><div class="head"><h3>📊 Логи</h3></div><div style="padding:16px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:var(--text2)">${(DB.get('logs')||[]).filter(l=>l.a.startsWith('int_')).slice(0,30).map(l=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">${new Date(l.t).toLocaleString()} — ${l.a}: ${l.d}</div>`).join('')||'<div style="padding:10px;text-align:center">Нет логов</div>'}</div></div>`; },
-  intSave(k){ const i=DB.get('int')||{}; i[k]={e:document.getElementById(`i-${k}-e`).checked,k:document.getElementById(`i-${k}-k`).value}; DB.set('int',i); UI.toast('Сохранено'); },
-  addCl(){ const i=DB.get('int')||{}; if(!i.clients)i.clients=[]; i.clients.push({nm:'',k:''}); DB.set('int',i); Pages.int(); },
-  rmCl(idx){ const i=DB.get('int')||{}; i.clients.splice(idx,1); DB.set('int',i); Pages.int(); },
-  saveCl(){ const i=DB.get('int')||{}; i.clients=[]; document.querySelectorAll('#cl-list div').forEach(d=>{const inp=d.querySelectorAll('input');i.clients.push({nm:inp[0].value,k:inp[1].value});}); DB.set('int',i); UI.toast('Клиенты сохранены'); },
 
-  set(){ const u=DB.get('users')||[]; document.getElementById('content').innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px" class="fade">
-    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">👤 Пользователи</h3>${u.map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span><b>${x.nm}</b> <span class="badge b-i">${x.role}</span></span><button class="btn d sm" ${x.id===1?'disabled':''} onclick="Pages.delU(${x.id})">🗑️</button></div>`).join('')}<button class="btn p sm" style="margin-top:8px" onclick="Pages.userMdl()">➕ Добавить</button></div>
-    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">💾 Данные</h3><button class="btn p" style="width:100%;margin-bottom:10px" onclick="Pages.expAll()">📥 Скачать бэкап</button><button class="btn o" style="width:100%;margin-bottom:10px" onclick="document.getElementById('imp-json').click()">📤 Загрузить бэкап</button><input type="file" id="imp-json" style="display:none" accept=".json" onchange="Pages.impAll(this)"><button class="btn d" style="width:100%" onclick="Pages.clearAll()">⚠️ Очистить всё</button></div>
-    <div class="panel" style="padding:16px"><h3 style="margin-bottom:12px">ℹ️ Система</h3><p style="color:var(--text2);line-height:1.6">Фулфилмент PRO v2.0<br>Хранение: LocalStorage + RAM<br>Печать: 58×40 мм, QR, ШК<br>Интеграции: Диадок, 1С, WMS<br>Обновление: Данные сохраняются автоматически</p></div></div>`; },
-  userMdl(){ UI.openMdl('Новый пользователь',`<div class="form"><div class="row"><div><label>Логин</label><input id="nu-l"></div><div><label>Пароль</label><input type="password" id="nu-p"></div></div><div class="row"><div><label>Имя</label><input id="nu-n"></div><div><label>Роль</label><select id="nu-r"><option value="user">Сотрудник</option><option value="admin">Админ</option></select></div></div></div>`,`<button class="btn o" onclick="UI.closeMdl()">Отмена</button><button class="btn p" onclick="Pages.saveU()">Сохранить</button>`); },
-  saveU(){ const u=DB.get('users')||[], d={id:Date.now(),login:document.getElementById('nu-l').value.trim(),pass:document.getElementById('nu-p').value.trim(),nm:document.getElementById('nu-n').value.trim(),role:document.getElementById('nu-r').value}; if(!d.login||!d.pass||!d.nm)return UI.toast('Заполните все поля','err'); if(u.find(x=>x.login===d.login))return UI.toast('Логин занят','err'); u.push(d); DB.set('users',u); UI.closeMdl(); Pages.set(); UI.toast('Пользователь добавлен'); },
-  delU(id){ if(!confirm('Удалить?'))return; let u=DB.get('users')||[]; u=u.filter(x=>x.id!==id); DB.set('users',u); Pages.set(); },
-  expAll(){ UI.dl(new Blob([DB.expAll()],{type:'application/json'}),`backup_${Date.now()}.json`); },
-  impAll(inp){ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{if(DB.impAll(e.target.result)){Pages.dash();UI.toast('Импорт успешен');}else UI.toast('Ошибка формата','err');}; r.readAsText(f); },
-  clearAll(){ if(!confirm('Удалить ВСЕ данные?'))return; if(!confirm('Точно?'))return; ['users','products','locations','recv','ship','inv','tasks','emp','fines','logs','int'].forEach(k=>localStorage.removeItem(DB._p+k)); DB.init(); Pages.dash(); UI.toast('Система очищена'); },
+    <div class="grid-2 fade-in">
+      <div class="table-container">
+        <div class="table-header">
+          <h3>📋 Последние операции</h3>
+        </div>
+        <div style="padding:16px;overflow-x:auto">
+          <table>
+            <thead><tr><th>Дата</th><th>Действие</th><th>Пользователь</th></tr></thead>
+            <tbody>
+              ${(DB.get('logs')||[]).slice(0,10).map(l => `<tr><td>${formatDate(l.date)}</td><td>${l.action}</td><td>${l.user}</td></tr>`).join('')}
+              ${(DB.get('logs')||[]).length === 0 ? '<tr><td colspan="3" style="text-align:center;color:var(--text2)">Нет записей</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="table-container">
+        <div class="table-header">
+          <h3>👥 Сотрудники онлайн</h3>
+        </div>
+        <div style="padding:16px;overflow-x:auto">
+          <table>
+            <thead><tr><th>Фото</th><th>Имя</th><th>Ставка</th><th>Статус</th></tr></thead>
+            <tbody>
+              ${employees.filter(e=>e.active).map(e => `
+                <tr>
+                  <td>${e.photo ? `<img src="${e.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">` : '👤'}</td>
+                  <td>${e.name}</td>
+                  <td>${formatMoney(e.rate)}</td>
+                  <td><span class="badge badge-success">Работает</span></td>
+                </tr>
+              `).join('')}
+              ${employees.filter(e=>e.active).length === 0 ? '<tr><td colspan="4" style="text-align:center;color:var(--text2)">Нет активных сотрудников</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
-  del(k,id,p){ if(!confirm('Удалить?'))return; let d=DB.get(k)||[]; d=d.filter(x=>x.id!==id); DB.set(k,d); Pages[p](); },
-  exp(k){ const d=DB.get(k)||[], h=Object.keys(d[0]||{}), c=h.join(';')+'\n'+d.map(x=>h.map(k=>x[k]??'').join(';')).join('\n'); UI.dl(new Blob(['\ufeff'+c],{type:'text/csv'}),`${k}.csv`); }
-};
+    <div class="fade-in" style="margin-top:20px">
+      <div class="table-container">
+        <div class="table-header">
+          <h3>🗺️ Карта склада (обзор)</h3>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('map')">Открыть карту →</button>
+        </div>
+        <div style="padding:16px">
+          <div class="map-grid">
+            ${(DB.get('locations')||[]).map(loc => {
+              const cls = loc.status === 'empty' ? 'empty' : loc.status === 'full' ? 'full' : 'partial';
+              return `<div class="map-cell ${cls}" onclick="navigateTo('map')" title="${loc.name}">
+                <span>${loc.id}</span>
+                <span style="font-size:.6rem;margin-top:2px">${loc.status==='empty'?'Свободно':loc.status==='full'?'Заполнено':'Частично'}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-// === MODULE: APP INIT ===
-const App = { user: null };
-const UI_helpers = {
-  dl(b,n){ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=n; a.click(); URL.revokeObjectURL(a); },
-  toast(m,t='ok'){ const el=document.getElementById('toast'); el.textContent=m; el.className=`show ${t}`; setTimeout(()=>el.className='',3000); }
-};
-Object.assign(UI, UI_helpers);
+// ==========================================
+// СТРАНИЦА: СКЛАД
+// ==========================================
+function renderWarehouse() {
+  const products = DB.get('products') || [];
+  const locations = DB.get('locations') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>🏭 Склад</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openProductModal()">➕ Добавить товар</button>
+        <button class="btn btn-outline" onclick="exportToCSV(products,['barcode','name','article','category','quantity','location','expiry','price','photo'],'Товары')">📊 Экспорт CSV</button>
+        <button class="btn btn-outline" onclick="document.getElementById('import-csv-file').click()">📤 Импорт CSV</button>
+        <input type="file" id="import-csv-file" accept=".csv" style="display:none" onchange="importProductsCSV(this)">
+      </div>
+    </div>
+    <div class="table-container fade-in">
+      <div class="table-header">
+        <h3>Товары (${products.length})</h3>
+        <div class="table-actions">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Поиск..." oninput="filterProducts(this.value)" style="padding-left:36px;width:200px">
+          </div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="products-table">
+          <thead><tr><th>Фото</th><th>ШК</th><th>Название</th><th>Артикул</th><th>Категория</th><th>Кол-во</th><th>Место</th><th>Срок</th><th>Цена</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${products.map(p => `<tr>
+              <td>${p.photo ? `<img src="${p.photo}" style="width:40px;height:40px;border-radius:8px;object-fit:cover">` : '📦'}</td>
+              <td><code>${p.barcode||'—'}</code></td>
+              <td>${p.name}</td>
+              <td>${p.article}</td>
+              <td>${p.category||'—'}</td>
+              <td>${p.quantity}</td>
+              <td><span class="badge badge-info">${p.location||'—'}</span></td>
+              <td>${p.expiry || '—'}</td>
+              <td>${formatMoney(p.price)}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="openProductModal('${p.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
+                <button class="btn btn-sm btn-outline" onclick="printProductLabel('${p.id}')">🏷️</button>
+              </td>
+            </tr>`).join('')}
+            ${products.length === 0 ? '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text2)">Нет товаров. Добавьте первый товар или импортируйте из CSV.</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
 
-// NAV EVENTS
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();UI.nav(a.dataset.p);if(window.innerWidth<768)document.getElementById('sb').classList.remove('open');}));
-document.getElementById('u-pass').addEventListener('keydown',e=>{if(e.key==='Enter')Auth.login();});
+function filterProducts(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#products-table tbody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 
-// INIT
-window.addEventListener('DOMContentLoaded',()=>{
-  try{const t=localStorage.getItem('ff_th');if(t)document.documentElement.dataset.theme=t;}catch{}
+function openProductModal(id) {
+  const products = DB.get('products') || [];
+  const locations = DB.get('locations') || [];
+  const p = id ? products.find(x => x.id === id) : null;
+  const title = p ? 'Редактировать товар' : 'Новый товар';
+
+  openModal(title, `
+    <div class="form-group">
+      <label>Фото товара</label>
+      ${photoInputHTML('prod-photo', p?.photo || '')}
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Штрих-код</label>
+        <input type="text" id="prod-barcode" value="${p?.barcode||''}" placeholder="Введите штрих-код">
+      </div>
+      <div class="form-group">
+        <label>Артикул</label>
+        <input type="text" id="prod-article" value="${p?.article||''}" placeholder="Артикул">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="prod-name" value="${p?.name||''}" placeholder="Название товара">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Категория</label>
+        <input type="text" id="prod-category" value="${p?.category||''}" placeholder="Категория">
+      </div>
+      <div class="form-group">
+        <label>Количество</label>
+        <input type="number" id="prod-qty" value="${p?.quantity||0}" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Место хранения</label>
+        <select id="prod-location">
+          <option value="">— Выберите —</option>
+          ${locations.map(l => `<option value="${l.id}" ${p?.location===l.id?'selected':''}>${l.id} — ${l.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Срок годности</label>
+        <input type="date" id="prod-expiry" value="${p?.expiry||''}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Цена (₽)</label>
+      <input type="number" id="prod-price" value="${p?.price||0}" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Описание / Документы</label>
+      <textarea id="prod-docs" rows="3" placeholder="Описание, ссылки на документы...">${p?.docs||''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveProduct('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+async function saveProduct(id) {
+  const products = DB.get('products') || [];
+  const photoInput = document.getElementById('prod-photo');
+  let photo = '';
+  if (photoInput.files[0]) {
+    photo = await fileToBase64(photoInput.files[0]);
+  } else if (id) {
+    const existing = products.find(p => p.id === id);
+    photo = existing?.photo || '';
+  }
+
+  const data = {
+    barcode: document.getElementById('prod-barcode').value,
+    name: document.getElementById('prod-name').value,
+    article: document.getElementById('prod-article').value,
+    category: document.getElementById('prod-category').value,
+    quantity: parseInt(document.getElementById('prod-qty').value) || 0,
+    location: document.getElementById('prod-location').value,
+    expiry: document.getElementById('prod-expiry').value,
+    price: parseFloat(document.getElementById('prod-price').value) || 0,
+    docs: document.getElementById('prod-docs').value,
+    photo
+  };
+
+  if (!data.name) { alert('Введите название товара'); return; }
+
+  if (id) {
+    const idx = products.findIndex(p => p.id === id);
+    if (idx >= 0) Object.assign(products[idx], data);
+    DB.addLog('product_edit', `Редактирован: ${data.name}`);
+  } else {
+    data.id = DB.genId();
+    data.createdAt = new Date().toISOString();
+    products.push(data);
+    DB.addLog('product_add', `Добавлен: ${data.name}`);
+  }
+
+  DB.set('products', products);
+  closeModal();
+  renderWarehouse();
+}
+
+function deleteProduct(id) {
+  if (!confirm('Удалить товар?')) return;
+  let products = DB.get('products') || [];
+  const p = products.find(x => x.id === id);
+  products = products.filter(x => x.id !== id);
+  DB.set('products', products);
+  DB.addLog('product_delete', `Удалён: ${p?.name}`);
+  renderWarehouse();
+}
+
+function printProductLabel(id) {
+  const products = DB.get('products') || [];
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = `
+    <div class="label-58x40" style="display:block;width:58mm;height:40mm;border:1px solid #000;padding:3mm;font-family:monospace;font-size:8pt;">
+      <div style="text-align:center;font-weight:bold;font-size:9pt;margin-bottom:2mm">${p.name}</div>
+      <div style="text-align:center;margin-bottom:1mm">
+        <svg id="label-barcode-svg" viewBox="0 0 200 60" style="width:50mm;height:15mm">
+          ${generateBarcodeSVG(p.barcode || p.article || p.name)}
+        </svg>
+      </div>
+      <div style="text-align:center;font-size:7pt;color:#666">Арт: ${p.article}</div>
+      <div style="text-align:center;font-size:7pt;color:#666">ШК: ${p.barcode || p.article}</div>
+      ${p.expiry ? `<div style="text-align:center;font-size:7pt;color:red;font-weight:bold;margin-top:1mm">Годен до: ${p.expiry}</div>` : ''}
+    </div>
+  `;
+  printArea.style.display = 'block';
+  window.print();
+  setTimeout(() => printArea.style.display = 'none', 1000);
+}
+
+function generateBarcodeSVG(text) {
+  let bars = '';
+  let x = 5;
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+  let seed = Math.abs(hash);
+  for (let i = 0; i < 60; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const w = (seed % 2) + 1;
+    if (i % 2 === 0) bars += `<rect x="${x}" y="5" width="${w*2}" height="45" fill="black"/>`;
+    x += w * 2;
+    if (x > 190) break;
+  }
+  return bars + `<text x="100" y="58" text-anchor="middle" font-size="8" font-family="monospace">${text}</text>`;
+}
+
+async function importProductsCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const result = await importCSV(file);
+  const products = DB.get('products') || [];
+  result.data.forEach(row => {
+    products.push({
+      id: DB.genId(),
+      barcode: row['Штрих-код'] || row['barcode'] || '',
+      name: row['Название'] || row['name'] || 'Без имени',
+      article: row['Артикул'] || row['article'] || '',
+      category: row['Категория'] || row['category'] || '',
+      quantity: parseInt(row['Количество'] || row['quantity'] || 0),
+      location: row['Место'] || row['location'] || '',
+      expiry: row['Срок'] || row['expiry'] || '',
+      price: parseFloat(row['Цена'] || row['price'] || 0),
+      photo: '',
+      docs: row['Документы'] || row['docs'] || '',
+      createdAt: new Date().toISOString()
+    });
+  });
+  DB.set('products', products);
+  DB.addLog('product_import', `Импортировано: ${result.data.length} товаров`);
+  renderWarehouse();
+}
+
+// ==========================================
+// СТРАНИЦА: ПРИЕМКА
+// ==========================================
+function renderReceiving() {
+  const receiving = DB.get('receiving') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>📥 Приемка товара</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openReceivingModal()">➕ Новая приемка</button>
+        <button class="btn btn-outline" onclick="exportToCSV(receiving,['id','date','supplier','barcode','name','quantity','status','comment'],'Приемка')">📊 Экспорт</button>
+      </div>
+    </div>
+    <div class="table-container fade-in">
+      <div class="table-header"><h3>Документы приемки (${receiving.length})</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Дата</th><th>Поставщик</th><th>ШК</th><th>Товар</th><th>Кол-во</th><th>Статус</th><th>Комментарий</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${receiving.map(r => `<tr>
+              <td>${formatDate(r.date)}</td>
+              <td>${r.supplier||'—'}</td>
+              <td><code>${r.barcode||'—'}</code></td>
+              <td>${r.name}</td>
+              <td>${r.quantity}</td>
+              <td>${getStatusBadge(r.status)}</td>
+              <td>${r.comment||'—'}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="openReceivingModal('${r.id}')">✏️</button>
+                <button class="btn btn-sm btn-success" onclick="updateReceivingStatus('${r.id}','received')" ${r.status==='received'?'disabled':''}>✅ Принять</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteReceiving('${r.id}')">🗑️</button>
+              </td>
+            </tr>`).join('')}
+            ${receiving.length === 0 ? '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Нет документов приемки</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openReceivingModal(id) {
+  const receiving = DB.get('receiving') || [];
+  const r = id ? receiving.find(x => x.id === id) : null;
+  const title = r ? 'Редактировать приемку' : 'Новая приемка';
+
+  openModal(title, `
+    <div class="form-row">
+      <div class="form-group">
+        <label>Поставщик</label>
+        <input type="text" id="recv-supplier" value="${r?.supplier||''}" placeholder="Название поставщика">
+      </div>
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="datetime-local" id="recv-date" value="${r?.date ? new Date(r.date).toISOString().slice(0,16) : new Date().toISOString().slice(0,16)}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Штрих-код (сканер)</label>
+        <input type="text" id="recv-barcode" value="${r?.barcode||''}" placeholder="Отсканируйте или введите" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Количество</label>
+        <input type="number" id="recv-qty" value="${r?.quantity||1}" min="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Название товара</label>
+      <input type="text" id="recv-name" value="${r?.name||''}" placeholder="Название">
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <textarea id="recv-comment" rows="3" placeholder="Примечания к приемке...">${r?.comment||''}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Фото документа / накладной</label>
+      ${photoInputHTML('recv-photo', r?.photo||'')}
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveReceiving('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+async function saveReceiving(id) {
+  const receiving = DB.get('receiving') || [];
+  const photoInput = document.getElementById('recv-photo');
+  let photo = '';
+  if (photoInput.files[0]) photo = await fileToBase64(photoInput.files[0]);
+  else if (id) photo = receiving.find(r=>r.id===id)?.photo || '';
+
+  const data = {
+    supplier: document.getElementById('recv-supplier').value,
+    date: new Date(document.getElementById('recv-date').value).toISOString(),
+    barcode: document.getElementById('recv-barcode').value,
+    name: document.getElementById('recv-name').value,
+    quantity: parseInt(document.getElementById('recv-qty').value) || 1,
+    comment: document.getElementById('recv-comment').value,
+    photo
+  };
+
+  if (!data.name) { alert('Введите название товара'); return; }
+
+  if (id) {
+    const idx = receiving.findIndex(r => r.id === id);
+    if (idx >= 0) Object.assign(receiving[idx], data);
+    DB.addLog('recv_edit', `Редактирована приемка: ${data.name}`);
+  } else {
+    data.id = DB.genId();
+    data.status = 'new';
+    receiving.push(data);
+    DB.addLog('recv_new', `Новая приемка: ${data.name} (${data.quantity} шт)`);
+  }
+
+  DB.set('receiving', receiving);
+  closeModal();
+  renderReceiving();
+}
+
+function updateReceivingStatus(id, status) {
+  const receiving = DB.get('receiving') || [];
+  const r = receiving.find(x => x.id === id);
+  if (r) {
+    r.status = status;
+    DB.set('receiving', receiving);
+    DB.addLog('recv_status', `Приемка "${r.name}" — статус: ${status}`);
+    // Автоматически добавляем товар на склад
+    if (status === 'received') {
+      const products = DB.get('products') || [];
+      const existing = products.find(p => p.barcode === r.barcode || p.article === r.barcode);
+      if (existing) {
+        existing.quantity += r.quantity;
+      } else {
+        products.push({id:DB.genId(), barcode:r.barcode, name:r.name, article:r.barcode, category:'', quantity:r.quantity, location:'', expiry:'', price:0, photo:r.photo, docs:'', createdAt:new Date().toISOString()});
+      }
+      DB.set('products', products);
+    }
+    renderReceiving();
+  }
+}
+
+function deleteReceiving(id) {
+  if (!confirm('Удалить документ приемки?')) return;
+  let receiving = DB.get('receiving') || [];
+  receiving = receiving.filter(r => r.id !== id);
+  DB.set('receiving', receiving);
+  renderReceiving();
+}
+
+// ==========================================
+// СТРАНИЦА: ОТГРУЗКА
+// ==========================================
+function renderShipping() {
+  const shipping = DB.get('shipping') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>📤 Отгрузка товара</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openShippingModal()">➕ Новая отгрузка</button>
+        <button class="btn btn-outline" onclick="exportToCSV(shipping,['id','date','client','barcode','name','quantity','status','comment'],'Отгрузка')">📊 Экспорт</button>
+      </div>
+    </div>
+    <div class="table-container fade-in">
+      <div class="table-header"><h3>Документы отгрузки (${shipping.length})</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Дата</th><th>Клиент</th><th>ШК</th><th>Товар</th><th>Кол-во</th><th>Статус</th><th>Комментарий</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${shipping.map(s => `<tr>
+              <td>${formatDate(s.date)}</td>
+              <td>${s.client||'—'}</td>
+              <td><code>${s.barcode||'—'}</code></td>
+              <td>${s.name}</td>
+              <td>${s.quantity}</td>
+              <td>${getStatusBadge(s.status)}</td>
+              <td>${s.comment||'—'}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="openShippingModal('${s.id}')">✏️</button>
+                <button class="btn btn-sm btn-success" onclick="updateShippingStatus('${s.id}','shipped')" ${s.status==='shipped'?'disabled':''}>🚚 Отгрузить</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteShipping('${s.id}')">🗑️</button>
+              </td>
+            </tr>`).join('')}
+            ${shipping.length === 0 ? '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Нет документов отгрузки</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openShippingModal(id) {
+  const shipping = DB.get('shipping') || [];
+  const s = id ? shipping.find(x => x.id === id) : null;
+  const products = DB.get('products') || [];
+
+  openModal(s ? 'Редактировать отгрузку' : 'Новая отгрузка', `
+    <div class="form-row">
+      <div class="form-group">
+        <label>Клиент</label>
+        <input type="text" id="ship-client" value="${s?.client||''}" placeholder="Название клиента">
+      </div>
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="datetime-local" id="ship-date" value="${s?.date ? new Date(s.date).toISOString().slice(0,16) : new Date().toISOString().slice(0,16)}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Товар (со склада)</label>
+      <select id="ship-product" onchange="fillShippingProduct()">
+        <option value="">— Выберите товар —</option>
+        ${products.map(p => `<option value="${p.id}" data-barcode="${p.barcode}" data-qty="${p.quantity}">${p.name} (${p.quantity} шт)</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Штрих-код</label>
+        <input type="text" id="ship-barcode" value="${s?.barcode||''}" placeholder="ШК товара">
+      </div>
+      <div class="form-group">
+        <label>Количество</label>
+        <input type="number" id="ship-qty" value="${s?.quantity||1}" min="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Название товара</label>
+      <input type="text" id="ship-name" value="${s?.name||''}" placeholder="Название">
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <textarea id="ship-comment" rows="3" placeholder="Примечания...">${s?.comment||''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveShipping('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+function fillShippingProduct() {
+  const sel = document.getElementById('ship-product');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    document.getElementById('ship-barcode').value = opt.dataset.barcode || '';
+    document.getElementById('ship-name').value = opt.text.split(' (')[0];
+  }
+}
+
+async function saveShipping(id) {
+  const shipping = DB.get('shipping') || [];
+  const data = {
+    client: document.getElementById('ship-client').value,
+    date: new Date(document.getElementById('ship-date').value).toISOString(),
+    barcode: document.getElementById('ship-barcode').value,
+    name: document.getElementById('ship-name').value,
+    quantity: parseInt(document.getElementById('ship-qty').value) || 1,
+    comment: document.getElementById('ship-comment').value
+  };
+
+  if (!data.name) { alert('Введите название товара'); return; }
+
+  if (id) {
+    const idx = shipping.findIndex(s => s.id === id);
+    if (idx >= 0) Object.assign(shipping[idx], data);
+    DB.addLog('ship_edit', `Редактирована отгрузка: ${data.name}`);
+  } else {
+    data.id = DB.genId();
+    data.status = 'new';
+    shipping.push(data);
+    DB.addLog('ship_new', `Новая отгрузка: ${data.name} → ${data.client}`);
+  }
+
+  DB.set('shipping', shipping);
+  closeModal();
+  renderShipping();
+}
+
+function updateShippingStatus(id, status) {
+  const shipping = DB.get('shipping') || [];
+  const s = shipping.find(x => x.id === id);
+  if (s) {
+    s.status = status;
+    // Уменьшаем количество на складе
+    const products = DB.get('products') || [];
+    const p = products.find(x => x.barcode === s.barcode || x.name === s.name);
+    if (p) {
+      p.quantity = Math.max(0, p.quantity - s.quantity);
+      DB.set('products', products);
+    }
+    DB.set('shipping', shipping);
+    DB.addLog('ship_status', `Отгрузка "${s.name}" — статус: ${status}`);
+    renderShipping();
+  }
+}
+
+function deleteShipping(id) {
+  if (!confirm('Удалить документ отгрузки?')) return;
+  let shipping = DB.get('shipping') || [];
+  shipping = shipping.filter(s => s.id !== id);
+  DB.set('shipping', shipping);
+  renderShipping();
+}
+
+// ==========================================
+// СТРАНИЦА: ИНВЕНТАРИЗАЦИЯ
+// ==========================================
+function renderInventory() {
+  const inventory = DB.get('inventory') || [];
+  const products = DB.get('products') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>📋 Инвентаризация</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openInventoryModal()">➕ Новая инвентаризация</button>
+        <button class="btn btn-outline" onclick="printInventoryReport()">🖨️ Печать отчёта</button>
+        <button class="btn btn-outline" onclick="exportToCSV(inventory,['date','barcode','name','expected','actual','diff','status'],'Инвентаризация')">📊 Экспорт</button>
+      </div>
+    </div>
+    <div class="table-container fade-in">
+      <div class="table-header"><h3>Результаты инвентаризации (${inventory.length})</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Дата</th><th>ШК</th><th>Товар</th><th>Ожидалось</th><th>Факт</th><th>Расх.</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${inventory.map(i => `<tr>
+              <td>${formatDate(i.date)}</td>
+              <td><code>${i.barcode||'—'}</code></td>
+              <td>${i.name}</td>
+              <td>${i.expected}</td>
+              <td>${i.actual}</td>
+              <td style="color:${i.diff===0?'var(--success)':i.diff>0?'#0984e3':'var(--danger)'}; font-weight:600">${i.diff > 0 ? '+' : ''}${i.diff}</td>
+              <td>${getStatusBadge(i.status)}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="openInventoryModal('${i.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteInventory('${i.id}')">🗑️</button>
+              </td>
+            </tr>`).join('')}
+            ${inventory.length === 0 ? '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Нет данных инвентаризации</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openInventoryModal(id) {
+  const inventory = DB.get('inventory') || [];
+  const products = DB.get('products') || [];
+  const i = id ? inventory.find(x => x.id === id) : null;
+
+  openModal(i ? 'Редактировать' : 'Новая инвентаризация (ТСД/ввод)', `
+    <div class="form-group">
+      <label>Товар (или сканируйте ШК)</label>
+      <select id="inv-product" onchange="fillInventory()">
+        <option value="">— Выберите —</option>
+        ${products.map(p => `<option value="${p.id}" data-barcode="${p.barcode}" data-qty="${p.quantity}" data-name="${p.name}">${p.name} — ${p.quantity} шт</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Штрих-код (ТСД)</label>
+        <input type="text" id="inv-barcode" value="${i?.barcode||''}" placeholder="Сканируйте ШК">
+      </div>
+      <div class="form-group">
+        <label>Название</label>
+        <input type="text" id="inv-name" value="${i?.name||''}" placeholder="Название">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ожидаемое кол-во</label>
+        <input type="number" id="inv-expected" value="${i?.expected||0}" min="0">
+      </div>
+      <div class="form-group">
+        <label>Фактическое кол-во</label>
+        <input type="number" id="inv-actual" value="${i?.actual||0}" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <textarea id="inv-comment" rows="2" placeholder="Примечания...">${i?.comment||''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveInventory('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+function fillInventory() {
+  const sel = document.getElementById('inv-product');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    document.getElementById('inv-barcode').value = opt.dataset.barcode || '';
+    document.getElementById('inv-name').value = opt.dataset.name || '';
+    document.getElementById('inv-expected').value = opt.dataset.qty || 0;
+  }
+}
+
+function saveInventory(id) {
+  const inventory = DB.get('inventory') || [];
+  const expected = parseInt(document.getElementById('inv-expected').value) || 0;
+  const actual = parseInt(document.getElementById('inv-actual').value) || 0;
+  const diff = actual - expected;
+
+  const data = {
+    barcode: document.getElementById('inv-barcode').value,
+    name: document.getElementById('inv-name').value,
+    expected, actual, diff,
+    comment: document.getElementById('inv-comment').value,
+    status: 'counted'
+  };
+
+  if (!data.name) { alert('Укажите товар'); return; }
+
+  if (id) {
+    const idx = inventory.findIndex(i => i.id === id);
+    if (idx >= 0) Object.assign(inventory[idx], data);
+  } else {
+    data.id = DB.genId();
+    data.date = new Date().toISOString();
+    inventory.push(data);
+    DB.addLog('inv_new', `Инвентаризация: ${data.name} (расх: ${data.diff})`);
+  }
+
+  DB.set('inventory', inventory);
+  closeModal();
+  renderInventory();
+}
+
+function deleteInventory(id) {
+  if (!confirm('Удалить?')) return;
+  let inventory = DB.get('inventory') || [];
+  inventory = inventory.filter(i => i.id !== id);
+  DB.set('inventory', inventory);
+  renderInventory();
+}
+
+function printInventoryReport() {
+  const inventory = DB.get('inventory') || [];
+  let html = `<html><head><meta charset="UTF-8"><title>Отчёт инвентаризации</title>
+    <style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left;font-size:12px}th{background:#f0f0f0}h1{text-align:center}</style>
+  </head><body>
+  <h1>📋 Отчёт инвентаризации</h1>
+  <p>Дата формирования: ${new Date().toLocaleString('ru')}</p>
+  <table><thead><tr><th>Дата</th><th>ШК</th><th>Товар</th><th>Ожидалось</th><th>Факт</th><th>Расхождение</th></tr></thead><tbody>
+  ${inventory.map(i => `<tr><td>${formatDate(i.date)}</td><td>${i.barcode}</td><td>${i.name}</td><td>${i.expected}</td><td>${i.actual}</td><td style="color:${i.diff===0?'green':'red'}">${i.diff}</td></tr>`).join('')}
+  </tbody></table>
+  <p style="margin-top:20px">Итого позиций: ${inventory.length}</p>
+  </body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.print();
+}
+
+// ==========================================
+// СТРАНИЦА: ЗАДАЧИ
+// ==========================================
+function renderTasks() {
+  const tasks = DB.get('tasks') || [];
+  const employees = DB.get('employees') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>✅ Задачи на день</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openTaskModal()">➕ Новая задача</button>
+      </div>
+    </div>
+    <div class="stats fade-in">
+      <div class="stat-card">
+        <div class="stat-value">${tasks.filter(t=>t.status==='done').length}</div>
+        <div class="stat-label">Выполнено</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${tasks.filter(t=>t.status==='progress').length}</div>
+        <div class="stat-label">В работе</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${tasks.filter(t=>t.status==='new').length}</div>
+        <div class="stat-label">Новые</div>
+      </div>
+    </div>
+    <div class="table-container fade-in">
+      <div class="table-header"><h3>Задачи (${tasks.length})</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Дата</th><th>Задача</th><th>Сотрудник</th><th>Приоритет</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${tasks.map(t => {
+              const emp = employees.find(e => e.id === t.employeeId);
+              return `<tr>
+                <td>${formatDate(t.date)}</td>
+                <td>${t.title}</td>
+                <td>${emp ? emp.name : 'Не назначен'}</td>
+                <td><span class="badge ${t.priority==='high'?'badge-danger':t.priority==='medium'?'badge-warning':'badge-info'}">${t.priority==='high'?'Высокий':t.priority==='medium'?'Средний':'Низкий'}</span></td>
+                <td>${getStatusBadge(t.status)}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary" onclick="openTaskModal('${t.id}')">✏️</button>
+                  <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${t.id}','done')" ${t.status==='done'?'disabled':''}>✅</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('')}
+            ${tasks.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text2)">Нет задач</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openTaskModal(id) {
+  const tasks = DB.get('tasks') || [];
+  const employees = DB.get('employees') || [];
+  const t = id ? tasks.find(x => x.id === id) : null;
+
+  openModal(t ? 'Редактировать задачу' : 'Новая задача', `
+    <div class="form-group">
+      <label>Название задачи</label>
+      <input type="text" id="task-title" value="${t?.title||''}" placeholder="Описание задачи">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Сотрудник</label>
+        <select id="task-employee">
+          <option value="">— Выберите —</option>
+          ${employees.map(e => `<option value="${e.id}" ${t?.employeeId===e.id?'selected':''}>${e.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Приоритет</label>
+        <select id="task-priority">
+          <option value="low" ${t?.priority==='low'?'selected':''}>Низкий</option>
+          <option value="medium" ${t?.priority==='medium'?'selected':''}>Средний</option>
+          <option value="high" ${t?.priority==='high'?'selected':''}>Высокий</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="datetime-local" id="task-date" value="${t?.date ? new Date(t.date).toISOString().slice(0,16) : new Date().toISOString().slice(0,16)}">
+      </div>
+      <div class="form-group">
+        <label>Статус</label>
+        <select id="task-status">
+          <option value="new" ${t?.status==='new'?'selected':''}>Новый</option>
+          <option value="progress" ${t?.status==='progress'?'selected':''}>В работе</option>
+          <option value="done" ${t?.status==='done'?'selected':''}>Выполнен</option>
+          <option value="cancelled" ${t?.status==='cancelled'?'selected':''}>Отменён</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Описание</label>
+      <textarea id="task-desc" rows="3" placeholder="Подробности...">${t?.description||''}</textarea>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveTask('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+function saveTask(id) {
+  const tasks = DB.get('tasks') || [];
+  const data = {
+    title: document.getElementById('task-title').value,
+    employeeId: document.getElementById('task-employee').value,
+    priority: document.getElementById('task-priority').value,
+    date: new Date(document.getElementById('task-date').value).toISOString(),
+    status: document.getElementById('task-status').value,
+    description: document.getElementById('task-desc').value
+  };
+
+  if (!data.title) { alert('Введите название задачи'); return; }
+
+  if (id) {
+    const idx = tasks.findIndex(t => t.id === id);
+    if (idx >= 0) Object.assign(tasks[idx], data);
+  } else {
+    data.id = DB.genId();
+    tasks.push(data);
+    DB.addLog('task_new', `Задача: ${data.title}`);
+  }
+
+  DB.set('tasks', tasks);
+  closeModal();
+  renderTasks();
+}
+
+function updateTaskStatus(id, status) {
+  const tasks = DB.get('tasks') || [];
+  const t = tasks.find(x => x.id === id);
+  if (t) {
+    t.status = status;
+    DB.set('tasks', tasks);
+    DB.addLog('task_status', `Задача "${t.title}" → ${status}`);
+    renderTasks();
+  }
+}
+
+function deleteTask(id) {
+  if (!confirm('Удалить задачу?')) return;
+  let tasks = DB.get('tasks') || [];
+  tasks = tasks.filter(t => t.id !== id);
+  DB.set('tasks', tasks);
+  renderTasks();
+}
+
+// ==========================================
+// СТРАНИЦА: СОТРУДНИКИ
+// ==========================================
+let employeeTimers = {};
+
+function renderEmployees() {
+  const employees = DB.get('employees') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>👥 Сотрудники</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openEmployeeModal()">➕ Добавить сотрудника</button>
+      </div>
+    </div>
+    <div class="grid-3 fade-in">
+      ${employees.map(e => {
+        const timer = employeeTimers[e.id] || {started:null, elapsed:0};
+        const isActive = e.active && timer.started;
+        return `<div class="stat-card" style="text-align:center">
+          ${e.photo ? `<img src="${e.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px">` : '<div style="width:80px;height:80px;border-radius:50%;background:var(--bg);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:2rem">👤</div>'}
+          <h3 style="margin-bottom:4px">${e.name}</h3>
+          <p style="color:var(--text2);font-size:.85rem;margin-bottom:8px">${e.position||'—'} | Ставка: ${formatMoney(e.rate)}/час</p>
+          <p style="font-size:.8rem;margin-bottom:8px">📱 ${e.phone||'—'} | 📄 ${e.docNumber||'—'}</p>
+          <div class="timer-display" id="timer-${e.id}">${isActive ? formatTime(timer.elapsed) : '00:00:00'}</div>
+          <div style="margin-top:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-sm ${e.active?'btn-danger':'btn-success'}" onclick="toggleEmployeeWork('${e.id}')">${e.active?'⏹ Стоп':'▶ Старт'}</button>
+            <button class="btn btn-sm btn-primary" onclick="openEmployeeModal('${e.id}')">✏️</button>
+            <button class="btn btn-sm btn-outline" onclick="showEmployeeQR('${e.id}')">📱 QR</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${e.id}')">🗑️</button>
+          </div>
+          ${e.documents ? `<p style="font-size:.75rem;color:var(--text2);margin-top:8px">📎 Документы: ${e.documents}</p>` : ''}
+        </div>`;
+      }).join('')}
+      ${employees.length === 0 ? '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text2)">Нет сотрудников. Добавьте первого.</div>' : ''}
+    </div>
+  `;
+  // Update timers
+  updateAllTimers();
+}
+
+function formatTime(seconds) {
+  const h = Math.floor(seconds/3600).toString().padStart(2,'0');
+  const m = Math.floor((seconds%3600)/60).toString().padStart(2,'0');
+  const s = (seconds%60).toString().padStart(2,'0');
+  return `${h}:${m}:${s}`;
+}
+
+function updateAllTimers() {
+  const employees = DB.get('employees') || [];
+  employees.forEach(e => {
+    if (e.active) {
+      if (!employeeTimers[e.id]) {
+        employeeTimers[e.id] = {started: Date.now(), elapsed: e.workTime || 0};
+      }
+      const elapsed = employeeTimers[e.id].elapsed + Math.floor((Date.now() - employeeTimers[e.id].started) / 1000);
+      const el = document.getElementById('timer-' + e.id);
+      if (el) el.textContent = formatTime(elapsed);
+    }
+  });
+  if (employees.some(e => e.active)) setTimeout(updateAllTimers, 1000);
+}
+
+function toggleEmployeeWork(id) {
+  const employees = DB.get('employees') || [];
+  const e = employees.find(x => x.id === id);
+  if (!e) return;
+
+  if (e.active) {
+    // Stop work
+    if (employeeTimers[id]) {
+      e.workTime = (e.workTime || 0) + Math.floor((Date.now() - employeeTimers[id].started) / 1000);
+      delete employeeTimers[id];
+    }
+    e.active = false;
+    DB.addLog('emp_stop', `Сотрудник ${e.name} остановил работу`);
+  } else {
+    // Start work
+    e.active = true;
+    employeeTimers[id] = {started: Date.now(), elapsed: 0};
+    DB.addLog('emp_start', `Сотрудник ${e.name} начал работу (QR сканирование)`);
+  }
+
+  DB.set('employees', employees);
+  renderEmployees();
+}
+
+function openEmployeeModal(id) {
+  const employees = DB.get('employees') || [];
+  const e = id ? employees.find(x => x.id === id) : null;
+
+  openModal(e ? 'Редактировать сотрудника' : 'Новый сотрудник', `
+    <div style="display:flex;gap:20px;align-items:flex-start">
+      ${photoInputHTML('emp-photo', e?.photo || '')}
+      <div style="flex:1">
+        <div class="form-group">
+          <label>ФИО</label>
+          <input type="text" id="emp-name" value="${e?.name||''}" placeholder="Иванов Иван Иванович">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Должность</label>
+            <input type="text" id="emp-position" value="${e?.position||''}" placeholder="Кладовщик">
+          </div>
+          <div class="form-group">
+            <label>Телефон</label>
+            <input type="tel" id="emp-phone" value="${e?.phone||''}" placeholder="+7 (999) 123-45-67">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ставка за час (₽)</label>
+            <input type="number" id="emp-rate" value="${e?.rate||300}" min="0">
+          </div>
+          <div class="form-group">
+            <label>Номер документа (паспорт)</label>
+            <input type="text" id="emp-doc" value="${e?.docNumber||''}" placeholder="Серия номер">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Документы (описание)</label>
+          <textarea id="emp-docs" rows="2" placeholder="Список документов...">${e?.documents||''}</textarea>
+        </div>
+      </div>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveEmployee('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+async function saveEmployee(id) {
+  const employees = DB.get('employees') || [];
+  const photoInput = document.getElementById('emp-photo');
+  let photo = '';
+  if (photoInput.files[0]) photo = await fileToBase64(photoInput.files[0]);
+  else if (id) photo = employees.find(e=>e.id===id)?.photo || '';
+
+  const data = {
+    name: document.getElementById('emp-name').value,
+    position: document.getElementById('emp-position').value,
+    phone: document.getElementById('emp-phone').value,
+    rate: parseFloat(document.getElementById('emp-rate').value) || 300,
+    docNumber: document.getElementById('emp-doc').value,
+    documents: document.getElementById('emp-docs').value,
+    photo
+  };
+
+  if (!data.name) { alert('Введите ФИО'); return; }
+
+  if (id) {
+    const idx = employees.findIndex(e => e.id === id);
+    if (idx >= 0) Object.assign(employees[idx], data);
+    DB.addLog('emp_edit', `Редактирован: ${data.name}`);
+  } else {
+    data.id = DB.genId();
+    data.active = false;
+    data.workTime = 0;
+    data.qrCode = data.id;
+    employees.push(data);
+    DB.addLog('emp_add', `Добавлен: ${data.name}`);
+  }
+
+  DB.set('employees', employees);
+  closeModal();
+  renderEmployees();
+}
+
+function deleteEmployee(id) {
+  if (!confirm('Удалить сотрудника?')) return;
+  let employees = DB.get('employees') || [];
+  employees = employees.filter(e => e.id !== id);
+  DB.set('employees', employees);
+  renderEmployees();
+}
+
+function showEmployeeQR(id) {
+  const employees = DB.get('employees') || [];
+  const e = employees.find(x => x.id === id);
+  if (!e) return;
+  openModal(`QR-код: ${e.name}`, `
+    <div style="text-align:center">
+      <p style="margin-bottom:12px">Сканируйте для начала/окончания работы</p>
+      <div class="qr-display" id="emp-qr-display"></div>
+      <p style="margin-top:12px;font-family:monospace;font-size:.9rem;color:var(--text2)">ID: ${e.qrCode}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="printQR('${e.name}','${e.qrCode}')">🖨️ Распечатать QR</button>
+    </div>
+  `, `<button class="btn btn-outline" onclick="closeModal()">Закрыть</button>`);
+  generateQR(e.qrCode, 'emp-qr-display', 200);
+}
+
+function printQR(name, code) {
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>QR ${name}</title>
+    <style>body{text-align:center;padding:20px;font-family:Arial}h2{margin-bottom:5px}p{color:#666}</style></head><body>
+    <h2>${name}</h2><p>QR-код для учёта рабочего времени</p>
+    <div style="width:200px;height:200px;border:2px solid #000;display:inline-flex;align-items:center;justify-content:center;font-size:14px;margin:20px 0">
+      QR: ${code}
+    </div><br>
+    <script>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+
+// ==========================================
+// СТРАНИЦА: ШТРАФЫ
+// ==========================================
+function renderFines() {
+  const fines = DB.get('fines') || [];
+  const employees = DB.get('employees') || [];
+
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>⚠️ Штрафы и прощения</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openFineModal()">➕ Новый штраф</button>
+        <button class="btn btn-outline" onclick="exportToCSV(fines,['date','employee','reason','amount','status','photo'],'Штрафы')">📊 Экспорт</button>
+      </div>
+    </div>
+
+    <div class="stat-card fade-in" style="margin-bottom:20px">
+      <h3 style="margin-bottom:12px">📖 Правила — как не получить штраф:</h3>
+      <ul style="padding-left:20px;line-height:2;color:var(--text2)">
+        <li>✅ Сканируйте QR-код при начале и окончании работы</li>
+        <li>✅ Проверяйте товар при приемке (количество, качество, срок годности)</li>
+        <li>✅ Размещайте товар только в назначенные места хранения</li>
+        <li>✅ Подтверждайте отгрузку только после проверки</li>
+        <li>✅ Соблюдайте технику безопасности на складе</li>
+        <li>✅ Ведите фотофиксацию при повреждении товара</li>
+        <li>❌ Не оставляйте товары без оформления</li>
+        <li>❌ Не допускайте пересортицу при размещении</li>
+      </ul>
+    </div>
+
+    <div class="table-container fade-in">
+      <div class="table-header"><h3>Штрафы и прощения (${fines.length})</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Дата</th><th>Сотрудник</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Фото</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${fines.map(f => {
+              const emp = employees.find(e => e.id === f.employeeId);
+              return `<tr>
+                <td>${formatDate(f.date)}</td>
+                <td>${emp ? emp.name : '—'}</td>
+                <td>${f.reason}</td>
+                <td style="color:${f.type==='fine'?'var(--danger)':'var(--success)'}; font-weight:600">${f.type==='fine'?'-':''}${formatMoney(f.amount)}</td>
+                <td>${f.forgiven ? '<span class="badge badge-success">Прощён</span>' : '<span class="badge badge-danger">Активен</span>'}</td>
+                <td>${f.photo ? `<img src="${f.photo}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer" onclick="window.open('${f.photo}')">` : '—'}</td>
+                <td>
+                  ${!f.forgiven ? `<button class="btn btn-sm btn-success" onclick="forgiveFine('${f.id}')">🤝 Простить</button>` : ''}
+                  <button class="btn btn-sm btn-primary" onclick="openFineModal('${f.id}')">✏️</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteFine('${f.id}')">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('')}
+            ${fines.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text2)">Нет штрафов 🎉</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openFineModal(id) {
+  const fines = DB.get('fines') || [];
+  const employees = DB.get('employees') || [];
+  const f = id ? fines.find(x => x.id === id) : null;
+
+  openModal(f ? 'Редактировать штраф' : 'Новый штраф', `
+    <div class="form-group">
+      <label>Сотрудник</label>
+      <select id="fine-employee">
+        <option value="">— Выберите —</option>
+        ${employees.map(e => `<option value="${e.id}" ${f?.employeeId===e.id?'selected':''}>${e.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Тип</label>
+        <select id="fine-type">
+          <option value="fine" ${f?.type==='fine'?'selected':''}>Штраф</option>
+          <option value="bonus" ${f?.type==='bonus'?'selected':''}>Премия</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Сумма (₽)</label>
+        <input type="number" id="fine-amount" value="${f?.amount||1000}" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Причина / За что</label>
+      <textarea id="fine-reason" rows="3" placeholder="Опишите причину...">${f?.reason||''}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Фото фиксация</label>
+      ${photoInputHTML('fine-photo', f?.photo||'')}
+    </div>
+    <div class="form-group">
+      <label>Дата</label>
+      <input type="datetime-local" id="fine-date" value="${f?.date ? new Date(f.date).toISOString().slice(0,16) : new Date().toISOString().slice(0,16)}">
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveFine('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+async function saveFine(id) {
+  const fines = DB.get('fines') || [];
+  const photoInput = document.getElementById('fine-photo');
+  let photo = '';
+  if (photoInput.files[0]) photo = await fileToBase64(photoInput.files[0]);
+  else if (id) photo = fines.find(f=>f.id===id)?.photo || '';
+
+  const data = {
+    employeeId: document.getElementById('fine-employee').value,
+    type: document.getElementById('fine-type').value,
+    amount: parseFloat(document.getElementById('fine-amount').value) || 0,
+    reason: document.getElementById('fine-reason').value,
+    photo,
+    date: new Date(document.getElementById('fine-date').value).toISOString()
+  };
+
+  if (!data.employeeId || !data.reason) { alert('Заполните все поля'); return; }
+
+  if (id) {
+    const idx = fines.findIndex(f => f.id === id);
+    if (idx >= 0) Object.assign(fines[idx], data);
+  } else {
+    data.id = DB.genId();
+    data.forgiven = false;
+    fines.push(data);
+    DB.addLog('fine_new', `Штраф: ${data.reason}`);
+  }
+
+  DB.set('fines', fines);
+  closeModal();
+  renderFines();
+}
+
+function forgiveFine(id) {
+  const fines = DB.get('fines') || [];
+  const f = fines.find(x => x.id === id);
+  if (f) {
+    f.forgiven = true;
+    DB.set('fines', fines);
+    DB.addLog('fine_forgive', `Штраф прощён: ${f.reason}`);
+    renderFines();
+  }
+}
+
+function deleteFine(id) {
+  if (!confirm('Удалить штраф?')) return;
+  let fines = DB.get('fines') || [];
+  fines = fines.filter(f => f.id !== id);
+  DB.set('fines', fines);
+  renderFines();
+}
+
+// ==========================================
+// СТРАНИЦА: ЭТИКЕТКИ (58x40)
+// ==========================================
+function renderLabels() {
+  const products = DB.get('products') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>🏷️ Печать этикеток (58×40 мм)</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="printAllLabels()">🖨️ Печать всех этикеток</button>
+      </div>
+    </div>
+    <div class="grid-2 fade-in">
+      <div class="table-container">
+        <div class="table-header"><h3>Выбор товаров для печати</h3></div>
+        <div style="padding:16px;max-height:400px;overflow-y:auto">
+          ${products.map(p => `
+            <label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer">
+              <input type="checkbox" class="label-check" value="${p.id}" data-barcode="${p.barcode||''}" data-name="${p.name}" data-article="${p.article||''}" data-expiry="${p.expiry||''}" data-kiz="${p.kiz||''}">
+              ${p.photo ? `<img src="${p.photo}" style="width:32px;height:32px;border-radius:6px;object-fit:cover">` : '📦'}
+              <span style="flex:1">${p.name}</span>
+              <span style="font-size:.8rem;color:var(--text2)">${p.barcode||'—'}</span>
+              ${p.kiz ? `<span class="badge badge-info">КИЗ</span>` : ''}
+            </label>
+          `).join('')}
+        </div>
+        <div style="padding:16px;border-top:1px solid var(--border)">
+          <div class="form-group">
+            <label>Количество копий на каждый товар</label>
+            <input type="number" id="label-copies" value="1" min="1" max="100">
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="printSelectedLabels()">🖨️ Печать выбранных</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <div class="table-header"><h3>Предпросмотр этикетки</h3></div>
+        <div style="padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px">
+          <div style="width:218px;height:150px;border:2px solid #333;padding:8px;font-family:monospace;font-size:9pt;background:#fff;color:#000;position:relative">
+            <div style="text-align:center;font-weight:bold;font-size:10pt;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="preview-name">Название товара</div>
+            <div id="preview-barcode" style="text-align:center;margin:4px 0;height:40px"></div>
+            <div style="text-align:center;font-size:8pt;color:#666">Арт: <span id="preview-article">—</span></div>
+            <div style="text-align:center;font-size:8pt;color:#666">ШК: <span id="preview-barcode-text">—</span></div>
+            <div id="preview-kiz" style="text-align:center;font-size:7pt;color:#e74c3c;margin-top:2px;display:none">КИЗ: <span id="preview-kiz-text"></span></div>
+            <div id="preview-expiry" style="text-align:center;font-size:8pt;color:red;font-weight:bold;margin-top:2px;display:none">Годен до: <span id="preview-exp-text"></span></div>
+          </div>
+        </div>
+        <p style="padding:0 20px 16px;font-size:.8rem;color:var(--text2)">Этикетка 58×40 мм для термопринтера. Включает ШК + КИЗ в одном файле.</p>
+      </div>
+    </div>
+  `;
+
+  // Add click handlers for preview
+  document.querySelectorAll('.label-check').forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (this.checked) {
+        document.getElementById('preview-name').textContent = this.dataset.name;
+        document.getElementById('preview-article').textContent = this.dataset.article || '—';
+        document.getElementById('preview-barcode-text').textContent = this.dataset.barcode || '—';
+        generateBarcode(this.dataset.barcode || this.dataset.article || this.dataset.name, 'preview-barcode', 180, 35);
+        if (this.dataset.kiz) {
+          document.getElementById('preview-kiz').style.display = 'block';
+          document.getElementById('preview-kiz-text').textContent = this.dataset.kiz;
+        } else {
+          document.getElementById('preview-kiz').style.display = 'none';
+        }
+        if (this.dataset.expiry) {
+          document.getElementById('preview-expiry').style.display = 'block';
+          document.getElementById('preview-exp-text').textContent = this.dataset.expiry;
+        } else {
+          document.getElementById('preview-expiry').style.display = 'none';
+        }
+      }
+    });
+  });
+}
+
+function printSelectedLabels() {
+  const checks = document.querySelectorAll('.label-check:checked');
+  const copies = parseInt(document.getElementById('label-copies').value) || 1;
+  const printArea = document.getElementById('print-area');
+  let html = '';
+
+  checks.forEach(cb => {
+    for (let i = 0; i < copies; i++) {
+      html += `<div class="label-58x40">
+        <div style="text-align:center;font-weight:bold;font-size:9pt;margin-bottom:2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cb.dataset.name}</div>
+        <div style="text-align:center;margin:1mm 0">
+          <svg viewBox="0 0 200 60" style="width:50mm;height:15mm">${generateBarcodeSVG(cb.dataset.barcode || cb.dataset.article || cb.dataset.name)}</svg>
+        </div>
+        <div style="text-align:center;font-size:7pt;color:#666">Арт: ${cb.dataset.article || '—'}</div>
+        <div style="text-align:center;font-size:7pt;color:#666">ШК: ${cb.dataset.barcode || '—'}</div>
+        ${cb.dataset.kiz ? `<div style="text-align:center;font-size:7pt;color:#e74c3c;margin-top:1mm">КИЗ: ${cb.dataset.kiz}</div>` : ''}
+        ${cb.dataset.expiry ? `<div style="text-align:center;font-size:7pt;color:red;font-weight:bold;margin-top:1mm">Годен до: ${cb.dataset.expiry}</div>` : ''}
+      </div>`;
+    }
+  });
+
+  printArea.innerHTML = html;
+  printArea.style.display = 'block';
+  setTimeout(() => { window.print(); setTimeout(() => printArea.style.display = 'none', 500); }, 300);
+}
+
+function printAllLabels() {
+  document.querySelectorAll('.label-check').forEach(cb => cb.checked = true);
+  printSelectedLabels();
+}
+
+// ==========================================
+// СТРАНИЦА: КАРТА СКЛАДА
+// ==========================================
+function renderMap() {
+  const locations = DB.get('locations') || [];
+  const products = DB.get('products') || [];
+
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>🗺️ Карта склада — движение товара онлайн</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openLocationModal()">➕ Добавить место</button>
+        <button class="btn btn-outline" onclick="refreshMap()">🔄 Обновить</button>
+      </div>
+    </div>
+    <div class="warehouse-map fade-in">
+      <h3 style="margin-bottom:8px">Схема склада</h3>
+      <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:4px;font-size:.85rem"><div style="width:16px;height:16px;border-radius:4px;background:rgba(0,184,148,.2);border:2px solid var(--success)"></div> Свободно</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:.85rem"><div style="width:16px;height:16px;border-radius:4px;background:rgba(253,203,110,.3);border:2px solid var(--warning)"></div> Частично</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:.85rem"><div style="width:16px;height:16px;border-radius:4px;background:rgba(231,76,60,.2);border:2px solid var(--danger)"></div> Заполнено</span>
+      </div>
+      <div class="map-grid" id="warehouse-map-grid">
+        ${locations.map(loc => {
+          const productsHere = products.filter(p => p.location === loc.id);
+          const totalQty = productsHere.reduce((s,p) => s + p.quantity, 0);
+          const fillPercent = loc.capacity > 0 ? Math.min(100, (totalQty / loc.capacity) * 100) : 0;
+          const statusClass = fillPercent === 0 ? 'empty' : fillPercent >= 90 ? 'full' : 'partial';
+          return `<div class="map-cell ${statusClass}" onclick="openLocationDetail('${loc.id}')" title="${loc.name}: ${totalQty}/${loc.capacity} шт">
+            <span style="font-size:.9rem">${loc.id}</span>
+            <span style="font-size:.65rem;margin-top:2px">${totalQty}/${loc.capacity}</span>
+            <div style="width:80%;height:4px;background:rgba(0,0,0,.1);border-radius:2px;margin-top:4px">
+              <div style="width:${fillPercent}%;height:100%;background:${fillPercent>=90?'var(--danger)':fillPercent>0?'var(--warning)':'var(--success)'};border-radius:2px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="table-container fade-in" style="margin-top:20px">
+      <div class="table-header"><h3>📊 Детализация мест хранения</h3></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Место</th><th>Зона</th><th>Ёмкость</th><th>Занято</th><th>Заполнение</th><th>Товары</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${locations.map(loc => {
+              const productsHere = products.filter(p => p.location === loc.id);
+              const totalQty = productsHere.reduce((s,p) => s + p.quantity, 0);
+              const fillPercent = loc.capacity > 0 ? Math.min(100, (totalQty / loc.capacity) * 100) : 0;
+              return `<tr>
+                <td><strong>${loc.id}</strong><br><small style="color:var(--text2)">${loc.name}</small></td>
+                <td>${loc.zone}</td>
+                <td>${loc.capacity} шт</td>
+                <td>${totalQty} шт</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+                      <div style="width:${fillPercent}%;height:100%;background:${fillPercent>=90?'var(--danger)':fillPercent>0?'var(--warning)':'var(--success)'};border-radius:4px;transition:.3s"></div>
+                    </div>
+                    <span style="font-size:.8rem;font-weight:600">${Math.round(fillPercent)}%</span>
+                  </div>
+                </td>
+                <td>${productsHere.map(p => `<span class="badge badge-info" style="margin:2px">${p.name}</span>`).join('') || '—'}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary" onclick="openLocationModal('${loc.id}')">✏️</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteLocation('${loc.id}')">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function refreshMap() { renderMap(); }
+
+function openLocationModal(id) {
+  const locations = DB.get('locations') || [];
+  const loc = id ? locations.find(x => x.id === id) : null;
+
+  openModal(loc ? 'Редактировать место' : 'Новое место хранения', `
+    <div class="form-row">
+      <div class="form-group">
+        <label>ID места</label>
+        <input type="text" id="loc-id" value="${loc?.id||''}" placeholder="A1" ${loc?'readonly':''}>
+      </div>
+      <div class="form-group">
+        <label>Зона</label>
+        <input type="text" id="loc-zone" value="${loc?.zone||''}" placeholder="A">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="loc-name" value="${loc?.name||''}" placeholder="Ряд A, Место 1">
+    </div>
+    <div class="form-group">
+      <label>Ёмкость (шт)</label>
+      <input type="number" id="loc-capacity" value="${loc?.capacity||100}" min="1">
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveLocation('${id||''}')">💾 Сохранить</button>
+  `);
+}
+
+function saveLocation(id) {
+  const locations = DB.get('locations') || [];
+  const data = {
+    id: document.getElementById('loc-id').value,
+    zone: document.getElementById('loc-zone').value,
+    name: document.getElementById('loc-name').value,
+    capacity: parseInt(document.getElementById('loc-capacity').value) || 100
+  };
+
+  if (!data.id || !data.name) { alert('Заполните ID и название'); return; }
+
+  if (id) {
+    const idx = locations.findIndex(l => l.id === id);
+    if (idx >= 0) Object.assign(locations[idx], data);
+  } else {
+    data.status = 'empty';
+    locations.push(data);
+  }
+
+  DB.set('locations', locations);
+  closeModal();
+  renderMap();
+}
+
+function deleteLocation(id) {
+  if (!confirm('Удалить место хранения?')) return;
+  let locations = DB.get('locations') || [];
+  locations = locations.filter(l => l.id !== id);
+  DB.set('locations', locations);
+  renderMap();
+}
+
+function openLocationDetail(locId) {
+  const locations = DB.get('locations') || [];
+  const products = DB.get('products') || [];
+  const loc = locations.find(l => l.id === locId);
+  const productsHere = products.filter(p => p.location === locId);
+
+  openModal(`📍 ${loc?.name || locId}`, `
+    <p style="margin-bottom:12px">Ёмкость: ${loc?.capacity || 0} шт | Заполнено: ${productsHere.reduce((s,p)=>s+p.quantity,0)} шт</p>
+    <table>
+      <thead><tr><th>Товар</th><th>ШК</th><th>Кол-во</th></tr></thead>
+      <tbody>
+        ${productsHere.map(p => `<tr><td>${p.name}</td><td><code>${p.barcode||'—'}</code></td><td>${p.quantity}</td></tr>`).join('')}
+        ${productsHere.length === 0 ? '<tr><td colspan="3" style="text-align:center;color:var(--text2)">Место свободно</td></tr>' : ''}
+      </tbody>
+    </table>
+  `, `<button class="btn btn-outline" onclick="closeModal()">Закрыть</button>`);
+}
+
+// ==========================================
+// СТРАНИЦА: ИНТЕГРАЦИИ
+// ==========================================
+function renderIntegrations() {
+  const integrations = DB.get('integrations') || {diadoc:{enabled:false,key:''},'1c':{enabled:false,key:''},wms:{enabled:false,key:''},clients:[]};
+
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>🔗 Интеграции</h1>
+    </div>
+    <div class="grid-2 fade-in">
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">📄 Диадок</h3>
+        <div class="form-group">
+          <label><input type="checkbox" id="int-diadoc-enabled" ${integrations.diadoc?.enabled?'checked':''}> Включить</label>
+        </div>
+        <div class="form-group">
+          <label>API Ключ</label>
+          <input type="text" id="int-diadoc-key" value="${integrations.diadoc?.key||''}" placeholder="Введите ключ API Диадок">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveIntegration('diadoc')">💾 Сохранить</button>
+      </div>
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">🏢 1С</h3>
+        <div class="form-group">
+          <label><input type="checkbox" id="int-1c-enabled" ${integrations['1c']?.enabled?'checked':''}> Включить</label>
+        </div>
+        <div class="form-group">
+          <label>API Ключ / URL</label>
+          <input type="text" id="int-1c-key" value="${integrations['1c']?.key||''}" placeholder="http://server:8080/1c-api">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveIntegration('1c')">💾 Сохранить</button>
+      </div>
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">📦 WMS</h3>
+        <div class="form-group">
+          <label><input type="checkbox" id="int-wms-enabled" ${integrations.wms?.enabled?'checked':''}> Включить</label>
+        </div>
+        <div class="form-group">
+          <label>API Ключ / URL</label>
+          <input type="text" id="int-wms-key" value="${integrations.wms?.key||''}" placeholder="WMS API endpoint">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveIntegration('wms')">💾 Сохранить</button>
+      </div>
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">👥 Клиенты (IP ключи)</h3>
+        <div id="clients-list">
+          ${(integrations.clients||[]).map((c,i) => `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+            <input type="text" value="${c.name||''}" style="flex:1;padding:8px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" placeholder="Название клиента">
+            <input type="text" value="${c.key||''}" style="flex:1;padding:8px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" placeholder="IP ключ">
+            <button class="btn btn-sm btn-danger" onclick="removeClient(${i})">✕</button>
+          </div>`).join('')}
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="addClient()" style="margin-top:8px">➕ Добавить клиента</button>
+        <button class="btn btn-primary btn-sm" onclick="saveClients()" style="margin-top:8px">💾 Сохранить</button>
+      </div>
+    </div>
+
+    <div class="table-container fade-in" style="margin-top:20px">
+      <div class="table-header"><h3>📊 Логи интеграций</h3></div>
+      <div style="padding:16px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:var(--text2)">
+        ${(DB.get('logs')||[]).filter(l=>l.action.startsWith('int_')).slice(0,50).map(l =>
+          `<div style="padding:4px 0;border-bottom:1px solid var(--border)">${formatDate(l.date)} — ${l.action}: ${l.details}</div>`
+        ).join('') || '<div style="padding:20px;text-align:center">Нет логов</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function saveIntegration(name) {
+  const integrations = DB.get('integrations') || {};
+  integrations[name] = {
+    enabled: document.getElementById(`int-${name}-enabled`).checked,
+    key: document.getElementById(`int-${name}-key`).value
+  };
+  DB.set('integrations', integrations);
+  DB.addLog('int_save', `Интеграция ${name} обновлена`);
+  alert('Сохранено!');
+}
+
+function addClient() {
+  const integrations = DB.get('integrations') || {clients:[]};
+  if (!integrations.clients) integrations.clients = [];
+  integrations.clients.push({name:'', key:''});
+  DB.set('integrations', integrations);
+  renderIntegrations();
+}
+
+function removeClient(idx) {
+  const integrations = DB.get('integrations') || {clients:[]};
+  integrations.clients.splice(idx, 1);
+  DB.set('integrations', integrations);
+  renderIntegrations();
+}
+
+function saveClients() {
+  const clients = [];
+  const container = document.getElementById('clients-list');
+  container.querySelectorAll('div').forEach(div => {
+    const inputs = div.querySelectorAll('input');
+    clients.push({name: inputs[0].value, key: inputs[1].value});
+  });
+  const integrations = DB.get('integrations') || {};
+  integrations.clients = clients;
+  DB.set('integrations', integrations);
+  DB.addLog('int_clients', 'Клиенты обновлены');
+  alert('Клиенты сохранены!');
+}
+
+// ==========================================
+// СТРАНИЦА: НАСТРОЙКИ
+// ==========================================
+function renderSettings() {
+  const users = DB.get('users') || [];
+  document.getElementById('content').innerHTML = `
+    <div class="topbar fade-in">
+      <h1>⚙️ Настройки</h1>
+    </div>
+
+    <div class="grid-2 fade-in">
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">👤 Управление пользователями</h3>
+        <div style="margin-bottom:12px">
+          ${users.map(u => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border)">
+            <span><strong>${u.name}</strong> <span class="badge badge-info">${u.role}</span></span>
+            <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})" ${u.id===1?'disabled':''}>🗑️</button>
+          </div>`).join('')}
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openUserModal()">➕ Добавить пользователя</button>
+      </div>
+
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">💾 Данные системы</h3>
+        <div class="form-group">
+          <label>Экспорт всех данных (JSON)</label>
+          <button class="btn btn-primary" style="width:100%" onclick="exportAllData()">📥 Скачать бэкап</button>
+        </div>
+        <div class="form-group">
+          <label>Импорт данных (JSON)</label>
+          <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('import-json-file').click()">📤 Загрузить бэкап</button>
+          <input type="file" id="import-json-file" accept=".json" style="display:none" onchange="importAllData(this)">
+        </div>
+        <div class="form-group">
+          <label>Очистка данных</label>
+          <button class="btn btn-danger" style="width:100%" onclick="clearAllData()">⚠️ Очистить все данные</button>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">🎨 Оформление</h3>
+        <div class="form-group">
+          <label>Тема оформления</label>
+          <button class="btn btn-outline" style="width:100%" onclick="toggleTheme()">🌓 Переключить день/ночь</button>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <h3 style="margin-bottom:16px">ℹ️ О системе</h3>
+        <p style="color:var(--text2);font-size:.9rem;line-height:1.8">
+          <strong>Фулфилмент PRO v1.0</strong><br>
+          Система управления складом и логистикой<br>
+          Хранение данных: localStorage<br>
+          Поддержка: печать этикеток 58×40, QR-коды, штрих-коды<br>
+          Интеграции: Диадок, 1С, WMS, клиенты по IP ключам
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function openUserModal() {
+  openModal('Новый пользователь', `
+    <div class="form-row">
+      <div class="form-group">
+        <label>Логин</label>
+        <input type="text" id="new-user-login" placeholder="Логин">
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="new-user-pass" placeholder="Пароль">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Имя</label>
+        <input type="text" id="new-user-name" placeholder="ФИО">
+      </div>
+      <div class="form-group">
+        <label>Роль</label>
+        <select id="new-user-role">
+          <option value="user">Сотрудник</option>
+          <option value="admin">Администратор</option>
+        </select>
+      </div>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveUser()">💾 Сохранить</button>
+  `);
+}
+
+function saveUser() {
+  const users = DB.get('users') || [];
+  const login = document.getElementById('new-user-login').value.trim();
+  const password = document.getElementById('new-user-pass').value.trim();
+  const name = document.getElementById('new-user-name').value.trim();
+  const role = document.getElementById('new-user-role').value;
+
+  if (!login || !password || !name) { alert('Заполните все поля'); return; }
+  if (users.find(u => u.login === login)) { alert('Логин уже существует'); return; }
+
+  users.push({id: Date.now(), login, password, name, role, photo: '', rate: 300});
+  DB.set('users', users);
+  DB.addLog('user_add', `Пользователь: ${name} (${login})`);
+  closeModal();
+  renderSettings();
+}
+
+function deleteUser(id) {
+  if (!confirm('Удалить пользователя?')) return;
+  let users = DB.get('users') || [];
+  users = users.filter(u => u.id !== id);
+  DB.set('users', users);
+  renderSettings();
+}
+
+function exportAllData() {
+  const data = DB.exportAll();
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fulfillment_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importAllData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (DB.importAll(e.target.result)) {
+      alert('Данные успешно импортированы!');
+      navigateTo('dashboard');
+    } else {
+      alert('Ошибка импорта. Проверьте формат файла.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('ВНИМАНИЕ! Все данные будут удалены. Продолжить?')) return;
+  if (!confirm('Вы уверены? Это действие нельзя отменить.')) return;
+  ['products','locations','receiving','shipping','inventory','tasks','employees','fines','logs','integrations'].forEach(k => {
+    localStorage.removeItem('ff_' + k);
+  });
   DB.init();
-  setTimeout(()=>{document.getElementById('splash').classList.add('hide');setTimeout(()=>{document.getElementById('splash').style.display='none';Auth.check();},800);},2200);
-  setInterval(()=>{ if(App.user && document.querySelector('[data-p="emp"]').classList.contains('active')) { document.querySelectorAll('[id^="tm-"]').forEach(el=>{ const id=el.id.split('-')[1]; const e=(DB.get('emp')||[]).find(v=>v.id===id); if(e?.act)el.textContent=Pages._tm(e); }); } },1000);
+  alert('Данные очищены');
+  navigateTo('dashboard');
+}
+
+// ==========================================
+// ИНИЦИАЛИЗАЦИЯ
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
+  DB.init();
+
+  // Splash screen
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      checkSession();
+    }, 800);
+  }, 2200);
 });
 </script>
 </body>
