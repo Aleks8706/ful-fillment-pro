@@ -2,239 +2,2551 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FulFill Pro — Полностью рабочий</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FulFill Pro — Система Фулфилмента с голосовым помощником</title>
+
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
-:root{--primary:#6366f1;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,0.12);--transition:all 0.3s ease}
-[data-theme="light"]{--bg:#f1f5f9;--bg-card:#fff;--bg-sidebar:#fff;--bg-input:#f8fafc;--text:#1e293b;--text-sec:#64748b;--border:#e2e8f0;--hover:#f1f5f9}
-[data-theme="dark"]{--bg:#0f172a;--bg-card:#1e293b;--bg-sidebar:#1e293b;--bg-input:#334155;--text:#f1f5f9;--text-sec:#94a3b8;--border:#334155;--hover:#334155}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);transition:var(--transition);overflow-x:hidden}
-#splash{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s,transform 0.5s}
-#splash.hide{opacity:0;pointer-events:none;transform:scale(1.1)}
-#splash .logo{font-size:64px;animation:pulse 2s infinite}
-#splash h1{color:#fff;font-size:28px;margin:16px 0 8px}
-#splash p{color:rgba(255,255,255,0.8);font-size:14px}
-.splash-loader{width:200px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin-top:32px;overflow:hidden}
-.splash-loader-bar{height:100%;background:#fff;border-radius:2px;animation:load 2s ease forwards}
-@keyframes load{0%{width:0}100%{width:100%}}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
-#login-screen{position:fixed;inset:0;z-index:9000;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
-.login-box{background:var(--bg-card);border-radius:20px;padding:32px;width:360px;max-width:90vw;border:1px solid var(--border)}
-.login-box h2{text-align:center;margin-bottom:24px}
-.login-box .logo-login{text-align:center;font-size:48px;margin-bottom:16px}
-#app{display:none;height:100vh}
-#app.active{display:flex}
-.sidebar{width:250px;background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:var(--transition);overflow-y:auto;flex-shrink:0}
-.sidebar-brand{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);position:relative}
-.sidebar-brand span{font-size:18px;font-weight:700}
-.sidebar-nav{padding:8px;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:var(--transition);color:var(--text-sec);font-size:13px;font-weight:500;margin-bottom:2px}
-.nav-item:hover,.nav-item.active{background:var(--primary);color:#fff}
-.nav-item .badge{margin-left:auto;background:var(--danger);color:#fff;padding:2px 6px;border-radius:8px;font-size:10px}
-.sidebar-footer{padding:12px;border-top:1px solid var(--border)}
-.user-info{display:flex;align-items:center;gap:10px}
-.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:56px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:10px}
-.topbar-search{flex:1;position:relative}
-.topbar-search input{width:100%;padding:8px 12px 8px 36px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none}
-.topbar-search::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px}
-.topbar-actions{display:flex;gap:6px;align-items:center}
-.content{flex:1;padding:12px;overflow-y:auto}
-.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3999;opacity:0;pointer-events:none;transition:opacity 0.3s}
-.sidebar-overlay.active{opacity:1;pointer-events:all}
-.sidebar-close-btn{display:none;position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;align-items:center;justify-content:center}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
-.stat-card{background:var(--bg-card);border-radius:var(--radius);padding:16px;border:1px solid var(--border)}
-.stat-card .icon{font-size:24px;margin-bottom:6px}
-.stat-card .value{font-size:22px;font-weight:700}
-.stat-card .label{font-size:11px;color:var(--text-sec);margin-top:2px}
-.card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:16px}
-.card h3{font-size:15px;font-weight:600;margin-bottom:12px}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:12px}
-th{font-weight:600;color:var(--text-sec);text-transform:uppercase;font-size:10px}
-.btn{padding:8px 14px;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:4px}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-success{background:var(--success);color:#fff}
-.btn-danger{background:var(--danger);color:#fff}
-.btn-warning{background:var(--warning);color:#000}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-sm{padding:5px 8px;font-size:11px}
-.voice-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.voice-btn.listening{animation:voicePulse 1s infinite;background:linear-gradient(135deg,#ef4444,#f97316)}
-@keyframes voicePulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.7)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
-.theme-toggle{width:36px;height:36px;border-radius:50%;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
-.page{display:none}.page.active{display:block}
-.warehouse-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
-.cell{aspect-ratio:1;border-radius:8px;border:2px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:11px;position:relative;overflow:hidden}
-.cell:hover{border-color:var(--primary);transform:scale(1.05)}
-.cell.occupied{background:rgba(99,102,241,0.15);border-color:var(--primary)}
-.cell.empty{background:rgba(16,185,129,0.1);border-color:var(--success)}
-.cell img{width:36px;height:36px;object-fit:cover;border-radius:6px;margin-bottom:2px}
-.cell .cell-label{font-weight:600}
-.cell .cell-qty{font-size:10px;color:var(--text-sec)}
-.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.product-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:var(--transition)}
-.product-card:hover{box-shadow:var(--shadow)}
-.product-photo{width:100%;height:140px;object-fit:cover;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--text-sec);font-size:40px}
-.product-info{padding:14px}
-.product-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:6px}
-.product-name{font-weight:600;font-size:14px}
-.product-sku{font-size:11px;color:var(--text-sec)}
-.product-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px}
-.product-meta-item{background:var(--bg-input);padding:4px 6px;border-radius:4px}
-.product-actions{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
-.form-group{margin-bottom:12px}
-.form-group label{display:block;font-size:11px;font-weight:500;color:var(--text-sec);margin-bottom:3px}
-.form-control{width:100%;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none}
-.form-control:focus{border-color:var(--primary)}
-textarea.form-control{resize:vertical;min-height:50px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.badge-status{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;display:inline-block}
-.badge-new{background:#dbeafe;color:#1d4ed8}
-.badge-done{background:#d1fae5;color:#065f46}
-.badge-error{background:#fee2e2;color:#991b1b}
-.badge-photo{background:rgba(99,102,241,0.15);color:var(--primary)}
-.modal-overlay{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:12px}
-.modal-overlay.active{display:flex}
-.modal{background:var(--bg-card);border-radius:14px;padding:20px;width:450px;max-width:95vw;max-height:85vh;overflow-y:auto;border:1px solid var(--border)}
-.modal h3{margin-bottom:14px;font-size:16px}
-.modal-footer{display:flex;gap:6px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
-.photo-upload{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border:2px dashed var(--border);border-radius:10px;cursor:pointer;transition:var(--transition);position:relative;background:var(--bg-input);text-align:center}
-.photo-upload:hover{border-color:var(--primary)}
-.photo-upload input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.photo-preview{width:80px;height:80px;border-radius:8px;object-fit:cover;border:2px solid var(--border)}
-.photo-placeholder{font-size:32px;color:var(--text-sec)}
-.photo-remove{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
-.photo-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.9);display:none;align-items:center;justify-content:center;cursor:pointer}
-.photo-modal.active{display:flex}
-.photo-modal img{max-width:90vw;max-height:90vh;border-radius:10px}
-.toast-container{position:fixed;bottom:12px;right:12px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:90vw}
-.toast{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:6px;font-size:12px;animation:slideIn 0.3s}
-.toast.success{border-left:3px solid var(--success)}
-.toast.error{border-left:3px solid var(--danger)}
-.toast.info{border-left:3px solid var(--info)}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-.tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{padding:6px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-sec);border-bottom:2px solid transparent;transition:var(--transition);white-space:nowrap}
-.tab.active,.tab:hover{color:var(--primary);border-bottom-color:var(--primary)}
-.tab-content{display:none}.tab-content.active{display:block}
-.sync-status{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-input);border-radius:6px;margin-bottom:10px;font-size:12px;flex-wrap:wrap}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.task-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.task-column{background:var(--bg-input);border-radius:var(--radius);padding:10px;min-height:150px}
-.task-column h4{margin-bottom:8px;font-size:12px;color:var(--text-sec)}
-.task-item{background:var(--bg-card);border-radius:6px;padding:8px;margin-bottom:6px;border:1px solid var(--border);font-size:12px}
-.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.emp-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:12px}
-.emp-header{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.emp-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
-.emp-name{font-weight:600}.emp-role{font-size:11px;color:var(--text-sec)}
-.emp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px}
-.emp-stat{background:var(--bg-input);padding:4px;border-radius:4px;text-align:center}
-.fine-card{background:var(--bg-card);border-radius:6px;border:1px solid var(--border);padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
-.fine-amount{font-size:16px;font-weight:700;color:var(--danger)}
-.live-dot{width:5px;height:5px;border-radius:50%;background:var(--success);display:inline-block;animation:blink 1.5s infinite}
-@media(max-width:768px){
-.sidebar{position:fixed;left:-270px;z-index:4000;height:100vh;transition:left 0.3s ease;box-shadow:4px 0 20px rgba(0,0,0,0.3)}
-.sidebar.open{left:0}.sidebar-close-btn{display:flex}.sidebar-brand{padding-right:44px}
-.form-row{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}
-.content{padding:10px}.products-grid{grid-template-columns:1fr}.modal{padding:14px}
+:root {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --radius: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.12);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+[data-theme="light"] {
+  --bg: #f1f5f9; --bg-card: #ffffff; --bg-sidebar: #ffffff;
+  --bg-input: #f8fafc; --text: #1e293b; --text-secondary: #64748b;
+  --border: #e2e8f0; --hover: #f1f5f9;
+}
+[data-theme="dark"] {
+  --bg: #0f172a; --bg-card: #1e293b; --bg-sidebar: #1e293b;
+  --bg-input: #334155; --text: #f1f5f9; --text-secondary: #94a3b8;
+  --border: #334155; --hover: #334155;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  transition: var(--transition); overflow-x: hidden;
+}
+
+/* SPLASH */
+#splash {
+  position: fixed; inset:0; z-index:10000;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.8s, transform 0.8s;
+}
+#splash.hide { opacity:0; pointer-events:none; transform:scale(1.1); }
+#splash .logo { font-size: 64px; animation: pulse 2s infinite; }
+#splash h1 { color:#fff; font-size:32px; margin:16px 0 8px; letter-spacing:2px; }
+#splash p { color:rgba(255,255,255,0.8); font-size:14px; }
+.splash-loader { width:200px; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin-top:32px; overflow:hidden; }
+.splash-loader-bar { height:100%; background:#fff; border-radius:2px; animation: load 2s ease-in-out forwards; }
+@keyframes load { 0%{width:0} 100%{width:100%} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+/* LOGIN */
+#login-screen {
+  position:fixed; inset:0; z-index:9000;
+  background: linear-gradient(135deg, var(--bg), var(--bg-card));
+  display:none; align-items:center; justify-content:center;
+}
+.login-box {
+  background: var(--bg-card); border-radius:20px; padding:48px;
+  width:400px; max-width:90vw; box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.login-box h2 { text-align:center; margin-bottom:32px; font-size:24px; }
+.login-box .logo-login { text-align:center; font-size:48px; margin-bottom:16px; }
+
+/* LAYOUT */
+#app { display:none; height:100vh; }
+#app.active { display:flex; }
+.sidebar {
+  width: 260px; background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display:flex; flex-direction:column;
+  transition: var(--transition); overflow-y: auto; flex-shrink: 0;
+}
+.sidebar-brand {
+  padding:20px; display:flex; align-items:center; gap:12px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-brand span { font-size:20px; font-weight:700; }
+.sidebar-nav { padding:12px; flex:1; }
+.nav-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border-radius:10px; cursor:pointer;
+  transition: var(--transition); color: var(--text-secondary);
+  font-size:14px; font-weight:500; margin-bottom:2px;
+}
+.nav-item:hover, .nav-item.active {
+  background: var(--primary); color:#fff;
+}
+.nav-item .badge {
+  margin-left:auto; background:var(--danger); color:#fff;
+  padding:2px 8px; border-radius:10px; font-size:11px;
+}
+.sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+.user-info { display:flex; align-items:center; gap:12px; }
+.user-avatar {
+  width:40px; height:40px; border-radius:50%;
+  background: var(--primary); display:flex;
+  align-items:center; justify-content:center; color:#fff; font-weight:700;
+}
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar {
+  height:64px; background: var(--bg-card);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 24px; gap:16px;
+}
+.topbar-search { flex:1; position:relative; }
+.topbar-search input {
+  width:100%; padding:10px 16px 10px 40px;
+  background: var(--bg-input); border:1px solid var(--border);
+  border-radius:10px; color: var(--text); font-size:14px;
+  outline:none; transition: var(--transition);
+}
+.topbar-search input:focus { border-color: var(--primary); }
+.topbar-search::before {
+  content:'🔍'; position:absolute; left:12px; top:50%;
+  transform:translateY(-50%); font-size:14px;
+}
+.topbar-actions { display:flex; gap:8px; align-items:center; }
+.content { flex:1; padding:24px; overflow-y:auto; }
+
+/* CARDS */
+.stats-grid {
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+  gap:16px; margin-bottom:24px;
+}
+.stat-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding:24px; border:1px solid var(--border);
+  transition: var(--transition);
+}
+.stat-card:hover { transform:translateY(-2px); box-shadow: var(--shadow); }
+.stat-card .icon { font-size:32px; margin-bottom:12px; }
+.stat-card .value { font-size:28px; font-weight:700; }
+.stat-card .label { font-size:13px; color: var(--text-secondary); margin-top:4px; }
+.card {
+  background: var(--bg-card); border-radius: var(--radius);
+  border:1px solid var(--border); padding:24px; margin-bottom:24px;
+}
+.card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px;
+}
+.card-header h3 { font-size:18px; font-weight:600; }
+
+/* TABLES */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th, td {
+  padding:12px 16px; text-align:left;
+  border-bottom:1px solid var(--border); font-size:13px;
+}
+th { font-weight:600; color: var(--text-secondary); text-transform:uppercase; font-size:11px; letter-spacing:0.5px; }
+tr:hover td { background: var(--hover); }
+
+/* BUTTONS */
+.btn {
+  padding:10px 20px; border:none; border-radius:8px;
+  font-size:14px; font-weight:500; cursor:pointer;
+  transition: var(--transition); display:inline-flex;
+  align-items:center; gap:8px;
+}
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-warning { background:var(--warning); color:#000; }
+.btn-outline { background:transparent; border:1px solid var(--border); color: var(--text); }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-icon { padding:8px; border-radius:8px; }
+
+/* VOICE ASSISTANT */
+.voice-btn {
+  width:44px; height:44px; border-radius:50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border: none; color: #fff; font-size: 20px;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: var(--transition);
+  position: relative;
+}
+.voice-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px rgba(99,102,241,0.5); }
+.voice-btn.listening {
+  animation: voicePulse 1s infinite;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+}
+@keyframes voicePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+  50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+}
+.voice-tooltip {
+  position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 6px; font-size: 11px;
+  white-space: nowrap; display: none; z-index: 100;
+  box-shadow: var(--shadow);
+}
+.voice-btn:hover .voice-tooltip { display: block; }
+
+.voice-panel {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px 24px; z-index: 6000;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  display: none; min-width: 320px; max-width: 500px;
+  animation: slideUp 0.3s ease;
+}
+.voice-panel.active { display: block; }
+@keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity:0; } to { transform: translateX(-50%) translateY(0); opacity:1; } }
+.voice-panel-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.voice-panel-status {
+  font-size: 14px; font-weight: 600;
+}
+.voice-panel-response {
+  font-size: 13px; color: var(--text-secondary);
+  padding: 8px; background: var(--bg-input);
+  border-radius: 8px; margin-bottom: 12px;
+  max-height: 150px; overflow-y: auto;
+  line-height: 1.5;
+}
+.voice-panel-commands {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.voice-command-chip {
+  padding: 4px 10px; background: var(--bg-input);
+  border: 1px solid var(--border); border-radius: 20px;
+  font-size: 11px; cursor: pointer; transition: var(--transition);
+}
+.voice-command-chip:hover { background: var(--primary); color: #fff; }
+
+/* FORMS */
+.form-group { margin-bottom:16px; }
+.form-group label {
+  display:block; font-size:13px; font-weight:500;
+  color: var(--text-secondary); margin-bottom:6px;
+}
+.form-control {
+  width:100%; padding:10px 14px;
+  background: var(--bg-input); border:1px solid var(--border);
+  border-radius:8px; color: var(--text); font-size:14px;
+  outline:none; transition: var(--transition);
+}
+.form-control:focus { border-color:var(--primary); }
+select.form-control { cursor:pointer; }
+textarea.form-control { resize:vertical; min-height:80px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* BADGES */
+.badge-status { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:500; }
+.badge-new { background:#dbeafe; color:#1d4ed8; }
+.badge-process { background:#fef3c7; color:#92400e; }
+.badge-done { background:#d1fae5; color:#065f46; }
+.badge-error { background:#fee2e2; color:#991b1b; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0; z-index:5000;
+  background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center;
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background: var(--bg-card); border-radius:16px;
+  padding:32px; width:600px; max-width:90vw;
+  max-height:85vh; overflow-y:auto;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+  border:1px solid var(--border);
+}
+.modal h3 { margin-bottom:20px; font-size:20px; }
+.modal-footer { display:flex; gap:12px; justify-content:flex-end; margin-top:20px; }
+
+.theme-toggle {
+  width:44px; height:44px; border-radius:50%;
+  background: var(--bg-input); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:20px; transition: var(--transition);
+}
+.page { display:none; }
+.page.active { display:block; }
+
+/* WAREHOUSE MAP */
+.warehouse-map {
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr));
+  gap:12px;
+}
+.cell {
+  aspect-ratio:1; border-radius:10px; border:2px solid var(--border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; transition: var(--transition); font-size:12px;
+  position:relative; overflow:hidden;
+}
+.cell:hover { border-color:var(--primary); transform:scale(1.05); }
+.cell.occupied { background: rgba(99,102,241,0.15); border-color:var(--primary); }
+.cell.empty { background: rgba(16,185,129,0.1); border-color:var(--success); }
+.cell.speaking { animation: cellSpeak 0.5s ease; border-color: var(--accent) !important; background: rgba(245,158,11,0.2) !important; }
+@keyframes cellSpeak { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+.cell .cell-label { font-weight:600; }
+.cell .cell-qty { font-size:10px; color: var(--text-secondary); }
+.cell img { width:40px; height:40px; object-fit:cover; border-radius:4px; margin-top:4px; }
+
+.qr-container { text-align:center; padding:20px; }
+
+.emp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.emp-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  border:1px solid var(--border); padding:20px;
+  transition: var(--transition);
+}
+.emp-card:hover { box-shadow: var(--shadow); }
+.emp-header { display:flex; gap:16px; align-items:center; margin-bottom:16px; }
+.emp-photo {
+  width:56px; height:56px; border-radius:50%;
+  background: var(--primary); display:flex; align-items:center;
+  justify-content:center; color:#fff; font-size:24px; font-weight:700;
+  overflow:hidden; flex-shrink:0;
+}
+.emp-photo img { width:100%; height:100%; object-fit:cover; }
+.emp-name { font-weight:600; font-size:16px; }
+.emp-role { font-size:12px; color: var(--text-secondary); }
+.emp-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.emp-stat { background: var(--bg-input); padding:8px; border-radius:8px; text-align:center; }
+.emp-stat .val { font-weight:700; font-size:16px; }
+.emp-stat .lbl { font-size:10px; color: var(--text-secondary); }
+
+.fine-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  border:1px solid var(--border); padding:16px; margin-bottom:12px;
+  display:flex; align-items:center; gap:16px;
+}
+.fine-amount { font-size:20px; font-weight:700; color:var(--danger); }
+.fine-amount.forgiven { color:var(--success); text-decoration:line-through; }
+.fine-details { flex:1; }
+.fine-details .reason { font-weight:500; }
+.fine-details .date { font-size:12px; color: var(--text-secondary); }
+.fine-photo { width:48px; height:48px; border-radius:8px; object-fit:cover; }
+
+.task-board { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.task-column { background: var(--bg-input); border-radius: var(--radius); padding:16px; min-height:300px; }
+.task-column h4 { margin-bottom:12px; font-size:14px; text-transform:uppercase; color: var(--text-secondary); }
+.task-item {
+  background: var(--bg-card); border-radius:8px; padding:12px;
+  margin-bottom:8px; border:1px solid var(--border);
+  cursor:grab; transition: var(--transition);
+}
+.task-item:hover { box-shadow: var(--shadow); }
+.task-item .task-title { font-weight:500; margin-bottom:4px; }
+.task-item .task-meta { font-size:11px; color: var(--text-secondary); }
+
+@media print {
+  body * { visibility:hidden; }
+  .print-area, .print-area * { visibility:visible; }
+  .print-area {
+    position:absolute; left:0; top:0;
+    width:58mm; height:40mm; padding:2mm;
+  }
+  .print-label { width:100%; text-align:center; }
+  .print-label .product-name { font-size:8px; font-weight:700; margin:2px 0; }
+  .print-label .product-sku { font-size:6px; color:#666; }
+  .print-label .product-expiry { font-size:6px; color:#999; }
+  .print-label svg { max-width:50mm; }
+}
+
+.toast-container {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  display:flex; flex-direction:column; gap:8px;
+}
+.toast {
+  background: var(--bg-card); border:1px solid var(--border);
+  border-radius:10px; padding:16px 24px;
+  box-shadow: var(--shadow); display:flex; align-items:center; gap:12px;
+  animation: slideIn 0.3s ease; min-width:300px;
+}
+.toast.success { border-left:4px solid var(--success); }
+.toast.error { border-left:4px solid var(--danger); }
+.toast.info { border-left:4px solid var(--info); }
+.toast.voice { border-left:4px solid #a855f7; }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+@media(max-width:768px) {
+  .sidebar { position:fixed; left:-260px; z-index:4000; height:100vh; }
+  .sidebar.open { left:0; }
+  .form-row { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+}
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+
+.tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:0; }
+.tab {
+  padding:10px 20px; cursor:pointer; font-size:14px; font-weight:500;
+  color: var(--text-secondary); border-bottom:2px solid transparent;
+  transition: var(--transition);
+}
+.tab.active, .tab:hover { color:var(--primary); border-bottom-color:var(--primary); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+.integ-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+.integ-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  border:1px solid var(--border); padding:24px; text-align:center;
+  transition: var(--transition);
+}
+.integ-card:hover { box-shadow: var(--shadow); transform:translateY(-2px); }
+.integ-card .integ-icon { font-size:40px; margin-bottom:12px; }
+.integ-card h4 { margin-bottom:8px; }
+.integ-card p { font-size:12px; color: var(--text-secondary); margin-bottom:16px; }
+.integ-status {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:20px; font-size:12px;
+}
+.integ-status.connected { background:rgba(16,185,129,0.15); color:var(--success); }
+.integ-status.disconnected { background:rgba(239,68,68,0.15); color:var(--danger); }
+
+.live-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--success); display:inline-block;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.hidden { display:none !important; }
+
+/* Voice Search Results */
+.voice-results {
+  position: fixed; top: 80px; right: 24px; z-index: 5500;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  display: none;
+}
+.voice-results.active { display: block; }
+.voice-result-item {
+  padding: 8px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: var(--transition);
+}
+.voice-result-item:hover { background: var(--hover); }
+.voice-result-item:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
-<div id="splash"><div class="logo">📦</div><h1>FulFill Pro</h1><p>Все модули работают</p><div class="splash-loader"><div class="splash-loader-bar"></div></div></div>
-<div id="login-screen"><div class="login-box"><div class="logo-login">📦</div><h2>Вход</h2><div class="form-group"><label>Логин</label><input type="text" class="form-control" id="login-user" placeholder="admin"></div><div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="login-pass" placeholder="admin"></div><button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="App.login()">🔐 Войти</button><p style="text-align:center;margin-top:10px;font-size:10px;color:var(--text-sec)">admin / admin</p></div></div>
 
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo">📦</div>
+  <h1>FulFill Pro</h1>
+  <p>Система управления фулфилмент-центром</p>
+  <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo-login">📦</div>
+    <h2>Вход в систему</h2>
+    <div class="form-group">
+      <label>Логин</label>
+      <input type="text" class="form-control" id="login-username" placeholder="Введите логин">
+    </div>
+    <div class="form-group">
+      <label>Пароль</label>
+      <input type="password" class="form-control" id="login-password" placeholder="Введите пароль">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="App.login()">
+      🔐 Войти
+    </button>
+    <p style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-secondary);">
+      admin / admin
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
 <div id="app">
-<aside class="sidebar" id="sidebar">
-<button class="sidebar-close-btn" onclick="App.closeSidebar()">✕</button>
-<div class="sidebar-brand"><span>📦</span><span>FulFill Pro</span></div>
-<nav class="sidebar-nav">
-<div class="nav-item active" data-page="dashboard">📊 Дашборд</div>
-<div class="nav-item" data-page="products">🏷️ Товары</div>
-<div class="nav-item" data-page="warehouse">🏭 Склад</div>
-<div class="nav-item" data-page="receiving">📥 Приемка</div>
-<div class="nav-item" data-page="shipping">📤 Отгрузка</div>
-<div class="nav-item" data-page="tasks">📋 Задачи</div>
-<div class="nav-item" data-page="employees">👥 Сотрудники</div>
-<div class="nav-item" data-page="fines">💰 Штрафы</div>
-<div class="nav-item" data-page="printing">🖨️ Печать</div>
-<div class="nav-item" data-page="sync">🔄 Синхронизация</div>
-<div class="nav-item" data-page="settings">⚙️ Настройки</div>
-</nav>
-<div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="u-avatar">A</div><div><div style="font-weight:600;font-size:12px;" id="u-name">Админ</div><div style="font-size:9px;color:var(--text-sec)" id="u-role">Админ</div></div></div></div>
-</aside>
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="App.closeSidebar()"></div>
-<div class="main">
-<header class="topbar">
-<button class="btn btn-outline" onclick="App.toggleSidebar()" style="display:none" id="menu-btn">☰</button>
-<div class="topbar-search"><input type="text" placeholder="Поиск..." id="g-search" oninput="App.search(this.value)"></div>
-<div class="topbar-actions"><span class="live-dot"></span><button class="voice-btn" onclick="Voice.toggle()">🎤</button><button class="theme-toggle" onclick="App.toggleTheme()" id="theme-btn">🌙</button><button class="btn btn-sm btn-outline" onclick="App.logout()">🚪</button></div>
-</header>
-<div class="content">
-<div class="page active" id="page-dashboard"><h2 style="margin-bottom:12px">📊 Панель управления</h2><div class="stats-grid" id="d-stats"></div></div>
-<div class="page" id="page-products"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>🏷️ Товары</h2><div style="display:flex;gap:4px"><button class="btn btn-primary" onclick="Products.add()">➕ Добавить</button><button class="btn btn-outline" onclick="Products.exportExcel()">📤 Экспорт</button></div></div><div class="form-group"><input type="text" class="form-control" placeholder="Поиск..." oninput="Products.filter(this.value)"></div><div class="products-grid" id="products-grid"></div></div>
-<div class="page" id="page-warehouse"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>🏭 Склад</h2><button class="btn btn-primary" onclick="Warehouse.addCell()">➕ Ячейка</button></div><div class="tabs"><div class="tab active" data-tab="wh-map">🗺️ Карта</div><div class="tab" data-tab="wh-list">📋 Список</div></div><div class="tab-content active" id="tab-wh-map"><div class="warehouse-map" id="wh-map"></div></div><div class="tab-content" id="tab-wh-list"><div class="table-wrap"><table><thead><tr><th>Фото</th><th>Ячейка</th><th>Товар</th><th>Кол-во</th><th>Действия</th></tr></thead><tbody id="wh-tbody"></tbody></table></div></div></div>
-<div class="page" id="page-receiving"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>📥 Приемка</h2><div style="display:flex;gap:4px"><button class="btn btn-success" onclick="Receiving.add()">➕ Новая</button><button class="btn btn-outline" onclick="Receiving.scan()">📷 Сканировать</button></div></div><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Позиций</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="recv-tbody"></tbody></table></div></div>
-<div class="page" id="page-shipping"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>📤 Отгрузка</h2><button class="btn btn-primary" onclick="Shipping.add()">➕ Новая</button></div><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Клиент</th><th>Позиций</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="ship-tbody"></tbody></table></div></div>
-<div class="page" id="page-tasks"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>📋 Задачи</h2><button class="btn btn-primary" onclick="Tasks.add()">➕ Создать</button></div><div class="task-board"><div class="task-column"><h4>📌 Новые</h4><div id="tk-new"></div></div><div class="task-column"><h4>⚙️ В работе</h4><div id="tk-proc"></div></div><div class="task-column"><h4>✅ Готово</h4><div id="tk-done"></div></div></div></div>
-<div class="page" id="page-employees"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h2>👥 Сотрудники</h2><button class="btn btn-primary" onclick="Employees.add()">➕ Добавить</button></div><div class="emp-grid" id="emp-grid"></div></div>
-<div class="page" id="page-fines"><h2>💰 Штрафы</h2><button class="btn btn-danger" onclick="Fines.add()" style="margin:8px 0">➕ Начислить</button><div id="fines-list"></div></div>
-<div class="page" id="page-printing"><h2>🖨️ Печать</h2><div class="card"><div class="form-row"><div class="form-group"><label>Товар</label><input type="text" class="form-control" id="p-name"></div><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="p-sku"></div></div><div class="form-row"><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="p-bc"></div><div class="form-group"><label>Копий</label><input type="number" class="form-control" id="p-copies" value="1"></div></div><button class="btn btn-primary" onclick="Printing.print()">🖨️ Печать</button><div id="p-preview" style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:12px;display:inline-block"></div></div></div>
-<div class="page" id="page-sync"><h2>🔄 Синхронизация</h2><div class="sync-status"><div class="sync-dot"></div><span>Устройство: <b id="dev-id"></b></span></div><div class="card"><h3>📱 QR-код</h3><button class="btn btn-primary" onclick="Sync.generateQR()">📤 Создать QR</button><div id="sync-qr-export" style="margin-top:10px;text-align:center"></div></div><div class="card" style="margin-top:10px"><h3>💾 Файл</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="Sync.exportFile()">📤 Экспорт</button><button class="btn btn-outline" onclick="document.getElementById('sync-file').click()">📥 Импорт</button><input type="file" id="sync-file" accept=".json" style="display:none" onchange="Sync.importFile(this)"></div></div><div class="card" style="margin-top:10px"><h3>📋 Лог</h3><div id="sync-log" style="max-height:120px;overflow-y:auto;font-size:10px"></div></div></div>
-<div class="page" id="page-settings"><h2>⚙️ Настройки</h2><div class="card"><h3>👤 Пользователи</h3><div id="set-users"></div></div><div class="card"><h3>🗑️ Данные</h3><button class="btn btn-danger" onclick="if(confirm('Удалить ВСЕ?')){DB.clearAll();location.reload()}">Сбросить всё</button></div></div>
-</div></div></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span>📦</span>
+      <span>FulFill Pro</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard">📊 Дашборд</div>
+      <div class="nav-item" data-page="warehouse">🏭 Склад <span class="badge" id="badge-warehouse">0</span></div>
+      <div class="nav-item" data-page="receiving">📥 Приемка <span class="badge" id="badge-receiving">0</span></div>
+      <div class="nav-item" data-page="shipping">📤 Отгрузка <span class="badge" id="badge-shipping">0</span></div>
+      <div class="nav-item" data-page="tasks">📋 Задачи <span class="badge" id="badge-tasks">0</span></div>
+      <div class="nav-item" data-page="employees">👥 Сотрудники</div>
+      <div class="nav-item" data-page="inventory">📦 Инвентаризация</div>
+      <div class="nav-item" data-page="fines">💰 Штрафы</div>
+      <div class="nav-item" data-page="printing">🖨️ Печать этикеток</div>
+      <div class="nav-item" data-page="integrations">🔗 Интеграции</div>
+      <div class="nav-item" data-page="settings">⚙️ Настройки</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div>
+          <div style="font-weight:600;font-size:14px;" id="user-name">Админ</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="user-role">Администратор</div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
-<div class="modal-overlay" id="modal"><div class="modal" id="modal-box"></div></div>
-<div class="toast-container" id="toasts"></div>
-<div class="print-area" id="print-area" style="display:none"></div>
-<div class="photo-modal" id="photo-modal" onclick="this.classList.remove('active')"><img id="photo-full"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="btn-icon btn-outline" onclick="App.toggleSidebar()" style="display:none;" id="menu-btn">☰</button>
+      <div class="topbar-search">
+        <input type="text" placeholder="Поиск по системе..." id="global-search" oninput="App.globalSearch(this.value)">
+      </div>
+      <div class="topbar-actions">
+        <span class="live-dot" title="Онлайн"></span>
+        <button class="voice-btn" id="voice-btn" onclick="VoiceAssistant.toggle()" title="Голосовой помощник">
+          🎤
+          <span class="voice-tooltip">Голосовой поиск по складу</span>
+        </button>
+        <button class="theme-toggle" onclick="App.toggleTheme()" id="theme-btn">🌙</button>
+        <button class="btn btn-sm btn-outline" onclick="App.logout()">🚪 Выход</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <h2 style="margin-bottom:24px;">📊 Панель управления</h2>
+        <div class="stats-grid" id="dashboard-stats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <div class="card">
+            <div class="card-header"><h3>📥 Последние приемки</h3></div>
+            <div id="dash-recent-receiving"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3> Последние отгрузки</h3></div>
+            <div id="dash-recent-shipping"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>🗺️ Схема склада — Онлайн</h3></div>
+          <div class="warehouse-map" id="dash-warehouse-map"></div>
+        </div>
+      </div>
+
+      <!-- WAREHOUSE -->
+      <div class="page" id="page-warehouse">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>🏭 Склад — Места хранения</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="Warehouse.addCell()">➕ Добавить ячейку</button>
+            <button class="btn btn-outline" onclick="Warehouse.importExcel()">📥 Импорт Excel</button>
+            <button class="btn btn-outline" onclick="Warehouse.exportExcel()">📤 Экспорт</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" data-tab="wh-map">🗺️ Карта склада</div>
+          <div class="tab" data-tab="wh-table">📋 Таблица</div>
+          <div class="tab" data-tab="wh-docs">📄 Документы</div>
+        </div>
+        <div class="tab-content active" id="tab-wh-map">
+          <div class="warehouse-map" id="warehouse-map"></div>
+        </div>
+        <div class="tab-content" id="tab-wh-table">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Ячейка</th><th>Зона</th><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Срок годности</th><th>Фото</th><th>Действия</th></tr>
+              </thead>
+              <tbody id="warehouse-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-wh-docs">
+          <div class="card">
+            <h3>📄 Документы склада</h3>
+            <div id="warehouse-docs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECEIVING -->
+      <div class="page" id="page-receiving">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2> Приемка товара</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success" onclick="Receiving.createNew()">➕ Новая приемка</button>
+            <button class="btn btn-outline" onclick="Receiving.scanBarcode()">📷 Сканировать</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📋 Список приемок</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Кол-во</th><th>Статус</th><th>Действия</th></tr></thead>
+              <tbody id="receiving-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHIPPING -->
+      <div class="page" id="page-shipping">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>📤 Отгрузка товара</h2>
+          <button class="btn btn-primary" onclick="Shipping.createNew()">➕ Новая отгрузка</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>№</th><th>Дата</th><th>Клиент</th><th>Товары</th><th>Статус</th><th>Действия</th></tr></thead>
+              <tbody id="shipping-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div class="page" id="page-tasks">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>📋 Задачи на день</h2>
+          <button class="btn btn-primary" onclick="Tasks.create()">➕ Создать задачу</button>
+        </div>
+        <div class="task-board">
+          <div class="task-column"><h4>📌 Новые</h4><div id="tasks-new"></div></div>
+          <div class="task-column"><h4> В работе</h4><div id="tasks-process"></div></div>
+          <div class="task-column"><h4>✅ Завершенные</h4><div id="tasks-done"></div></div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div class="page" id="page-employees">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>👥 Сотрудники</h2>
+          <button class="btn btn-primary" onclick="Employees.add()">➕ Добавить сотрудника</button>
+        </div>
+        <div class="emp-grid" id="employees-grid"></div>
+      </div>
+
+      <!-- INVENTORY -->
+      <div class="page" id="page-inventory">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>📦 Инвентаризация</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="Inventory.start()">📱 Начать (ТСД)</button>
+            <button class="btn btn-outline" onclick="Inventory.printReport()">️ Печать отчета</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3> Текущая инвентаризация</h3>
+            <span class="badge-status badge-process" id="inv-status">Не начата</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Ячейка</th><th>Система</th><th>Факт</th><th>Расхождение</th><th>Статус</th></tr></thead>
+              <tbody id="inventory-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINES -->
+      <div class="page" id="page-fines">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>💰 Штрафы и прощения</h2>
+          <button class="btn btn-danger" onclick="Fines.add()">➕ Начислить штраф</button>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:16px;">📜 Правила</h3>
+          <div id="fine-rules"></div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-bottom:16px;">📋 История штрафов</h3>
+          <div id="fines-list"></div>
+        </div>
+      </div>
+
+      <!-- PRINTING -->
+      <div class="page" id="page-printing">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2>🖨️ Печать этикеток 58×40</h2>
+          <button class="btn btn-primary" onclick="Printing.createFromWarehouse()">📦 Печать со склада</button>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:16px;">🏷️ Генератор этикеток</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Название товара</label><input type="text" class="form-control" id="print-name" placeholder="Название товара"></div>
+            <div class="form-group"><label>Артикул (SKU)</label><input type="text" class="form-control" id="print-sku" placeholder="SKU-001"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="print-barcode" placeholder="4601234567890"></div>
+            <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="print-expiry"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>QR / КИЗ</label><input type="text" class="form-control" id="print-qr" placeholder="Код маркировки"></div>
+            <div class="form-group"><label>Количество копий</label><input type="number" class="form-control" id="print-copies" value="1" min="1"></div>
+          </div>
+          <button class="btn btn-primary" onclick="Printing.generateLabel()">🖨️ Печать этикетки</button>
+          <button class="btn btn-outline" onclick="Printing.previewLabel()">👁️ Предпросмотр</button>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-bottom:16px;">👁️ Предпросмотр</h3>
+          <div id="print-preview" style="border:1px solid var(--border);border-radius:8px;padding:20px;display:inline-block;"></div>
+        </div>
+      </div>
+
+      <!-- INTEGRATIONS -->
+      <div class="page" id="page-integrations">
+        <h2 style="margin-bottom:24px;">🔗 Интеграции</h2>
+        <div class="integ-grid" id="integ-grid"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <h2 style="margin-bottom:24px;">⚙️ Настройки</h2>
+        <div class="card">
+          <h3 style="margin-bottom:16px;">💾 Импорт / Экспорт</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="IO.exportAll()">📤 Экспорт (JSON)</button>
+            <button class="btn btn-success" onclick="document.getElementById('import-file').click()">📥 Импорт</button>
+            <input type="file" id="import-file" accept=".json,.xlsx" style="display:none;" onchange="IO.importData(this)">
+            <button class="btn btn-danger" onclick="IO.resetAll()">🗑️ Сбросить</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <h3 style="margin-bottom:16px;">👤 Пользователи</h3>
+          <div id="settings-users"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- PRINT AREA -->
+<div class="print-area" id="print-area" style="display:none;"></div>
+
+<!-- VOICE PANEL -->
+<div class="voice-panel" id="voice-panel">
+  <div class="voice-panel-header">
+    <span style="font-size:24px;">🎤</span>
+    <span class="voice-panel-status" id="voice-status">Голосовой помощник</span>
+  </div>
+  <div class="voice-panel-response" id="voice-response">
+    Скажите команду, например: <em>"Где молоко?"</em> или <em>"Что в ячейке A1?"</em>
+  </div>
+  <div class="voice-panel-commands" id="voice-commands">
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('где молоко')">Где молоко?</span>
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('ячейка A1')">Ячейка A1</span>
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('сколько товаров')">Сколько товаров?</span>
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('список склад')">Список склада</span>
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('открыть склад')">Открыть склад</span>
+    <span class="voice-command-chip" onclick="VoiceAssistant.quickCommand('открыть приемка')">Открыть приемку</span>
+  </div>
+</div>
+
+<!-- VOICE SEARCH RESULTS -->
+<div class="voice-results" id="voice-results"></div>
 
 <script>
-const DB={get(k,d=null){try{const v=localStorage.getItem('ff_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('ff_'+k,JSON.stringify(v))}catch(e){App.toast('Память заполнена','error')}},getAll(){const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith('ff_'))d[k.slice(3)]=JSON.parse(localStorage.getItem(k))}return d},importAll(data){Object.entries(data).forEach(([k,v])=>DB.set(k,v))},clearAll(){Object.keys(DB.getAll()).forEach(k=>localStorage.removeItem('ff_'+k))}};
+// ==================== DATA LAYER ====================
+const DB = {
+  get(key, def=null) {
+    try { const d = localStorage.getItem('ff_'+key); return d ? JSON.parse(d) : def; }
+    catch(e) { return def; }
+  },
+  set(key, val) {
+    try { localStorage.setItem('ff_'+key, JSON.stringify(val)); } catch(e) { console.warn('Storage full'); }
+  },
+  getAll() {
+    const data = {};
+    for(let i=0; i<localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if(k && k.startsWith('ff_')) data[k.slice(3)] = JSON.parse(localStorage.getItem(k));
+    }
+    return data;
+  },
+  clearAll() {
+    const keys = [];
+    for(let i=0; i<localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if(k && k.startsWith('ff_')) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+  }
+};
 
-const Photo={maxSize:120*1024,maxW:300,maxH:300,compress(file){return new Promise((ok,err)=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height;if(w>this.maxW){h=h*this.maxW/w;w=this.maxW}if(h>this.maxH){w=w*this.maxH/h;h=this.maxH}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.8,url=c.toDataURL('image/jpeg',q);while(url.length>this.maxSize&&q>0.1){q-=0.1;url=c.toDataURL('image/jpeg',q)}ok(url)};img.onerror=()=>err('Ошибка изображения');img.src=e.target.result};r.onerror=()=>err('Ошибка чтения');r.readAsDataURL(file)})},view(src){if(!src)return;document.getElementById('photo-full').src=src;document.getElementById('photo-modal').classList.add('active')}};
+// ==================== INIT DEFAULTS ====================
+function initDefaults() {
+  if(!DB.get('initialized')) {
+    DB.set('users', [
+      { id:1, login:'admin', password:'admin', name:'Администратор', role:'admin', photo:'' },
+      { id:2, login:'manager', password:'1234', name:'Менеджер', role:'manager', photo:'' }
+    ]);
+    DB.set('warehouse_cells', [
+      { id:'A1', zone:'Зона A', product:'Молоко', sku:'MILK-001', qty:24, expiry:'2026-06-15', photo:'', status:'occupied' },
+      { id:'A2', zone:'Зона A', product:'Хлеб белый', sku:'BRD-001', qty:50, expiry:'2026-05-12', photo:'', status:'occupied' },
+      { id:'A3', zone:'Зона A', product:'Сыр Российский', sku:'CHS-001', qty:15, expiry:'2026-07-01', photo:'', status:'occupied' },
+      { id:'B1', zone:'Зона B', product:'Кофе Nescafe', sku:'COF-001', qty:30, expiry:'2027-01-01', photo:'', status:'occupied' },
+      { id:'B2', zone:'Зона B', product:'Чай Greenfield', sku:'TEA-001', qty:40, expiry:'2027-06-01', photo:'', status:'occupied' },
+      { id:'B3', zone:'Зона B', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
+      { id:'C1', zone:'Зона C', product:'Шампунь Head&Shoulders', sku:'SHP-001', qty:20, expiry:'2028-01-01', photo:'', status:'occupied' },
+      { id:'C2', zone:'Зона C', product:'Мыло Dove', sku:'SOP-001', qty:35, expiry:'2028-06-01', photo:'', status:'occupied' },
+      { id:'C3', zone:'Зона C', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
+      { id:'D1', zone:'Зона D', product:'Бумага А4 SvetoCopy', sku:'PAP-001', qty:100, expiry:'', photo:'', status:'occupied' },
+      { id:'D2', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' },
+      { id:'D3', zone:'Зона D', product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' }
+    ]);
+    DB.set('receivings', []);
+    DB.set('shippings', []);
+    DB.set('tasks', []);
+    DB.set('employees', [
+      { id:1, name:'Иванов Иван', role:'Кладовщик', rate:500, photo:'', status:'offline', qr:'EMP-001', checkIn:null, totalHours:0, totalEarned:0 },
+      { id:2, name:'Петрова Мария', role:'Менеджер', rate:600, photo:'', status:'offline', qr:'EMP-002', checkIn:null, totalHours:0, totalEarned:0 }
+    ]);
+    DB.set('fines', []);
+    DB.set('fine_rules', [
+      { rule:'Опоздание >15 мин', amount:500, description:'Штраф за опоздание' },
+      { rule:'Нарушение ТБ', amount:1000, description:'Работа без СИЗ' },
+      { rule:'Порча товара', amount:2000, description:'Бой, повреждение' }
+    ]);
+    DB.set('inventory', { active:false, items:[] });
+    DB.set('integrations', { diadoc:{connected:false,key:''}, oneC:{connected:false,url:'',key:''}, wms:{connected:false,url:'',key:''}, clients:[] });
+    DB.set('theme', 'dark');
+    DB.set('initialized', true);
+  }
+}
 
-function init(){if(!DB.get('init')){DB.set('users',[{id:1,login:'admin',password:'admin',name:'Администратор',role:'admin'}]);DB.set('products',[{id:'P1',name:'Молоко 1л',sku:'MILK-001',barcode:'4601111111111',category:'Молочные',price:89,desc:'Молоко',image:''},{id:'P2',name:'Хлеб',sku:'BRD-001',barcode:'4602222222222',category:'Хлеб',price:45,desc:'Хлеб белый',image:''}]);DB.set('barcodes',{'4601111111111':'P1','4602222222222':'P2'});DB.set('cells',[{id:'A1',zone:'A',pid:'P1',qty:24},{id:'A2',zone:'A',pid:'P2',qty:50},{id:'B1',zone:'B',pid:'',qty:0}]);DB.set('recv',[]);DB.set('ship',[]);DB.set('tasks',[]);DB.set('emp',[{id:1,name:'Иванов',role:'Кладовщик',rate:500,status:'off',checkIn:null,hours:0}]);DB.set('fines',[]);DB.set('theme','dark');DB.set('init',true)}}
+// ==================== VOICE ASSISTANT ====================
+const VoiceAssistant = {
+  synth: null,
+  recognition: null,
+  isListening: false,
+  voiceVolume: 1,
+  voiceRate: 1,
+  voicePitch: 1,
 
-const AudioMgr={play(ok){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);if(ok){o.frequency.setValueAtTime(800,c.currentTime);g.gain.setValueAtTime(0.2,c.currentTime)}else{o.frequency.setValueAtTime(200,c.currentTime);g.gain.setValueAtTime(0.3,c.currentTime)}g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.1);o.start();o.stop(c.currentTime+0.1)}catch(e){}}}
+  init() {
+    // Check browser support
+    if('speechSynthesis' in window) {
+      this.synth = window.speechSynthesis;
+      console.log('🔊 SpeechSynthesis available');
+    } else {
+      console.warn('⚠️ SpeechSynthesis not supported');
+    }
 
-const Voice={synth:null,rec:null,on:false,init(){if('speechSynthesis'in window)this.synth=window.speechSynthesis;if('webkitSpeechRecognition'in window||'SpeechRecognition'in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;this.rec=new SR();this.rec.lang='ru-RU';this.rec.onresult=e=>this.go(e.results[0][0].transcript);this.rec.onend=()=>{this.on=false;document.querySelector('.voice-btn')?.classList.remove('listening')}}},toggle(){if(!this.rec){App.toast('Голос не работает','error');return}this.on?this.rec.stop():(this.rec.start(),this.on=true,document.querySelector('.voice-btn')?.classList.add('listening'))},go(t){const l=t.toLowerCase();if(l.includes('товар'))App.nav('products');else if(l.includes('склад'))App.nav('warehouse');else if(l.includes('приемк'))App.nav('receiving');else App.toast('Не поняла','info')},speak(t){if(this.synth){this.synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';this.synth.speak(u)}}};
+    if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = 'ru-RU';
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 3;
 
-const Sync={getDevId(){let i=localStorage.getItem('ff_did');if(!i){i='DEV-'+Math.random().toString(36).substr(2,6).toUpperCase();localStorage.setItem('ff_did',i)}return i},log(a,d){const l=DB.get('logs',[]);l.unshift({t:new Date().toISOString(),d:this.getDevId(),a,d:d||''});if(l.length>50)l.length=50;DB.set('logs',l);this.render()},render(){const l=DB.get('logs',[]),e=document.getElementById('sync-log');if(!e)return;e.innerHTML=l.slice(0,20).map(x=>`<div style="padding:2px 0;border-bottom:1px solid var(--border)">${new Date(x.t).toLocaleTimeString()} ${x.d} — ${x.a}</div>`).join('')},init(){document.getElementById('dev-id').textContent=this.getDevId();this.render()},generateQR(){const d=DB.getAll(),c=document.getElementById('sync-qr-export');try{new QRCode(c,{text:JSON.stringify(d),width:150,height:150});this.log('QR')}catch(e){c.innerHTML='❌ QR ошибка'}}};
+      this.recognition.onstart = () => {
+        this.isListening = true;
+        document.getElementById('voice-btn').classList.add('listening');
+        document.getElementById('voice-status').textContent = '🎤 Слушаю...';
+        document.getElementById('voice-panel').classList.add('active');
+        document.getElementById('voice-response').innerHTML = '<em>Слушаю вас...</em>';
+      };
 
-const App={user:null,init(){init();const t=DB.get('theme','dark');document.documentElement.setAttribute('data-theme',t);document.getElementById('theme-btn').textContent=t==='dark'?'☀️':'🌙';setTimeout(()=>{const s=document.getElementById('splash');if(s){s.classList.add('hide');setTimeout(()=>{s.style.display='none';this.auth()}},500)}},1200);Voice.init();this.bindNav();this.bindTabs();this.updResp();window.addEventListener('resize',()=>this.updResp());this.swipe()},bindNav(){document.querySelectorAll('.nav-item').forEach(n=>{n.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));n.classList.add('active');const p=n.dataset.page;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p)?.classList.add('active');this.refresh(p);if(window.innerWidth<=768)this.closeSidebar()})})},bindTabs(){document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{const p=t.closest('.page');if(!p)return;p.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('tab-'+t.dataset.tab)?.classList.add('active')})})},updResp(){const b=document.getElementById('menu-btn');if(window.innerWidth<=768)b.style.display='flex';else{b.style.display='none';this.closeSidebar()}},toggleSidebar(){const s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay');if(s.classList.contains('open'))this.closeSidebar();else{s.classList.add('open');o.classList.add('active');document.body.style.overflow='hidden'}},closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');document.body.style.overflow=''},swipe(){let s=0,e=0;document.addEventListener('touchstart',t=>s=t.changedTouches[0].screenX,{passive:true});document.addEventListener('touchend',t=>{e=t.changedTouches[0].screenX;if(s-e>50&&window.innerWidth<=768)this.closeSidebar()},{passive:true})},auth(){const s=DB.get('session');if(s){this.user=DB.get('users').find(u=>u.id===s.id);if(this.user){this.showApp();return}}document.getElementById('login-screen').style.display='flex'},login(){const l=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value.trim(),u=DB.get('users').find(x=>x.login===l&&x.password===p);if(u){this.user=u;DB.set('session',{id:u.id});this.showApp()}else App.toast('Неверный логин','error')},logout(){DB.set('session',null);this.user=null;document.getElementById('app').classList.remove('active');document.getElementById('login-screen').style.display='flex'},showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('u-name').textContent=this.user.name;document.getElementById('u-role').textContent=this.user.role;document.getElementById('u-avatar').textContent=this.user.name[0];this.refresh('dashboard')},toggleTheme(){const c=document.documentElement.getAttribute('data-theme'),n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);DB.set('theme',n);document.getElementById('theme-btn').textContent=n==='dark'?'☀️':'🌙'},refresh(p){const m={dashboard:Dash,products:Products,warehouse:Warehouse,receiving:Receiving,shipping:Shipping,tasks:Tasks,employees:Employees,fines:Fines,printing:Printing,sync:Sync,settings:Settings};if(m[p])m[p].render()},nav(p){document.querySelectorAll('.nav-item').forEach(n=>{n.classList.remove('active');if(n.dataset.page===p)n.classList.add('active')});document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p)?.classList.add('active');this.refresh(p)},search(q){if(!q)return;this.nav('products');Products.filter(q.toLowerCase())},toast(m,t='info'){const c=document.getElementById('toasts'),d=document.createElement('div');d.className='toast '+t;d.innerHTML=`<span>${{success:'✅',error:'❌',info:'ℹ️'}[t]||'ℹ️'}</span><span>${m}</span>`;c.appendChild(d);setTimeout(()=>d.remove(),2500)},modal(h){document.getElementById('modal-box').innerHTML=h;document.getElementById('modal').classList.add('active')},closeModal(){document.getElementById('modal').classList.remove('active')},genId(){return Date.now().toString(36)},date(d){return d?new Date(d).toLocaleString('ru-RU'):'—'}};
+      this.recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
 
-const Dash={render(){const p=DB.get('products',[]),c=DB.get('cells',[]),r=DB.get('recv',[]),s=DB.get('ship',[]),occ=c.filter(x=>x.pid).length,tot=c.reduce((s,x)=>s+(x.qty||0),0);document.getElementById('d-stats').innerHTML=`<div class="stat-card"><div class="icon">🏷️</div><div class="value">${p.length}</div><div class="label">Товаров</div></div><div class="stat-card"><div class="icon">📦</div><div class="value">${tot}</div><div class="label">Единиц</div></div><div class="stat-card"><div class="icon">🏭</div><div class="value">${occ}/${c.length}</div><div class="label">Ячеек</div></div><div class="stat-card"><div class="icon">📥</div><div class="value">${r.length}</div><div class="label">Приемок</div></div>`}};
+        for(let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if(event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
 
-const Products={render(){const p=DB.get('products',[]),c=DB.get('cells',[]);document.getElementById('products-grid').innerHTML=p.map(x=>{const wh=c.filter(z=>z.pid===x.id),tot=wh.reduce((s,z)=>s+(z.qty||0),0),img=x.image?`<img src="${x.image}" class="product-photo" onclick="Photo.view('${x.image}')">`:'<div class="product-photo">📷</div>';return `<div class="product-card">${img}<div class="product-info"><div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku} | ${x.category||''}</div></div><span class="badge-status badge-photo">📦 ${tot}</span></div><div class="product-meta"><div class="product-meta-item">🏷️ ${x.barcode||'—'}</div><div class="product-meta-item">💰 ${x.price||0}₽</div></div>${x.desc?`<div style="margin-top:4px;font-size:10px;color:var(--text-sec)">${x.desc}</div>`:''}<div class="product-actions"><button class="btn btn-sm btn-primary" onclick="Products.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-outline" onclick="Products.photo('${x.id}')">📸</button><button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button></div></div></div>`}).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--text-sec);padding:30px">Нет товаров</p>'},filter(q){const p=DB.get('products',[]).filter(x=>(x.name+x.sku+(x.category||'')).toLowerCase().includes(q));document.getElementById('products-grid').innerHTML=p.map(x=>{const wh=DB.get('cells',[]).filter(z=>z.pid===x.id),tot=wh.reduce((s,z)=>s+(z.qty||0),0),img=x.image?`<img src="${x.image}" class="product-photo" onclick="Photo.view('${x.image}')">`:'<div class="product-photo">📷</div>';return `<div class="product-card">${img}<div class="product-info"><div class="product-header"><div><div class="product-name">${x.name}</div><div class="product-sku">${x.sku}</div></div></div><div class="product-meta"><div class="product-meta-item">📦 ${tot}</div><div class="product-meta-item">🏷️ ${x.barcode||'—'}</div></div><div class="product-actions"><button class="btn btn-sm btn-primary" onclick="Products.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-outline" onclick="Products.photo('${x.id}')">📸</button><button class="btn btn-sm btn-danger" onclick="Products.del('${x.id}')">🗑️</button></div></div></div>`}).join('')||'<p style="grid-column:1/-1;text-align:center;padding:20px">Не найдено</p>'},add(){App.modal(`<h3>➕ Новый товар</h3><div class="photo-upload" id="new-photo"><input type="file" accept="image/*" id="new-photo-file"><div class="photo-placeholder">📷</div><div style="font-size:11px;color:var(--text-sec)">Нажмите для фото</div><img src="" class="photo-preview" id="new-preview" style="display:none"></div><div class="form-group"><label>Название *</label><input type="text" class="form-control" id="pr-name"></div><div class="form-row"><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="pr-sku"></div><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="pr-bc"></div></div><div class="form-row"><div class="form-group"><label>Категория</label><input type="text" class="form-control" id="pr-cat" value="Другое"></div><div class="form-group"><label>Цена</label><input type="number" class="form-control" id="pr-price"></div></div><div class="form-group"><label>Описание</label><textarea class="form-control" id="pr-desc"></textarea></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Products.save()">💾 Сохранить</button></div>`);Products._img='';document.getElementById('new-photo-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{Products._img=await Photo.compress(f);document.getElementById('new-preview').src=Products._img;document.getElementById('new-preview').style.display='block'}catch(err){App.toast('Ошибка фото','error')}}},save(editId){const name=document.getElementById('pr-name').value.trim();if(!name){App.toast('Введите название','error');return}const p=DB.get('products',[]),d={name,sku:document.getElementById('pr-sku').value.trim(),barcode:document.getElementById('pr-bc').value.trim(),cat:document.getElementById('pr-cat').value,price:+document.getElementById('pr-price').value||0,desc:document.getElementById('pr-desc').value};if(editId){const i=p.findIndex(x=>x.id===editId);if(i>=0){if(Products._img!==undefined)p[i].image=Products._img||'';Object.assign(p[i],d)}}else{p.push({id:App.genId(),image:Products._img||'',...d,created:new Date().toISOString()})}DB.set('products',p);if(d.barcode){const bc=DB.get('barcodes',{});bc[d.barcode]=p[p.length-1].id||editId;DB.set('barcodes',bc)}App.closeModal();this.render();App.toast(editId?'Обновлено':'Создано','success');AudioMgr.play(true)},edit(id){const p=DB.get('products',[]).find(x=>x.id===id);if(!p)return;App.modal(`<h3>✏️ ${p.name}</h3><div class="photo-upload" id="edit-photo"><input type="file" accept="image/*" id="edit-photo-file">${p.image?`<img src="${p.image}" class="photo-preview" id="edit-preview"><button class="photo-remove" onclick="Products.remPhoto(event)">✕</button>`:'<div class="photo-placeholder">📷</div><div style="font-size:11px;color:var(--text-sec)">Нажмите</div><img src="" class="photo-preview" id="edit-preview" style="display:none">'}</div><div class="form-group"><label>Название</label><input type="text" class="form-control" id="pr-name" value="${p.name}"></div><div class="form-row"><div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="pr-sku" value="${p.sku||''}"></div><div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="pr-bc" value="${p.barcode||''}"></div></div><div class="form-row"><div class="form-group"><label>Категория</label><input type="text" class="form-control" id="pr-cat" value="${p.cat||'Другое'}"></div><div class="form-group"><label>Цена</label><input type="number" class="form-control" id="pr-price" value="${p.price||0}"></div></div><div class="form-group"><label>Описание</label><textarea class="form-control" id="pr-desc">${p.desc||''}</textarea></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Products.save('${id}')">💾 Сохранить</button></div>`);Products._img=p.image;document.getElementById('edit-photo-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{Products._img=await Photo.compress(f);document.getElementById('edit-preview').src=Products._img;document.getElementById('edit-preview').style.display='block'}catch(err){App.toast('Ошибка','error')}}},remPhoto(e){e.stopPropagation();e.preventDefault();Products._img='';document.getElementById('edit-preview').style.display='none';document.getElementById('edit-photo').innerHTML='<input type="file" accept="image/*" id="edit-photo-file"><div class="photo-placeholder">📷</div><div style="font-size:11px;color:var(--text-sec)">Нажмите</div><img src="" class="photo-preview" id="edit-preview" style="display:none">';document.getElementById('edit-photo-file').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;Products._img=await Photo.compress(f);document.getElementById('edit-preview').src=Products._img;document.getElementById('edit-preview').style.display='block'}},photo(id){const p=DB.get('products',[]).find(x=>x.id===id);if(!p)return;App.modal(`<h3>📸 ${p.name}</h3><div class="photo-upload"><input type="file" accept="image/*" id="ph-file"><div class="photo-placeholder">📷</div><div style="font-size:11px;color:var(--text-sec)">Загрузить новое фото</div><img src="" class="photo-preview" id="ph-preview" style="display:none"></div>${p.image?`<img src="${p.image}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;margin-top:8px"><br><button class="btn btn-sm btn-danger" style="margin-top:4px" onclick="Products.remProductPhoto('${id}')">Удалить текущее</button>`:''}<div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Products.savePhoto('${id}')">Сохранить</button></div>`);Products._img='';document.getElementById('ph-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;Products._img=await Photo.compress(f);document.getElementById('ph-preview').src=Products._img;document.getElementById('ph-preview').style.display='block'}},savePhoto(id){const p=DB.get('products',[]),i=p.findIndex(x=>x.id===id);if(i>=0&&Products._img){p[i].image=Products._img;DB.set('products',p);App.toast('Фото сохранено','success')}App.closeModal();this.render()},remProductPhoto(id){const p=DB.get('products',[]),i=p.findIndex(x=>x.id===id);if(i>=0){p[i].image='';DB.set('products',p);App.toast('Фото удалено','success')}App.closeModal();this.render()},del(id){if(!confirm('Удалить?'))return;DB.set('products',DB.get('products',[]).filter(x=>x.id!==id));this.render();App.toast('Удалено','success')},exportExcel(){const p=DB.get('products',[]),d=p.map(x=>({ID:x.id,Название:x.name,Артикул:x.sku,Штрихкод:x.barcode,Категория:x.cat||'',Цена:x.price}));const ws=XLSX.utils.json_to_sheet(d),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Товары');XLSX.writeFile(wb,'products_'+App.genId()+'.xlsx')}};
+        if(interimTranscript) {
+          document.getElementById('voice-response').innerHTML = `<em>🗣️ ${interimTranscript}</em>`;
+        }
 
-const Warehouse={render(){this.map();this.list()},map(){const w=DB.get('cells',[]),p=DB.get('products',[]);document.getElementById('wh-map').innerHTML=w.map(x=>{const pr=x.pid?p.find(z=>z.id===x.pid):null,img=pr?.image?`<img src="${pr.image}">`:'';return `<div class="cell ${x.pid?'occupied':'empty'}" onclick="Warehouse.edit('${x.id}')">${img}<div class="cell-label">${x.id}</div><div class="cell-qty">${x.qty||0}</div></div>`}).join('')},list(){const w=DB.get('cells',[]),p=DB.get('products',[]);document.getElementById('wh-tbody').innerHTML=w.map(x=>{const pr=x.pid?p.find(z=>z.id===x.pid):null,img=pr?.image?`<img src="${pr.image}" style="width:36px;height:36px;border-radius:4px;object-fit:cover" onclick="Photo.view('${pr.image}')">`:'<span style="color:var(--text-sec)">—</span>';return `<tr><td>${img}</td><td><b>${x.id}</b></td><td>${pr?pr.name:'—'}</td><td>${x.qty||0}</td><td><button class="btn btn-sm btn-outline" onclick="Warehouse.edit('${x.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="Warehouse.del('${x.id}')">🗑️</button></td></tr>`}).join('')},addCell(){App.modal(`<h3>➕ Ячейка</h3><div class="form-row"><div class="form-group"><label>ID</label><input type="text" class="form-control" id="w-id" placeholder="A3"></div><div class="form-group"><label>Зона</label><select class="form-control" id="w-zone"><option>A</option><option>B</option><option>C</option></select></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.save()">Сохранить</button></div>`)},save(){const id=document.getElementById('w-id').value.trim();if(!id){App.toast('Введите ID','error');return}const w=DB.get('cells',[]);if(w.find(x=>x.id===id)){App.toast('Уже есть','error');return}w.push({id,zone:document.getElementById('w-zone').value,pid:'',qty:0});DB.set('cells',w);App.closeModal();this.render()},edit(id){const w=DB.get('cells',[]).find(x=>x.id===id);if(!w)return;const p=DB.get('products',[]);App.modal(`<h3>✏️ ${w.id}</h3><div class="form-group"><label>Товар</label><select class="form-control" id="w-prod"><option value="">— Пусто —</option>${p.map(x=>`<option value="${x.id}" ${w.pid===x.id?'selected':''}>${x.name}</option>`).join('')}</select></div><div class="form-group"><label>Количество</label><input type="number" class="form-control" id="w-qty" value="${w.qty||0}"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Warehouse.update('${id}')">Обновить</button></div>`)},update(id){const w=DB.get('cells',[]),i=w.findIndex(x=>x.id===id);if(i<0)return;w[i].pid=document.getElementById('w-prod').value;w[i].qty=+document.getElementById('w-qty').value||0;DB.set('cells',w);App.closeModal();this.render()},del(id){if(!confirm('Удалить?'))return;DB.set('cells',DB.get('cells',[]).filter(x=>x.id!==id));this.render()}};
+        if(finalTranscript) {
+          this.processCommand(finalTranscript.trim());
+        }
+      };
 
-const Receiving={render(){const r=DB.get('recv',[]);document.getElementById('recv-tbody').innerHTML=r.map(x=>`<tr><td><b>${x.num}</b></td><td>${App.date(x.date)}</td><td>${x.sup||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.done?'done':'new'}">${x.done?'Готово':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Receiving.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Receiving.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-sec)">Нет приемок</td></tr>'},add(){const p=DB.get('products',[]);App.modal(`<h3>📥 Приемка</h3><div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="r-sup"></div><div class="form-group"><label>Товары JSON</label><textarea class="form-control" id="r-items" placeholder='[{"pid":"P1","qty":10}]'></textarea></div><div style="font-size:10px;color:var(--text-sec);margin-bottom:6px">Товары: ${p.map(x=>`${x.name}(${x.id})`).join(', ')}</div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-success" onclick="Receiving.save()">Создать</button></div>`)},save(){const sup=document.getElementById('r-sup').value.trim();let items=[];try{items=JSON.parse(document.getElementById('r-items').value||'[]')}catch(e){App.toast('Ошибка JSON','error');return}const r=DB.get('recv',[]);r.push({id:App.genId(),num:'RCV-'+Date.now().toString().slice(-6),date:new Date().toISOString(),sup,items,done:false});DB.set('recv',r);App.closeModal();this.render()},done(id){const r=DB.get('recv',[]),i=r.findIndex(x=>x.id===id);if(i<0)return;r[i].done=true;const w=DB.get('cells',[]);r[i].items.forEach(it=>{const e=w.find(x=>!x.pid);if(e){e.pid=it.pid;e.qty=(e.qty||0)+it.qty}});DB.set('recv',r);DB.set('cells',w);this.render()},del(id){DB.set('recv',DB.get('recv',[]).filter(x=>x.id!==id));this.render()},scan(){App.modal(`<h3>📷 Сканирование</h3><div style="border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center"><input type="text" class="form-control" id="s-code" placeholder="Штрих-код..." style="font-size:16px;text-align:center"><div id="s-res" style="margin-top:6px"></div></div><div class="form-group"><label>Кол-во</label><input type="number" class="form-control" id="s-qty" value="1"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Receiving.process()">Добавить</button></div>`);setTimeout(()=>{const i=document.getElementById('s-code');if(i){i.focus();i.onkeypress=e=>{if(e.key==='Enter')Receiving.process()}}},100)},process(){const bc=document.getElementById('s-code')?.value.trim(),qty=+document.getElementById('s-qty')?.value||1;if(!bc){App.toast('Введите код','error');return}const bcs=DB.get('barcodes',{}),pid=bcs[bc];if(!pid){AudioMgr.play(false);App.toast('Товар не в реестре','error');return}AudioMgr.play(true);const w=DB.get('cells',[]);let c=w.find(x=>x.pid===pid)||w.find(x=>!x.pid);if(c){if(!c.pid)c.pid=pid;c.qty=(c.qty||0)+qty;DB.set('cells',w);App.closeModal();Warehouse.render()}else App.toast('Нет ячеек','error')}};
+      this.recognition.onerror = (event) => {
+        console.warn('Voice error:', event.error);
+        this.speak('Не удалось распознать речь. Попробуйте ещё раз.');
+        this.stopListening();
+      };
 
-const Shipping={render(){const s=DB.get('ship',[]);document.getElementById('ship-tbody').innerHTML=s.map(x=>`<tr><td><b>${x.num}</b></td><td>${App.date(x.date)}</td><td>${x.cli||'—'}</td><td>${x.items?.length||0}</td><td><span class="badge-status badge-${x.done?'done':'new'}">${x.done?'Готово':'Новая'}</span></td><td><button class="btn btn-sm btn-success" onclick="Shipping.done('${x.id}')">✅</button><button class="btn btn-sm btn-danger" onclick="Shipping.del('${x.id}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-sec)">Нет отгрузок</td></tr>'},add(){App.modal(`<h3>📤 Отгрузка</h3><div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="s-cli"></div><div class="form-group"><label>Товары JSON</label><textarea class="form-control" id="s-items" placeholder='[{"pid":"P1","qty":2}]'></textarea></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Shipping.save()">Создать</button></div>`)},save(){const cli=document.getElementById('s-cli').value.trim();let items=[];try{items=JSON.parse(document.getElementById('s-items').value||'[]')}catch(e){App.toast('Ошибка','error');return}const s=DB.get('ship',[]);s.push({id:App.genId(),num:'SHP-'+Date.now().toString().slice(-6),date:new Date().toISOString(),cli,items,done:false});DB.set('ship',s);App.closeModal();this.render()},done(id){const s=DB.get('ship',[]),i=s.findIndex(x=>x.id===id);if(i<0)return;s[i].done=true;const w=DB.get('cells',[]);s[i].items.forEach(it=>{let rem=it.qty;for(const c of w){if(c.pid===it.pid&&c.qty>0){const t=Math.min(rem,c.qty);c.qty-=t;rem-=t;if(c.qty<=0){c.qty=0;c.pid=''}}if(rem<=0)break}});DB.set('ship',s);DB.set('cells',w);this.render()},del(id){DB.set('ship',DB.get('ship',[]).filter(x=>x.id!==id));this.render()}};
+      this.recognition.onend = () => {
+        this.stopListening();
+      };
 
-const Tasks={render(){const t=DB.get('tasks',[]);['new','proc','done'].forEach(s=>{const st=s==='new'?'new':s==='proc'?'process':'done';document.getElementById('tk-'+s).innerHTML=t.filter(x=>x.status===st).map(x=>`<div class="task-item"><div>${x.title}</div><div style="margin-top:3px;display:flex;gap:3px">${st!=='new'?`<button class="btn btn-sm btn-outline" onclick="Tasks.move('${x.id}','${st==='process'?'done':'new'}')">⬅️</button>`:''}${st!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${x.id}','${st==='new'?'process':'done'}')">➡️</button>`:''}</div></div>`).join('')||'<p style="font-size:10px;color:var(--text-sec);padding:3px">Пусто</p>'})},add(){App.modal(`<h3>➕ Задача</h3><div class="form-group"><label>Название</label><input type="text" class="form-control" id="t-title"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Tasks.save()">Создать</button></div>`)},save(){const t=DB.get('tasks',[]);t.push({id:App.genId(),title:document.getElementById('t-title').value,status:'new'});DB.set('tasks',t);App.closeModal();this.render()},move(id,s){const t=DB.get('tasks',[]),i=t.findIndex(x=>x.id===id);if(i>=0)t[i].status=s;DB.set('tasks',t);this.render()}};
+      console.log('🎤 SpeechRecognition available');
+    } else {
+      console.warn('⚠️ SpeechRecognition not supported');
+    }
 
-const Employees={render(){const e=DB.get('emp',[]);document.getElementById('emp-grid').innerHTML=e.map(x=>{const h=x.checkIn?((Date.now()-new Date(x.checkIn).getTime())/36e5).toFixed(1):0;return `<div class="emp-card"><div class="emp-header"><div class="emp-avatar">${x.name[0]}</div><div><div class="emp-name">${x.name}</div><div class="emp-role">${x.role} | ${x.rate}₽/ч</div><div class="badge-status badge-${x.status==='on'?'done':'error'}">${x.status==='on'?'🟢':'🔴'}</div></div></div><div class="emp-stats"><div class="emp-stat"><div>${h}ч</div><div>Сегодня</div></div><div class="emp-stat"><div>${(h*x.rate).toFixed(0)}₽</div><div>Заработано</div></div></div><div style="margin-top:6px">${x.status==='off'?`<button class="btn btn-sm btn-success" onclick="Employees.in('${x.id}')">▶️</button>`:`<button class="btn btn-sm btn-warning" onclick="Employees.out('${x.id}')">⏹️</button>`}</div></div>`}).join('')},add(){App.modal(`<h3>➕ Сотрудник</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="e-name"></div><div class="form-row"><div class="form-group"><label>Должность</label><input type="text" class="form-control" id="e-role" value="Кладовщик"></div><div class="form-group"><label>Ставка</label><input type="number" class="form-control" id="e-rate" value="400"></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Employees.save()">Добавить</button></div>`)},save(){const e=DB.get('emp',[]);e.push({id:App.genId(),name:document.getElementById('e-name').value,role:document.getElementById('e-role').value,rate:+document.getElementById('e-rate').value,status:'off',checkIn:null,hours:0});DB.set('emp',e);App.closeModal();this.render()},in(id){const e=DB.get('emp',[]),i=e.findIndex(x=>x.id===id);if(i>=0){e[i].status='on';e[i].checkIn=new Date().toISOString();DB.set('emp',e);this.render()}},out(id){const e=DB.get('emp',[]),i=e.findIndex(x=>x.id===id);if(i>=0&&e[i].checkIn){const h=(Date.now()-new Date(e[i].checkIn).getTime())/36e5;e[i].hours+=h;e[i].status='off';e[i].checkIn=null;DB.set('emp',e);this.render()}}};
+    // Speak greeting
+    this.speak('Добро пожаловать в систему FulFill Pro. Нажмите на микрофон для голосового управления.');
+  },
 
-const Fines={render(){const f=DB.get('fines',[]);document.getElementById('fines-list').innerHTML=f.map(x=>`<div class="fine-card"><div class="fine-amount">-${x.amt}₽</div><div style="flex:1"><div>${x.reason}</div><small style="color:var(--text-sec)">${App.date(x.date)}</small></div><button class="btn btn-sm btn-danger" onclick="Fines.del('${x.id}')">🗑️</button></div>`).join('')||'<p style="color:var(--text-sec)">Нет штрафов</p>'},add(){const e=DB.get('emp',[]);App.modal(`<h3>💰 Штраф</h3><div class="form-group"><label>Сотрудник</label><select class="form-control" id="f-emp">${e.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div><div class="form-group"><label>Причина</label><input type="text" class="form-control" id="f-reason"></div><div class="form-group"><label>Сумма</label><input type="number" class="form-control" id="f-amt" value="500"></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-danger" onclick="Fines.save()">Начислить</button></div>`)},save(){const f=DB.get('fines',[]);f.push({id:App.genId(),emp:document.getElementById('f-emp').value,reason:document.getElementById('f-reason').value,amt:+document.getElementById('f-amt').value,date:new Date().toISOString()});DB.set('fines',f);App.closeModal();this.render()},del(id){DB.set('fines',DB.get('fines',[]).filter(x=>x.id!==id));this.render()}};
+  toggle() {
+    if(this.isListening) {
+      this.stopListening();
+    } else {
+      this.startListening();
+    }
+  },
 
-const Printing={render(){this.preview()},print(){const n=document.getElementById('p-name').value,s=document.getElementById('p-sku').value,b=document.getElementById('p-bc').value,c=+document.getElementById('p-copies').value||1;for(let i=0;i<c;i++)this.draw(n,s,b)},draw(n,s,b){const p=document.getElementById('print-area');p.style.display='block';p.innerHTML=`<div style="text-align:center;font-size:8px;font-weight:700">${n||'Товар'}</div>${b?`<svg id="pb"></svg>`:''}`;if(b)try{JsBarcode('#pb',b,{width:1,height:20,fontSize:7,margin:0})}catch(e){}setTimeout(()=>{window.print();p.style.display='none'},200)},preview(){const n=document.getElementById('p-name')?.value||'Товар',b=document.getElementById('p-bc')?.value||'123';document.getElementById('p-preview').innerHTML=`<div style="width:120px;height:80px;border:1px solid var(--border);padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:7px;font-weight:700">${n}</div><svg id="prevb"></svg></div>`;setTimeout(()=>{try{JsBarcode('#prevb',b,{width:1,height:15,fontSize:7})}catch(e){}},50)}};
+  startListening() {
+    if(!this.recognition) {
+      this.speak('Ваш браузер не поддерживает голосовой ввод. Используйте Google Chrome.');
+      return;
+    }
+    try {
+      this.recognition.start();
+    } catch(e) {
+      // Already listening, restart
+      this.recognition.stop();
+      setTimeout(() => this.recognition.start(), 100);
+    }
+  },
 
-const Settings={render(){const u=DB.get('users',[]);document.getElementById('set-users').innerHTML=u.map(x=>`<div style="padding:6px;border:1px solid var(--border);border-radius:4px;margin-bottom:4px;display:flex;justify-content:space-between;font-size:12px"><span><b>${x.name}</b> (${x.role})</span><button class="btn btn-sm btn-outline" onclick="Settings.edit('${x.id}')">✏️</button></div>`).join('')},edit(id){const u=DB.get('users',[]).find(x=>x.id===id);if(!u)return;App.modal(`<h3>✏️ ${u.name}</h3><div class="form-group"><label>Имя</label><input type="text" class="form-control" id="su-name" value="${u.name}"></div><div class="form-group"><label>Роль</label><select class="form-control" id="su-role"><option value="admin" ${u.role==='admin'?'selected':''}>Админ</option><option value="manager" ${u.role==='manager'?'selected':''}>Менеджер</option></select></div><div class="modal-footer"><button class="btn btn-outline" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="Settings.save('${u.id}')">Сохранить</button></div>`)},save(id){const u=DB.get('users',[]),i=u.findIndex(x=>x.id===id);if(i<0)return;u[i].name=document.getElementById('su-name').value;u[i].role=document.getElementById('su-role').value;DB.set('users',u);App.closeModal();this.render()}};
+  stopListening() {
+    this.isListening = false;
+    if(this.recognition) {
+      try { this.recognition.stop(); } catch(e) {}
+    }
+    document.getElementById('voice-btn').classList.remove('listening');
+    document.getElementById('voice-status').textContent = 'Голосовой помощник';
+    document.getElementById('voice-panel').classList.remove('active');
+  },
 
-document.addEventListener('DOMContentLoaded',()=>{App.init();document.addEventListener('click',()=>{try{new(window.AudioContext||window.webkitAudioContext)}catch(e){}},{once:true})});
+  quickCommand(cmd) {
+    this.processCommand(cmd);
+  },
+
+  speak(text) {
+    if(!this.synth) return;
+    this.synth.cancel(); // Cancel any current speech
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ru-RU';
+    utterance.rate = this.voiceRate;
+    utterance.pitch = this.voicePitch;
+    utterance.volume = this.voiceVolume;
+
+    // Try to find Russian voice
+    const voices = this.synth.getVoices();
+    const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+    if(ruVoice) utterance.voice = ruVoice;
+
+    this.synth.speak(utterance);
+
+    // Update voice response panel
+    document.getElementById('voice-response').innerHTML = `<strong></strong> ${text}`;
+  },
+
+  processCommand(cmd) {
+    const lower = cmd.toLowerCase().trim();
+    console.log('🎤 Command:', lower);
+
+    // Stop listening
+    this.stopListening();
+
+    // Show voice panel
+    document.getElementById('voice-panel').classList.add('active');
+
+    // Navigation commands
+    if(lower.includes('открой склад') || lower.includes('открыть склад') || lower.includes('склад') || lower.includes('куда положить')) {
+      this.speak('Открываю раздел склад.');
+      this.navigateTo('warehouse');
+      return;
+    }
+    if(lower.includes('открой приемк') || lower.includes('открыть приемк') || lower.includes('приемк')) {
+      this.speak('Открываю раздел приемка.');
+      this.navigateTo('receiving');
+      return;
+    }
+    if(lower.includes('открой отгрузк') || lower.includes('открыть отгрузк') || lower.includes('отгрузк')) {
+      this.speak('Открываю раздел отгрузка.');
+      this.navigateTo('shipping');
+      return;
+    }
+    if(lower.includes('открой задач') || lower.includes('открыть задач') || lower.includes('задач')) {
+      this.speak('Открываю раздел задачи.');
+      this.navigateTo('tasks');
+      return;
+    }
+    if(lower.includes('открой сотрудник') || lower.includes('открыть сотрудник') || lower.includes('сотрудник')) {
+      this.speak('Открываю раздел сотрудники.');
+      this.navigateTo('employees');
+      return;
+    }
+    if(lower.includes('открой инвентаризац') || lower.includes('открыть инвентаризац') || lower.includes('инвентаризац')) {
+      this.speak('Открываю раздел инвентаризация.');
+      this.navigateTo('inventory');
+      return;
+    }
+    if(lower.includes('открой штраф') || lower.includes('открыть штраф') || lower.includes('штраф')) {
+      this.speak('Открываю раздел штрафы.');
+      this.navigateTo('fines');
+      return;
+    }
+    if(lower.includes('открой печат') || lower.includes('открыть печат') || lower.includes('печать') || lower.includes('этикетк')) {
+      this.speak('Открываю раздел печать этикеток.');
+      this.navigateTo('printing');
+      return;
+    }
+    if(lower.includes('открой интеграц') || lower.includes('открыть интеграц') || lower.includes('интеграц')) {
+      this.speak('Открываю раздел интеграции.');
+      this.navigateTo('integrations');
+      return;
+    }
+    if(lower.includes('открой настройк') || lower.includes('открыть настройк') || lower.includes('настройк')) {
+      this.speak('Открываю раздел настройки.');
+      this.navigateTo('settings');
+      return;
+    }
+
+    // Cell query: "ячейка A1" / "что в A1" / "где A1"
+    const cellMatch = lower.match(/ячейк[ае]?\s*([A-Z]\d)/) || lower.match(/в\s*([A-Z]\d)/) || lower.match(/где\s*([A-Z]\d)/i);
+    if(cellMatch) {
+      const cellId = cellMatch[1].toUpperCase();
+      this.queryCell(cellId);
+      return;
+    }
+
+    // Product search: "где молоко" / "найди сыр" / "где найти хлеб"
+    const whereMatch = lower.match(/где\s+(.+)/) || lower.match(/найди\s+(.+)/) || lower.match(/поиск\s+(.+)/) || lower.match(/расположение\s+(.+)/);
+    if(whereMatch) {
+      const productName = whereMatch[1].trim();
+      this.searchProduct(productName);
+      return;
+    }
+
+    // Zone query: "что в зоне A" / "зона B"
+    const zoneMatch = lower.match(/зон[ае]?\s+([A-Z])/i);
+    if(zoneMatch) {
+      const zone = 'Зона ' + zoneMatch[1].toUpperCase();
+      this.queryZone(zone);
+      return;
+    }
+
+    // Statistics: "сколько товаров" / "статистика" / "отчет"
+    if(lower.includes('сколько') || lower.includes('статистик') || lower.includes('отчет') || lower.includes('сколько товаров') || lower.includes('сколько всего')) {
+      this.reportStatistics();
+      return;
+    }
+
+    // List all products
+    if(lower.includes('список') || lower.includes('перечень') || lower.includes('все товары')) {
+      this.listAllProducts();
+      return;
+    }
+
+    // Empty cells
+    if(lower.includes('пустые') || lower.includes('свободные') || lower.includes('где пусто')) {
+      this.listEmptyCells();
+      return;
+    }
+
+    // New receiving
+    if(lower.includes('новая приемк') || lower.includes('создать приемк')) {
+      this.speak('Создаю новую приемку.');
+      this.navigateTo('receiving');
+      setTimeout(() => Receiving.createNew(), 500);
+      return;
+    }
+
+    // New shipping
+    if(lower.includes('новая отгрузк') || lower.includes('создать отгрузк')) {
+      this.speak('Создаю новую отгрузку.');
+      this.navigateTo('shipping');
+      setTimeout(() => Shipping.createNew(), 500);
+      return;
+    }
+
+    // Inventory
+    if(lower.includes('начать инвентаризац') || lower.includes('инвентаризация')) {
+      this.speak('Запускаю инвентаризацию.');
+      this.navigateTo('inventory');
+      setTimeout(() => Inventory.start(), 500);
+      return;
+    }
+
+    // Unknown command
+    this.speak('Не поняла команду. Скажите например: "Где молоко" или "Что в ячейке A1" или "Сколько товаров на складе".');
+  },
+
+  searchProduct(name) {
+    const cells = DB.get('warehouse_cells', []);
+    const results = cells.filter(c =>
+      c.status === 'occupied' &&
+      c.product.toLowerCase().includes(name.toLowerCase())
+    );
+
+    if(results.length === 0) {
+      // Try partial match
+      const partialResults = cells.filter(c =>
+        c.status === 'occupied' &&
+        (c.product.toLowerCase().includes(name.toLowerCase().substring(0,3)) ||
+         c.sku.toLowerCase().includes(name.toLowerCase()))
+      );
+
+      if(partialResults.length === 0) {
+        this.speak(`Товар "${name}" не найден на складе.`);
+        return;
+      }
+
+      const result = partialResults[0];
+      this.speak(`Товар ${result.product} находится в ячейке ${result.id}, ${result.zone}. Количество: ${result.qty} штук.`);
+      this.highlightCell(result.id);
+      return;
+    }
+
+    if(results.length === 1) {
+      const r = results[0];
+      this.speak(`Товар ${r.product} находится в ячейке ${r.id}, ${r.zone}. Количество: ${r.qty} штук. Срок годности: ${r.expiry || 'не указан'}.`);
+      this.highlightCell(r.id);
+    } else {
+      const locations = results.map(r => `${r.product} в ячейке ${r.id}, ${r.zone}, ${r.qty} шт.`).join('. ');
+      this.speak(`Найдено ${results.length} товаров. ${locations}`);
+      results.forEach(r => this.highlightCell(r.id));
+    }
+  },
+
+  queryCell(cellId) {
+    const cells = DB.get('warehouse_cells', []);
+    const cell = cells.find(c => c.id === cellId.toUpperCase());
+
+    if(!cell) {
+      this.speak(`Ячейка ${cellId} не найдена на складе.`);
+      return;
+    }
+
+    if(cell.status === 'empty') {
+      this.speak(`Ячейка ${cell.id} в ${cell.zone} свободна. Туда можно положить товар.`);
+      this.highlightCell(cell.id);
+      return;
+    }
+
+    this.speak(`Ячейка ${cell.id}, ${cell.zone}. Товар: ${cell.product}. Артикул: ${cell.sku}. Количество: ${cell.qty} штук.${cell.expiry ? ' Срок годности: ' + cell.expiry + '.' : ''}`);
+    this.highlightCell(cell.id);
+  },
+
+  queryZone(zone) {
+    const cells = DB.get('warehouse_cells', []);
+    const zoneCells = cells.filter(c => c.zone === zone);
+
+    if(zoneCells.length === 0) {
+      this.speak(`Зона ${zone} не найдена.`);
+      return;
+    }
+
+    const occupied = zoneCells.filter(c => c.status === 'occupied');
+    const empty = zoneCells.filter(c => c.status === 'empty');
+
+    if(occupied.length === 0) {
+      this.speak(`В зоне ${zone} нет товаров. Все ячейки свободны.`);
+      return;
+    }
+
+    const products = occupied.map(c => `${c.product} в ${c.id}, ${c.qty} шт`).join(', ');
+    this.speak(`В зоне ${zone} находится: ${products}. Всего ${occupied.length} товаров. Свободных ячеек: ${empty.length}.`);
+
+    occupied.forEach(c => this.highlightCell(c.id));
+  },
+
+  reportStatistics() {
+    const cells = DB.get('warehouse_cells', []);
+    const occupied = cells.filter(c => c.status === 'occupied');
+    const empty = cells.filter(c => c.status === 'empty');
+    const totalQty = cells.reduce((s, c) => s + (c.qty || 0), 0);
+
+    this.speak(`На складе ${cells.length} ячеек. Занято ${occupied.length}, свободно ${empty.length}. Общее количество товаров: ${totalQty} штук.`);
+  },
+
+  listAllProducts() {
+    const cells = DB.get('warehouse_cells', []);
+    const occupied = cells.filter(c => c.status === 'occupied');
+
+    if(occupied.length === 0) {
+      this.speak('Склад пуст. Нет товаров.');
+      return;
+    }
+
+    const list = occupied.map(c => `${c.product}, ячейка ${c.id}, ${c.qty} шт`).join('. ');
+    this.speak(`На складе ${occupied.length} товаров. ${list}`);
+  },
+
+  listEmptyCells() {
+    const cells = DB.get('warehouse_cells', []);
+    const empty = cells.filter(c => c.status === 'empty');
+
+    if(empty.length === 0) {
+      this.speak('Нет свободных ячеек. Склад полностью заполнен.');
+      return;
+    }
+
+    const list = empty.map(c => c.id).join(', ');
+    this.speak(`Свободные ячейки: ${list}. Всего ${empty.length} ячеек доступно.`);
+  },
+
+  highlightCell(cellId) {
+    const cell = document.querySelector(`.cell[onclick*="${cellId}"]`) ||
+                 document.querySelector(`.cell:has(.cell-label:contains('${cellId}'))`);
+
+    // Find and highlight
+    document.querySelectorAll('.cell').forEach(c => {
+      const label = c.querySelector('.cell-label');
+      if(label && label.textContent === cellId) {
+        c.classList.add('speaking');
+        c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => c.classList.remove('speaking'), 2000);
+      }
+    });
+  },
+
+  navigateTo(page) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page)?.classList.add('active');
+    App.refreshPage(page);
+  }
+};
+
+// ==================== APP CORE ====================
+const App = {
+  currentUser: null,
+
+  init() {
+    try {
+      initDefaults();
+
+      // Load theme
+      const theme = DB.get('theme', 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('theme-btn').textContent = theme === 'dark' ? '☀️' : '🌙';
+
+      // Splash screen
+      setTimeout(() => {
+        const splash = document.getElementById('splash');
+        if(splash) {
+          splash.classList.add('hide');
+          setTimeout(() => {
+            splash.style.display = 'none';
+            this.checkAuth();
+          }, 800);
+        }
+      }, 2500);
+
+      // Init Voice Assistant
+      VoiceAssistant.init();
+
+      // Navigation
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+          item.classList.add('active');
+          const page = item.dataset.page;
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          document.getElementById('page-'+page).classList.add('active');
+          this.refreshPage(page);
+          // Voice announcement
+          const names = { dashboard:'Дашборд', warehouse:'Склад', receiving:'Приемка', shipping:'Отгрузка', tasks:'Задачи', employees:'Сотрудники', inventory:'Инвентаризация', fines:'Штрафы', printing:'Печать этикеток', integrations:'Интеграции', settings:'Настройки' };
+          if(VoiceAssistant.synth && names[page]) {
+            VoiceAssistant.speak(names[page]);
+          }
+        });
+      });
+
+      // Tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const parent = tab.closest('.page');
+          parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const tabId = tab.dataset.tab;
+          parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+          document.getElementById('tab-'+tabId).classList.add('active');
+        });
+      });
+
+      this.updateResponsive();
+      window.addEventListener('resize', () => this.updateResponsive());
+      setInterval(() => Employees.checkAutoCheckout(), 60000);
+      this.updateBadges();
+
+      console.log('✅ App initialized with Voice Assistant');
+    } catch(err) {
+      console.error('Init error:', err);
+    }
+  },
+
+  updateResponsive() {
+    const btn = document.getElementById('menu-btn');
+    if(window.innerWidth <= 768) {
+      btn.style.display = 'flex';
+    } else {
+      btn.style.display = 'none';
+      document.getElementById('sidebar').classList.remove('open');
+    }
+  },
+
+  toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); },
+
+  checkAuth() {
+    const session = DB.get('session');
+    if(session) {
+      const users = DB.get('users');
+      const user = users.find(u => u.id === session.userId);
+      if(user) { this.currentUser = user; this.showApp(); return; }
+    }
+    document.getElementById('login-screen').style.display = 'flex';
+  },
+
+  login() {
+    const login = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const users = DB.get('users');
+    const user = users.find(u => u.login === login && u.password === password);
+    if(user) {
+      this.currentUser = user;
+      DB.set('session', { userId: user.id });
+      this.showApp();
+      VoiceAssistant.speak(`Добро пожаловать, ${user.name}!`);
+    } else {
+      App.toast('Неверный логин или пароль', 'error');
+    }
+  },
+
+  logout() {
+    DB.set('session', null);
+    this.currentUser = null;
+    document.getElementById('app').classList.remove('active');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-password').value = '';
+  },
+
+  showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('active');
+    document.getElementById('user-name').textContent = this.currentUser.name;
+    document.getElementById('user-role').textContent = this.currentUser.role === 'admin' ? 'Администратор' : 'Менеджер';
+    document.getElementById('user-avatar').textContent = this.currentUser.name.charAt(0).toUpperCase();
+    Dashboard.render();
+  },
+
+  toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    DB.set('theme', next);
+    document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+  },
+
+  refreshPage(page) {
+    const modules = { dashboard:Dashboard, warehouse:Warehouse, receiving:Receiving, shipping:Shipping, tasks:Tasks, employees:Employees, inventory:Inventory, fines:Fines, printing:Printing, integrations:Integrations, settings:Settings };
+    if(modules[page]) modules[page].render();
+    this.updateBadges();
+  },
+
+  updateBadges() {
+    const cells = DB.get('warehouse_cells',[]);
+    const recv = DB.get('receivings',[]);
+    const ship = DB.get('shippings',[]);
+    const tasks = DB.get('tasks',[]);
+    document.getElementById('badge-warehouse').textContent = cells.filter(c=>c.status==='occupied').length;
+    document.getElementById('badge-receiving').textContent = recv.filter(r=>r.status==='new').length;
+    document.getElementById('badge-shipping').textContent = ship.filter(s=>s.status==='new').length;
+    document.getElementById('badge-tasks').textContent = tasks.filter(t=>t.status==='new').length;
+  },
+
+  globalSearch(query) {
+    if(!query) return;
+    query = query.toLowerCase();
+    const cells = DB.get('warehouse_cells',[]).filter(c =>
+      c.product.toLowerCase().includes(query) || c.sku.toLowerCase().includes(query) || c.id.toLowerCase().includes(query)
+    );
+    if(cells.length > 0) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelector('[data-page="warehouse"]').classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-warehouse').classList.add('active');
+      App.refreshPage('warehouse');
+      App.toast(`Найдено ${cells.length} товаров`, 'info');
+    }
+  },
+
+  toast(message, type='info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    const icons = { success:'✅', error:'❌', info:'️', warning:'⚠️', voice:'🎤' };
+    toast.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  },
+
+  modal(html) {
+    document.getElementById('modal-content').innerHTML = html;
+    document.getElementById('modal-overlay').classList.add('active');
+  },
+
+  closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+  },
+
+  genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); },
+
+  formatDate(d) {
+    if(!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  },
+
+  today() { return new Date().toISOString().split('T')[0]; },
+
+  statusBadge(status) {
+    const map = {
+      'new': ['Новая','badge-new'], 'process': ['В процессе','badge-process'],
+      'done': ['Завершена','badge-done'], 'error': ['Ошибка','badge-error']
+    };
+    const [label, cls] = map[status] || [status,''];
+    return `<span class="badge-status ${cls}">${label}</span>`;
+  }
+};
+
+// ==================== DASHBOARD ====================
+const Dashboard = {
+  render() {
+    const cells = DB.get('warehouse_cells',[]);
+    const recv = DB.get('receivings',[]);
+    const ship = DB.get('shippings',[]);
+    const tasks = DB.get('tasks',[]);
+    const employees = DB.get('employees',[]);
+    const occupied = cells.filter(c => c.status === 'occupied').length;
+    const totalQty = cells.reduce((s,c) => s + (c.qty||0), 0);
+    const onlineEmp = employees.filter(e => e.status === 'online').length;
+
+    document.getElementById('dashboard-stats').innerHTML = `
+      <div class="stat-card"><div class="icon">🏭</div><div class="value">${occupied}</div><div class="label">Ячеек занято / ${cells.length}</div></div>
+      <div class="stat-card"><div class="icon">📦</div><div class="value">${totalQty}</div><div class="label">Единиц на складе</div></div>
+      <div class="stat-card"><div class="icon">📥</div><div class="value">${recv.length}</div><div class="label">Приемок всего</div></div>
+      <div class="stat-card"><div class="icon">📤</div><div class="value">${ship.length}</div><div class="label">Отгрузок всего</div></div>
+      <div class="stat-card"><div class="icon">📋</div><div class="value">${tasks.filter(t=>t.status!=='done').length}</div><div class="label">Активных задач</div></div>
+      <div class="stat-card"><div class="icon">👥</div><div class="value">${onlineEmp}</div><div class="label">Сотрудников онлайн / ${employees.length}</div></div>
+    `;
+
+    document.getElementById('dash-recent-receiving').innerHTML = recv.length ?
+      recv.slice(-5).reverse().map(r => `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;">
+        <span>${r.supplier||'—'}</span><span>${r.items?.length||0} поз.</span>${App.statusBadge(r.status)}
+      </div>`).join('') : '<p style="color:var(--text-secondary);font-size:13px;">Нет данных</p>';
+
+    document.getElementById('dash-recent-shipping').innerHTML = ship.length ?
+      ship.slice(-5).reverse().map(s => `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;">
+        <span>${s.client||'—'}</span><span>${s.items?.length||0} поз.</span>${App.statusBadge(s.status)}
+      </div>`).join('') : '<p style="color:var(--text-secondary);font-size:13px;">Нет данных</p>';
+
+    this.renderMap();
+  },
+
+  renderMap() {
+    const cells = DB.get('warehouse_cells',[]);
+    document.getElementById('dash-warehouse-map').innerHTML = cells.map(c => `
+      <div class="cell ${c.status}" title="${c.id}: ${c.product||'Пусто'} (${c.qty} шт)" onclick="VoiceAssistant.queryCell('${c.id}')">
+        <div class="cell-label">${c.id}</div>
+        <div class="cell-qty">${c.qty||0} шт</div>
+        ${c.product ? `<div style="font-size:9px;color:var(--text-secondary);">${c.product.substring(0,15)}</div>` : ''}
+        ${c.photo ? `<img src="${c.photo}" alt="">` : ''}
+      </div>
+    `).join('');
+  }
+};
+
+// ==================== WAREHOUSE ====================
+const Warehouse = {
+  render() {
+    const cells = DB.get('warehouse_cells',[]);
+    this.renderMap(cells);
+    this.renderTable(cells);
+    this.renderDocs();
+  },
+
+  renderMap(cells) {
+    document.getElementById('warehouse-map').innerHTML = cells.map(c => `
+      <div class="cell ${c.status}" onclick="VoiceAssistant.queryCell('${c.id}'); Warehouse.editCell('${c.id}');" title="Нажмите для озвучки и редактирования">
+        <div class="cell-label">${c.id}</div>
+        <div class="cell-qty">${c.qty||0} шт</div>
+        ${c.product ? `<div style="font-size:9px;color:var(--text-secondary);">${c.product.substring(0,15)}</div>` : ''}
+        ${c.photo ? `<img src="${c.photo}" alt="">` : ''}
+      </div>
+    `).join('');
+  },
+
+  renderTable(cells) {
+    document.getElementById('warehouse-tbody').innerHTML = cells.map(c => `
+      <tr>
+        <td><strong>${c.id}</strong></td>
+        <td>${c.zone}</td>
+        <td>${c.product||'—'}</td>
+        <td>${c.sku||'—'}</td>
+        <td>${c.qty||0}</td>
+        <td>${c.expiry||'—'}</td>
+        <td>${c.photo ? `<img src="${c.photo}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '—'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="Warehouse.editCell('${c.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="Warehouse.deleteCell('${c.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+  },
+
+  renderDocs() {
+    const cells = DB.get('warehouse_cells',[]).filter(c => c.status === 'occupied');
+    document.getElementById('warehouse-docs').innerHTML = cells.length ?
+      cells.map(c => `
+        <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <strong>${c.product}</strong> — ${c.id} (${c.zone})<br>
+            <small style="color:var(--text-secondary);">Артикул: ${c.sku} | Кол-во: ${c.qty} | Срок: ${c.expiry||'—'}</small>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-outline" onclick="Printing.printProduct('${c.id}')">️</button>
+            <button class="btn btn-sm btn-outline" onclick="Warehouse.printDoc('${c.id}')">📄</button>
+          </div>
+        </div>
+      `).join('') : '<p style="color:var(--text-secondary);">Нет товаров</p>';
+  },
+
+  addCell() {
+    App.modal(`
+      <h3>➕ Добавить ячейку</h3>
+      <div class="form-group"><label>Идентификатор</label><input type="text" class="form-control" id="cell-id" placeholder="A4"></div>
+      <div class="form-group"><label>Зона</label>
+        <select class="form-control" id="cell-zone"><option>Зона A</option><option>Зона B</option><option>Зона C</option><option>Зона D</option></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Warehouse.saveCell()">Сохранить</button>
+      </div>
+    `);
+  },
+
+  saveCell(id) {
+    const cells = DB.get('warehouse_cells',[]);
+    const cellId = document.getElementById('cell-id').value.trim() || id;
+    const zone = document.getElementById('cell-zone').value;
+
+    if(id) {
+      const idx = cells.findIndex(c => c.id === id);
+      if(idx >= 0) {
+        cells[idx].product = document.getElementById('cell-product').value.trim();
+        cells[idx].sku = document.getElementById('cell-sku').value.trim();
+        cells[idx].qty = parseInt(document.getElementById('cell-qty').value) || 0;
+        cells[idx].expiry = document.getElementById('cell-expiry').value;
+        cells[idx].zone = zone;
+        cells[idx].status = cells[idx].qty > 0 ? 'occupied' : 'empty';
+      }
+    } else {
+      if(cells.find(c => c.id === cellId)) { App.toast('Ячейка существует','error'); return; }
+      cells.push({ id:cellId, zone, product:'', sku:'', qty:0, expiry:'', photo:'', status:'empty' });
+    }
+
+    DB.set('warehouse_cells', cells);
+    App.closeModal();
+    this.render();
+    App.toast(id ? 'Обновлено' : 'Добавлено', 'success');
+  },
+
+  editCell(id) {
+    const cells = DB.get('warehouse_cells',[]);
+    const c = cells.find(x => x.id === id);
+    if(!c) return;
+
+    App.modal(`
+      <h3>✏️ Редактирование ячейки ${c.id}</h3>
+      <div class="form-group"><label>Товар</label><input type="text" class="form-control" id="cell-product" value="${c.product||''}"></div>
+      <div class="form-group"><label>Артикул</label><input type="text" class="form-control" id="cell-sku" value="${c.sku||''}"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="cell-qty" value="${c.qty||0}"></div>
+        <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="cell-expiry" value="${c.expiry||''}"></div>
+      </div>
+      <div class="form-group"><label>Фото</label><input type="file" class="form-control" id="cell-photo" accept="image/*">
+        ${c.photo ? `<img src="${c.photo}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:8px;">` : ''}
+      </div>
+      <div class="form-group"><label>Зона</label>
+        <select class="form-control" id="cell-zone">
+          ${['Зона A','Зона B','Зона C','Зона D'].map(z => `<option ${c.zone===z?'selected':''}>${z}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Warehouse.saveCell('${c.id}')">Сохранить</button>
+      </div>
+    `);
+  },
+
+  deleteCell(id) {
+    if(!confirm('Удалить ячейку '+id+'?')) return;
+    let cells = DB.get('warehouse_cells',[]);
+    cells = cells.filter(c => c.id !== id);
+    DB.set('warehouse_cells', cells);
+    this.render();
+    App.toast('Удалено', 'success');
+  },
+
+  importExcel() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const wb = XLSX.read(ev.target.result, { type:'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+        const cells = DB.get('warehouse_cells',[]);
+        data.forEach((row, i) => {
+          const cellId = row['Ячейка'] || row['Cell'] || 'IMP-'+(i+1);
+          const existing = cells.find(c => c.id === cellId);
+          if(existing) {
+            existing.product = row['Товар'] || row['Product'] || '';
+            existing.sku = row['Артикул'] || row['SKU'] || '';
+            existing.qty = parseInt(row['Количество'] || row['Qty'] || 0);
+            existing.expiry = row['Срок'] || row['Expiry'] || '';
+            existing.status = existing.qty > 0 ? 'occupied' : 'empty';
+            existing.zone = row['Зона'] || row['Zone'] || existing.zone;
+          }
+        });
+        DB.set('warehouse_cells', cells);
+        this.render();
+        App.toast(`Импортировано ${data.length} записей`, 'success');
+      };
+      reader.readAsBinaryString(file);
+    };
+    input.click();
+  },
+
+  exportExcel() {
+    const cells = DB.get('warehouse_cells',[]);
+    const data = cells.map(c => ({'Ячейка':c.id,'Зона':c.zone,'Товар':c.product,'Артикул':c.sku,'Количество':c.qty,'Срок':c.expiry,'Статус':c.status}));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Склад');
+    XLSX.writeFile(wb, 'warehouse_'+App.today()+'.xlsx');
+    App.toast('Экспорт завершен', 'success');
+  },
+
+  printDoc(id) {
+    const cells = DB.get('warehouse_cells',[]);
+    const c = cells.find(x => x.id === id);
+    if(!c) return;
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><title>${c.product}</title><style>body{font-family:Arial;padding:40px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1>📦 ${c.product}</h1><table><tr><th>Параметр</th><th>Значение</th></tr><tr><td>Ячейка</td><td>${c.id}</td></tr><tr><td>Зона</td><td>${c.zone}</td></tr><tr><td>Артикул</td><td>${c.sku}</td></tr><tr><td>Количество</td><td>${c.qty} шт</td></tr><tr><td>Срок</td><td>${c.expiry||'—'}</td></tr></table></body></html>`);
+  }
+};
+
+// ==================== RECEIVING ====================
+const Receiving = {
+  render() {
+    const recv = DB.get('receivings',[]);
+    document.getElementById('receiving-tbody').innerHTML = recv.map(r => `
+      <tr>
+        <td><strong>${r.number}</strong></td>
+        <td>${App.formatDate(r.date)}</td>
+        <td>${r.supplier||'—'}</td>
+        <td>${r.items?.length||0} поз.</td>
+        <td>${App.statusBadge(r.status)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="Receiving.edit('${r.id}')">✏️</button>
+          <button class="btn btn-sm btn-success" onclick="Receiving.complete('${r.id}')">✅</button>
+          <button class="btn btn-sm btn-danger" onclick="Receiving.remove('${r.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет приемок</td></tr>';
+  },
+
+  createNew() {
+    const employees = DB.get('employees',[]);
+    const number = 'RCV-' + Date.now().toString().slice(-6);
+    App.modal(`
+      <h3>📥 Новая приемка</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Номер</label><input type="text" class="form-control" id="recv-number" value="${number}" readonly></div>
+        <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="recv-date" value="${new Date().toISOString().slice(0,16)}"></div>
+      </div>
+      <div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="recv-supplier" placeholder="Название"></div>
+      <div class="form-group"><label>Товары (JSON)</label><textarea class="form-control" id="recv-items" placeholder='[{"name":"Товар","sku":"SKU-001","qty":10}]'>[]</textarea></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Receiving.save()">Сохранить</button>
+      </div>
+    `);
+  },
+
+  save(id) {
+    const recv = DB.get('receivings',[]);
+    const data = {
+      id: id || App.genId(),
+      number: document.getElementById('recv-number').value,
+      date: document.getElementById('recv-date').value,
+      supplier: document.getElementById('recv-supplier').value,
+      items: JSON.parse(document.getElementById('recv-items').value || '[]'),
+      status: id ? (recv.find(r=>r.id===id)?.status || 'new') : 'new'
+    };
+    if(id) { const idx = recv.findIndex(r => r.id === id); if(idx>=0) recv[idx]=data; }
+    else recv.push(data);
+    DB.set('receivings', recv);
+    App.closeModal();
+    this.render();
+    App.toast(id?'Обновлено':'Создано','success');
+  },
+
+  edit(id) {
+    const recv = DB.get('receivings',[]);
+    const r = recv.find(x => x.id === id);
+    if(!r) return;
+    App.modal(`
+      <h3>✏️ Приемка ${r.number}</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Номер</label><input type="text" class="form-control" id="recv-number" value="${r.number}"></div>
+        <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="recv-date" value="${r.date}"></div>
+      </div>
+      <div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="recv-supplier" value="${r.supplier||''}"></div>
+      <div class="form-group"><label>Товары</label><textarea class="form-control" id="recv-items">${JSON.stringify(r.items||[],null,2)}</textarea></div>
+      <div class="form-group"><label>Статус</label>
+        <select class="form-control" id="recv-status">
+          <option value="new" ${r.status==='new'?'selected':''}>Новая</option>
+          <option value="process" ${r.status==='process'?'selected':''}>В процессе</option>
+          <option value="done" ${r.status==='done'?'selected':''}>Завершена</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Receiving.save('${r.id}')">Сохранить</button>
+      </div>
+    `);
+  },
+
+  complete(id) {
+    const recv = DB.get('receivings',[]);
+    const r = recv.find(x => x.id === id);
+    if(!r) return;
+    r.status = 'done';
+    r.completedAt = new Date().toISOString();
+    const cells = DB.get('warehouse_cells',[]);
+    (r.items||[]).forEach(item => {
+      const emptyCell = cells.find(c => c.status === 'empty');
+      if(emptyCell) {
+        emptyCell.product = item.name;
+        emptyCell.sku = item.sku;
+        emptyCell.qty = item.qty;
+        emptyCell.status = 'occupied';
+      }
+    });
+    DB.set('receivings', recv);
+    DB.set('warehouse_cells', cells);
+    this.render();
+    VoiceAssistant.speak('Приемка завершена, товар размещен на складе.');
+    App.toast('Приемка завершена', 'success');
+  },
+
+  remove(id) {
+    if(!confirm('Удалить?')) return;
+    DB.set('receivings', DB.get('receivings',[]).filter(r => r.id !== id));
+    this.render();
+  },
+
+  scanBarcode() {
+    App.modal(`
+      <h3>📷 Сканирование</h3>
+      <div class="form-group"><label>Штрих-код</label><input type="text" class="form-control" id="scan-barcode" placeholder="Отсканируйте..." autofocus></div>
+      <div class="form-group"><label>Количество</label><input type="number" class="form-control" id="scan-qty" value="1"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Receiving.processScan()">Добавить</button>
+      </div>
+    `);
+    setTimeout(() => document.getElementById('scan-barcode')?.focus(), 100);
+  },
+
+  processScan() {
+    const barcode = document.getElementById('scan-barcode').value.trim();
+    const qty = parseInt(document.getElementById('scan-qty').value) || 1;
+    if(!barcode) { App.toast('Введите штрих-код','error'); return; }
+    const cells = DB.get('warehouse_cells',[]);
+    const cell = cells.find(c => c.sku === barcode || c.id === barcode);
+    if(cell) {
+      cell.qty += qty;
+      DB.set('warehouse_cells', cells);
+      VoiceAssistant.speak(`Добавлено ${qty} штук товара в ячейку ${cell.id}. Товар: ${cell.product}.`);
+      App.toast(`+${qty} шт в ${cell.id}`, 'success');
+    } else {
+      const emptyCell = cells.find(c => c.status === 'empty');
+      if(emptyCell) {
+        emptyCell.sku = barcode;
+        emptyCell.qty = qty;
+        emptyCell.status = 'occupied';
+        emptyCell.product = 'Товар ' + barcode;
+        DB.set('warehouse_cells', cells);
+        VoiceAssistant.speak(`Новый товар размещен в ячейку ${emptyCell.id}.`);
+        App.toast(`Новый товар в ${emptyCell.id}`, 'success');
+      }
+    }
+    App.closeModal();
+    Warehouse.render();
+  }
+};
+
+// ==================== SHIPPING ====================
+const Shipping = {
+  render() {
+    const ship = DB.get('shippings',[]);
+    document.getElementById('shipping-tbody').innerHTML = ship.map(s => `
+      <tr>
+        <td><strong>${s.number}</strong></td>
+        <td>${App.formatDate(s.date)}</td>
+        <td>${s.client||'—'}</td>
+        <td>${s.items?.length||0} поз.</td>
+        <td>${App.statusBadge(s.status)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="Shipping.edit('${s.id}')">✏️</button>
+          <button class="btn btn-sm btn-success" onclick="Shipping.complete('${s.id}')">✅</button>
+          <button class="btn btn-sm btn-danger" onclick="Shipping.remove('${s.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Нет отгрузок</td></tr>';
+  },
+
+  createNew() {
+    const number = 'SHP-' + Date.now().toString().slice(-6);
+    App.modal(`
+      <h3>📤 Новая отгрузка</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Номер</label><input type="text" class="form-control" id="shp-number" value="${number}" readonly></div>
+        <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="shp-date" value="${new Date().toISOString().slice(0,16)}"></div>
+      </div>
+      <div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="shp-client" placeholder="Клиент"></div>
+      <div class="form-group"><label>Товары</label><textarea class="form-control" id="shp-items" placeholder='[{"name":"Товар","sku":"SKU-001","qty":5}]'>[]</textarea></div>
+      <div class="form-group"><label>Адрес</label><input type="text" class="form-control" id="shp-address" placeholder="Адрес"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Shipping.save()">Создать</button>
+      </div>
+    `);
+  },
+
+  save(id) {
+    const ship = DB.get('shippings',[]);
+    const data = {
+      id: id || App.genId(),
+      number: document.getElementById('shp-number').value,
+      date: document.getElementById('shp-date').value,
+      client: document.getElementById('shp-client').value,
+      items: JSON.parse(document.getElementById('shp-items').value || '[]'),
+      address: document.getElementById('shp-address').value,
+      status: 'new'
+    };
+    if(id) { const idx = ship.findIndex(s=>s.id===id); if(idx>=0){data.status=ship[idx].status; ship[idx]=data;} }
+    else ship.push(data);
+    DB.set('shippings', ship);
+    App.closeModal();
+    this.render();
+    App.toast('Сохранено','success');
+  },
+
+  edit(id) {
+    const ship = DB.get('shippings',[]);
+    const s = ship.find(x => x.id === id);
+    if(!s) return;
+    App.modal(`
+      <h3>✏️ Отгрузка ${s.number}</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Номер</label><input type="text" class="form-control" id="shp-number" value="${s.number}"></div>
+        <div class="form-group"><label>Дата</label><input type="datetime-local" class="form-control" id="shp-date" value="${s.date}"></div>
+      </div>
+      <div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="shp-client" value="${s.client||''}"></div>
+      <div class="form-group"><label>Товары</label><textarea class="form-control" id="shp-items">${JSON.stringify(s.items||[],null,2)}</textarea></div>
+      <div class="form-group"><label>Адрес</label><input type="text" class="form-control" id="shp-address" value="${s.address||''}"></div>
+      <div class="form-group"><label>Статус</label>
+        <select class="form-control" id="shp-status">
+          <option value="new" ${s.status==='new'?'selected':''}>Новая</option>
+          <option value="process" ${s.status==='process'?'selected':''}>В процессе</option>
+          <option value="done" ${s.status==='done'?'selected':''}>Отгружена</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Shipping.save('${s.id}')">Сохранить</button>
+      </div>
+    `);
+  },
+
+  complete(id) {
+    const ship = DB.get('shippings',[]);
+    const s = ship.find(x => x.id === id);
+    if(!s) return;
+    s.status = 'done';
+    s.completedAt = new Date().toISOString();
+    const cells = DB.get('warehouse_cells',[]);
+    (s.items||[]).forEach(item => {
+      let remaining = item.qty;
+      for(const cell of cells) {
+        if(cell.sku === item.sku && cell.qty > 0) {
+          const take = Math.min(remaining, cell.qty);
+          cell.qty -= take;
+          remaining -= take;
+          if(cell.qty <= 0) { cell.qty=0; cell.status='empty'; cell.product=''; cell.sku=''; }
+        }
+        if(remaining <= 0) break;
+      }
+    });
+    DB.set('shippings', ship);
+    DB.set('warehouse_cells', cells);
+    this.render();
+    VoiceAssistant.speak('Отгрузка завершена, товар списан со склада.');
+    App.toast('Отгрузка завершена', 'success');
+  },
+
+  remove(id) {
+    if(!confirm('Удалить?')) return;
+    DB.set('shippings', DB.get('shippings',[]).filter(s => s.id !== id));
+    this.render();
+  }
+};
+
+// ==================== TASKS ====================
+const Tasks = {
+  render() {
+    const tasks = DB.get('tasks',[]);
+    const employees = DB.get('employees',[]);
+    ['new','process','done'].forEach(status => {
+      const container = document.getElementById('tasks-'+status);
+      const filtered = tasks.filter(t => t.status === status);
+      container.innerHTML = filtered.map(t => {
+        const emp = employees.find(e => e.id == t.employeeId);
+        return `<div class="task-item">
+          <div class="task-title">${t.title}</div>
+          <div class="task-meta">👤 ${emp?.name||'—'} | ⏰ ${t.deadline||'—'}</div>
+          <div style="margin-top:8px;display:flex;gap:4px;">
+            ${status!=='new'?`<button class="btn btn-sm btn-outline" onclick="Tasks.move('${t.id}','${status==='process'?'done':'new'}')">⬅️</button>`:''}
+            ${status!=='done'?`<button class="btn btn-sm btn-success" onclick="Tasks.move('${t.id}','${status==='new'?'process':'done'}')">️</button>`:''}
+            <button class="btn btn-sm btn-danger" onclick="Tasks.remove('${t.id}')">🗑️</button>
+          </div>
+        </div>`;
+      }).join('') || '<p style="color:var(--text-secondary);font-size:12px;padding:8px;">Нет задач</p>';
+    });
+  },
+
+  create() {
+    const employees = DB.get('employees',[]);
+    App.modal(`
+      <h3>➕ Создать задачу</h3>
+      <div class="form-group"><label>Название</label><input type="text" class="form-control" id="task-title" placeholder="Название"></div>
+      <div class="form-group"><label>Описание</label><textarea class="form-control" id="task-desc" placeholder="Описание"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Сотрудник</label>
+          <select class="form-control" id="task-employee">${employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label>Дедлайн</label><input type="datetime-local" class="form-control" id="task-deadline"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Tasks.save()">Создать</button>
+      </div>
+    `);
+  },
+
+  save() {
+    const tasks = DB.get('tasks',[]);
+    tasks.push({
+      id: App.genId(),
+      title: document.getElementById('task-title').value,
+      description: document.getElementById('task-desc').value,
+      employeeId: document.getElementById('task-employee').value,
+      deadline: document.getElementById('task-deadline').value,
+      priority: 'medium',
+      status: 'new',
+      createdAt: new Date().toISOString()
+    });
+    DB.set('tasks', tasks);
+    App.closeModal();
+    this.render();
+    App.toast('Задача создана','success');
+  },
+
+  move(id, newStatus) {
+    const tasks = DB.get('tasks',[]);
+    const t = tasks.find(x => x.id === id);
+    if(t) {
+      t.status = newStatus;
+      if(newStatus === 'done') t.completedAt = new Date().toISOString();
+      DB.set('tasks', tasks);
+      this.render();
+    }
+  },
+
+  remove(id) {
+    DB.set('tasks', DB.get('tasks',[]).filter(t => t.id !== id));
+    this.render();
+  }
+};
+
+// ==================== EMPLOYEES ====================
+const Employees = {
+  render() {
+    const employees = DB.get('employees',[]);
+    const fines = DB.get('fines',[]);
+    document.getElementById('employees-grid').innerHTML = employees.map(e => {
+      const empFines = fines.filter(f => f.employeeId == e.id);
+      const totalFines = empFines.filter(f => !f.forgiven).reduce((s,f) => s + f.amount, 0);
+      const hoursToday = e.checkIn ? ((Date.now() - new Date(e.checkIn).getTime()) / 3600000).toFixed(1) : 0;
+      const earnedToday = e.checkIn ? (hoursToday * e.rate).toFixed(0) : 0;
+      return `<div class="emp-card">
+        <div class="emp-header">
+          <div class="emp-photo">${e.photo ? `<img src="${e.photo}">` : e.name.charAt(0)}</div>
+          <div>
+            <div class="emp-name">${e.name}</div>
+            <div class="emp-role">${e.role} | ${e.rate}₽/час</div>
+            <span class="badge-status ${e.status==='online'?'badge-done':'badge-error'}">
+              <span class="live-dot" style="margin-right:4px;"></span>${e.status==='online'?'Онлайн':'Оффлайн'}
+            </span>
+          </div>
+        </div>
+        <div class="emp-stats">
+          <div class="emp-stat"><div class="val">${hoursToday}</div><div class="lbl">Часов сегодня</div></div>
+          <div class="emp-stat"><div class="val">${earnedToday}₽</div><div class="lbl">Заработано</div></div>
+          <div class="emp-stat"><div class="val">${e.totalHours?.toFixed(1)||0}</div><div class="lbl">Всего часов</div></div>
+          <div class="emp-stat"><div class="val" style="color:${totalFines>0?'var(--danger)':'var(--success)'}">${totalFines}₽</div><div class="lbl">Штрафы</div></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          ${e.status==='offline'?
+            `<button class="btn btn-sm btn-success" onclick="Employees.checkIn('${e.id}')">▶️ Начать</button>`:
+            `<button class="btn btn-sm btn-warning" onclick="Employees.checkOut('${e.id}')">⏹️ Завершить</button>`
+          }
+          <button class="btn btn-sm btn-outline" onclick="Employees.edit('${e.id}')">✏️</button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  add() {
+    App.modal(`
+      <h3>➕ Добавить сотрудника</h3>
+      <div class="form-group"><label>ФИО</label><input type="text" class="form-control" id="emp-name" placeholder="ФИО"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Должность</label><input type="text" class="form-control" id="emp-role" placeholder="Должность"></div>
+        <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="emp-rate" value="400"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Employees.save()">Добавить</button>
+      </div>
+    `);
+  },
+
+  save(id) {
+    const employees = DB.get('employees',[]);
+    const name = document.getElementById('emp-name')?.value;
+    const role = document.getElementById('emp-role')?.value;
+    const rate = parseInt(document.getElementById('emp-rate')?.value) || 400;
+
+    if(id) {
+      const idx = employees.findIndex(e => e.id == id);
+      if(idx >= 0) {
+        if(name) employees[idx].name = name;
+        if(role) employees[idx].role = role;
+        employees[idx].rate = rate;
+      }
+    } else {
+      employees.push({
+        id: Date.now(), name, role, rate,
+        photo:'', status:'offline',
+        qr:'EMP-'+String(employees.length+1).padStart(3,'0'),
+        checkIn:null, totalHours:0, totalEarned:0
+      });
+    }
+    DB.set('employees', employees);
+    App.closeModal();
+    this.render();
+    App.toast('Сохранено','success');
+  },
+
+  edit(id) {
+    const employees = DB.get('employees',[]);
+    const e = employees.find(x => x.id == id);
+    if(!e) return;
+    App.modal(`
+      <h3>✏️ ${e.name}</h3>
+      <div class="form-group"><label>ФИО</label><input type="text" class="form-control" id="emp-name" value="${e.name}"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Должность</label><input type="text" class="form-control" id="emp-role" value="${e.role}"></div>
+        <div class="form-group"><label>Ставка ₽/час</label><input type="number" class="form-control" id="emp-rate" value="${e.rate}"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Employees.save(${e.id})">Сохранить</button>
+      </div>
+    `);
+  },
+
+  checkIn(id) {
+    const employees = DB.get('employees',[]);
+    const e = employees.find(x => x.id == id);
+    if(e) {
+      e.status = 'online';
+      e.checkIn = new Date().toISOString();
+      DB.set('employees', employees);
+      this.render();
+      VoiceAssistant.speak(`${e.name} начал смену.`);
+      App.toast(`${e.name} начал смену`, 'success');
+    }
+  },
+
+  checkOut(id) {
+    const employees = DB.get('employees',[]);
+    const e = employees.find(x => x.id == id);
+    if(e && e.checkIn) {
+      const hours = (Date.now() - new Date(e.checkIn).getTime()) / 3600000;
+      e.totalHours = (e.totalHours||0) + hours;
+      e.totalEarned = (e.totalEarned||0) + (hours * e.rate);
+      e.status = 'offline';
+      e.checkIn = null;
+      DB.set('employees', employees);
+      this.render();
+      VoiceAssistant.speak(`${e.name} завершил смену. Заработано ${(hours*e.rate).toFixed(0)} рублей.`);
+      App.toast(`${e.name}: ${hours.toFixed(1)}ч, ${(hours*e.rate).toFixed(0)}₽`, 'success');
+    }
+  },
+
+  checkAutoCheckout() {
+    const employees = DB.get('employees',[]);
+    employees.forEach(e => {
+      if(e.checkIn) {
+        const elapsed = (Date.now() - new Date(e.checkIn).getTime()) / 3600000;
+        if(elapsed > 12) {
+          e.totalHours = (e.totalHours||0) + elapsed;
+          e.totalEarned = (e.totalEarned||0) + (elapsed * e.rate);
+          e.status = 'offline';
+          e.checkIn = null;
+        }
+      }
+    });
+    DB.set('employees', employees);
+  }
+};
+
+// ==================== INVENTORY ====================
+const Inventory = {
+  render() {
+    const inv = DB.get('inventory', {active:false, items:[]});
+    const cells = DB.get('warehouse_cells',[]);
+    document.getElementById('inv-status').textContent = inv.active ? 'В процессе' : 'Не начата';
+    document.getElementById('inv-status').className = 'badge-status ' + (inv.active ? 'badge-process' : 'badge-new');
+    document.getElementById('inventory-tbody').innerHTML = cells.filter(c => c.status === 'occupied').map(c => {
+      const invItem = inv.items.find(i => i.cellId === c.id);
+      const diff = invItem ? (invItem.fact - c.qty) : null;
+      return `<tr>
+        <td>${c.id} (${c.zone})</td>
+        <td>${c.qty}</td>
+        <td><input type="number" class="form-control" style="width:100px;" value="${invItem?.fact||''}" onchange="Inventory.updateFact('${c.id}',this.value)" ${!inv.active?'disabled':''}></td>
+        <td style="color:${diff>0?'var(--success)':diff<0?'var(--danger)':'inherit'}">${diff!==null?(diff>0?'+'+diff:diff):'—'}</td>
+        <td>${invItem ? App.statusBadge(diff===0?'done':'error') : '—'}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  start() {
+    const cells = DB.get('warehouse_cells',[]);
+    const items = cells.filter(c=>c.status==='occupied').map(c=>({cellId:c.id, system:c.qty, fact:null}));
+    DB.set('inventory', {active:true, items, startedAt: new Date().toISOString()});
+    this.render();
+    VoiceAssistant.speak('Инвентаризация начата. Озвучивайте номер ячейки и количество.');
+    App.toast('Инвентаризация начата', 'success');
+  },
+
+  updateFact(cellId, value) {
+    const inv = DB.get('inventory');
+    const item = inv.items.find(i => i.cellId === cellId);
+    if(item) item.fact = parseInt(value) || 0;
+    DB.set('inventory', inv);
+    this.render();
+  },
+
+  printReport() {
+    const inv = DB.get('inventory', {items:[]});
+    const cells = DB.get('warehouse_cells',[]);
+    const total = inv.items.length;
+    const matched = inv.items.filter(i => i.fact === cells.find(c=>c.id===i.cellId)?.qty).length;
+    const diff = total - matched;
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><title>Отчет инвентаризации</title><style>body{font-family:Arial;padding:30px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:8px;}</style></head><body><h1> Отчет</h1><p>Дата: ${App.formatDate(inv.startedAt||Date.now())}</p><table><tr><th>Ячейка</th><th>Система</th><th>Факт</th><th>Расхождение</th></tr>${inv.items.map(i=>{const c=cells.find(x=>x.id===i.cellId);const d=i.fact-(c?.qty||0);return `<tr><td>${i.cellId}</td><td>${c?.qty||0}</td><td>${i.fact||'—'}</td><td>${d!==0?(d>0?'+':'')+d:'0'}</td></tr>`;}).join('')}</table></body></html>`);
+  }
+};
+
+// ==================== FINES ====================
+const Fines = {
+  render() {
+    const fines = DB.get('fines',[]);
+    const rules = DB.get('fine_rules',[]);
+    document.getElementById('fine-rules').innerHTML = rules.map(r => `
+      <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
+        <strong>⚠️ ${r.rule}</strong> — <span style="color:var(--danger);font-weight:600;">${r.amount}₽</span>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">${r.description}</p>
+      </div>
+    `).join('');
+    document.getElementById('fines-list').innerHTML = fines.length ?
+      fines.map(f => {
+        const emp = DB.get('employees',[]).find(e => e.id == f.employeeId);
+        return `<div class="fine-card">
+          <div class="fine-amount ${f.forgiven?'forgiven':''}">${f.forgiven?'':'-'}${f.amount}₽</div>
+          <div class="fine-details">
+            <div class="reason">${f.reason}</div>
+            <div class="date">👤 ${emp?.name||'—'} | 📅 ${App.formatDate(f.date)}</div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            ${!f.forgiven?`<button class="btn btn-sm btn-success" onclick="Fines.forgive('${f.id}')">🙏</button>`:''}
+            <button class="btn btn-sm btn-danger" onclick="Fines.remove('${f.id}')">️</button>
+          </div>
+        </div>`;
+      }).join('') : '<p style="color:var(--text-secondary);">Штрафов нет 🎉</p>';
+  },
+
+  add() {
+    const employees = DB.get('employees',[]);
+    const rules = DB.get('fine_rules',[]);
+    App.modal(`
+      <h3>💰 Штраф</h3>
+      <div class="form-group"><label>Сотрудник</label>
+        <select class="form-control" id="fine-employee">${employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Причина</label>
+        <select class="form-control" id="fine-reason">
+          <option value="">Выберите...</option>
+          ${rules.map(r=>`<option value="${r.rule}">${r.rule} (${r.amount}₽)</option>`).join('')}
+          <option value="custom">Другая</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Описание</label><textarea class="form-control" id="fine-desc" placeholder="Подробности..."></textarea></div>
+      <div class="form-group"><label>Сумма ₽</label><input type="number" class="form-control" id="fine-amount" value="500"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-danger" onclick="Fines.save()">Начислить</button>
+      </div>
+    `);
+  },
+
+  save() {
+    const fines = DB.get('fines',[]);
+    fines.push({
+      id: App.genId(),
+      employeeId: document.getElementById('fine-employee').value,
+      reason: document.getElementById('fine-reason').value || document.getElementById('fine-desc').value,
+      description: document.getElementById('fine-desc').value,
+      amount: parseInt(document.getElementById('fine-amount').value) || 0,
+      photo: '',
+      date: new Date().toISOString(),
+      forgiven: false
+    });
+    DB.set('fines', fines);
+    App.closeModal();
+    this.render();
+    App.toast('Штраф начислен','warning');
+  },
+
+  forgive(id) {
+    const fines = DB.get('fines',[]);
+    const f = fines.find(x => x.id === id);
+    if(f) { f.forgiven = true; DB.set('fines', fines); this.render(); App.toast('Прощен','success'); }
+  },
+
+  remove(id) {
+    DB.set('fines', DB.get('fines',[]).filter(f => f.id !== id));
+    this.render();
+  }
+};
+
+// ==================== PRINTING ====================
+const Printing = {
+  render() { this.previewLabel(); },
+
+  generateLabel() {
+    const name = document.getElementById('print-name').value.trim();
+    const sku = document.getElementById('print-sku').value.trim();
+    const barcode = document.getElementById('print-barcode').value.trim();
+    const expiry = document.getElementById('print-expiry').value;
+    const qr = document.getElementById('print-qr').value.trim();
+    const copies = parseInt(document.getElementById('print-copies').value) || 1;
+    if(!name && !sku && !barcode) { App.toast('Заполните поля','error'); return; }
+    for(let i=0; i<copies; i++) this.printLabelHTML(name,sku,barcode,expiry,qr);
+  },
+
+  printLabelHTML(name,sku,barcode,expiry,qr) {
+    const printArea = document.getElementById('print-area');
+    printArea.style.display = 'block';
+    printArea.innerHTML = `<div class="print-label">
+      <div class="product-name">${name||'Товар'}</div>
+      <div class="product-sku">Арт: ${sku||'—'}</div>
+      ${barcode?`<svg id="label-barcode"></svg>`:''}
+      ${qr?`<div id="label-qr" style="margin-top:2px;"></div>`:''}
+      ${expiry?`<div class="product-expiry">Годен до: ${expiry}</div>`:''}
+    </div>`;
+    if(barcode) { try { JsBarcode('#label-barcode',barcode,{width:1.5,height:25,displayValue:true,fontSize:8,margin:0}); } catch(e){} }
+    if(qr) { try { const q=document.getElementById('label-qr'); q.innerHTML=''; new QRCode(q,{text:qr,width:50,height:50,margin:0}); } catch(e){} }
+    setTimeout(() => { window.print(); printArea.style.display='none'; }, 300);
+  },
+
+  previewLabel() {
+    const name = document.getElementById('print-name')?.value || 'Товар';
+    const sku = document.getElementById('print-sku')?.value || 'SKU-001';
+    const barcode = document.getElementById('print-barcode')?.value || '4601234567890';
+    const expiry = document.getElementById('print-expiry')?.value || '2026-12-31';
+    const preview = document.getElementById('print-preview');
+    preview.innerHTML = `<div style="width:220px;height:150px;border:1px solid var(--border);border-radius:4px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);">
+      <div style="font-size:11px;font-weight:700;margin-bottom:2px;">${name}</div>
+      <div style="font-size:8px;color:var(--text-secondary);margin-bottom:4px;">Арт: ${sku}</div>
+      <svg id="preview-barcode"></svg>
+      <div style="font-size:7px;color:var(--text-secondary);margin-top:2px;">Годен до: ${expiry}</div>
+    </div>`;
+    setTimeout(() => { try { JsBarcode('#preview-barcode',barcode,{width:1.5,height:20,displayValue:true,fontSize:7,margin:1}); } catch(e){} }, 100);
+  },
+
+  printProduct(cellId) {
+    const cells = DB.get('warehouse_cells',[]);
+    const c = cells.find(x => x.id === cellId);
+    if(!c) return;
+    document.getElementById('print-name').value = c.product;
+    document.getElementById('print-sku').value = c.sku;
+    document.getElementById('print-barcode').value = c.sku || c.id;
+    document.getElementById('print-expiry').value = c.expiry || '';
+    document.getElementById('print-copies').value = c.qty || 1;
+    this.previewLabel();
+  },
+
+  createFromWarehouse() {
+    App.modal(`
+      <h3> Печать со склада</h3>
+      <div class="form-group"><label>Товар</label>
+        <select class="form-control" id="print-select-cell">
+          <option value="">— Выберите —</option>
+          ${DB.get('warehouse_cells',[]).filter(c=>c.status==='occupied').map(c=>`<option value="${c.id}">${c.id} — ${c.product} (${c.qty} шт)</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Копий</label><input type="number" class="form-control" id="print-copies" value="1"></div>
+        <div class="form-group"><label>Срок годности</label><input type="date" class="form-control" id="print-expiry"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Printing.generateLabel()">🖨️ Печать</button>
+      </div>
+    `);
+  }
+};
+
+// ==================== INTEGRATIONS ====================
+const Integrations = {
+  render() {
+    const integ = DB.get('integrations',{diadoc:{},oneC:{},wms:{},clients:[]});
+    const clients = integ.clients || [];
+    document.getElementById('integ-grid').innerHTML = `
+      <div class="integ-card">
+        <div class="integ-icon">📄</div><h4>Диадок</h4><p>ЭДО</p>
+        <span class="integ-status ${integ.diadoc?.connected?'connected':'disconnected'}">${integ.diadoc?.connected?'✅':'❌'}</span>
+        <div style="margin-top:12px;">
+          <input type="text" class="form-control" placeholder="API ключ" id="diadoc-key" value="${integ.diadoc?.key||''}" style="margin-bottom:8px;">
+          <button class="btn btn-sm btn-primary" onclick="Integrations.connect('diadoc')">Подключить</button>
+        </div>
+      </div>
+      <div class="integ-card">
+        <div class="integ-icon">🏢</div><h4>1С</h4><p>1С:Предприятие</p>
+        <span class="integ-status ${integ.oneC?.connected?'connected':'disconnected'}">${integ.oneC?.connected?'✅':'❌'}</span>
+        <div style="margin-top:12px;">
+          <input type="text" class="form-control" placeholder="URL" id="1c-url" value="${integ.oneC?.url||''}" style="margin-bottom:8px;">
+          <input type="text" class="form-control" placeholder="Ключ" id="1c-key" value="${integ.oneC?.key||''}" style="margin-bottom:8px;">
+          <button class="btn btn-sm btn-primary" onclick="Integrations.connect('oneC')">Подключить</button>
+        </div>
+      </div>
+      <div class="integ-card">
+        <div class="integ-icon">📊</div><h4>WMS</h4><p>Склад</p>
+        <span class="integ-status ${integ.wms?.connected?'connected':'disconnected'}">${integ.wms?.connected?'✅':'❌'}</span>
+        <div style="margin-top:12px;">
+          <input type="text" class="form-control" placeholder="URL" id="wms-url" value="${integ.wms?.url||''}" style="margin-bottom:8px;">
+          <input type="text" class="form-control" placeholder="Ключ" id="wms-key" value="${integ.wms?.key||''}" style="margin-bottom:8px;">
+          <button class="btn btn-sm btn-primary" onclick="Integrations.connect('wms')">Подключить</button>
+        </div>
+      </div>
+      <div class="integ-card">
+        <div class="integ-icon">🔑</div><h4>Клиенты</h4><p>IP-ключи</p>
+        <span class="integ-status ${clients.length>0?'connected':'disconnected'}">${clients.length} клиентов</span>
+        <div style="margin-top:12px;">
+          <input type="text" class="form-control" placeholder="Название" id="client-name" style="margin-bottom:8px;">
+          <input type="text" class="form-control" placeholder="IP-ключ" id="client-key" style="margin-bottom:8px;">
+          <button class="btn btn-sm btn-primary" onclick="Integrations.addClient()">Добавить</button>
+        </div>
+        ${clients.map(c=>`<div style="padding:6px;border:1px solid var(--border);border-radius:6px;margin-top:8px;font-size:12px;display:flex;justify-content:space-between;">
+          <span>${c.name}</span><button class="btn btn-sm btn-danger" onclick="Integrations.removeClient('${c.key}')">✕</button>
+        </div>`).join('')}
+      </div>
+    `;
+  },
+
+  connect(type) {
+    const integ = DB.get('integrations',{diadoc:{},oneC:{},wms:{},clients:[]});
+    if(type==='diadoc') integ.diadoc = {key:document.getElementById('diadoc-key').value, connected:true};
+    else if(type==='oneC') integ.oneC = {url:document.getElementById('1c-url').value, key:document.getElementById('1c-key').value, connected:true};
+    else if(type==='wms') integ.wms = {url:document.getElementById('wms-url').value, key:document.getElementById('wms-key').value, connected:true};
+    DB.set('integrations', integ);
+    this.render();
+    App.toast('Подключено','success');
+  },
+
+  addClient() {
+    const integ = DB.get('integrations',{diadoc:{},oneC:{},wms:{},clients:[]});
+    const name = document.getElementById('client-name').value.trim();
+    const key = document.getElementById('client-key').value.trim();
+    if(!name||!key){App.toast('Заполните поля','error');return;}
+    integ.clients = integ.clients||[];
+    integ.clients.push({name,key,createdAt:new Date().toISOString()});
+    DB.set('integrations',integ);
+    this.render();
+    App.toast('Клиент добавлен','success');
+  },
+
+  removeClient(key) {
+    const integ = DB.get('integrations');
+    integ.clients = (integ.clients||[]).filter(c=>c.key!==key);
+    DB.set('integrations',integ);
+    this.render();
+  }
+};
+
+// ==================== SETTINGS ====================
+const Settings = {
+  render() {
+    const users = DB.get('users',[]);
+    document.getElementById('settings-users').innerHTML = users.map(u => `
+      <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <div><strong>${u.name}</strong> (${u.login})<br><small style="color:var(--text-secondary);">${u.role}</small></div>
+        <button class="btn btn-sm btn-outline" onclick="Settings.editUser(${u.id})">✏️</button>
+      </div>
+    `).join('');
+  },
+
+  editUser(id) {
+    const users = DB.get('users',[]);
+    const u = users.find(x => x.id === id);
+    if(!u) return;
+    App.modal(`
+      <h3>✏️ Пользователь</h3>
+      <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="user-edit-name" value="${u.name}"></div>
+      <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="user-edit-login" value="${u.login}"></div>
+      <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="user-edit-pass"></div>
+      <div class="form-group"><label>Роль</label>
+        <select class="form-control" id="user-edit-role">
+          <option value="admin" ${u.role==='admin'?'selected':''}>Администратор</option>
+          <option value="manager" ${u.role==='manager'?'selected':''}>Менеджер</option>
+          <option value="worker" ${u.role==='worker'?'selected':''}>Сотрудник</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="Settings.saveUser(${u.id})">Сохранить</button>
+      </div>
+    `);
+  },
+
+  saveUser(id) {
+    const users = DB.get('users',[]);
+    const u = users.find(x => x.id === id);
+    if(u) {
+      u.name = document.getElementById('user-edit-name').value;
+      u.login = document.getElementById('user-edit-login').value;
+      u.role = document.getElementById('user-edit-role').value;
+      const p = document.getElementById('user-edit-pass').value;
+      if(p) u.password = p;
+      DB.set('users', users);
+      App.closeModal();
+      this.render();
+      App.toast('Сохранено','success');
+    }
+  }
+};
+
+// ==================== IMPORT/EXPORT ====================
+const IO = {
+  exportAll() {
+    const data = DB.getAll();
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fulfill_backup_${App.today()}.json`;
+    a.click();
+    App.toast('Экспорт завершен','success');
+  },
+
+  importData(input) {
+    const file = input.files[0];
+    if(!file) return;
+    if(file.name.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          Object.keys(data).forEach(key => DB.set(key, data[key]));
+          App.toast('Импортировано','success');
+          setTimeout(() => location.reload(), 1500);
+        } catch(err) { App.toast('Ошибка','error'); }
+      };
+      reader.readAsText(file);
+    }
+  },
+
+  resetAll() {
+    if(!confirm('Удалить все данные?')) return;
+    if(!confirm('Точно удалить?')) return;
+    DB.clearAll();
+    App.toast('Сброшено','warning');
+    setTimeout(() => location.reload(), 1500);
+  }
+};
+
+// ==================== INITIALIZE ====================
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 FulFill Pro with Voice Assistant loading...');
+  App.init();
+});
 </script>
+
 </body>
 </html>
