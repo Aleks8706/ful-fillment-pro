@@ -1,2875 +1,1089 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FulfillPro WMS</title>
-<style>
-:root {
-  --bg: #f0f2f5; --bg2: #ffffff; --bg3: #e8eaed;
-  --text: #1a1a2e; --text2: #555; --text3: #888;
-  --primary: #4361ee; --primary-hover: #3a56d4;
-  --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c;
-  --border: #ddd; --shadow: 0 2px 12px rgba(0,0,0,0.08);
-  --radius: 12px; --radius-sm: 8px;
-  --sidebar-w: 260px; --header-h: 64px;
-  --gradient: linear-gradient(135deg, #4361ee, #7209b7);
-  --card-bg: #fff; --input-bg: #f5f6fa;
-  --table-stripe: #f8f9fa; --table-hover: #eef0f5;
-}
-[data-theme="dark"] {
-  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
-  --primary: #58a6ff; --primary-hover: #79b8ff;
-  --border: #30363d; --shadow: 0 2px 12px rgba(0,0,0,0.4);
-  --card-bg: #161b22; --input-bg: #0d1117;
-  --table-stripe: #1c232b; --table-hover: #252d36;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: var(--bg); color: var(--text);
-  transition: background .3s, color .3s;
-  overflow: hidden; height: 100vh;
-}
-/* SPLASH SCREEN */
-#splash {
-  position: fixed; inset:0; z-index:10000;
-  background: var(--gradient);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity .6s, visibility .6s;
-}
-#splash.hidden { opacity:0; visibility:hidden; pointer-events:none; }
-#splash .logo {
-  width: 120px; height: 120px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 30px; display: flex;
-  align-items: center; justify-content: center;
-  font-size: 48px; color: #fff;
-  animation: pulse 2s infinite;
-  backdrop-filter: blur(10px);
-}
-@keyframes pulse {
-  0%,100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-#splash h1 {
-  color: #fff; font-size: 32px; margin: 20px 0 8px;
-  font-weight: 700; letter-spacing: 2px;
-}
-#splash p { color: rgba(255,255,255,0.8); font-size: 14px; }
-#splash .loader {
-  margin-top: 40px; width: 200px; height: 4px;
-  background: rgba(255,255,255,0.2); border-radius: 4px;
-  overflow: hidden;
-}
-#splash .loader-bar {
-  height: 100%; width: 0; background: #fff;
-  border-radius: 4px; transition: width .3s;
-}
-/* LOGIN */
-#loginScreen {
-  position: fixed; inset:0; z-index:9000;
-  background: var(--gradient);
-  display: none; align-items: center; justify-content: center;
-}
-#loginScreen.active { display: flex; }
-.login-box {
-  background: var(--bg2); padding: 40px; border-radius: 20px;
-  width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-.login-box h2 { text-align:center; margin-bottom: 8px; }
-.login-box p.sub { text-align:center; color:var(--text2); margin-bottom:24px; font-size:14px; }
-.login-box input {
-  width: 100%; padding: 14px 16px; border: 2px solid var(--border);
-  border-radius: var(--radius-sm); font-size: 15px; margin-bottom: 12px;
-  background: var(--input-bg); color: var(--text); outline: none;
-  transition: border-color .2s;
-}
-.login-box input:focus { border-color: var(--primary); }
-.login-box button {
-  width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
-  background: var(--gradient); color: #fff; font-size: 16px;
-  font-weight: 600; cursor: pointer; transition: transform .1s, box-shadow .2s;
-}
-.login-box button:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(67,97,238,0.4); }
-.login-box button:active { transform: translateY(0); }
-.login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 8px; min-height: 20px; }
-/* LAYOUT */
-#app { display: none; height: 100vh; }
-#app.active { display: flex; }
-/* SIDEBAR */
-.sidebar {
-  width: var(--sidebar-w); background: var(--bg2);
-  border-right: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  height: 100vh; overflow-y: auto;
-  transition: width .3s;
-}
-.sidebar-header {
-  padding: 20px; display: flex; align-items: center; gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.sidebar-header .s-logo {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: var(--gradient); display: flex;
-  align-items: center; justify-content: center;
-  color: #fff; font-size: 20px; flex-shrink: 0;
-}
-.sidebar-header h3 { font-size: 18px; font-weight: 700; }
-.sidebar-header span { font-size: 11px; color: var(--text3); }
-.nav-group { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.nav-group-title {
-  padding: 6px 20px; font-size: 11px;
-  text-transform: uppercase; color: var(--text3);
-  font-weight: 600; letter-spacing: 1px;
-}
-.nav-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px; cursor: pointer;
-  color: var(--text2); transition: all .15s;
-  font-size: 14px; position: relative;
-}
-.nav-item:hover { background: var(--bg3); color: var(--text); }
-.nav-item.active {
-  color: var(--primary); background: rgba(67,97,238,0.08);
-}
-.nav-item.active::before {
-  content:''; position: absolute; left:0; top:50%;
-  transform: translateY(-50%); width: 3px; height: 60%;
-  background: var(--primary); border-radius: 0 3px 3px 0;
-}
-.nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
-.nav-item .badge {
-  margin-left: auto; background: var(--danger);
-  color: #fff; font-size: 11px; padding: 2px 7px;
-  border-radius: 10px; font-weight: 600;
-}
-/* HEADER */
-.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-.header {
-  height: var(--header-h); background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 24px;
-  gap: 16px; flex-shrink: 0;
-}
-.header .title { font-size: 20px; font-weight: 700; }
-.header .spacer { flex:1; }
-.header-btn {
-  padding: 8px 16px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: var(--bg2);
-  color: var(--text); cursor: pointer; font-size: 13px;
-  display: flex; align-items: center; gap: 6px;
-  transition: all .15s;
-}
-.header-btn:hover { background: var(--bg3); }
-.header-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-.header-btn.primary:hover { background: var(--primary-hover); }
-.theme-toggle {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1px solid var(--border); background: var(--bg2);
-  cursor: pointer; font-size: 18px; display: flex;
-  align-items: center; justify-content: center;
-  transition: all .2s;
-}
-.theme-toggle:hover { background: var(--bg3); }
-.user-info {
-  display: flex; align-items: center; gap: 10px;
-  padding: 4px 12px 4px 4px; border-radius: 20px;
-  background: var(--bg3); cursor: pointer;
-}
-.user-info img {
-  width: 32px; height: 32px; border-radius: 50%;
-  object-fit: cover;
-}
-.user-info span { font-size: 13px; font-weight: 600; }
-/* CONTENT */
-.content {
-  flex: 1; overflow-y: auto; padding: 24px;
-  background: var(--bg);
-}
-.page { display: none; }
-.page.active { display: block; }
-/* CARDS */
-.stats-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px; margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-}
-.stat-card .label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
-.stat-card .value { font-size: 28px; font-weight: 700; margin: 8px 0 4px; }
-.stat-card .sub { font-size: 12px; color: var(--text2); }
-.stat-card.green .value { color: var(--success); }
-.stat-card.blue .value { color: var(--primary); }
-.stat-card.orange .value { color: var(--warning); }
-.stat-card.red .value { color: var(--danger); }
-/* TABLE */
-.table-wrap {
-  background: var(--card-bg); border-radius: var(--radius);
-  box-shadow: var(--shadow); border: 1px solid var(--border);
-  overflow: hidden;
-}
-.table-toolbar {
-  padding: 16px 20px; display: flex; align-items: center;
-  gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border);
-}
-.search-box {
-  flex: 1; min-width: 200px; padding: 10px 14px;
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--input-bg); color: var(--text);
-  font-size: 14px; outline: none;
-}
-.search-box:focus { border-color: var(--primary); }
-select.filter {
-  padding: 10px 14px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: var(--input-bg);
-  color: var(--text); font-size: 13px; outline: none;
-}
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  padding: 12px 16px; text-align: left; font-size: 12px;
-  text-transform: uppercase; color: var(--text3);
-  background: var(--bg3); font-weight: 600;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-tbody td {
-  padding: 12px 16px; font-size: 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-tbody tr:nth-child(even) { background: var(--table-stripe); }
-tbody tr:hover { background: var(--table-hover); }
-td img.thumb {
-  width: 40px; height: 40px; border-radius: 8px;
-  object-fit: cover; border: 1px solid var(--border);
-}
-/* BADGE */
-.badge {
-  display: inline-block; padding: 4px 10px;
-  border-radius: 20px; font-size: 12px; font-weight: 600;
-}
-.badge.green { background: rgba(46,204,113,0.15); color: var(--success); }
-.badge.blue { background: rgba(67,97,238,0.15); color: var(--primary); }
-.badge.orange { background: rgba(243,156,18,0.15); color: var(--warning); }
-.badge.red { background: rgba(231,76,60,0.15); color: var(--danger); }
-.badge.gray { background: rgba(0,0,0,0.1); color: var(--text2); }
-/* MODAL */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  display: none; align-items: center; justify-content: center;
-  z-index: 5000; backdrop-filter: blur(4px);
-}
-.modal-overlay.active { display: flex; }
-.modal {
-  background: var(--bg2); border-radius: var(--radius);
-  width: 90%; max-width: 700px; max-height: 85vh;
-  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-.modal-header {
-  padding: 20px 24px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; background: var(--bg2); z-index: 1;
-}
-.modal-header h3 { font-size: 18px; }
-.modal-close {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: none; background: var(--bg3); cursor: pointer;
-  font-size: 18px; display: flex; align-items: center;
-  justify-content: center; color: var(--text);
-}
-.modal-body { padding: 24px; }
-.form-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-}
-.form-grid .full { grid-column: 1 / -1; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 13px; font-weight: 600; color: var(--text2); }
-.form-group input, .form-group select, .form-group textarea {
-  padding: 10px 14px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: var(--input-bg);
-  color: var(--text); font-size: 14px; outline: none;
-  font-family: inherit;
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  border-color: var(--primary);
-}
-.form-group textarea { resize: vertical; min-height: 80px; }
-.modal-footer {
-  padding: 16px 24px; border-top: 1px solid var(--border);
-  display: flex; gap: 12px; justify-content: flex-end;
-}
-.btn {
-  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-hover); }
-.btn-success { background: var(--success); color: #fff; }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-warning { background: var(--warning); color: #fff; }
-.btn-secondary { background: var(--bg3); color: var(--text); }
-.btn-secondary:hover { background: var(--border); }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
-/* SCAN AREA */
-.scan-area {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 24px; text-align: center; margin-bottom: 20px;
-  border: 2px dashed var(--border);
-}
-.scan-area input {
-  width: 100%; max-width: 400px; padding: 16px;
-  border: 2px solid var(--primary); border-radius: var(--radius);
-  font-size: 20px; text-align: center; background: var(--input-bg);
-  color: var(--text); outline: none;
-}
-.scan-area input:focus { box-shadow: 0 0 0 4px rgba(67,97,238,0.2); }
-.scan-status {
-  margin-top: 12px; font-size: 14px; padding: 8px 16px;
-  border-radius: var(--radius-sm); display: inline-block;
-}
-.scan-status.ok { background: rgba(46,204,113,0.15); color: var(--success); }
-.scan-status.err { background: rgba(231,76,60,0.15); color: var(--danger); }
-/* WAREHOUSE MAP */
-.warehouse-map {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 20px; border: 1px solid var(--border);
-  min-height: 400px; position: relative;
-  overflow: auto;
-}
-.shelf-grid {
-  display: grid; gap: 8px;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-}
-.shelf-cell {
-  background: var(--bg3); border-radius: var(--radius-sm);
-  padding: 12px; text-align: center; cursor: pointer;
-  transition: all .2s; border: 2px solid transparent;
-  position: relative;
-}
-.shelf-cell:hover { border-color: var(--primary); }
-.shelf-cell.occupied { background: rgba(67,97,238,0.15); border-color: var(--primary); }
-.shelf-cell.empty { background: rgba(46,204,113,0.1); border-color: var(--success); }
-.shelf-cell .shelf-name { font-size: 13px; font-weight: 700; }
-.shelf-cell .shelf-count { font-size: 11px; color: var(--text3); margin-top: 4px; }
-.shelf-cell .fill-bar {
-  height: 4px; background: var(--bg3); border-radius: 2px;
-  margin-top: 6px; overflow: hidden;
-}
-.shelf-cell .fill-bar .fill { height: 100%; background: var(--primary); border-radius: 2px; }
-/* EMPLOYEE CARD */
-.emp-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-.emp-card {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 20px; border: 1px solid var(--border);
-  box-shadow: var(--shadow); transition: transform .2s;
-}
-.emp-card:hover { transform: translateY(-2px); }
-.emp-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.emp-card-header img {
-  width: 50px; height: 50px; border-radius: 50%;
-  object-fit: cover; border: 2px solid var(--border);
-}
-.emp-card-header .name { font-weight: 700; font-size: 15px; }
-.emp-card-header .role { font-size: 12px; color: var(--text3); }
-.emp-card-body { font-size: 13px; }
-.emp-card-body div { display: flex; justify-content: space-between; padding: 4px 0; }
-.emp-card-body .label { color: var(--text3); }
-.emp-card-footer { display: flex; gap: 8px; margin-top: 12px; }
-.emp-card-footer .btn { flex: 1; justify-content: center; }
-/* VOICE ASSISTANT */
-.voice-btn {
-  position: fixed; bottom: 24px; right: 24px;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--gradient); color: #fff;
-  border: none; font-size: 24px; cursor: pointer;
-  box-shadow: 0 4px 20px rgba(67,97,238,0.4);
-  z-index: 100; display: flex; align-items: center;
-  justify-content: center; transition: all .2s;
-}
-.voice-btn:hover { transform: scale(1.1); }
-.voice-btn.listening { animation: voicePulse 1s infinite; }
-@keyframes voicePulse {
-  0%,100% { box-shadow: 0 4px 20px rgba(67,97,238,0.4); }
-  50% { box-shadow: 0 4px 40px rgba(67,97,238,0.8); }
-}
-.voice-panel {
-  position: fixed; bottom: 90px; right: 24px;
-  width: 320px; background: var(--bg2); border-radius: var(--radius);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-  border: 1px solid var(--border); display: none;
-  z-index: 100; overflow: hidden;
-}
-.voice-panel.active { display: block; }
-.voice-panel-header {
-  padding: 12px 16px; background: var(--gradient);
-  color: #fff; font-weight: 600; font-size: 14px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.voice-panel-body { padding: 16px; max-height: 300px; overflow-y: auto; }
-.voice-panel-body p { font-size: 13px; margin-bottom: 8px; line-height: 1.5; }
-/* PRINT LABEL */
-.label-preview {
-  width: 58mm; height: 40mm; border: 1px solid #000;
-  padding: 3mm; font-size: 7px; font-family: monospace;
-  background: #fff; color: #000; display: inline-block;
-  page-break-inside: avoid;
-}
-.label-preview .lp-name { font-size: 9px; font-weight: bold; margin-bottom: 2px; }
-.label-preview .lp-barcode { font-size: 6px; margin: 2px 0; }
-.label-preview .lp-barcode-img { height: 18px; }
-.label-preview .lp-row { display: flex; justify-content: space-between; font-size: 7px; }
-.label-preview .lp-datamatrix { float: right; width: 16mm; height: 16mm; }
-/* FBO TABS */
-.fbo-tabs {
-  display: flex; gap: 4px; margin-bottom: 16px;
-  background: var(--bg3); border-radius: var(--radius-sm);
-  padding: 4px; width: fit-content;
-}
-.fbo-tab {
-  padding: 8px 16px; border-radius: 6px; cursor: pointer;
-  font-size: 13px; font-weight: 600; color: var(--text2);
-  transition: all .15s;
-}
-.fbo-tab.active { background: var(--primary); color: #fff; }
-.fbo-tab:hover:not(.active) { background: var(--border); }
-/* REALTIME INDICATOR */
-.realtime-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--success); display: inline-block;
-  animation: blink 1.5s infinite;
-}
-@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-/* NOTIFICATION */
-.notification {
-  position: fixed; top: 20px; right: 20px;
-  padding: 14px 20px; border-radius: var(--radius-sm);
-  background: var(--bg2); border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  z-index: 9999; transform: translateX(120%);
-  transition: transform .3s; max-width: 360px;
-}
-.notification.show { transform: translateX(0); }
-.notification.success { border-left: 4px solid var(--success); }
-.notification.error { border-left: 4px solid var(--danger); }
-.notification.warning { border-left: 4px solid var(--warning); }
-.notification .notif-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-.notification .notif-text { font-size: 13px; color: var(--text2); }
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text3); }
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .sidebar { position: fixed; left: -260px; z-index: 8000; }
-  .sidebar.open { left: 0; }
-  .form-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .modal { width: 95%; }
-  .header .title { font-size: 16px; }
-}
-/* PRINT */
-@media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { position: absolute; left: 0; top: 0; }
-  .label-preview { border: 1px solid #000; }
-}
-/* KIZ QR */
-.datamatrix-svg { width: 16mm; height: 16mm; }
-.barcode-svg { height: 20px; }
-/* FINE CARD */
-.fine-card {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 16px; border: 1px solid var(--border);
-  margin-bottom: 12px;
-}
-.fine-card .fine-header { display: flex; justify-content: space-between; align-items: center; }
-.fine-card .fine-amount { font-size: 20px; font-weight: 700; color: var(--danger); }
-.fine-card .fine-reason { font-size: 13px; color: var(--text2); margin: 8px 0; }
-.fine-card .fine-photo {
-  width: 100%; max-height: 200px; object-fit: cover;
-  border-radius: var(--radius-sm); margin-top: 8px;
-}
-/* TASKS */
-.task-item {
-  background: var(--card-bg); border-radius: var(--radius);
-  padding: 16px; border: 1px solid var(--border);
-  margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
-}
-.task-item .task-check {
-  width: 24px; height: 24px; border-radius: 50%;
-  border: 2px solid var(--border); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: all .2s;
-}
-.task-item .task-check.done { background: var(--success); border-color: var(--success); color: #fff; }
-.task-item .task-info { flex: 1; }
-.task-item .task-title { font-weight: 600; font-size: 14px; }
-.task-item .task-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
-.task-item .task-priority {
-  padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
-}
-.priority-high { background: rgba(231,76,60,0.15); color: var(--danger); }
-.priority-medium { background: rgba(243,156,18,0.15); color: var(--warning); }
-.priority-low { background: rgba(46,204,113,0.15); color: var(--success); }
-/* CLOCK */
-.clock {
-  font-family: 'Courier New', monospace;
-  font-size: 14px; font-weight: 600;
-  color: var(--text2);
-}
-</style>
-</head>
-<body>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FulFillPro — WMS с голосовым управлением</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d' },
+                        accent: { 500: '#6366f1', 600: '#4f46e5' },
+                        dark: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .dark .glass { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); }
+        .light .glass { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.08); }
+        
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover, .sidebar-link.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 16px; max-height: 90vh; overflow-y: auto; width: 90%; max-width: 700px; animation: slideUp 0.3s ease-out; }
+        .dark .modal-content { background: #1e293b; }
 
-<!-- SPLASH SCREEN -->
-<div id="splash">
-  <div class="logo">📦</div>
-  <h1>FulfillPro WMS</h1>
-  <p>Система управления складом и фулфилментом</p>
-  <div class="loader"><div class="loader-bar" id="splashBar"></div></div>
-</div>
+        @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes pulse-red { 0%{box-shadow:0 0 0 0 rgba(239, 68, 68, 0.7)} 70%{box-shadow:0 0 0 10px rgba(239, 68, 68, 0)} 100%{box-shadow:0 0 0 0 rgba(239, 68, 68, 0)} }
+        
+        .tsd-scanner-active { border: 2px solid #22c55e; box-shadow: 0 0 15px rgba(34, 197, 94, 0.3); }
+        .tsd-error-active { border: 2px solid #ef4444; animation: pulse-red 1s infinite; }
+
+        /* Voice Assistant UI */
+        .voice-orb {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4ade80, #16a34a);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .voice-orb.listening {
+            background: radial-gradient(circle at 30% 30%, #f87171, #dc2626);
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+            animation: pulse-glow 1.5s infinite;
+        }
+        .voice-orb.speaking {
+            background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.6);
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes pulse-glow { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+        @keyframes bounce { from{transform:scale(1)} to{transform:scale(1.05)} }
+
+        .print-only { display: none; }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white; color: black; } }
+    </style>
+</head>
+<body class="bg-dark-900 text-dark-100 min-h-screen overflow-hidden flex flex-col">
+
+<!-- AUDIO CONTEXT FOR BEEPS -->
+<div id="audioContext" style="display:none;"></div>
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <h2>📦 FulfillPro WMS</h2>
-    <p class="sub">Войдите в систему для продолжения</p>
-    <input type="text" id="loginUser" placeholder="Логин" autocomplete="username">
-    <input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password">
-    <button onclick="doLogin()">Войти</button>
-    <div class="login-error" id="loginError"></div>
-  </div>
+<div id="loginScreen" class="fixed inset-0 z-[999] bg-dark-950 flex items-center justify-center p-4">
+    <div class="w-full max-w-md glass rounded-2xl p-8 shadow-2xl animate-slideUp">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-accent-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                <i class="fas fa-warehouse text-white text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">FulFill<span class="text-primary-500">Pro</span></h1>
+            <p class="text-dark-400 text-sm mt-1">Голосовая система управления складом</p>
+        </div>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-dark-300 mb-1">Логин</label>
+                <input type="text" id="loginUsername" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 text-white focus:border-primary-500 outline-none" value="admin">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-dark-300 mb-1">Пароль</label>
+                <input type="password" id="loginPassword" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 text-white focus:border-primary-500 outline-none" value="admin123">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-semibold py-3 rounded-lg transition-all shadow-lg">
+                <i class="fas fa-sign-in-alt mr-2"></i>Войти
+            </button>
+            <div class="flex justify-between items-center mt-4">
+                <button type="button" onclick="toggleVoicePermission()" id="voicePermBtn" class="text-xs text-dark-400 hover:text-primary-400 flex items-center gap-2">
+                    <i class="fas fa-microphone-slash"></i> Разрешить голос
+                </button>
+                <span class="text-xs text-dark-500">Демо: admin / admin123</span>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- MAIN APP -->
-<div id="app">
-  <!-- SIDEBAR -->
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="s-logo">📦</div>
-      <div><h3>FulfillPro</h3><span>WMS v3.0</span></div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-group-title">Главное</div>
-      <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Дашборд</div>
-      <div class="nav-item" data-page="warehouse"><span class="icon">🏭</span> Склад и карта</div>
-      <div class="nav-item" data-page="products"><span class="icon">📦</span> Товары</div>
-      <div class="nav-item" data-page="receiving"><span class="icon">📥</span> Приёмка <span class="badge" id="recvBadge" style="display:none">0</span></div>
-      <div class="nav-item" data-page="shipping"><span class="icon">📤</span> Отгрузка</div>
-      <div class="nav-item" data-page="inventory"><span class="icon">📋</span> Инвентаризация</div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-group-title">Маркетплейсы</div>
-      <div class="nav-item" data-page="fbo"><span class="icon">🏪</span> FBO (Озон/ВБ)</div>
-      <div class="nav-item" data-page="fbs"><span class="icon">🚚</span> FBS (Озон/ВБ) <span class="badge" id="fbsBadge" style="display:none">0</span></div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-group-title">Персонал</div>
-      <div class="nav-item" data-page="employees"><span class="icon">👥</span> Сотрудники</div>
-      <div class="nav-item" data-page="tasks"><span class="icon">✅</span> Задачи</div>
-      <div class="nav-item" data-page="fines"><span class="icon">⚠️</span> Штрафы</div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-group-title">Печать</div>
-      <div class="nav-item" data-page="labels"><span class="icon">🏷️</span> Этикетки 58×40</div>
-      <div class="nav-item" data-page="documents"><span class="icon">📄</span> Документы</div>
-    </div>
-
-    <div class="nav-group">
-      <div class="nav-group-title">Интеграции</div>
-      <div class="nav-item" data-page="integrations"><span class="icon">🔗</span> API / Интеграции</div>
-      <div class="nav-item" data-page="settings"><span class="icon">⚙️</span> Настройки</div>
-    </div>
-  </nav>
-
-  <!-- MAIN CONTENT -->
-  <div class="main">
-    <div class="header">
-      <button class="header-btn" onclick="toggleSidebar()" style="display:none" id="menuBtn">☰</button>
-      <span class="title" id="pageTitle">Дашборд</span>
-      <div class="spacer"></div>
-      <span class="realtime-dot" title="Онлайн"></span>
-      <span class="clock" id="clock"></span>
-      <button class="theme-toggle" onclick="toggleTheme()" title="Тема">🌙</button>
-      <button class="header-btn" onclick="exportAllData()">💾 Экспорт</button>
-      <button class="header-btn" onclick="document.getElementById('importFile').click()">📂 Импорт</button>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(event)">
-      <div class="user-info" onclick="showPage('settings')">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%234361ee'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='40'%3E👤%3C/text%3E%3C/svg%3E" id="userAvatar" alt="">
-        <span id="userName">Админ</span>
-      </div>
-    </div>
-
-    <div class="content" id="contentArea">
-
-      <!-- ==================== DASHBOARD ==================== -->
-      <div class="page active" id="page-dashboard">
-        <div class="stats-grid">
-          <div class="stat-card blue"><div class="label">Товаров на складе</div><div class="value" id="dTotalProducts">0</div><div class="sub">SKU позиций</div></div>
-          <div class="stat-card green"><div class="label">Приёмки сегодня</div><div class="value" id="dReceivingToday">0</div><div class="sub">Активных приёмок</div></div>
-          <div class="stat-card orange"><div class="label">Отгрузки сегодня</div><div class="value" id="dShippingToday">0</div><div class="sub">В работе</div></div>
-          <div class="stat-card red"><div class="label">Задачи на сегодня</div><div class="value" id="dTasksToday">0</div><div class="sub">Ожидают выполнения</div></div>
-          <div class="stat-card blue"><div class="label">Сотрудников онлайн</div><div class="value" id="dEmployeesOnline">0</div><div class="sub">Работают сейчас</div></div>
-          <div class="stat-card green"><div class="label">Заполненность склада</div><div class="value" id="dWarehouseFill">0%</div><div class="sub">Мест занято</div></div>
+<div id="mainApp" class="hidden flex-1 flex overflow-hidden">
+    
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-dark-900 border-r border-dark-800 flex flex-col no-print hidden md:flex">
+        <div class="p-4 border-b border-dark-800 flex items-center gap-3">
+            <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center"><i class="fas fa-cubes text-white text-sm"></i></div>
+            <span class="font-bold text-white">FulFill<span class="text-primary-500">Pro</span></span>
         </div>
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <strong>Последние операции</strong>
-          </div>
-          <table>
-            <thead><tr><th>Время</th><th>Тип</th><th>Описание</th><th>Сотрудник</th><th>Статус</th></tr></thead>
-            <tbody id="dashLogBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== WAREHOUSE ==================== -->
-      <div class="page" id="page-warehouse">
-        <div class="stats-grid">
-          <div class="stat-card blue"><div class="label">Всего мест</div><div class="value" id="wTotalPlaces">0</div></div>
-          <div class="stat-card green"><div class="label">Свободных</div><div class="value" id="wFreePlaces">0</div></div>
-          <div class="stat-card orange"><div class="label">Занятых</div><div class="value" id="wOccupiedPlaces">0</div></div>
-        </div>
-        <div style="margin-bottom:16px; display:flex; gap:12px; flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="openModal('addShelf')">➕ Добавить стеллаж</button>
-          <button class="btn btn-secondary" onclick="generateWarehouseLayout()">🔄 Генерировать схему</button>
-        </div>
-        <div class="warehouse-map" id="warehouseMap">
-          <div class="shelf-grid" id="shelfGrid"></div>
-        </div>
-        <div style="margin-top:16px; display:flex; gap:8px; font-size:12px; color:var(--text2);">
-          <span>🟦 Занято</span> <span>🟩 Свободно</span>
-        </div>
-      </div>
-
-      <!-- ==================== PRODUCTS ==================== -->
-      <div class="page" id="page-products">
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <input class="search-box" placeholder="Поиск по названию, штрихкоду, артикулу..." id="prodSearch" oninput="renderProducts()">
-            <select class="filter" id="prodFilterCat" onchange="renderProducts()"><option value="">Все категории</option></select>
-            <button class="btn btn-primary" onclick="openModal('addProduct')">➕ Добавить товар</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('prodExcelFile').click()">📥 Импорт Excel</button>
-            <button class="btn btn-secondary" onclick="exportProductsExcel()">📤 Экспорт Excel</button>
-            <input type="file" id="prodExcelFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importProductsExcel(event)">
-          </div>
-          <div style="overflow-x:auto;">
-            <table>
-              <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>ШК</th><th>КИЗ</th><th>Категория</th><th>Кол-во</th><th>Место</th><th>Годен до</th><th>Действия</th></tr></thead>
-              <tbody id="productsBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==================== RECEIVING ==================== -->
-      <div class="page" id="page-receiving">
-        <div class="scan-area">
-          <p style="margin-bottom:12px; font-weight:600;">📥 Приёмка товара (Тсд сканер)</p>
-          <input type="text" id="recvScanInput" placeholder="Сканируйте штрихкод..." autofocus>
-          <div class="scan-status" id="recvScanStatus"></div>
-        </div>
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <strong>Приёмка #<span id="recvDocNum">—</span></strong>
-            <div class="spacer"></div>
-            <select class="filter" id="recvStatus"><option value="open">Открыта</option><option value="complete">Завершена</option></select>
-            <button class="btn btn-primary" onclick="completeReceiving()">✅ Завершить приёмку</button>
-            <button class="btn btn-secondary" onclick="printReceivingDoc()">🖨️ Печать документа</button>
-            <button class="btn btn-secondary" onclick="newReceivingDoc()">📋 Новый документ</button>
-          </div>
-          <table>
-            <thead><tr><th>Фото</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Место</th><th>Дата приёмки</th><th>Действия</th></tr></thead>
-            <tbody id="receivingBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== SHIPPING ==================== -->
-      <div class="page" id="page-shipping">
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <input class="search-box" placeholder="Поиск товара для отгрузки..." id="shipSearch">
-            <button class="btn btn-primary" onclick="openModal('addShipping')">➕ Создать отгрузку</button>
-          </div>
-          <table>
-            <thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Направление</th><th>Дата</th><th>Статус</th><th>Действия</th></tr></thead>
-            <tbody id="shippingBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== INVENTORY ==================== -->
-      <div class="page" id="page-inventory">
-        <div class="scan-area">
-          <p style="margin-bottom:12px; font-weight:600;">📋 Инвентаризация</p>
-          <input type="text" id="invScanInput" placeholder="Сканируйте штрихкод или введите вручную...">
-          <div style="margin-top:12px;">
-            <button class="btn btn-primary" onclick="addToInventory()">➕ В позицию</button>
-            <button class="btn btn-secondary" onclick="printInventoryReport()">🖨️ Печать отчёта</button>
-            <button class="btn btn-success" onclick="completeInventory()">✅ Завершить инвентаризацию</button>
-          </div>
-          <div class="scan-status" id="invScanStatus"></div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Товар</th><th>Артикул</th><th>ШК</th><th>Системное кол-во</th><th>Фактическое</th><th>Разница</th><th>Место</th></tr></thead>
-            <tbody id="inventoryBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== FBO ==================== -->
-      <div class="page" id="page-fbo">
-        <div class="fbo-tabs">
-          <div class="fbo-tab active" onclick="switchFboTab(this,'ozon')">Озон ФБО</div>
-          <div class="fbo-tab" onclick="switchFboTab(this,'wb')">ВБ ФБО</div>
-        </div>
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <button class="btn btn-primary" onclick="document.getElementById('fboTzFile').click()">📥 Загрузить ТЗ (Excel)</button>
-            <input type="file" id="fboTzFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFboTz(event)">
-            <select class="filter" id="fboCityFilter" onchange="renderFboTable()"><option value="">Все города</option></select>
-            <select class="filter" id="fboPackFilter" onchange="renderFboTable()"><option value="">Все спайки</option></select>
-            <button class="btn btn-secondary" onclick="printFboLabels()">🏷️ Печать этикеток 58×40</button>
-            <button class="btn btn-success" onclick="generateFboReport()">📊 Отчёт</button>
-            <button class="btn btn-warning" onclick="packToBoxes()">📦 Разложить по коробам</button>
-          </div>
-          <table>
-            <thead><tr><th>Наименование</th><th>Баркод</th><th>Артикул</th><th>Годен до</th><th>Город</th><th>Спайка</th><th>Кол-во этикеток</th><th>Статус</th><th>Короб</th><th>Действия</th></tr></thead>
-            <tbody id="fboBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== FBS ==================== -->
-      <div class="page" id="page-fbs">
-        <div class="fbo-tabs">
-          <div class="fbo-tab active" onclick="switchFbsTab(this,'ozon')">Озон FBS</div>
-          <div class="fbo-tab" onclick="switchFbsTab(this,'wb')">ВБ FBS</div>
-        </div>
-        <div style="margin-bottom:12px; display:flex; align-items:center; gap:12px;">
-          <span class="realtime-dot"></span>
-          <span style="font-size:13px; color:var(--text2);">Автообновление каждые 30 сек</span>
-          <span class="clock" id="fbsNextUpdate"></span>
-          <button class="btn btn-sm btn-primary" onclick="fetchFbsOrders()">🔄 Обновить сейчас</button>
-        </div>
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <input class="search-box" placeholder="Поиск заказов..." id="fbsSearch">
-            <select class="filter" id="fbsStatusFilter" onchange="renderFbsTable()"><option value="">Все статусы</option><option value="new">Новый</option><option value="packing">Сборка</option><option value="ready">Готов</option><option value="shipped">Отгружен</option></select>
-          </div>
-          <table>
-            <thead><tr><th>№ заказа</th><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Остаток</th><th>Статус</th><th>Дата</th><th>Действия</th></tr></thead>
-            <tbody id="fbsBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== EMPLOYEES ==================== -->
-      <div class="page" id="page-employees">
-        <div style="margin-bottom:16px;">
-          <button class="btn btn-primary" onclick="openModal('addEmployee')">➕ Добавить сотрудника</button>
-        </div>
-        <div class="emp-grid" id="empGrid"></div>
-      </div>
-
-      <!-- ==================== TASKS ==================== -->
-      <div class="page" id="page-tasks">
-        <div style="margin-bottom:16px; display:flex; gap:12px;">
-          <button class="btn btn-primary" onclick="openModal('addTask')">➕ Создать задачу</button>
-          <select class="filter" id="taskEmpFilter" onchange="renderTasks()"><option value="">Все сотрудники</option></select>
-        </div>
-        <div id="tasksList"></div>
-      </div>
-
-      <!-- ==================== FINES ==================== -->
-      <div class="page" id="page-fines">
-        <div style="margin-bottom:16px;">
-          <button class="btn btn-danger" onclick="openModal('addFine')">⚠️ Выписать штраф</button>
-        </div>
-        <div id="finesList"></div>
-      </div>
-
-      <!-- ==================== LABELS ==================== -->
-      <div class="page" id="page-labels">
-        <div style="display:flex; gap:16px; flex-wrap:wrap;">
-          <div style="flex:1; min-width:300px;">
-            <div class="table-wrap">
-              <div class="table-toolbar">
-                <strong>Печать этикеток 58×40</strong>
-              </div>
-              <div style="padding:16px;">
-                <div class="form-grid">
-                  <div class="form-group"><label>Товар</label>
-                    <select id="labelProduct" onchange="updateLabelPreview()"></select>
-                  </div>
-                  <div class="form-group"><label>Количество</label>
-                    <input type="number" id="labelQty" value="1" min="1" onchange="updateLabelPreview()">
-                  </div>
-                  <div class="form-group full"><label>
-                    <input type="checkbox" id="labelIncludeKiz" checked onchange="updateLabelPreview()">
-                    Включить КИЗ (DataMatrix)
-                  </label></div>
+        <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+            <button onclick="navigate('dashboard')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm active" data-nav="dashboard"><i class="fas fa-chart-pie w-5"></i>Дашборд</button>
+            <button onclick="navigate('receiving')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="receiving"><i class="fas fa-dolly w-5"></i>Приёмка (ТСД)</button>
+            <button onclick="navigate('shipping')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="shipping"><i class="fas fa-truck-loading w-5"></i>Отгрузка</button>
+            <button onclick="navigate('warehouse')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="warehouse"><i class="fas fa-boxes-stacked w-5"></i>Склад</button>
+            <button onclick="navigate('employees')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="employees"><i class="fas fa-users w-5"></i>Сотрудники</button>
+            <button onclick="navigate('labels')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="labels"><i class="fas fa-barcode w-5"></i>Этикетки</button>
+            <button onclick="navigate('settings')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="settings"><i class="fas fa-cog w-5"></i>Настройки</button>
+        </nav>
+        <div class="p-4 border-t border-dark-800">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-dark-700 flex items-center justify-center"><i class="fas fa-user text-dark-400"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white truncate" id="currentUserDisplay">Админ</p>
+                    <p class="text-xs text-green-500">Онлайн</p>
                 </div>
-                <div style="margin-top:16px; text-align:center;">
-                  <button class="btn btn-primary" onclick="printLabels()">🖨️ Печать</button>
+                <button onclick="logout()" class="text-dark-500 hover:text-red-500"><i class="fas fa-power-off"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <main class="flex-1 flex flex-col relative bg-dark-950 overflow-hidden">
+        <!-- HEADER -->
+        <header class="h-16 bg-dark-900/80 backdrop-blur border-b border-dark-800 flex items-center justify-between px-6 no-print z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-dark-300"><i class="fas fa-bars"></i></button>
+                <h2 id="pageTitle" class="text-lg font-semibold text-white">Дашборд</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-dark-800 rounded-full border border-dark-700">
+                    <i class="fas fa-clock text-dark-400 text-xs"></i>
+                    <span id="headerTime" class="text-sm text-dark-300 font-mono">--:--</span>
                 </div>
-              </div>
+                <!-- VOICE ASSISTANT TRIGGER -->
+                <div class="relative group">
+                    <div id="voiceOrb" class="voice-orb" onclick="toggleVoiceAssistant()">
+                        <i class="fas fa-microphone text-white text-xl"></i>
+                    </div>
+                    <div class="absolute top-full right-0 mt-2 w-48 bg-dark-800 rounded-lg shadow-xl p-2 hidden group-hover:block border border-dark-700">
+                        <p class="text-xs text-dark-400 px-2 py-1">Скажите: "Где товар [название]" или "Остаток на складе"</p>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div style="flex:0 0 auto;">
-            <div class="table-wrap" style="padding:20px;">
-              <strong>Предпросмотр</strong>
-              <div id="labelPreviewArea" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
-            </div>
-          </div>
+        </header>
+
+        <!-- PAGES -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth" id="contentArea">
+            
+            <!-- DASHBOARD -->
+            <section id="page-dashboard" class="page-section space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass rounded-xl p-4 border-l-4 border-primary-500">
+                        <p class="text-dark-400 text-sm">Товаров на складе</p>
+                        <h3 class="text-2xl font-bold text-white" id="dashTotalItems">0</h3>
+                    </div>
+                    <div class="glass rounded-xl p-4 border-l-4 border-blue-500">
+                        <p class="text-dark-400 text-sm">Приёмок сегодня</p>
+                        <h3 class="text-2xl font-bold text-white" id="dashReceivingCount">0</h3>
+                    </div>
+                    <div class="glass rounded-xl p-4 border-l-4 border-orange-500">
+                        <p class="text-dark-400 text-sm">Отгрузок сегодня</p>
+                        <h3 class="text-2xl font-bold text-white" id="dashShippingCount">0</h3>
+                    </div>
+                    <div class="glass rounded-xl p-4 border-l-4 border-purple-500">
+                        <p class="text-dark-400 text-sm">Сотрудников онлайн</p>
+                        <h3 class="text-2xl font-bold text-white" id="dashOnlineEmp">0</h3>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass rounded-xl p-6">
+                        <h3 class="font-semibold text-white mb-4">Активность склада</h3>
+                        <canvas id="activityChart" height="200"></canvas>
+                    </div>
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="font-semibold text-white mb-4">Быстрые действия</h3>
+                        <div class="space-y-3">
+                            <button onclick="navigate('receiving')" class="w-full bg-dark-800 hover:bg-dark-700 text-left px-4 py-3 rounded-lg text-sm text-white flex items-center gap-3 transition">
+                                <i class="fas fa-barcode text-primary-500"></i> Начать приёмку (ТСД)
+                            </button>
+                            <button onclick="navigate('shipping')" class="w-full bg-dark-800 hover:bg-dark-700 text-left px-4 py-3 rounded-lg text-sm text-white flex items-center gap-3 transition">
+                                <i class="fas fa-truck text-orange-500"></i> Создать отгрузку
+                            </button>
+                            <button onclick="openModal('addProduct')" class="w-full bg-dark-800 hover:bg-dark-700 text-left px-4 py-3 rounded-lg text-sm text-white flex items-center gap-3 transition">
+                                <i class="fas fa-plus-circle text-blue-500"></i> Добавить новый товар
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RECEIVING (TSD MODE) -->
+            <section id="page-receiving" class="page-section hidden h-full flex flex-col">
+                <div class="glass rounded-xl p-1 flex-1 flex flex-col relative overflow-hidden" id="tsdContainer">
+                    <!-- TSD Header -->
+                    <div class="bg-dark-800 p-4 rounded-t-xl flex justify-between items-center border-b border-dark-700">
+                        <div>
+                            <h3 class="text-white font-bold flex items-center gap-2">
+                                <i class="fas fa-barcode text-primary-500"></i> Режим ТСД
+                            </h3>
+                            <p class="text-xs text-dark-400">Сканируйте штрихкоды для приёмки</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="finishReceivingSession()" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-sm transition">
+                                <i class="fas fa-check mr-1"></i> Завершить
+                            </button>
+                            <button onclick="clearReceivingSession()" class="bg-red-600/20 text-red-400 hover:bg-red-600/30 px-3 py-1 rounded text-sm transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scan Input Area (Hidden but focused) -->
+                    <div class="p-4 bg-dark-900/50 border-b border-dark-700">
+                        <div class="relative">
+                            <input type="text" id="tsdInput" 
+                                class="w-full bg-dark-800 border-2 border-dark-600 rounded-lg pl-10 pr-4 py-3 text-white text-lg font-mono focus:border-primary-500 focus:outline-none transition-colors tsd-scanner-active" 
+                                placeholder="Ожидание сканирования..." 
+                                autocomplete="off" autofocus>
+                            <i class="fas fa-barcode absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"></i>
+                        </div>
+                        <div id="scanFeedback" class="mt-2 text-sm font-medium h-6 flex items-center gap-2"></div>
+                    </div>
+
+                    <!-- Current Session List -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-2" id="receivingList">
+                        <div class="text-center text-dark-500 py-10">
+                            <i class="fas fa-box-open text-4xl mb-3 opacity-50"></i>
+                            <p>Список пуст. Отсканируйте товар.</p>
+                        </div>
+                    </div>
+
+                    <!-- Stats Footer -->
+                    <div class="bg-dark-800 p-3 rounded-b-xl border-t border-dark-700 flex justify-between text-sm">
+                        <span class="text-dark-400">Позиций: <b class="text-white" id="recPosCount">0</b></span>
+                        <span class="text-dark-400">Всего шт: <b class="text-white" id="recQtyCount">0</b></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SHIPPING -->
+            <section id="page-shipping" class="page-section hidden">
+                <div class="flex justify-between mb-4">
+                    <button onclick="openModal('addShipping')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-plus mr-1"></i> Новая отгрузка
+                    </button>
+                </div>
+                <div class="glass rounded-xl overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-dark-800 text-dark-400">
+                            <tr><th class="p-4">№</th><th class="p-4">Клиент</th><th class="p-4">Статус</th><th class="p-4">Дата</th><th class="p-4">Действия</th></tr>
+                        </thead>
+                        <tbody id="shippingTableBody" class="divide-y divide-dark-800"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- WAREHOUSE -->
+            <section id="page-warehouse" class="page-section hidden">
+                <div class="flex justify-between mb-4">
+                    <input type="text" id="searchWarehouse" placeholder="Поиск по названию или ШК..." class="bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-sm text-white w-64 focus:border-primary-500 outline-none" oninput="renderWarehouse()">
+                </div>
+                <div class="glass rounded-xl overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-dark-800 text-dark-400">
+                            <tr><th class="p-4">Фото</th><th class="p-4">Артикул</th><th class="p-4">Название</th><th class="p-4">ШК</th><th class="p-4">Ячейка</th><th class="p-4">Остаток</th><th class="p-4">Действия</th></tr>
+                        </thead>
+                        <tbody id="warehouseTableBody" class="divide-y divide-dark-800"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- EMPLOYEES -->
+            <section id="page-employees" class="page-section hidden">
+                <div class="flex justify-between mb-4">
+                    <button onclick="openModal('addEmployee')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-user-plus mr-1"></i> Добавить сотрудника
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="employeesGrid"></div>
+            </section>
+
+            <!-- LABELS -->
+            <section id="page-labels" class="page-section hidden">
+                <div class="glass rounded-xl p-6 max-w-2xl mx-auto">
+                    <h3 class="text-white font-semibold mb-4">Печать этикеток (58x40)</h3>
+                    <div class="space-y-4">
+                        <select id="labelProductSelect" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white">
+                            <option value="">Выберите товар...</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <input type="number" id="labelCount" value="1" min="1" class="w-20 bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white">
+                            <button onclick="printLabels()" class="flex-1 bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-print mr-2"></i> Печать
+                            </button>
+                        </div>
+                        <div id="labelPreview" class="border border-dashed border-dark-600 rounded-lg p-4 flex justify-center bg-white mt-4"></div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- SETTINGS -->
+             <section id="page-settings" class="page-section hidden">
+                <div class="glass rounded-xl p-6 max-w-2xl">
+                    <h3 class="text-white font-semibold mb-4">Настройки системы</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-dark-400 mb-1">Название компании</label>
+                            <input type="text" id="settingCompanyName" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-dark-800 rounded-lg">
+                            <span class="text-sm text-white">Голосовой помощник</span>
+                            <button onclick="toggleVoicePermission()" id="voiceToggleBtn" class="text-xs bg-dark-700 px-3 py-1 rounded text-white">Включить</button>
+                        </div>
+                        <button onclick="saveSettings()" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg transition">Сохранить</button>
+                        <button onclick="resetData()" class="w-full bg-red-900/50 hover:bg-red-900 text-red-400 py-2 rounded-lg transition mt-4">Сброс всех данных</button>
+                    </div>
+                </div>
+            </section>
+
         </div>
-      </div>
-
-      <!-- ==================== DOCUMENTS ==================== -->
-      <div class="page" id="page-documents">
-        <div class="table-wrap">
-          <div class="table-toolbar">
-            <strong>Документы</strong>
-          </div>
-          <table>
-            <thead><tr><th>№</th><th>Тип</th><th>Дата</th><th>Описание</th><th>Статус</th><th>Действия</th></tr></thead>
-            <tbody id="documentsBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ==================== INTEGRATIONS ==================== -->
-      <div class="page" id="page-integrations">
-        <div class="stats-grid">
-          <div class="stat-card blue"><div class="label">Диадок</div><div class="value" id="intDiadoc">🔴</div><div class="sub">Подключить через API</div></div>
-          <div class="stat-card green"><div class="label">1С</div><div class="value" id="int1c">🔴</div><div class="sub">Интеграция</div></div>
-          <div class="stat-card orange"><div class="label">WMS</div><div class="value" id="intWms">🔴</div><div class="sub">Внешняя WMS</div></div>
-        </div>
-        <div class="table-wrap">
-          <div class="table-toolbar"><strong>Настройки интеграций</strong></div>
-          <div style="padding:20px;">
-            <div class="form-grid">
-              <div class="form-group"><label>Диадок API ключ</label><input type="text" id="intDiadocKey" placeholder="Введите ключ"></div>
-              <div class="form-group"><label>1С URL</label><input type="text" id="int1cUrl" placeholder="http://server:port"></div>
-              <div class="form-group"><label>1С Логин</label><input type="text" id="int1cLogin" placeholder="Логин"></div>
-              <div class="form-group"><label>1С Пароль</label><input type="password" id="int1cPass" placeholder="Пароль"></div>
-              <div class="form-group"><label>WMS API URL</label><input type="text" id="intWmsUrl" placeholder="http://wms-api"></div>
-              <div class="form-group"><label>WMS API Ключ</label><input type="text" id="intWmsKey" placeholder="Ключ"></div>
-              <div class="form-group"><label>Клиент IP ключ</label><input type="text" id="intClientKey" placeholder="Клиентский ключ"></div>
-              <div class="form-group"><label>Ozon API ключ</label><input type="text" id="intOzonKey" placeholder="Ozon API"></div>
-              <div class="form-group"><label>WB API ключ</label><input type="text" id="intWbKey" placeholder="WB API"></div>
-            </div>
-            <div style="margin-top:16px;">
-              <button class="btn btn-primary" onclick="saveIntegrations()">💾 Сохранить</button>
-              <button class="btn btn-success" onclick="testIntegrations()">🧪 Тест соединения</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==================== SETTINGS ==================== -->
-      <div class="page" id="page-settings">
-        <div class="table-wrap">
-          <div class="table-toolbar"><strong>Настройки системы</strong></div>
-          <div style="padding:20px;">
-            <div class="form-grid">
-              <div class="form-group"><label>Название компании</label><input type="text" id="setCompanyName" value="FulfillPro"></div>
-              <div class="form-group"><label>Адрес склада</label><input type="text" id="setAddress"></div>
-              <div class="form-group"><label>Телефон</label><input type="text" id="setPhone"></div>
-              <div class="form-group"><label>Email</label><input type="email" id="setEmail"></div>
-            </div>
-            <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить</button>
-              <button class="btn btn-danger" onclick="if(confirm('Сбросить ВСЕ данные?')){localStorage.clear();location.reload();}">🗑️ Сбросить данные</button>
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap" style="margin-top:16px;">
-          <div class="table-toolbar"><strong>Управление пользователями</strong></div>
-          <div style="padding:20px;">
-            <div class="form-grid">
-              <div class="form-group"><label>Новый логин</label><input type="text" id="newLogin"></div>
-              <div class="form-group"><label>Новый пароль</label><input type="password" id="newPass"></div>
-            </div>
-            <div style="margin-top:12px;">
-              <button class="btn btn-primary" onclick="addUser()">➕ Добавить пользователя</button>
-            </div>
-            <div style="margin-top:16px;">
-              <strong>Существующие пользователи:</strong>
-              <div id="usersList" style="margin-top:8px;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
+    </main>
 </div>
 
-<!-- MODALS -->
-<div class="modal-overlay" id="modal-addProduct">
-  <div class="modal">
-    <div class="modal-header"><h3>Добавить товар</h3><button class="modal-close" onclick="closeModal('addProduct')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Название *</label><input type="text" id="prodName" required></div>
-        <div class="form-group"><label>Артикул *</label><input type="text" id="prodSku"></div>
-        <div class="form-group"><label>Штрихкод *</label><input type="text" id="prodBarcode"></div>
-        <div class="form-group"><label>КИЗ (DataMatrix)</label><input type="text" id="prodKiz"></div>
-        <div class="form-group"><label>Категория</label><input type="text" id="prodCategory" list="catList"><datalist id="catList"></datalist></div>
-        <div class="form-group"><label>Количество</label><input type="number" id="prodQty" value="0" min="0"></div>
-        <div class="form-group"><label>Место хранения</label><select id="prodShelf"></select></div>
-        <div class="form-group"><label>Годен до</label><input type="date" id="prodExpiry"></div>
-        <div class="form-group full"><label>Фото</label><input type="file" id="prodPhoto" accept="image/*" onchange="previewPhoto(this,'prodPhotoPreview')"></div>
-        <div class="form-group full" id="prodPhotoPreview" style="display:none;text-align:center;"><img src="" style="max-width:200px;max-height:150px;border-radius:8px;"></div>
-        <div class="form-group full"><label>Документы</label><input type="file" id="prodDocs" multiple></div>
-        <div class="form-group full"><label>Описание</label><textarea id="prodDesc"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addProduct')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveProduct()">💾 Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-addEmployee">
-  <div class="modal">
-    <div class="modal-header"><h3>Добавить сотрудника</h3><button class="modal-close" onclick="closeModal('addEmployee')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>ФИО *</label><input type="text" id="empName"></div>
-        <div class="form-group"><label>Должность</label><input type="text" id="empRole"></div>
-        <div class="form-group"><label>Ставка (₽/час)</label><input type="number" id="empRate" value="300" min="0"></div>
-        <div class="form-group"><label>Телефон</label><input type="text" id="empPhone"></div>
-        <div class="form-group"><label>Email</label><input type="email" id="empEmail"></div>
-        <div class="form-group"><label>QR-код ID</label><input type="text" id="empQrId" placeholder="Авто" readonly></div>
-        <div class="form-group full"><label>Фото</label><input type="file" id="empPhoto" accept="image/*" onchange="previewPhoto(this,'empPhotoPreview')"></div>
-        <div class="form-group full" id="empPhotoPreview" style="display:none;text-align:center;"><img src="" style="max-width:200px;max-height:150px;border-radius:8px;"></div>
-        <div class="form-group full"><label>Документы (паспорт, договор и т.д.)</label><input type="file" id="empDocs" multiple></div>
-        <div class="form-group full"><label>Примечания</label><textarea id="empNotes"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addEmployee')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveEmployee()">💾 Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-addTask">
-  <div class="modal">
-    <div class="modal-header"><h3>Создать задачу</h3><button class="modal-close" onclick="closeModal('addTask')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group full"><label>Название задачи *</label><input type="text" id="taskTitle"></div>
-        <div class="form-group"><label>Приоритет</label><select id="taskPriority"><option value="high">Высокий</option><option value="medium" selected>Средний</option><option value="low">Низкий</option></select></div>
-        <div class="form-group"><label>Сотрудник</label><select id="taskEmployee"></select></div>
-        <div class="form-group"><label>Дата</label><input type="date" id="taskDate"></div>
-        <div class="form-group"><label>Время</label><input type="time" id="taskTime"></div>
-        <div class="form-group full"><label>Описание</label><textarea id="taskDesc"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addTask')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveTask()">💾 Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-addFine">
-  <div class="modal">
-    <div class="modal-header"><h3>Выписать штраф</h3><button class="modal-close" onclick="closeModal('addFine')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Сотрудник *</label><select id="fineEmployee"></select></div>
-        <div class="form-group"><label>Сумма (₽) *</label><input type="number" id="fineAmount" min="0"></div>
-        <div class="form-group full"><label>Причина *</label><textarea id="fineReason"></textarea></div>
-        <div class="form-group full"><label>Как избежать (рекомендации)</label><textarea id="finePrevention"></textarea></div>
-        <div class="form-group full"><label>Фото фиксация</label><input type="file" id="finePhoto" accept="image/*" onchange="previewPhoto(this,'finePhotoPreview')"></div>
-        <div class="form-group full" id="finePhotoPreview" style="display:none;text-align:center;"><img src="" style="max-width:200px;max-height:150px;border-radius:8px;"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addFine')">Отмена</button>
-      <button class="btn btn-danger" onclick="saveFine()">⚠️ Выписать штраф</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-addShipping">
-  <div class="modal">
-    <div class="modal-header"><h3>Создать отгрузку</h3><button class="modal-close" onclick="closeModal('addShipping')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Товар *</label><select id="shipProduct"></select></div>
-        <div class="form-group"><label>Количество *</label><input type="number" id="shipQty" min="1" value="1"></div>
-        <div class="form-group"><label>Направление</label><input type="text" id="shipDest" placeholder="Адрес / маркетплейс"></div>
-        <div class="form-group"><label>Примечание</label><textarea id="shipNote"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addShipping')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveShipping()">💾 Создать</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-addShelf">
-  <div class="modal">
-    <div class="modal-header"><h3>Добавить стеллаж</h3><button class="modal-close" onclick="closeModal('addShelf')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Название *</label><input type="text" id="shelfName" placeholder="A-01-1"></div>
-        <div class="form-group"><label>Зона</label><input type="text" id="shelfZone" placeholder="A"></div>
-        <div class="form-group"><label>Вместимость</label><input type="number" id="shelfCapacity" value="50"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addShelf')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveShelf()">💾 Добавить</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-shelfDetail">
-  <div class="modal">
-    <div class="modal-header"><h3 id="shelfDetailTitle">Стеллаж</h3><button class="modal-close" onclick="closeModal('shelfDetail')">✕</button></div>
-    <div class="modal-body" id="shelfDetailBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('shelfDetail')">Закрыть</button>
-    </div>
-  </div>
-</div>
-
-<!-- EMPLOYEE QR MODAL -->
-<div class="modal-overlay" id="modal-empQr">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-header"><h3>QR-код сотрудника</h3><button class="modal-close" onclick="closeModal('empQr')">✕</button></div>
-    <div class="modal-body" style="text-align:center;">
-      <div id="empQrDisplay" style="margin:20px auto;"></div>
-      <p id="empQrName" style="font-weight:700;"></p>
-      <p id="empQrId" style="color:var(--text2);font-size:13px;"></p>
-      <div style="margin-top:16px;">
-        <button class="btn btn-primary" onclick="printEmployeeQr()">🖨️ Печать QR</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- EMPLOYEE CLOCK-IN -->
-<div class="modal-overlay" id="modal-clockIn">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-header"><h3>📷 Сканирование QR сотрудника</h3><button class="modal-close" onclick="closeModal('clockIn')">✕</button></div>
-    <div class="modal-body">
-      <div class="scan-area">
-        <input type="text" id="clockInInput" placeholder="Сканируйте QR-код сотрудника...">
-        <div class="scan-status" id="clockInStatus"></div>
-      </div>
-      <div style="text-align:center; margin-top:12px;">
-        <button class="btn btn-success" onclick="clockInEmployee()">✅ Отметить вход</button>
-        <button class="btn btn-danger" onclick="clockOutEmployee()">🚪 Отметить выход</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- VOICE ASSISTANT -->
-<button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Голосовой помощник">🎤</button>
-<div class="voice-panel" id="voicePanel">
-  <div class="voice-panel-header">🎤 Голосовой помощник <button style="background:none;border:none;color:#fff;cursor:pointer;" onclick="toggleVoice()">✕</button></div>
-  <div class="voice-panel-body" id="voiceBody">
-    <p>Нажмите на микрофон и задайте вопрос. Например:</p>
-    <p>• "Где лежит товар [артикул]?"</p>
-    <p>• "Сколько товаров на складе?"</p>
-    <p>• "Покажи приёмку"</p>
-    <p>• "Какие задачи на сегодня?"</p>
-  </div>
-</div>
-
-<!-- NOTIFICATION -->
-<div class="notification" id="notification">
-  <div class="notif-title" id="notifTitle"></div>
-  <div class="notif-text" id="notifText"></div>
-</div>
-
-<!-- PRINT AREA -->
-<div class="print-area" id="printArea" style="display:none;"></div>
-
-<!-- JS LIBS (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- MODALS CONTAINER -->
+<div id="modalContainer"></div>
 
 <script>
-// ===================== DATA STORE =====================
-const DB = {
-  get(k) { try { return JSON.parse(localStorage.getItem('fp_'+k)) || null; } catch { return null; } },
-  set(k,v) { localStorage.setItem('fp_'+k, JSON.stringify(v)); },
-  getAll() {
-    const r = {};
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(k.startsWith('fp_')) r[k.replace('fp_','')] = this.get(k.replace('fp_',''));
-    }
-    return r;
-  }
+// ==================== DATA & STATE ====================
+const DB_KEY = 'fulfillpro_v4_db';
+let db = {
+    products: [],
+    receiving: [],
+    shipping: [],
+    employees: [],
+    settings: { companyName: 'My Warehouse', voiceEnabled: false },
+    nextId: { product: 1, receiving: 1, shipping: 1, employee: 1 }
 };
 
-// Init defaults
-let products = DB.get('products') || [];
-let shelves = DB.get('shelves') || [];
-let employees = DB.get('employees') || [];
-let receiving = DB.get('receiving') || [];
-let shipping = DB.get('shipping') || [];
-let tasks = DB.get('tasks') || [];
-let fines = DB.get('fines') || [];
-let fboItems = DB.get('fboItems') || [];
-let fbsOrders = DB.get('fbsOrders') || [];
-let inventory = DB.get('inventory') || [];
-let documents = DB.get('documents') || [];
-let users = DB.get('users') || [{login:'admin',pass:'admin',role:'Администратор'}];
-let settings = DB.get('settings') || {};
-let integrations = DB.get('integrations') || {};
-let logs = DB.get('logs') || [];
-let currentUser = DB.get('currentUser') || null;
-let currentReceivingDoc = DB.get('currentReceivingDoc') || null;
+// Temporary state for current receiving session
+let currentReceivingSession = [];
 
-function saveAll() {
-  DB.set('products', products);
-  DB.set('shelves', shelves);
-  DB.set('employees', employees);
-  DB.set('receiving', receiving);
-  DB.set('shipping', shipping);
-  DB.set('tasks', tasks);
-  DB.set('fines', fines);
-  DB.set('fboItems', fboItems);
-  DB.set('fbsOrders', fbsOrders);
-  DB.set('inventory', inventory);
-  DB.set('documents', documents);
-  DB.set('users', users);
-  DB.set('settings', settings);
-  DB.set('integrations', integrations);
-  DB.set('logs', logs);
-  DB.set('currentReceivingDoc', currentReceivingDoc);
-}
-
-function addLog(type, desc) {
-  logs.unshift({
-    time: new Date().toLocaleString('ru-RU'),
-    type, desc,
-    employee: currentUser ? currentUser.login : '—',
-    status: 'ok'
-  });
-  if(logs.length > 200) logs = logs.slice(0,200);
-  DB.set('logs', logs);
-}
-
-// ===================== SPLASH & LOGIN =====================
-window.addEventListener('load', () => {
-  let prog = 0;
-  const bar = document.getElementById('splashBar');
-  const iv = setInterval(() => {
-    prog += Math.random() * 30;
-    if(prog >= 100) { prog = 100; clearInterval(iv); }
-    bar.style.width = prog + '%';
-  }, 200);
-  setTimeout(() => {
-    document.getElementById('splash').classList.add('hidden');
-    if(currentUser) {
-      showApp();
-    } else {
-      document.getElementById('loginScreen').classList.add('active');
-    }
-  }, 2200);
-});
-
-function doLogin() {
-  const login = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const user = users.find(u => u.login === login && u.pass === pass);
-  if(user) {
-    currentUser = user;
-    DB.set('currentUser', user);
-    document.getElementById('loginScreen').classList.remove('active');
-    showApp();
-    notify('Добро пожаловать!', 'Вы вошли как ' + user.login, 'success');
-  } else {
-    document.getElementById('loginError').textContent = 'Неверный логин или пароль';
-  }
-}
-
-function showApp() {
-  document.getElementById('app').classList.add('active');
-  document.getElementById('userName').textContent = currentUser ? currentUser.login : 'Гость';
-  initApp();
-}
-
-// ===================== INIT =====================
-function initApp() {
-  if(shelves.length === 0) generateWarehouseLayout(true);
-  renderAll();
-  startClock();
-  startFbsAutoUpdate();
-  setupScanListeners();
-  loadIntegrationsUI();
-  loadSettingsUI();
-  renderUsersList();
-  updateLabelProductSelect();
-  generateEmployeeQrIds();
-}
-
-function renderAll() {
-  renderDashboard();
-  renderWarehouse();
-  renderProducts();
-  renderReceiving();
-  renderShipping();
-  renderInventory();
-  renderFboTable();
-  renderFbsTable();
-  renderEmployees();
-  renderTasks();
-  renderFines();
-  renderDocuments();
-  renderEmployeeSelects();
-}
-
-// ===================== CLOCK =====================
-function startClock() {
-  function update() {
-    const now = new Date();
-    document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU');
-    if(document.getElementById('fbsNextUpdate')) {
-      const sec = 30 - (now.getSeconds() % 30);
-      document.getElementById('fbsNextUpdate').textContent = `Обновление через ${sec}с`;
-    }
-  }
-  update();
-  setInterval(update, 1000);
-}
-
-// ===================== THEME =====================
-function toggleTheme() {
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.querySelector('.theme-toggle').textContent = isDark ? '🌙' : '☀️';
-  DB.set('theme', isDark ? 'light' : 'dark');
-}
-(function(){ const t = DB.get('theme'); if(t) { document.documentElement.setAttribute('data-theme', t); setTimeout(()=>{ const btn = document.querySelector('.theme-toggle'); if(btn) btn.textContent = t==='dark'?'☀️':'🌙'; },100); } })();
-
-// ===================== NAVIGATION =====================
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    const page = item.dataset.page;
-    showPage(page);
-  });
-});
-
-const pageTitles = {
-  dashboard:'Дашборд', warehouse:'Склад и карта', products:'Товары',
-  receiving:'Приёмка', shipping:'Отгрузка', inventory:'Инвентаризация',
-  fbo:'FBO (Озон/ВБ)', fbs:'FBS (Озон/ВБ)', employees:'Сотрудники',
-  tasks:'Задачи', fines:'Штрафы', labels:'Этикетки 58×40',
-  documents:'Документы', integrations:'Интеграции', settings:'Настройки'
-};
-
-function showPage(page) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
-  if(navItem) navItem.classList.add('active');
-  const pageEl = document.getElementById('page-'+page);
-  if(pageEl) pageEl.classList.add('active');
-  document.getElementById('pageTitle').textContent = pageTitles[page] || page;
-}
-
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-}
-
-// ===================== NOTIFICATIONS =====================
-function notify(title, text, type='success') {
-  const el = document.getElementById('notification');
-  el.className = 'notification ' + type;
-  document.getElementById('notifTitle').textContent = title;
-  document.getElementById('notifText').textContent = text;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 4000);
-}
-
-// ===================== MODALS =====================
-function openModal(id) {
-  document.getElementById('modal-'+id).classList.add('active');
-  if(id === 'addEmployee') document.getElementById('empQrId').value = 'EMP-' + Date.now().toString(36).toUpperCase();
-  if(id === 'addProduct') fillShelfSelect();
-  if(id === 'addTask' || id === 'addFine') fillEmployeeSelects();
-}
-function closeModal(id) { document.getElementById('modal-'+id).classList.remove('active'); }
-
-function previewPhoto(input, previewId) {
-  const file = input.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const prev = document.getElementById(previewId);
-    prev.style.display = 'block';
-    prev.querySelector('img').src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ===================== DASHBOARD =====================
-function renderDashboard() {
-  document.getElementById('dTotalProducts').textContent = products.length;
-  document.getElementById('dReceivingToday').textContent = receiving.filter(r => r.status==='open').length;
-  document.getElementById('dShippingToday').textContent = shipping.filter(s => s.status!=='shipped').length;
-  document.getElementById('dTasksToday').textContent = tasks.filter(t => !t.done).length;
-  const online = employees.filter(e => e.clockIn && !e.clockOut).length;
-  document.getElementById('dEmployeesOnline').textContent = online;
-  const fill = shelves.length ? Math.round(shelves.filter(s=>s.occupied>0).length/shelves.length*100) : 0;
-  document.getElementById('dWarehouseFill').textContent = fill + '%';
-  const tbody = document.getElementById('dashLogBody');
-  tbody.innerHTML = logs.slice(0,15).map(l => `
-    <tr><td>${l.time}</td><td>${l.type}</td><td>${l.desc}</td><td>${l.employee}</td>
-    <td><span class="badge ${l.status==='ok'?'green':'red'}">${l.status==='ok'?'OK':'ERR'}</span></td></tr>
-  `).join('');
-}
-
-// ===================== WAREHOUSE =====================
-function generateWarehouseLayout(initial) {
-  if(!initial && shelves.length > 0 && !confirm('Сгенерировать новую схему? Текущие данные мест сохранятся.')) return;
-  if(initial && shelves.length > 0) return;
-  const zones = ['A','B','C','D'];
-  shelves = [];
-  let idx = 0;
-  zones.forEach(z => {
-    for(let r=1; r<=4; r++) {
-      for(let c=1; c<=6; c++) {
-        shelves.push({
-          id: 'shelf_'+idx,
-          name: z+'-'+String(r).padStart(2,'0')+'-'+String(c).padStart(2,'0'),
-          zone: z, row: r, col: c,
-          capacity: 50 + Math.floor(Math.random()*50),
-          occupied: 0
-        });
-        idx++;
-      }
-    }
-  });
-  saveAll();
-  renderWarehouse();
-  notify('Схема склада', 'Сгенерировано ' + shelves.length + ' мест', 'success');
-}
-
-function renderWarehouse() {
-  const grid = document.getElementById('shelfGrid');
-  grid.innerHTML = shelves.map(s => {
-    const fill = Math.round(s.occupied / s.capacity * 100);
-    const cls = s.occupied > 0 ? 'occupied' : 'empty';
-    return `<div class="shelf-cell ${cls}" onclick="openShelfDetail('${s.id}')">
-      <div class="shelf-name">${s.name}</div>
-      <div class="shelf-count">${s.occupied}/${s.capacity}</div>
-      <div class="fill-bar"><div class="fill" style="width:${fill}%"></div></div>
-    </div>`;
-  }).join('');
-  document.getElementById('wTotalPlaces').textContent = shelves.length;
-  document.getElementById('wOccupiedPlaces').textContent = shelves.filter(s=>s.occupied>0).length;
-  document.getElementById('wFreePlaces').textContent = shelves.filter(s=>s.occupied===0).length;
-}
-
-function saveShelf() {
-  const name = document.getElementById('shelfName').value.trim();
-  const zone = document.getElementById('shelfZone').value.trim() || 'Z';
-  const cap = parseInt(document.getElementById('shelfCapacity').value) || 50;
-  if(!name) return notify('Ошибка','Укажите название','error');
-  shelves.push({ id:'shelf_'+Date.now(), name, zone, capacity:cap, occupied:0 });
-  saveAll(); renderWarehouse(); closeModal('addShelf');
-  notify('Стеллаж добавлен', name, 'success');
-}
-
-function openShelfDetail(id) {
-  const s = shelves.find(x=>x.id===id);
-  if(!s) return;
-  document.getElementById('shelfDetailTitle').textContent = 'Стеллаж ' + s.name;
-  const prods = products.filter(p => p.shelfId === id);
-  document.getElementById('shelfDetailBody').innerHTML = `
-    <div class="form-grid">
-      <div><strong>Зона:</strong> ${s.zone}</div>
-      <div><strong>Вместимость:</strong> ${s.capacity}</div>
-      <div><strong>Занято:</strong> ${s.occupied}</div>
-      <div><strong>Свободно:</strong> ${s.capacity - s.occupied}</div>
-    </div>
-    <h4 style="margin:16px 0 8px;">Товары на стеллаже:</h4>
-    ${prods.length ? prods.map(p => `<div style="padding:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-      ${p.photo ? `<img src="${p.photo}" style="width:30px;height:30px;border-radius:6px;object-fit:cover;">` : '📦'}
-      <span>${p.name}</span><span style="color:var(--text3);">×${p.qty}</span>
-    </div>`).join('') : '<p style="color:var(--text3);">Нет товаров</p>'}
-  `;
-  openModal('shelfDetail');
-}
-
-// ===================== PRODUCTS =====================
-function fillShelfSelect() {
-  const sel = document.getElementById('prodShelf');
-  sel.innerHTML = '<option value="">— Не выбрано —</option>' +
-    shelves.map(s => `<option value="${s.id}">${s.name} (${s.occupied}/${s.capacity})</option>`).join('');
-}
-
-function saveProduct() {
-  const name = document.getElementById('prodName').value.trim();
-  if(!name) return notify('Ошибка','Укажите название','error');
-  const photoEl = document.getElementById('prodPhotoPreview');
-  const photo = photoEl.style.display !== 'none' ? photoEl.querySelector('img').src : '';
-  const prod = {
-    id: 'prod_' + Date.now(),
-    name,
-    sku: document.getElementById('prodSku').value.trim(),
-    barcode: document.getElementById('prodBarcode').value.trim(),
-    kiz: document.getElementById('prodKiz').value.trim(),
-    category: document.getElementById('prodCategory').value.trim(),
-    qty: parseInt(document.getElementById('prodQty').value) || 0,
-    shelfId: document.getElementById('prodShelf').value,
-    expiry: document.getElementById('prodExpiry').value,
-    photo,
-    desc: document.getElementById('prodDesc').value,
-    createdAt: new Date().toISOString()
-  };
-  products.push(prod);
-  // Update shelf occupancy
-  if(prod.shelfId) {
-    const shelf = shelves.find(s=>s.id===prod.shelfId);
-    if(shelf) shelf.occupied += prod.qty;
-  }
-  saveAll(); renderAll(); closeModal('addProduct');
-  addLog('Товар', `Добавлен: ${name} (×${prod.qty})`);
-  notify('Товар добавлен', name + ' ×' + prod.qty, 'success');
-}
-
-function renderProducts() {
-  const search = (document.getElementById('prodSearch')?.value || '').toLowerCase();
-  const cat = document.getElementById('prodFilterCat')?.value || '';
-  // Update category filter
-  const cats = [...new Set(products.map(p=>p.category).filter(Boolean))];
-  const catSel = document.getElementById('prodFilterCat');
-  if(catSel) {
-    const currentCat = catSel.value;
-    catSel.innerHTML = '<option value="">Все категории</option>' + cats.map(c=>`<option value="${c}" ${c===currentCat?'selected':''}>${c}</option>`).join('');
-    // Update datalist too
-    document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${c}">`).join('');
-  }
-  let filtered = products.filter(p => {
-    if(search && !p.name.toLowerCase().includes(search) && !(p.sku||'').toLowerCase().includes(search) && !(p.barcode||'').toLowerCase().includes(search)) return false;
-    if(cat && p.category !== cat) return false;
-    return true;
-  });
-  document.getElementById('productsBody').innerHTML = filtered.map(p => {
-    const shelf = shelves.find(s=>s.id===p.shelfId);
-    return `<tr>
-      <td>${p.photo ? `<img class="thumb" src="${p.photo}">` : '📦'}</td>
-      <td><strong>${p.name}</strong></td>
-      <td>${p.sku||'—'}</td>
-      <td>${p.barcode||'—'}</td>
-      <td>${p.kiz||'—'}</td>
-      <td>${p.category||'—'}</td>
-      <td><strong>${p.qty}</strong></td>
-      <td>${shelf ? shelf.name : '—'}</td>
-      <td>${p.expiry||'—'}</td>
-      <td>
-        <button class="btn btn-sm btn-secondary" onclick="editProduct('${p.id}')">✏️</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function editProduct(id) {
-  const p = products.find(x=>x.id===id);
-  if(!p) return;
-  document.getElementById('prodName').value = p.name;
-  document.getElementById('prodSku').value = p.sku||'';
-  document.getElementById('prodBarcode').value = p.barcode||'';
-  document.getElementById('prodKiz').value = p.kiz||'';
-  document.getElementById('prodCategory').value = p.category||'';
-  document.getElementById('prodQty').value = p.qty;
-  document.getElementById('prodExpiry').value = p.expiry||'';
-  document.getElementById('prodDesc').value = p.desc||'';
-  if(p.photo) {
-    const prev = document.getElementById('prodPhotoPreview');
-    prev.style.display = 'block';
-    prev.querySelector('img').src = p.photo;
-  }
-  fillShelfSelect();
-  document.getElementById('prodShelf').value = p.shelfId||'';
-  openModal('addProduct');
-  // On save, update instead of add
-  const saveBtn = document.querySelector('#modal-addProduct .modal-footer .btn-primary');
-  saveBtn.onclick = () => {
-    p.name = document.getElementById('prodName').value.trim();
-    p.sku = document.getElementById('prodSku').value.trim();
-    p.barcode = document.getElementById('prodBarcode').value.trim();
-    p.kiz = document.getElementById('prodKiz').value.trim();
-    p.category = document.getElementById('prodCategory').value.trim();
-    p.qty = parseInt(document.getElementById('prodQty').value)||0;
-    p.shelfId = document.getElementById('prodShelf').value;
-    p.expiry = document.getElementById('prodExpiry').value;
-    p.desc = document.getElementById('prodDesc').value;
-    const photoEl = document.getElementById('prodPhotoPreview');
-    if(photoEl.style.display !== 'none') p.photo = photoEl.querySelector('img').src;
-    saveAll(); renderAll(); closeModal('addProduct');
-    saveBtn.onclick = () => saveProduct(); // reset
-    notify('Товар обновлён', p.name, 'success');
-  };
-}
-
-function deleteProduct(id) {
-  if(!confirm('Удалить товар?')) return;
-  const p = products.find(x=>x.id===id);
-  if(p && p.shelfId) {
-    const shelf = shelves.find(s=>s.id===p.shelfId);
-    if(shelf) shelf.occupied = Math.max(0, shelf.occupied - p.qty);
-  }
-  products = products.filter(x=>x.id!==id);
-  saveAll(); renderAll();
-  notify('Товар удалён', '', 'warning');
-}
-
-// ===================== EXCEL IMPORT/EXPORT =====================
-function importProductsExcel(event) {
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'binary'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws);
-      data.forEach(row => {
-        const prod = {
-          id: 'prod_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
-          name: row['Название'] || row['Name'] || row['Наименование'] || 'Без названия',
-          sku: row['Артикул'] || row['SKU'] || row['Арт'] || '',
-          barcode: row['Штрихкод'] || row['Barcode'] || row['ШК'] || '',
-          kiz: row['КИЗ'] || row['Киз'] || row['DataMatrix'] || '',
-          category: row['Категория'] || row['Category'] || '',
-          qty: parseInt(row['Количество'] || row['Qty'] || row['Кол-во'] || 0),
-          shelfId: '',
-          expiry: row['Годен до'] || row['Expiry'] || '',
-          photo: '', desc: '', createdAt: new Date().toISOString()
-        };
-        products.push(prod);
-      });
-      saveAll(); renderAll();
-      notify('Импорт завершён', `Загружено ${data.length} товаров`, 'success');
-      addLog('Импорт', `Excel: ${data.length} товаров`);
-    } catch(err) {
-      notify('Ошибка импорта', err.message, 'error');
-    }
-  };
-  reader.readAsBinaryString(file);
-  event.target.value = '';
-}
-
-function exportProductsExcel() {
-  const ws = XLSX.utils.json_to_sheet(products.map(p => ({
-    'Название': p.name, 'Артикул': p.sku, 'Штрихкод': p.barcode,
-    'КИЗ': p.kiz, 'Категория': p.category, 'Количество': p.qty,
-    'Место': shelves.find(s=>s.id===p.shelfId)?.name || '', 'Годен до': p.expiry,
-    'Описание': p.desc
-  })));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Товары');
-  XLSX.writeFile(wb, 'products_' + new Date().toISOString().slice(0,10) + '.xlsx');
-  notify('Экспорт', 'Файл сохранён', 'success');
-}
-
-// ===================== RECEIVING =====================
-function newReceivingDoc() {
-  currentReceivingDoc = {
-    id: 'recv_' + Date.now(),
-    num: 'ПР-' + String(receiving.length + 1).padStart(4, '0'),
-    items: [],
-    status: 'open',
-    createdAt: new Date().toISOString()
-  };
-  saveAll(); renderReceiving();
-  document.getElementById('recvScanInput').focus();
-  notify('Новый документ приёмки', currentReceivingDoc.num, 'success');
-}
-
-function setupScanListeners() {
-  const recvInput = document.getElementById('recvScanInput');
-  if(recvInput) {
-    recvInput.addEventListener('keydown', e => {
-      if(e.key === 'Enter') {
-        e.preventDefault();
-        processReceivingScan(recvInput.value.trim());
-        recvInput.value = '';
-      }
-    });
-  }
-  const invInput = document.getElementById('invScanInput');
-  if(invInput) {
-    invInput.addEventListener('keydown', e => {
-      if(e.key === 'Enter') {
-        e.preventDefault();
-        addToInventory();
-        invInput.value = '';
-      }
-    });
-  }
-  const clockInput = document.getElementById('clockInInput');
-  if(clockInput) {
-    clockInput.addEventListener('keydown', e => {
-      if(e.key === 'Enter') {
-        e.preventDefault();
-        processClockIn(clockInput.value.trim());
-        clockInput.value = '';
-      }
-    });
-  }
-}
-
-function processReceivingScan(barcode) {
-  if(!barcode) return;
-  if(!currentReceivingDoc) { newReceivingDoc(); }
-  const product = products.find(p => p.barcode === barcode);
-  const statusEl = document.getElementById('recvScanStatus');
-
-  if(product) {
-    statusEl.className = 'scan-status ok';
-    statusEl.textContent = '✅ Товар найден: ' + product.name;
-    // Check if already in receiving doc
-    const existing = currentReceivingDoc.items.find(i => i.productId === product.id);
-    if(existing) {
-      existing.qty++;
-    } else {
-      currentReceivingDoc.items.push({
-        productId: product.id,
-        name: product.name,
-        sku: product.sku,
-        barcode: product.barcode,
-        qty: 1,
-        shelfId: product.shelfId,
-        photo: product.photo
-      });
-    }
-    product.qty++;
-    if(product.shelfId) {
-      const shelf = shelves.find(s=>s.id===product.shelfId);
-      if(shelf) shelf.occupied++;
-    }
-    addLog('Приёмка', `+1 ${product.name} (${barcode})`);
-    speak('Товар ' + product.name + ' принят');
-  } else {
-    statusEl.className = 'scan-status err';
-    statusEl.textContent = '❌ Товар не найден в системе!';
-    playBeep();
-    speak('Внимание! Товар не найден в системе');
-    notify('Ошибка приёмки', 'Товар со штрихкодом ' + barcode + ' не найден', 'error');
-  }
-  saveAll(); renderReceiving(); renderDashboard();
-}
-
-function renderReceiving() {
-  document.getElementById('recvDocNum').textContent = currentReceivingDoc ? currentReceivingDoc.num : '—';
-  if(!currentReceivingDoc || currentReceivingDoc.items.length === 0) {
-    document.getElementById('receivingBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:40px;">Нет товаров. Сканируйте штрихкод для начала приёмки.</td></tr>';
-    return;
-  }
-  document.getElementById('receivingBody').innerHTML = currentReceivingDoc.items.map((item, idx) => {
-    const shelf = shelves.find(s=>s.id===item.shelfId);
-    return `<tr>
-      <td>${item.photo ? `<img class="thumb" src="${item.photo}">` : '📦'}</td>
-      <td><strong>${item.name}</strong></td>
-      <td>${item.sku||'—'}</td>
-      <td>${item.barcode||'—'}</td>
-      <td><strong>${item.qty}</strong></td>
-      <td>${shelf ? shelf.name : '—'}</td>
-      <td>${currentReceivingDoc.createdAt ? new Date(currentReceivingDoc.createdAt).toLocaleString('ru-RU') : '—'}</td>
-      <td>
-        <button class="btn btn-sm btn-secondary" onclick="editRecvQty(${idx})">✏️</button>
-        <button class="btn btn-sm btn-danger" onclick="removeRecvItem(${idx})">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function editRecvQty(idx) {
-  const newQty = prompt('Новое количество:', currentReceivingDoc.items[idx].qty);
-  if(newQty !== null) {
-    currentReceivingDoc.items[idx].qty = parseInt(newQty) || 0;
-    saveAll(); renderReceiving();
-  }
-}
-
-function removeRecvItem(idx) {
-  currentReceivingDoc.items.splice(idx, 1);
-  saveAll(); renderReceiving();
-}
-
-function completeReceiving() {
-  if(!currentReceivingDoc) return;
-  currentReceivingDoc.status = 'complete';
-  currentReceivingDoc.completedAt = new Date().toISOString();
-  receiving.push({...currentReceivingDoc});
-  // Create document
-  documents.push({
-    id: 'doc_'+Date.now(),
-    type: 'Приёмка',
-    date: new Date().toISOString(),
-    desc: `Приёмка ${currentReceivingDoc.num}: ${currentReceivingDoc.items.length} позиций`,
-    status: 'completed'
-  });
-  currentReceivingDoc = null;
-  saveAll(); renderAll();
-  notify('Приёмка завершена', '', 'success');
-  addLog('Приёмка', 'Документ завершён');
-}
-
-function printReceivingDoc() {
-  if(!currentReceivingDoc || currentReceivingDoc.items.length === 0) return;
-  const pa = document.getElementById('printArea');
-  pa.style.display = 'block';
-  pa.innerHTML = `
-    <h2 style="text-align:center;">ДОКУМЕНТ ПРИЁМКИ ${currentReceivingDoc.num}</h2>
-    <p>Дата: ${new Date(currentReceivingDoc.createdAt).toLocaleString('ru-RU')}</p>
-    <p>Оператор: ${currentUser?.login || '—'}</p>
-    <table border="1" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;margin-top:12px;">
-      <thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Кол-во</th></tr></thead>
-      <tbody>${currentReceivingDoc.items.map((item,i) => `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.sku||''}</td><td>${item.barcode||''}</td><td>${item.qty}</td></tr>`).join('')}</tbody>
-    </table>
-    <p style="margin-top:20px;">Итого позиций: ${currentReceivingDoc.items.length}</p>
-    <p>Подпись: _______________</p>
-  `;
-  window.print();
-  setTimeout(() => { pa.style.display = 'none'; }, 1000);
-}
-
-// ===================== SHIPPING =====================
-function renderShipping() {
-  document.getElementById('shippingBody').innerHTML = shipping.map((s, idx) => {
-    const statusMap = {pending:'orange', shipped:'green', cancelled:'red'};
-    const statusText = {pending:'В работе', shipped:'Отгружен', cancelled:'Отменён'};
-    return `<tr>
-      <td>${idx+1}</td><td>${s.productName}</td><td>${s.sku||'—'}</td>
-      <td>${s.qty}</td><td>${s.dest||'—'}</td>
-      <td>${new Date(s.createdAt).toLocaleDateString('ru-RU')}</td>
-      <td><span class="badge ${statusMap[s.status]}">${statusText[s.status]}</span></td>
-      <td>
-        <button class="btn btn-sm btn-success" onclick="shipItem(${idx})">📤 Отгрузить</button>
-        <button class="btn btn-sm btn-danger" onclick="cancelShip(${idx})">❌</button>
-      </td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:40px;">Нет отгрузок</td></tr>';
-}
-
-function saveShipping() {
-  const prodId = document.getElementById('shipProduct').value;
-  const qty = parseInt(document.getElementById('shipQty').value) || 1;
-  const prod = products.find(p=>p.id===prodId);
-  if(!prod) return notify('Ошибка','Выберите товар','error');
-  if(prod.qty < qty) return notify('Ошибка','Недостаточно товара на складе','error');
-  shipping.push({
-    id: 'ship_'+Date.now(),
-    productId: prod.id,
-    productName: prod.name,
-    sku: prod.sku,
-    qty,
-    dest: document.getElementById('shipDest').value,
-    note: document.getElementById('shipNote').value,
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  });
-  prod.qty -= qty;
-  saveAll(); renderAll(); closeModal('addShipping');
-  notify('Отгрузка создана', prod.name + ' ×' + qty, 'success');
-  addLog('Отгрузка', `${prod.name} ×${qty} → ${document.getElementById('shipDest').value}`);
-}
-
-function shipItem(idx) {
-  shipping[idx].status = 'shipped';
-  saveAll(); renderShipping(); renderDashboard();
-  notify('Отгружено', shipping[idx].productName, 'success');
-  addLog('Отгрузка', 'Отгружен: ' + shipping[idx].productName);
-}
-
-function cancelShip(idx) {
-  const s = shipping[idx];
-  const prod = products.find(p=>p.id===s.productId);
-  if(prod) prod.qty += s.qty;
-  s.status = 'cancelled';
-  saveAll(); renderAll();
-  notify('Отменено', s.productName, 'warning');
-}
-
-// ===================== INVENTORY =====================
-function addToInventory() {
-  const barcode = document.getElementById('invScanInput').value.trim();
-  if(!barcode) return;
-  const product = products.find(p => p.barcode === barcode || p.sku === barcode);
-  const statusEl = document.getElementById('invScanStatus');
-  if(product) {
-    statusEl.className = 'scan-status ok';
-    statusEl.textContent = '✅ ' + product.name;
-    const existing = inventory.find(i => i.productId === product.id);
-    if(existing) {
-      existing.actual++;
-    } else {
-      inventory.push({
-        productId: product.id,
-        name: product.name,
-        sku: product.sku,
-        barcode: product.barcode,
-        systemQty: product.qty,
-        actual: 1,
-        shelfId: product.shelfId
-      });
-    }
-    speak('Товар ' + product.name + ' добавлен в инвентаризацию');
-  } else {
-    statusEl.className = 'scan-status err';
-    statusEl.textContent = '❌ Не найден';
-    playBeep();
-  }
-  saveAll(); renderInventory();
-}
-
-function renderInventory() {
-  document.getElementById('inventoryBody').innerHTML = inventory.map(item => {
-    const diff = item.actual - item.systemQty;
-    const diffClass = diff === 0 ? 'green' : diff > 0 ? 'blue' : 'red';
-    const shelf = shelves.find(s=>s.id===item.shelfId);
-    return `<tr>
-      <td><strong>${item.name}</strong></td><td>${item.sku||'—'}</td><td>${item.barcode||'—'}</td>
-      <td>${item.systemQty}</td>
-      <td><input type="number" value="${item.actual}" min="0" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--input-bg);color:var(--text);" onchange="updateInvActual('${item.productId}',this.value)"></td>
-      <td><span class="badge ${diffClass}">${diff > 0 ? '+' : ''}${diff}</span></td>
-      <td>${shelf ? shelf.name : '—'}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px;">Сканируйте товары</td></tr>';
-}
-
-function updateInvActual(id, val) {
-  const item = inventory.find(i=>i.productId===id);
-  if(item) item.actual = parseInt(val)||0;
-  saveAll();
-}
-
-function completeInventory() {
-  inventory.forEach(item => {
-    const prod = products.find(p=>p.id===item.productId);
-    if(prod) {
-      const diff = item.actual - prod.qty;
-      prod.qty = item.actual;
-      if(diff !== 0) addLog('Инвентаризация', `${prod.name}: ${prod.qty} → ${item.actual} (${diff > 0 ? '+' : ''}${diff})`);
-    }
-  });
-  saveAll(); renderAll();
-  notify('Инвентаризация завершена', 'Данные обновлены', 'success');
-  inventory = [];
-  saveAll();
-  renderInventory();
-}
-
-function printInventoryReport() {
-  const pa = document.getElementById('printArea');
-  pa.style.display = 'block';
-  pa.innerHTML = `
-    <h2 style="text-align:center;">ОТЧЁТ ИНВЕНТАРИЗАЦИИ</h2>
-    <p>Дата: ${new Date().toLocaleString('ru-RU')}</p>
-    <p>Оператор: ${currentUser?.login || '—'}</p>
-    <table border="1" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;margin-top:12px;">
-      <thead><tr><th>Товар</th><th>Артикул</th><th>Системное</th><th>Фактическое</th><th>Разница</th></tr></thead>
-      <tbody>${inventory.map(item => {
-        const diff = item.actual - item.systemQty;
-        return `<tr><td>${item.name}</td><td>${item.sku||''}</td><td>${item.systemQty}</td><td>${item.actual}</td><td>${diff > 0 ? '+' : ''}${diff}</td></tr>`;
-      }).join('')}</tbody>
-    </table>
-    <p style="margin-top:20px;">Подпись: _______________</p>
-  `;
-  window.print();
-  setTimeout(() => { pa.style.display = 'none'; }, 1000);
-}
-
-// ===================== FBO =====================
-let currentFboTab = 'ozon';
-function switchFboTab(el, tab) {
-  el.parentElement.querySelectorAll('.fbo-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  currentFboTab = tab;
-  renderFboTable();
-}
-
-function importFboTz(event) {
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'binary'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws);
-      data.forEach(row => {
-        fboItems.push({
-          id: 'fbo_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
-          name: row['Наименование'] || row['Name'] || row['Товар'] || '',
-          barcode: row['Баркод'] || row['Barcode'] || row['ШК'] || '',
-          sku: row['Артикул'] || row['SKU'] || row['Арт'] || '',
-          expiry: row['Годен до'] || row['Expiry'] || '',
-          city: row['Город'] || row['City'] || row['Направление'] || '',
-          packQty: parseInt(row['Спайка'] || row['Квант'] || row['Кол-во в спайке'] || 1),
-          labelQty: parseInt(row['Кол-во этикеток'] || row['LabelQty'] || row['Этикетки'] || 1),
-          status: 'pending',
-          box: '',
-          marketplace: currentFboTab,
-          createdAt: new Date().toISOString()
-        });
-      });
-      saveAll(); renderFboTable();
-      notify('ТЗ загружено', `Добавлено ${data.length} позиций`, 'success');
-    } catch(err) {
-      notify('Ошибка', err.message, 'error');
-    }
-  };
-  reader.readAsBinaryString(file);
-  event.target.value = '';
-}
-
-function renderFboTable() {
-  const cityFilter = document.getElementById('fboCityFilter')?.value || '';
-  const packFilter = document.getElementById('fboPackFilter')?.value || '';
-  // Update filters
-  const cities = [...new Set(fboItems.filter(i=>i.marketplace===currentFboTab).map(i=>i.city).filter(Boolean))];
-  const packs = [...new Set(fboItems.filter(i=>i.marketplace===currentFboTab).map(i=>i.packQty).filter(Boolean))];
-  const citySel = document.getElementById('fboCityFilter');
-  const packSel = document.getElementById('fboPackFilter');
-  if(citySel) {
-    citySel.innerHTML = '<option value="">Все города</option>' + cities.map(c=>`<option value="${c}" ${c===cityFilter?'selected':''}>${c}</option>`).join('');
-  }
-  if(packSel) {
-    packSel.innerHTML = '<option value="">Все спайки</option>' + packs.map(p=>`<option value="${p}" ${parseInt(p)===parseInt(packFilter)?'selected':''}>${p} шт</option>`).join('');
-  }
-
-  let filtered = fboItems.filter(i => {
-    if(i.marketplace !== currentFboTab) return false;
-    if(cityFilter && i.city !== cityFilter) return false;
-    if(packFilter && i.packQty !== parseInt(packFilter)) return false;
-    return true;
-  });
-
-  const statusMap = {pending:'orange', printed:'blue', packed:'green', shipped:'gray'};
-  const statusText = {pending:'Ожидает', printed:'Напечатано', packed:'Упаковано', shipped:'Отгружено'};
-
-  document.getElementById('fboBody').innerHTML = filtered.map((item, idx) => {
-    const realIdx = fboItems.indexOf(item);
-    return `<tr>
-      <td><strong>${item.name}</strong></td>
-      <td>${item.barcode||'—'}</td>
-      <td>${item.sku||'—'}</td>
-      <td>${item.expiry||'—'}</td>
-      <td>${item.city||'—'}</td>
-      <td>${item.packQty} шт</td>
-      <td>${item.labelQty}</td>
-      <td><span class="badge ${statusMap[item.status]}">${statusText[item.status]}</span></td>
-      <td>${item.box||'—'}</td>
-      <td>
-        <select style="padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:12px;" onchange="updateFboStatus(${realIdx},this.value)">
-          <option value="pending" ${item.status==='pending'?'selected':''}>Ожидает</option>
-          <option value="printed" ${item.status==='printed'?'selected':''}>Напечатано</option>
-          <option value="packed" ${item.status==='packed'?'selected':''}>Упаковано</option>
-          <option value="shipped" ${item.status==='shipped'?'selected':''}>Отгружено</option>
-        </select>
-        <input type="text" placeholder="Короб" value="${item.box||''}" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:12px;" onchange="updateFboBox(${realIdx},this.value)">
-      </td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:40px;">Загрузите ТЗ из Excel</td></tr>';
-}
-
-function updateFboStatus(idx, status) {
-  fboItems[idx].status = status;
-  saveAll(); renderFboTable();
-}
-
-function updateFboBox(idx, box) {
-  fboItems[idx].box = box;
-  saveAll();
-}
-
-function printFboLabels() {
-  const filtered = fboItems.filter(i => i.marketplace === currentFboTab && (i.status === 'pending' || i.status === 'printed'));
-  if(filtered.length === 0) return notify('Нет данных', 'Нет позиций для печати', 'warning');
-  const pa = document.getElementById('printArea');
-  pa.style.display = 'block';
-  let html = '<div style="display:flex;flex-wrap:wrap;gap:2mm;">';
-  filtered.forEach(item => {
-    for(let i = 0; i < item.labelQty; i++) {
-      html += `
-        <div class="label-preview">
-          <div class="lp-name">${item.name}</div>
-          <svg class="barcode-svg" id="fbo-barcode-${item.id}-${i}" data-barcode="${item.barcode||item.sku||'0000'}"></svg>
-          <div class="lp-row"><span>Арт: ${item.sku||'—'}</span><span>Годен: ${item.expiry||'—'}</span></div>
-          <div class="lp-row"><span>Спайка: ${item.packQty}шт</span><span>Город: ${item.city||'—'}</span></div>
-          ${item.barcode ? `<div class="lp-barcode-img"><svg class="datamatrix-svg" id="fbo-dm-${item.id}-${i}"></svg></div>` : ''}
-        </div>`;
-    }
-  });
-  html += '</div>';
-  pa.innerHTML = html;
-  // Render barcodes
-  setTimeout(() => {
-    filtered.forEach(item => {
-      for(let i = 0; i < item.labelQty; i++) {
+function loadData() {
+    const saved = localStorage.getItem(DB_KEY);
+    if (saved) {
         try {
-          JsBarcode(`#fbo-barcode-${item.id}-${i}`, item.barcode||item.sku||'0000', {width:1, height:16, displayValue:false});
-          if(item.barcode) {
-            // Simple QR as DataMatrix proxy
-            try {
-              new QRCode(document.getElementById(`fbo-dm-${item.id}-${i}`), {
-                text: item.barcode, width: 60, height: 60
-              });
-            } catch(e) {}
-          }
-        } catch(e) {}
-      }
-    });
-    window.print();
-    setTimeout(() => { pa.style.display = 'none'; }, 1000);
-  }, 300);
-}
-
-function generateFboReport() {
-  const filtered = fboItems.filter(i => i.marketplace === currentFboTab);
-  const cityStats = {};
-  filtered.forEach(i => {
-    if(!cityStats[i.city]) cityStats[i.city] = {total:0, pending:0, printed:0, packed:0, shipped:0};
-    cityStats[i.city].total += i.labelQty;
-    cityStats[i.city][i.status] = (cityStats[i.city][i.status]||0) + i.labelQty;
-  });
-  let report = `ОТЧЁТ FBO — ${currentFboTab === 'ozon' ? 'Озон' : 'ВБ'}\nДата: ${new Date().toLocaleString('ru-RU')}\n\n`;
-  report += 'Город | Всего | Ожидает | Напечатано | Упаковано | Отгружено\n';
-  report += '-'.repeat(70) + '\n';
-  Object.entries(cityStats).forEach(([city, stats]) => {
-    report += `${city} | ${stats.total} | ${stats.pending} | ${stats.printed} | ${stats.packed} | ${stats.shipped}\n`;
-  });
-  const totalAll = filtered.reduce((s,i)=>s+i.labelQty,0);
-  report += '-'.repeat(70) + '\n';
-  report += `ИТОГО: ${totalAll} этикеток\n`;
-  alert(report);
-}
-
-function packToBoxes() {
-  const filtered = fboItems.filter(i => i.marketplace === currentFboTab && i.status !== 'shipped');
-  if(filtered.length === 0) return notify('Нет данных', 'Нет позиций для упаковки', 'warning');
-  let boxNum = 1;
-  filtered.forEach(item => {
-    if(!item.box) {
-      item.box = 'BOX-' + String(boxNum).padStart(3,'0');
-      item.status = 'packed';
-      boxNum++;
+            const parsed = JSON.parse(saved);
+            // Merge with defaults to ensure structure integrity
+            db = { ...db, ...parsed };
+            // Ensure nested objects exist
+            if(!db.nextId) db.nextId = { product: 1, receiving: 1, shipping: 1, employee: 1 };
+        } catch(e) { console.error("DB Load Error", e); }
     }
-  });
-  saveAll(); renderFboTable();
-  notify('Упаковка', `Разложено по ${boxNum-1} коробам`, 'success');
 }
 
-// ===================== FBS =====================
-let currentFbsTab = 'ozon';
-function switchFbsTab(el, tab) {
-  el.parentElement.querySelectorAll('.fbo-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  currentFbsTab = tab;
-  renderFbsTable();
+function saveData() {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
 }
 
-function fetchFbsOrders() {
-  // Simulate API fetch — in production, use real API endpoint
-  const integration = DB.get('integrations') || {};
-  const apiKey = currentFbsTab === 'ozon' ? integration.ozonKey : integration.wbKey;
-
-  // Simulated orders
-  if(!apiKey) {
-    // Demo data
-    if(fbsOrders.length === 0) {
-      fbsOrders = [
-        {id:'fbs_1', orderNum:'ORD-001', product:'Товар 1', sku:'SKU-001', qty:2, stock:15, status:'new', marketplace:'ozon', date:new Date().toISOString()},
-        {id:'fbs_2', orderNum:'ORD-002', product:'Товар 2', sku:'SKU-002', qty:1, stock:8, status:'new', marketplace:'ozon', date:new Date().toISOString()},
-        {id:'fbs_3', orderNum:'WB-001', product:'Товар 3', sku:'SKU-003', qty:3, stock:22, status:'packing', marketplace:'wb', date:new Date().toISOString()},
-      ];
-    }
-  }
-  saveAll(); renderFbsTable();
-  notify('Заказы обновлены', `Найдено ${fbsOrders.filter(o=>o.marketplace===currentFbsTab).length} заказов`, 'success');
+function genId(type) {
+    return db.nextId[type]++;
 }
 
-function startFbsAutoUpdate() {
-  setInterval(() => {
-    fetchFbsOrders();
-  }, 30000);
+// ==================== UTILITIES ====================
+function formatDate(isoString) {
+    if (!isoString) return '-';
+    return new Date(isoString).toLocaleDateString('ru-RU') + ' ' + new Date(isoString).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
 }
 
-function renderFbsTable() {
-  const statusFilter = document.getElementById('fbsStatusFilter')?.value || '';
-  let filtered = fbsOrders.filter(o => {
-    if(o.marketplace !== currentFbsTab) return false;
-    if(statusFilter && o.status !== statusFilter) return false;
-    return true;
-  });
-  const statusMap = {new:'orange', packing:'blue', ready:'green', shipped:'gray'};
-  const statusText = {new:'Новый', packing:'Сборка', ready:'Готов', shipped:'Отгружен'};
-  document.getElementById('fbsBody').innerHTML = filtered.map((order, idx) => {
-    const realIdx = fbsOrders.indexOf(order);
-    return `<tr>
-      <td><strong>${order.orderNum}</strong></td>
-      <td>${order.product}</td><td>${order.sku||'—'}</td>
-      <td>${order.qty}</td>
-      <td><span class="badge ${order.stock > 5 ? 'green' : order.stock > 0 ? 'orange' : 'red'}">${order.stock} шт</span></td>
-      <td><span class="badge ${statusMap[order.status]}">${statusText[order.status]}</span></td>
-      <td>${new Date(order.date).toLocaleString('ru-RU')}</td>
-      <td>
-        <select style="padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--input-bg);color:var(--text);font-size:12px;" onchange="updateFbsStatus(${realIdx},this.value)">
-          <option value="new" ${order.status==='new'?'selected':''}>Новый</option>
-          <option value="packing" ${order.status==='packing'?'selected':''}>Сборка</option>
-          <option value="ready" ${order.status==='ready'?'selected':''}>Готов</option>
-          <option value="shipped" ${order.status==='shipped'?'selected':''}>Отгружен</option>
-        </select>
-      </td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:40px;">Нет заказов</td></tr>';
-}
-
-function updateFbsStatus(idx, status) {
-  fbsOrders[idx].status = status;
-  if(status === 'shipped') {
-    const prod = products.find(p=>p.sku === fbsOrders[idx].sku);
-    if(prod) prod.qty -= fbsOrders[idx].qty;
-  }
-  saveAll(); renderFbsTable(); renderProducts();
-}
-
-// ===================== EMPLOYEES =====================
-function generateEmployeeQrIds() {
-  employees.forEach(emp => {
-    if(!emp.qrId) emp.qrId = 'EMP-' + (emp.id ? emp.id.slice(-6).toUpperCase() : Date.now().toString(36).toUpperCase());
-  });
-  saveAll();
-}
-
-function saveEmployee() {
-  const name = document.getElementById('empName').value.trim();
-  if(!name) return notify('Ошибка','Укажите ФИО','error');
-  const photoEl = document.getElementById('empPhotoPreview');
-  const photo = photoEl.style.display !== 'none' ? photoEl.querySelector('img').src : '';
-  const emp = {
-    id: 'emp_' + Date.now(),
-    name,
-    role: document.getElementById('empRole').value.trim(),
-    rate: parseFloat(document.getElementById('empRate').value) || 300,
-    phone: document.getElementById('empPhone').value.trim(),
-    email: document.getElementById('empEmail').value.trim(),
-    qrId: document.getElementById('empQrId').value || 'EMP-' + Date.now().toString(36).toUpperCase(),
-    photo,
-    notes: document.getElementById('empNotes').value,
-    clockIn: null,
-    clockOut: null,
-    totalHours: 0,
-    createdAt: new Date().toISOString()
-  };
-  employees.push(emp);
-  saveAll(); renderAll(); closeModal('addEmployee');
-  notify('Сотрудник добавлен', name, 'success');
-  addLog('Сотрудник', `Добавлен: ${name}`);
-}
-
-function renderEmployees() {
-  document.getElementById('empGrid').innerHTML = employees.map(emp => {
-    const isOnline = emp.clockIn && !emp.clockOut;
-    const hours = emp.totalHours || 0;
-    const earnings = hours * emp.rate;
-    return `<div class="emp-card">
-      <div class="emp-card-header">
-        ${emp.photo ? `<img src="${emp.photo}">` : '<div style="width:50px;height:50px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">👤</div>'}
-        <div><div class="name">${emp.name}</div><div class="role">${emp.role||'Сотрудник'}</div></div>
-        <span class="badge ${isOnline?'green':'gray'}" style="margin-left:auto;">${isOnline?'🟢 Онлайн':'⚫ Офлайн'}</span>
-      </div>
-      <div class="emp-card-body">
-        <div><span class="label">Ставка:</span><span><strong>${emp.rate} ₽/час</strong></span></div>
-        <div><span class="label">Часов:</span><span>${hours.toFixed(1)}</span></div>
-        <div><span class="label">Начислено:</span><span><strong>${earnings.toFixed(0)} ₽</strong></span></div>
-        <div><span class="label">QR ID:</span><span>${emp.qrId}</span></div>
-        <div><span class="label">Телефон:</span><span>${emp.phone||'—'}</span></div>
-      </div>
-      <div class="emp-card-footer">
-        <button class="btn btn-sm btn-primary" onclick="showEmpQr('${emp.id}')">📱 QR</button>
-        <button class="btn btn-sm btn-secondary" onclick="openClockIn()">📷 Часы</button>
-        <button class="btn btn-sm btn-secondary" onclick="editEmployee('${emp.id}')">✏️</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${emp.id}')">🗑️</button>
-      </div>
-    </div>`;
-  }).join('') || '<p style="color:var(--text3);text-align:center;padding:40px;">Нет сотрудников</p>';
-}
-
-function showEmpQr(id) {
-  const emp = employees.find(e=>e.id===id);
-  if(!emp) return;
-  document.getElementById('empQrName').textContent = emp.name;
-  document.getElementById('empQrId').textContent = 'ID: ' + emp.qrId;
-  const display = document.getElementById('empQrDisplay');
-  display.innerHTML = '';
-  try {
-    new QRCode(display, { text: emp.qrId, width: 200, height: 200 });
-  } catch(e) {
-    display.innerHTML = '<div style="width:200px;height:200px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-radius:12px;">QR: ' + emp.qrId + '</div>';
-  }
-  openModal('empQr');
-}
-
-function printEmployeeQr() {
-  const pa = document.getElementById('printArea');
-  pa.style.display = 'block';
-  pa.innerHTML = `<div style="text-align:center;padding:20px;">
-    <h3>${document.getElementById('empQrName').textContent}</h3>
-    <p>${document.getElementById('empQrId').textContent}</p>
-    <div id="printQr" style="margin:16px auto;"></div>
-  </div>`;
-  setTimeout(() => {
-    try {
-      new QRCode(document.getElementById('printQr'), { text: document.getElementById('empQrId').textContent.replace('ID: ',''), width: 150, height: 150 });
-    } catch(e) {}
-    window.print();
-    setTimeout(() => { pa.style.display = 'none'; }, 1000);
-  }, 200);
-}
-
-function openClockIn() { openModal('clockIn'); document.getElementById('clockInInput').focus(); }
-
-function processClockIn(qrId) {
-  const emp = employees.find(e => e.qrId === qrId);
-  const statusEl = document.getElementById('clockInStatus');
-  if(emp) {
-    if(!emp.clockIn) {
-      emp.clockIn = new Date().toISOString();
-      statusEl.className = 'scan-status ok';
-      statusEl.textContent = '✅ Вход: ' + emp.name + ' — ' + new Date().toLocaleTimeString('ru-RU');
-      speak('Добро пожаловать, ' + emp.name);
-      addLog('Часы', `${emp.name} — вход`);
-    } else {
-      statusEl.className = 'scan-status err';
-      statusEl.textContent = '⚠️ Уже отмечен вход';
-    }
-  } else {
-    statusEl.className = 'scan-status err';
-    statusEl.textContent = '❌ Сотрудник не найден';
-    playBeep();
-  }
-  saveAll(); renderEmployees(); renderDashboard();
-}
-
-function clockInEmployee() {
-  processClockIn(document.getElementById('clockInInput').value.trim());
-}
-
-function clockOutEmployee() {
-  const qrId = document.getElementById('clockInInput').value.trim();
-  const emp = employees.find(e => e.qrId === qrId);
-  const statusEl = document.getElementById('clockInStatus');
-  if(emp && emp.clockIn) {
-    const clockOut = new Date();
-    const clockIn = new Date(emp.clockIn);
-    const hours = (clockOut - clockIn) / (1000 * 60 * 60);
-    emp.clockOut = clockOut.toISOString();
-    emp.totalHours = (emp.totalHours || 0) + hours;
-    statusEl.className = 'scan-status ok';
-    statusEl.textContent = `🚪 Выход: ${emp.name} — ${hours.toFixed(2)} часов — ${Math.round(hours * emp.rate)} ₽`;
-    speak('До свидания, ' + emp.name + '. Отработано ' + hours.toFixed(1) + ' часов');
-    addLog('Часы', `${emp.name} — выход (${hours.toFixed(1)}ч, ${Math.round(hours*emp.rate)}₽)`);
-    emp.clockIn = null;
-    emp.clockOut = null;
-  } else {
-    statusEl.className = 'scan-status err';
-    statusEl.textContent = '❌ Нет активного входа';
-    playBeep();
-  }
-  saveAll(); renderEmployees(); renderDashboard();
-}
-
-function editEmployee(id) {
-  const emp = employees.find(e=>e.id===id);
-  if(!emp) return;
-  document.getElementById('empName').value = emp.name;
-  document.getElementById('empRole').value = emp.role||'';
-  document.getElementById('empRate').value = emp.rate;
-  document.getElementById('empPhone').value = emp.phone||'';
-  document.getElementById('empEmail').value = emp.email||'';
-  document.getElementById('empQrId').value = emp.qrId;
-  document.getElementById('empNotes').value = emp.notes||'';
-  if(emp.photo) {
-    const prev = document.getElementById('empPhotoPreview');
-    prev.style.display = 'block';
-    prev.querySelector('img').src = emp.photo;
-  }
-  openModal('addEmployee');
-  const saveBtn = document.querySelector('#modal-addEmployee .modal-footer .btn-primary');
-  const origId = id;
-  saveBtn.onclick = () => {
-    const e = employees.find(x=>x.id===origId);
-    if(e) {
-      e.name = document.getElementById('empName').value.trim();
-      e.role = document.getElementById('empRole').value.trim();
-      e.rate = parseFloat(document.getElementById('empRate').value)||300;
-      e.phone = document.getElementById('empPhone').value.trim();
-      e.email = document.getElementById('empEmail').value.trim();
-      e.qrId = document.getElementById('empQrId').value;
-      e.notes = document.getElementById('empNotes').value;
-      const photoEl = document.getElementById('empPhotoPreview');
-      if(photoEl.style.display !== 'none') e.photo = photoEl.querySelector('img').src;
-      saveAll(); renderAll(); closeModal('addEmployee');
-      saveBtn.onclick = () => saveEmployee();
-      notify('Сотрудник обновлён', e.name, 'success');
-    }
-  };
-}
-
-function deleteEmployee(id) {
-  if(!confirm('Удалить сотрудника?')) return;
-  employees = employees.filter(e=>e.id!==id);
-  saveAll(); renderAll();
-  notify('Сотрудник удалён', '', 'warning');
-}
-
-// ===================== TASKS =====================
-function fillEmployeeSelects() {
-  const opts = employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-  document.getElementById('taskEmployee').innerHTML = '<option value="">— Не выбран —</option>' + opts;
-  document.getElementById('fineEmployee').innerHTML = '<option value="">— Выберите —</option>' + opts;
-  // Task filter
-  document.getElementById('taskEmpFilter').innerHTML = '<option value="">Все сотрудники</option>' + opts;
-}
-
-function renderEmployeeSelects() {
-  const opts = employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-  document.getElementById('taskEmployee').innerHTML = '<option value="">— Не выбран —</option>' + opts;
-  document.getElementById('fineEmployee').innerHTML = '<option value="">— Выберите —</option>' + opts;
-  document.getElementById('taskEmpFilter').innerHTML = '<option value="">Все сотрудники</option>' + opts;
-  // Label product select
-  updateLabelProductSelect();
-  // Shipping product select
-  document.getElementById('shipProduct').innerHTML = '<option value="">— Выберите —</option>' + products.map(p=>`<option value="${p.id}">${p.name} (${p.qty}шт)</option>`).join('');
-}
-
-function updateLabelProductSelect() {
-  document.getElementById('labelProduct').innerHTML = '<option value="">— Выберите —</option>' + products.map(p=>`<option value="${p.id}">${p.name} | ${p.sku||p.barcode||'—'}</option>`).join('');
-}
-
-function saveTask() {
-  const title = document.getElementById('taskTitle').value.trim();
-  if(!title) return notify('Ошибка','Укажите название','error');
-  tasks.push({
-    id: 'task_'+Date.now(),
-    title,
-    priority: document.getElementById('taskPriority').value,
-    employeeId: document.getElementById('taskEmployee').value,
-    date: document.getElementById('taskDate').value,
-    time: document.getElementById('taskTime').value,
-    desc: document.getElementById('taskDesc').value,
-    done: false,
-    createdAt: new Date().toISOString()
-  });
-  saveAll(); renderTasks(); closeModal('addTask');
-  notify('Задача создана', title, 'success');
-}
-
-function renderTasks() {
-  const empFilter = document.getElementById('taskEmpFilter')?.value || '';
-  let filtered = tasks.filter(t => {
-    if(empFilter && t.employeeId !== empFilter) return false;
-    return true;
-  });
-  document.getElementById('tasksList').innerHTML = filtered.map(t => {
-    const emp = employees.find(e=>e.id===t.employeeId);
-    const prioClass = {high:'priority-high',medium:'priority-medium',low:'priority-low'}[t.priority];
-    const prioText = {high:'Высокий',medium:'Средний',low:'Низкий'}[t.priority];
-    return `<div class="task-item" style="opacity:${t.done?0.5:1}">
-      <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-      <div class="task-info">
-        <div class="task-title">${t.title}</div>
-        <div class="task-meta">
-          ${emp ? emp.name : '—'} | ${t.date||'Без даты'} ${t.time||''} | ${t.desc||''}
-        </div>
-      </div>
-      <span class="task-priority ${prioClass}">${prioText}</span>
-      <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑️</button>
-    </div>`;
-  }).join('') || '<p style="color:var(--text3);text-align:center;padding:40px;">Нет задач</p>';
-}
-
-function toggleTask(id) {
-  const task = tasks.find(t=>t.id===id);
-  if(task) task.done = !task.done;
-  saveAll(); renderTasks(); renderDashboard();
-}
-
-function deleteTask(id) {
-  tasks = tasks.filter(t=>t.id!==id);
-  saveAll(); renderTasks();
-}
-
-// ===================== FINES =====================
-function saveFine() {
-  const empId = document.getElementById('fineEmployee').value;
-  const amount = parseFloat(document.getElementById('fineAmount').value) || 0;
-  const reason = document.getElementById('fineReason').value.trim();
-  if(!empId || !amount || !reason) return notify('Ошибка','Заполните все поля','error');
-  const photoEl = document.getElementById('finePhotoPreview');
-  const photo = photoEl.style.display !== 'none' ? photoEl.querySelector('img').src : '';
-  fines.push({
-    id: 'fine_'+Date.now(),
-    employeeId: empId,
-    amount,
-    reason,
-    prevention: document.getElementById('finePrevention').value,
-    photo,
-    forgiven: false,
-    createdAt: new Date().toISOString()
-  });
-  saveAll(); renderFines(); closeModal('addFine');
-  const emp = employees.find(e=>e.id===empId);
-  notify('Штраф выписан', `${emp?.name}: ${amount}₽ — ${reason}`, 'error');
-  addLog('Штраф', `${emp?.name}: ${amount}₽ за "${reason}"`);
-}
-
-function renderFines() {
-  document.getElementById('finesList').innerHTML = fines.map(f => {
-    const emp = employees.find(e=>e.id===f.employeeId);
-    return `<div class="fine-card" style="opacity:${f.forgiven?0.4:1}">
-      <div class="fine-header">
-        <div>
-          <strong>${emp?.name || 'Удалённый сотрудник'}</strong>
-          <div style="font-size:12px;color:var(--text3);">${new Date(f.createdAt).toLocaleString('ru-RU')}</div>
-        </div>
-        <div class="fine-amount">${f.forgiven?'<s>':''}${f.amount}₽${f.forgiven?'</s>':''}</div>
-      </div>
-      <div class="fine-reason">⚠️ <strong>Причина:</strong> ${f.reason}</div>
-      ${f.prevention ? `<div class="fine-reason">💡 <strong>Как избежать:</strong> ${f.prevention}</div>` : ''}
-      ${f.photo ? `<img class="fine-photo" src="${f.photo}" alt="Фото фиксация">` : ''}
-      <div style="margin-top:8px;display:flex;gap:8px;">
-        ${!f.forgiven ? `<button class="btn btn-sm btn-success" onclick="forgiveFine('${f.id}')">✅ Простить</button>` : '<span class="badge green">Прощён</span>'}
-        <button class="btn btn-sm btn-danger" onclick="deleteFine('${f.id}')">🗑️</button>
-      </div>
-    </div>`;
-  }).join('') || '<p style="color:var(--text3);text-align:center;padding:40px;">Нет штрафов</p>';
-}
-
-function forgiveFine(id) {
-  const fine = fines.find(f=>f.id===id);
-  if(fine) fine.forgiven = true;
-  saveAll(); renderFines();
-  notify('Штраф прощён', '', 'success');
-}
-
-function deleteFine(id) {
-  if(!confirm('Удалить штраф?')) return;
-  fines = fines.filter(f=>f.id!==id);
-  saveAll(); renderFines();
-}
-
-// ===================== LABELS =====================
-function updateLabelPreview() {
-  const prodId = document.getElementById('labelProduct').value;
-  const qty = parseInt(document.getElementById('labelQty').value) || 1;
-  const includeKiz = document.getElementById('labelIncludeKiz').checked;
-  const prod = products.find(p=>p.id===prodId);
-  const area = document.getElementById('labelPreviewArea');
-  if(!prod) { area.innerHTML = '<p style="color:var(--text3);">Выберите товар</p>'; return; }
-  area.innerHTML = '';
-  for(let i=0; i<Math.min(qty, 5); i++) {
+function showToast(msg, type = 'success') {
     const div = document.createElement('div');
-    div.className = 'label-preview';
-    div.innerHTML = `
-      <div class="lp-name">${prod.name}</div>
-      <svg class="barcode-svg" id="lp-barcode-${i}"></svg>
-      <div class="lp-row"><span>Арт: ${prod.sku||'—'}</span><span>Годен: ${prod.expiry||'—'}</span></div>
-      ${includeKiz && prod.kiz ? `<div style="margin-top:2px;"><svg class="datamatrix-svg" id="lp-dm-${i}"></svg></div>` : ''}
-      ${prod.kiz ? `<div style="font-size:5px;margin-top:1px;">КИЗ: ${prod.kiz}</div>` : ''}
-    `;
-    area.appendChild(div);
-  }
-  setTimeout(() => {
-    for(let i=0; i<Math.min(qty, 5); i++) {
-      try {
-        JsBarcode(`#lp-barcode-${i}`, prod.barcode||prod.sku||'0000', {width:1, height:16, displayValue:false});
-        if(includeKiz && prod.kiz) {
-          try { new QRCode(document.getElementById(`lp-dm-${i}`), {text:prod.kiz, width:55, height:55}); } catch(e) {}
-        }
-      } catch(e) {}
+    const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600' };
+    div.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-xl z-[200] animate-slideUp flex items-center gap-2`;
+    div.innerHTML = `<i class="fas fa-${type==='success'?'check':type==='error'?'exclamation-triangle':'info-circle'}"></i> ${msg}`;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+}
+
+// Audio Beep Generator (No external files)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
     }
-  }, 100);
 }
 
-function printLabels() {
-  const prodId = document.getElementById('labelProduct').value;
-  const qty = parseInt(document.getElementById('labelQty').value) || 1;
-  const includeKiz = document.getElementById('labelIncludeKiz').checked;
-  const prod = products.find(p=>p.id===prodId);
-  if(!prod) return notify('Ошибка','Выберите товар','error');
-  const pa = document.getElementById('printArea');
-  pa.style.display = 'block';
-  let html = '<div style="display:flex;flex-wrap:wrap;gap:2mm;">';
-  for(let i=0; i<qty; i++) {
-    html += `
-      <div class="label-preview">
-        <div class="lp-name">${prod.name}</div>
-        <svg class="barcode-svg" id="print-lp-barcode-${i}"></svg>
-        <div class="lp-row"><span>Арт: ${prod.sku||'—'}</span><span>Годен: ${prod.expiry||'—'}</span></div>
-        ${includeKiz && prod.kiz ? `<div style="margin-top:2px;"><svg class="datamatrix-svg" id="print-lp-dm-${i}"></svg></div>` : ''}
-        ${prod.kiz ? `<div style="font-size:5px;margin-top:1px;">КИЗ: ${prod.kiz}</div>` : ''}
-      </div>`;
-  }
-  html += '</div>';
-  pa.innerHTML = html;
-  setTimeout(() => {
-    for(let i=0; i<qty; i++) {
-      try {
-        JsBarcode(`#print-lp-barcode-${i}`, prod.barcode||prod.sku||'0000', {width:1, height:16, displayValue:false});
-        if(includeKiz && prod.kiz) {
-          try { new QRCode(document.getElementById(`print-lp-dm-${i}`), {text:prod.kiz, width:55, height:55}); } catch(e) {}
-        }
-      } catch(e) {}
-    }
-    window.print();
-    setTimeout(() => { pa.style.display = 'none'; }, 1000);
-  }, 300);
+// ==================== NAVIGATION ====================
+function navigate(pageId) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+    document.getElementById('page-' + pageId).classList.remove('hidden');
+    
+    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+    const navBtn = document.querySelector(`[data-nav="${pageId}"]`);
+    if(navBtn) navBtn.classList.add('active');
+
+    const titles = {
+        dashboard: 'Дашборд', receiving: 'Приёмка (ТСД)', shipping: 'Отгрузка',
+        warehouse: 'Склад', employees: 'Сотрудники', labels: 'Этикетки', settings: 'Настройки'
+    };
+    document.getElementById('pageTitle').textContent = titles[pageId];
+
+    // Page specific init
+    if (pageId === 'receiving') initReceivingMode();
+    if (pageId === 'dashboard') renderDashboard();
+    if (pageId === 'warehouse') renderWarehouse();
+    if (pageId === 'employees') renderEmployees();
+    if (pageId === 'labels') initLabels();
 }
 
-// ===================== DOCUMENTS =====================
-function renderDocuments() {
-  document.getElementById('documentsBody').innerHTML = documents.map(d => {
-    const statusMap = {draft:'orange', completed:'green', cancelled:'red'};
-    const statusText = {draft:'Черновик', completed:'Завершён', cancelled:'Отменён'};
-    return `<tr>
-      <td>${d.id}</td><td>${d.type}</td><td>${new Date(d.date).toLocaleDateString('ru-RU')}</td>
-      <td>${d.desc}</td>
-      <td><span class="badge ${statusMap[d.status]}">${statusText[d.status]}</span></td>
-      <td><button class="btn btn-sm btn-secondary" onclick="notify('Документ','Печать документа','success')">🖨️</button></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:40px;">Нет документов</td></tr>';
-}
-
-// ===================== INTEGRATIONS =====================
-function loadIntegrationsUI() {
-  const int = DB.get('integrations') || {};
-  document.getElementById('intDiadocKey').value = int.diadocKey || '';
-  document.getElementById('int1cUrl').value = int.i1cUrl || '';
-  document.getElementById('int1cLogin').value = int.i1cLogin || '';
-  document.getElementById('int1cPass').value = int.i1cPass || '';
-  document.getElementById('intWmsUrl').value = int.wmsUrl || '';
-  document.getElementById('intWmsKey').value = int.wmsKey || '';
-  document.getElementById('intClientKey').value = int.clientKey || '';
-  document.getElementById('intOzonKey').value = int.ozonKey || '';
-  document.getElementById('intWbKey').value = int.wbKey || '';
-}
-
-function saveIntegrations() {
-  integrations = {
-    diadocKey: document.getElementById('intDiadocKey').value,
-    i1cUrl: document.getElementById('int1cUrl').value,
-    i1cLogin: document.getElementById('int1cLogin').value,
-    i1cPass: document.getElementById('int1cPass').value,
-    wmsUrl: document.getElementById('intWmsUrl').value,
-    wmsKey: document.getElementById('intWmsKey').value,
-    clientKey: document.getElementById('intClientKey').value,
-    ozonKey: document.getElementById('intOzonKey').value,
-    wbKey: document.getElementById('intWbKey').value
-  };
-  DB.set('integrations', integrations);
-  // Update indicators
-  document.getElementById('intDiadoc').textContent = integrations.diadocKey ? '🟢' : '🔴';
-  document.getElementById('int1c').textContent = integrations.i1cUrl ? '🟢' : '🔴';
-  document.getElementById('intWms').textContent = integrations.wmsUrl ? '🟢' : '🔴';
-  notify('Интеграции сохранены', '', 'success');
-}
-
-function testIntegrations() {
-  notify('Тест соединения', 'Проверка подключений...', 'warning');
-  setTimeout(() => {
-    let results = [];
-    if(integrations.diadocKey) results.push('Диадок: ✅');
-    if(integrations.i1cUrl) results.push('1С: ✅ (симуляция)');
-    if(integrations.wmsUrl) results.push('WMS: ✅ (симуляция)');
-    if(integrations.ozonKey) results.push('Ozon: ✅ (симуляция)');
-    if(integrations.wbKey) results.push('WB: ✅ (симуляция)');
-    if(results.length === 0) results.push('Нет настроенных интеграций');
-    alert('Результаты теста:\n\n' + results.join('\n'));
-  }, 1500);
-}
-
-// ===================== SETTINGS =====================
-function loadSettingsUI() {
-  document.getElementById('setCompanyName').value = settings.companyName || 'FulfillPro';
-  document.getElementById('setAddress').value = settings.address || '';
-  document.getElementById('setPhone').value = settings.phone || '';
-  document.getElementById('setEmail').value = settings.email || '';
-}
-
-function saveSettings() {
-  settings = {
-    companyName: document.getElementById('setCompanyName').value,
-    address: document.getElementById('setAddress').value,
-    phone: document.getElementById('setPhone').value,
-    email: document.getElementById('setEmail').value
-  };
-  DB.set('settings', settings);
-  notify('Настройки сохранены', '', 'success');
-}
-
-function addUser() {
-  const login = document.getElementById('newLogin').value.trim();
-  const pass = document.getElementById('newPass').value;
-  if(!login || !pass) return notify('Ошибка','Заполните все поля','error');
-  if(users.find(u=>u.login===login)) return notify('Ошибка','Логин уже существует','error');
-  users.push({login, pass, role:'Сотрудник'});
-  DB.set('users', users);
-  document.getElementById('newLogin').value = '';
-  document.getElementById('newPass').value = '';
-  renderUsersList();
-  notify('Пользователь добавлен', login, 'success');
-}
-
-function renderUsersList() {
-  document.getElementById('usersList').innerHTML = users.map(u => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);">
-      <span><strong>${u.login}</strong> — ${u.role||'Пользователь'}</span>
-      ${u.login !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.login}')">🗑️</button>` : '<span class="badge green">Админ</span>'}
-    </div>
-  `).join('');
-}
-
-function deleteUser(login) {
-  if(!confirm('Удалить пользователя ' + login + '?')) return;
-  users = users.filter(u=>u.login!==login);
-  DB.set('users', users);
-  renderUsersList();
-}
-
-// ===================== IMPORT/EXPORT ALL =====================
-function exportAllData() {
-  const data = DB.getAll();
-  data.currentUser = null; // don't export session
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'fulfillpro_backup_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  notify('Экспорт', 'Все данные сохранены в файл', 'success');
-}
-
-function importAllData(event) {
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      Object.entries(data).forEach(([key, value]) => {
-        DB.set(key, value);
-      });
-      notify('Импорт', 'Все данные восстановлены', 'success');
-      setTimeout(() => location.reload(), 1000);
-    } catch(err) {
-      notify('Ошибка импорта', err.message, 'error');
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
-}
-
-// ===================== VOICE ASSISTANT =====================
-let recognition = null;
-let voiceActive = false;
-
-function toggleVoice() {
-  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    notify('Голосовой помощник', 'Ваш браузер не поддерживает распознавание речи', 'warning');
-    return;
-  }
-  const btn = document.getElementById('voiceBtn');
-  const panel = document.getElementById('voicePanel');
-  if(voiceActive) {
-    voiceActive = false;
-    btn.classList.remove('listening');
-    panel.classList.remove('active');
-    if(recognition) recognition.stop();
-    return;
-  }
-  voiceActive = true;
-  btn.classList.add('listening');
-  panel.classList.add('active');
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'ru-RU';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript.toLowerCase();
-    processVoiceCommand(text);
-  };
-  recognition.onend = () => {
-    if(voiceActive) {
-      try { recognition.start(); } catch(e) {}
-    }
-  };
-  recognition.onerror = () => {
-    voiceActive = false;
-    btn.classList.remove('listening');
-  };
-  try { recognition.start(); } catch(e) {}
-}
-
-function processVoiceCommand(text) {
-  const body = document.getElementById('voiceBody');
-  body.innerHTML = `<p>🎤 "${text}"</p>`;
-  if(text.includes('товар') || text.includes('артикул')) {
-    const query = text.replace(/товар|артикул|где|лежит|найти/gi, '').trim();
-    const found = products.find(p => p.name.toLowerCase().includes(query) || (p.sku||'').toLowerCase().includes(query) || (p.barcode||'').toLowerCase().includes(query));
-    if(found) {
-      const shelf = shelves.find(s=>s.id===found.shelfId);
-      const msg = `Товар "${found.name}" находится на стеллаже ${shelf ? shelf.name : 'не определён'}. Количество: ${found.qty} шт.`;
-      body.innerHTML += `<p>✅ ${msg}</p>`;
-      speak(msg);
+// ==================== AUTH ====================
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = document.getElementById('loginUsername').value;
+    const p = document.getElementById('loginPassword').value;
+    if(u === 'admin' && p === 'admin123') {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('flex');
+        initApp();
     } else {
-      const msg = `Товар "${query}" не найден в системе.`;
-      body.innerHTML += `<p>❌ ${msg}</p>`;
-      speak(msg);
+        showToast('Неверный логин/пароль', 'error');
     }
-  } else if(text.includes('сколько') && text.includes('товар')) {
-    const msg = `На складе ${products.length} SKU позиций, общее количество единиц товаров — ${products.reduce((s,p)=>s+p.qty,0)}.`;
-    body.innerHTML += `<p>✅ ${msg}</p>`;
-    speak(msg);
-  } else if(text.includes('приёмк')) {
-    showPage('receiving');
-    const msg = 'Открываю страницу приёмки.';
-    body.innerHTML += `<p>✅ ${msg}</p>`;
-    speak(msg);
-  } else if(text.includes('задач')) {
-    showPage('tasks');
-    const pending = tasks.filter(t=>!t.done).length;
-    const msg = `Открываю задачи. На сегодня ${pending} ожидающих задач.`;
-    body.innerHTML += `<p>✅ ${msg}</p>`;
-    speak(msg);
-  } else if(text.includes('сотрудник')) {
-    showPage('employees');
-    const msg = `Открываю список сотрудников. Всего ${employees.length} сотрудников.`;
-    body.innerHTML += `<p>✅ ${msg}</p>`;
-    speak(msg);
-  } else if(text.includes('склад') || text.includes('карт')) {
-    showPage('warehouse');
-    const msg = 'Открываю карту склада.';
-    body.innerHTML += `<p>✅ ${msg}</p>`;
-    speak(msg);
-  } else {
-    const msg = 'Я не понял команду. Попробуйте: "Где лежит товар [артикул]?"';
-    body.innerHTML += `<p>❓ ${msg}</p>`;
-    speak(msg);
-  }
+});
+
+function logout() {
+    location.reload();
+}
+
+// ==================== VOICE ASSISTANT ====================
+let recognition;
+let isListening = false;
+
+function toggleVoicePermission() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showToast('Ваш браузер не поддерживает голосовой ввод', 'error');
+        return;
+    }
+    
+    db.settings.voiceEnabled = !db.settings.voiceEnabled;
+    saveData();
+    updateVoiceUI();
+    
+    if(db.settings.voiceEnabled) {
+        initSpeechRecognition();
+        showToast('Голосовой помощник активирован', 'success');
+    } else {
+        if(recognition) recognition.stop();
+        showToast('Голосовой помощник выключен', 'info');
+    }
+}
+
+function updateVoiceUI() {
+    const btn = document.getElementById('voicePermBtn');
+    const toggle = document.getElementById('voiceToggleBtn');
+    const orb = document.getElementById('voiceOrb');
+    
+    if(db.settings.voiceEnabled) {
+        if(btn) btn.innerHTML = '<i class="fas fa-microphone text-green-500"></i> Голос включен';
+        if(toggle) { toggle.textContent = 'Выключить'; toggle.className = 'text-xs bg-red-600 px-3 py-1 rounded text-white'; }
+        if(orb) orb.style.display = 'flex';
+    } else {
+        if(btn) btn.innerHTML = '<i class="fas fa-microphone-slash"></i> Разрешить голос';
+        if(toggle) { toggle.textContent = 'Включить'; toggle.className = 'text-xs bg-dark-700 px-3 py-1 rounded text-white'; }
+        if(orb) orb.style.display = 'none';
+    }
+}
+
+function initSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+        isListening = true;
+        document.getElementById('voiceOrb').classList.add('listening');
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        document.getElementById('voiceOrb').classList.remove('listening');
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        processVoiceCommand(transcript);
+    };
+}
+
+function toggleVoiceAssistant() {
+    if(!db.settings.voiceEnabled) {
+        showToast('Включите голос в настройках', 'info');
+        return;
+    }
+    if(isListening) recognition.stop();
+    else recognition.start();
 }
 
 function speak(text) {
-  if('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ru-RU';
-    utter.rate = 1;
+    if(!db.settings.voiceEnabled) return;
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
-  }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ru-RU';
+    utterance.rate = 1.1;
+    
+    const orb = document.getElementById('voiceOrb');
+    orb.classList.add('speaking');
+    utterance.onend = () => orb.classList.remove('speaking');
+    
+    window.speechSynthesis.speak(utterance);
 }
 
-// ===================== SOUND =====================
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 800;
-    osc.type = 'square';
-    gain.gain.value = 0.3;
-    osc.start();
-    setTimeout(() => { osc.stop(); ctx.close(); }, 300);
-  } catch(e) {}
-}
-
-// ===================== KEYBOARD SHORTCUTS =====================
-document.addEventListener('keydown', e => {
-  if(e.altKey) {
-    switch(e.key) {
-      case '1': showPage('dashboard'); break;
-      case '2': showPage('warehouse'); break;
-      case '3': showPage('products'); break;
-      case '4': showPage('receiving'); break;
-      case '5': showPage('shipping'); break;
-      case '6': showPage('inventory'); break;
-      case '7': showPage('fbo'); break;
-      case '8': showPage('fbs'); break;
-      case '9': showPage('employees'); break;
-      case '0': showPage('tasks'); break;
+function processVoiceCommand(cmd) {
+    showToast(`Голос: "${cmd}"`, 'info');
+    
+    // Command: Where is [product]?
+    if (cmd.includes('где') || cmd.includes('найди')) {
+        const query = cmd.replace('где', '').replace('найди', '').replace('товар', '').trim();
+        const product = db.products.find(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query));
+        
+        if (product) {
+            speak(`${product.name} находится в ячейке ${product.cell || 'не назначено'}. Остаток ${product.quantity} штук.`);
+        } else {
+            speak('Товар не найден.');
+        }
     }
-  }
+    // Command: Navigate
+    else if (cmd.includes('приемка') || cmd.includes('приёмка')) {
+        speak('Открываю приёмку');
+        navigate('receiving');
+    }
+    else if (cmd.includes('склад') || cmd.includes('остатки')) {
+        speak('Открываю склад');
+        navigate('warehouse');
+    }
+    else if (cmd.includes('отгрузка')) {
+        speak('Открываю отгрузку');
+        navigate('shipping');
+    }
+    else {
+        speak('Команда не распознана');
+    }
+}
+
+// ==================== RECEIVING (TSD LOGIC) ====================
+function initReceivingMode() {
+    const input = document.getElementById('tsdInput');
+    input.value = '';
+    input.focus();
+    renderReceivingList();
+    
+    // Remove old listener to avoid duplicates
+    input.onkeydown = null;
+    input.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            handleTSDScan(this.value.trim());
+            this.value = '';
+        }
+    };
+}
+
+function handleTSDScan(barcode) {
+    if (!barcode) return;
+    
+    const feedback = document.getElementById('scanFeedback');
+    const container = document.getElementById('tsdContainer');
+    
+    // Find product
+    const product = db.products.find(p => p.barcode === barcode);
+    
+    if (product) {
+        // SUCCESS
+        playSound('success');
+        speak(product.name); // Voice feedback
+        
+        feedback.innerHTML = `<span class="text-green-400"><i class="fas fa-check-circle"></i> ${product.name}</span>`;
+        container.classList.remove('tsd-error-active');
+        container.classList.add('tsd-scanner-active');
+        
+        // Add to session
+        const existing = currentReceivingSession.find(i => i.productId === product.id);
+        if (existing) {
+            existing.qty++;
+        } else {
+            currentReceivingSession.push({ productId: product.id, qty: 1 });
+        }
+        
+        renderReceivingList();
+        setTimeout(() => container.classList.remove('tsd-scanner-active'), 500);
+        
+    } else {
+        // ERROR - STOP PROCESS
+        playSound('error');
+        speak('Товар не найден. Проверьте штрихкод.');
+        
+        feedback.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-times-circle"></i> ТОВАР НЕ НАЙДЕН: ${barcode}</span>`;
+        container.classList.add('tsd-error-active');
+        
+        // Vibrate device if supported
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        
+        // Keep focus but visual alert remains until next successful scan or manual clear
+        document.getElementById('tsdInput').focus();
+    }
+}
+
+function renderReceivingList() {
+    const list = document.getElementById('receivingList');
+    const posCount = document.getElementById('recPosCount');
+    const qtyCount = document.getElementById('recQtyCount');
+    
+    if (currentReceivingSession.length === 0) {
+        list.innerHTML = `<div class="text-center text-dark-500 py-10"><i class="fas fa-barcode text-4xl mb-3 opacity-50"></i><p>Сканируйте товары...</p></div>`;
+        posCount.textContent = '0';
+        qtyCount.textContent = '0';
+        return;
+    }
+    
+    let totalQty = 0;
+    list.innerHTML = currentReceivingSession.map(item => {
+        const p = db.products.find(x => x.id === item.productId);
+        totalQty += item.qty;
+        return `
+        <div class="flex items-center justify-between bg-dark-800 p-3 rounded-lg border border-dark-700 animate-slideUp">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-dark-700 rounded flex items-center justify-center text-xs text-dark-400 font-mono">${p.sku.substring(0,2)}</div>
+                <div>
+                    <p class="text-white text-sm font-medium">${p.name}</p>
+                    <p class="text-xs text-dark-500 font-mono">${p.barcode}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-primary-400 font-bold text-lg">x${item.qty}</span>
+                <button onclick="removeFromSession(${item.productId})" class="text-dark-600 hover:text-red-500"><i class="fas fa-times"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+    
+    posCount.textContent = currentReceivingSession.length;
+    qtyCount.textContent = totalQty;
+}
+
+function removeFromSession(productId) {
+    currentReceivingSession = currentReceivingSession.filter(i => i.productId !== productId);
+    renderReceivingList();
+}
+
+function finishReceivingSession() {
+    if (currentReceivingSession.length === 0) return;
+    
+    const recId = genId('receiving');
+    const record = {
+        id: recId,
+        date: new Date().toISOString(),
+        items: [...currentReceivingSession],
+        status: 'completed'
+    };
+    
+    // Update stock
+    record.items.forEach(item => {
+        const prod = db.products.find(p => p.id === item.productId);
+        if(prod) prod.quantity = (parseInt(prod.quantity) || 0) + item.qty;
+    });
+    
+    db.receiving.unshift(record);
+    saveData();
+    
+    currentReceivingSession = [];
+    renderReceivingList();
+    showToast(`Приёмка #${recId} сохранена`);
+    speak('Приёмка успешно завершена');
+}
+
+function clearReceivingSession() {
+    if(confirm('Очистить текущий список?')) {
+        currentReceivingSession = [];
+        renderReceivingList();
+        document.getElementById('tsdContainer').classList.remove('tsd-error-active');
+    }
+}
+
+// ==================== PRODUCTS CRUD ====================
+function openModal(type, data = null) {
+    const container = document.getElementById('modalContainer');
+    let html = '';
+    
+    if (type === 'addProduct' || type === 'editProduct') {
+        const isEdit = type === 'editProduct';
+        const p = isEdit ? db.products.find(x => x.id === data) : {};
+        
+        html = `
+        <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="p-6 border-b border-dark-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white">${isEdit ? 'Редактировать товар' : 'Новый товар'}</h3>
+                    <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <form onsubmit="saveProduct(event, ${isEdit ? data : 'null'})" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs text-dark-400">Артикул</label><input name="sku" required value="${p.sku||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                        <div><label class="text-xs text-dark-400">Название</label><input name="name" required value="${p.name||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs text-dark-400">Штрихкод</label><input name="barcode" required value="${p.barcode||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white font-mono"></div>
+                        <div><label class="text-xs text-dark-400">Ячейка</label><input name="cell" value="${p.cell||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs text-dark-400">Количество</label><input type="number" name="quantity" value="${p.quantity||0}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                        <div><label class="text-xs text-dark-400">Цена</label><input type="number" step="0.01" name="price" value="${p.price||0}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    </div>
+                    <div class="pt-4 flex gap-2">
+                        <button type="submit" class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-2 rounded transition">Сохранить</button>
+                        <button type="button" onclick="closeModal()" class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded transition">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+    } else if (type === 'addEmployee' || type === 'editEmployee') {
+        const isEdit = type === 'editEmployee';
+        const e = isEdit ? db.employees.find(x => x.id === data) : {};
+        
+        html = `
+        <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="p-6 border-b border-dark-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white">${isEdit ? 'Редактировать сотрудника' : 'Новый сотрудник'}</h3>
+                    <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <form onsubmit="saveEmployee(event, ${isEdit ? data : 'null'})" class="p-6 space-y-4">
+                    <div><label class="text-xs text-dark-400">ФИО</label><input name="name" required value="${e.name||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    <div><label class="text-xs text-dark-400">Должность</label><input name="position" value="${e.position||''}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    <div><label class="text-xs text-dark-400">Ставка (руб/час)</label><input type="number" name="rate" value="${e.rate||0}" class="w-full bg-dark-800 border border-dark-700 rounded p-2 text-white"></div>
+                    
+                    <div class="p-3 bg-dark-800 rounded border border-dark-700">
+                        <label class="text-xs text-primary-400 block mb-2">QR Код доступа</label>
+                        <div class="flex items-center gap-4">
+                            <div id="empQrPreview" class="bg-white p-1 rounded"></div>
+                            <p class="text-xs text-dark-400">Отсканируйте этот код для начала смены</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex gap-2">
+                        <button type="submit" class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-2 rounded transition">Сохранить</button>
+                        <button type="button" onclick="closeModal()" class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded transition">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+        
+        setTimeout(() => {
+            const qrDiv = document.getElementById('empQrPreview');
+            if(qrDiv) {
+                qrDiv.innerHTML = '';
+                // Generate a predictable QR for demo purposes if new
+                const code = isEdit ? e.qrCode : 'EMP-' + Date.now();
+                new QRCode(qrDiv, { text: code, width: 80, height: 80 });
+                // Store temp code in form
+                const form = qrDiv.closest('form');
+                if(!isEdit) {
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'qrCode';
+                    hidden.value = code;
+                    form.appendChild(hidden);
+                }
+            }
+        }, 100);
+    }
+
+    container.innerHTML = html;
+}
+
+function closeModal(e) {
+    if(e && e.target !== e.currentTarget) return;
+    document.getElementById('modalContainer').innerHTML = '';
+}
+
+function saveProduct(e, id) {
+    e.preventDefault();
+    const f = e.target;
+    const data = {
+        sku: f.sku.value,
+        name: f.name.value,
+        barcode: f.barcode.value,
+        cell: f.cell.value,
+        quantity: parseInt(f.quantity.value) || 0,
+        price: parseFloat(f.price.value) || 0
+    };
+
+    if (id) {
+        const idx = db.products.findIndex(p => p.id === id);
+        db.products[idx] = { ...db.products[idx], ...data };
+    } else {
+        data.id = genId('product');
+        data.createdAt = new Date().toISOString();
+        db.products.push(data);
+    }
+    saveData();
+    closeModal();
+    renderWarehouse();
+    showToast('Товар сохранён');
+}
+
+function deleteProduct(id) {
+    if(confirm('Удалить товар?')) {
+        db.products = db.products.filter(p => p.id !== id);
+        saveData();
+        renderWarehouse();
+        showToast('Товар удалён', 'info');
+    }
+}
+
+// ==================== EMPLOYEES CRUD ====================
+function saveEmployee(e, id) {
+    e.preventDefault();
+    const f = e.target;
+    const data = {
+        name: f.name.value,
+        position: f.position.value,
+        rate: parseFloat(f.rate.value) || 0,
+        qrCode: f.qrCode?.value || (id ? db.employees.find(x=>x.id===id).qrCode : 'EMP-'+Date.now())
+    };
+
+    if (id) {
+        const idx = db.employees.findIndex(emp => emp.id === id);
+        db.employees[idx] = { ...db.employees[idx], ...data };
+    } else {
+        data.id = genId('employee');
+        data.status = 'offline';
+        db.employees.push(data);
+    }
+    saveData();
+    closeModal();
+    renderEmployees();
+    showToast('Сотрудник сохранён');
+}
+
+function deleteEmployee(id) {
+    if(confirm('Удалить сотрудника?')) {
+        db.employees = db.employees.filter(e => e.id !== id);
+        saveData();
+        renderEmployees();
+        showToast('Сотрудник удалён', 'info');
+    }
+}
+
+function renderEmployees() {
+    const grid = document.getElementById('employeesGrid');
+    grid.innerHTML = db.employees.map(e => `
+        <div class="glass rounded-xl p-4 flex items-start gap-4 hover:bg-dark-800/50 transition">
+            <div class="w-12 h-12 bg-dark-700 rounded-full flex items-center justify-center text-lg text-white font-bold">
+                ${e.name.charAt(0)}
+            </div>
+            <div class="flex-1">
+                <h4 class="text-white font-medium">${e.name}</h4>
+                <p class="text-xs text-dark-400">${e.position || 'Сотрудник'}</p>
+                <div class="mt-2 flex gap-2">
+                    <span class="text-xs bg-dark-800 px-2 py-1 rounded text-dark-300">${e.rate}₽/ч</span>
+                    <span class="text-xs px-2 py-1 rounded ${e.status==='online'?'bg-green-900 text-green-400':'bg-red-900 text-red-400'}">
+                        ${e.status==='online'?'На смене':'Оффлайн'}
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="openModal('editEmployee', ${e.id})" class="text-blue-400 hover:text-blue-300"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteEmployee(${e.id})" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('') || '<div class="col-span-3 text-center text-dark-500">Нет сотрудников</div>';
+}
+
+// ==================== RENDERING HELPERS ====================
+function renderDashboard() {
+    document.getElementById('dashTotalItems').textContent = db.products.reduce((acc, p) => acc + (parseInt(p.quantity)||0), 0);
+    document.getElementById('dashReceivingCount').textContent = db.receiving.length;
+    document.getElementById('dashShippingCount').textContent = db.shipping.length;
+    document.getElementById('dashOnlineEmp').textContent = db.employees.filter(e => e.status === 'online').length;
+    
+    // Simple Chart
+    const ctx = document.getElementById('activityChart');
+    if(window.myChart) window.myChart.destroy();
+    window.myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+            datasets: [{
+                label: 'Операции',
+                data: [12, 19, 3, 5, 2, 3, 10], // Dummy data for visual
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
+}
+
+function renderWarehouse() {
+    const term = document.getElementById('searchWarehouse').value.toLowerCase();
+    const filtered = db.products.filter(p => p.name.toLowerCase().includes(term) || p.barcode.includes(term) || p.sku.toLowerCase().includes(term));
+    
+    document.getElementById('warehouseTableBody').innerHTML = filtered.map(p => `
+        <tr class="hover:bg-dark-800/50 transition">
+            <td class="p-4"><div class="w-8 h-8 bg-dark-700 rounded flex items-center justify-center text-xs text-dark-500"><i class="fas fa-box"></i></div></td>
+            <td class="p-4 font-mono text-xs text-primary-400">${p.sku}</td>
+            <td class="p-4 text-white">${p.name}</td>
+            <td class="p-4 font-mono text-xs text-dark-400">${p.barcode}</td>
+            <td class="p-4 text-sm"><span class="bg-dark-800 px-2 py-1 rounded border border-dark-700">${p.cell || '-'}</span></td>
+            <td class="p-4 font-bold text-white">${p.quantity}</td>
+            <td class="p-4 flex gap-3">
+                <button onclick="openModal('editProduct', ${p.id})" class="text-blue-400 hover:text-white" title="Редактировать"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteProduct(${p.id})" class="text-red-400 hover:text-white" title="Удалить"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function initLabels() {
+    const sel = document.getElementById('labelProductSelect');
+    sel.innerHTML = '<option value="">Выберите товар...</option>' + 
+        db.products.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('');
+    
+    sel.onchange = function() {
+        const p = db.products.find(x => x.id == this.value);
+        const prev = document.getElementById('labelPreview');
+        if(p) {
+            prev.innerHTML = `<svg id="barcodeDisplay"></svg>`;
+            JsBarcode("#barcodeDisplay", p.barcode, {
+                format: "CODE128",
+                lineColor: "#000",
+                width: 2,
+                height: 40,
+                displayValue: true
+            });
+        } else {
+            prev.innerHTML = '';
+        }
+    };
+}
+
+function printLabels() {
+    const pid = document.getElementById('labelProductSelect').value;
+    if(!pid) return;
+    const p = db.products.find(x => x.id == pid);
+    const count = document.getElementById('labelCount').value;
+    
+    const win = window.open('', '', 'width=600,height=400');
+    let html = `<html><head><style>
+        @page { size: 58mm 40mm; margin: 0; }
+        body { margin: 0; padding: 0; font-family: monospace; }
+        .label { width: 58mm; height: 40mm; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dotted #ccc; page-break-after: always; box-sizing: border-box; padding: 2mm; }
+        .name { font-weight: bold; font-size: 12pt; margin-bottom: 2mm; text-align: center; }
+        .sku { font-size: 8pt; margin-bottom: 1mm; }
+    </style></head><body>`;
+    
+    for(let i=0; i<count; i++) {
+        html += `
+        <div class="label">
+            <div class="name">${p.name}</div>
+            <div class="sku">Арт: ${p.sku}</div>
+            <svg id="bc_${i}"></svg>
+        </div>`;
+    }
+    
+    html += `<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+    <script>
+        window.onload = function() {
+            for(let i=0; i<${count}; i++) {
+                JsBarcode("#bc_" + i, "${p.barcode}", { width: 1.5, height: 30, fontSize: 14 });
+            }
+            setTimeout(() => window.print(), 500);
+        };
+    <\/script></body></html>`;
+    
+    win.document.write(html);
+    win.document.close();
+}
+
+function renderShipping() {
+    document.getElementById('shippingTableBody').innerHTML = db.shipping.map(s => `
+        <tr class="border-b border-dark-800">
+            <td class="p-4 text-primary-400">#${s.id}</td>
+            <td class="p-4 text-white">${s.client}</td>
+            <td class="p-4"><span class="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-xs">В сборке</span></td>
+            <td class="p-4 text-dark-400 text-xs">${formatDate(s.date)}</td>
+            <td class="p-4"><button class="text-blue-400"><i class="fas fa-file-invoice"></i></button></td>
+        </tr>
+    `).join('');
+}
+
+// ==================== INIT ====================
+function initApp() {
+    loadData();
+    updateVoiceUI();
+    navigate('dashboard');
+    
+    // Clock
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('headerTime').textContent = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+
+    // Demo Data if empty
+    if(db.products.length === 0) {
+        db.products = [
+            { id: 1, sku: 'SKU-001', name: 'iPhone 13 Case', barcode: '2000000000001', cell: 'A-01', quantity: 50, price: 500 },
+            { id: 2, sku: 'SKU-002', name: 'USB-C Cable', barcode: '2000000000002', cell: 'B-12', quantity: 120, price: 200 },
+            { id: 3, sku: 'SKU-003', name: 'Power Bank 10k', barcode: '2000000000003', cell: 'A-05', quantity: 15, price: 1500 }
+        ];
+        db.nextId.product = 4;
+        saveData();
+    }
+}
+
+function resetData() {
+    if(confirm('Это удалит ВСЕ данные. Продолжить?')) {
+        localStorage.removeItem(DB_KEY);
+        location.reload();
+    }
+}
+
+function saveSettings() {
+    db.settings.companyName = document.getElementById('settingCompanyName').value;
+    saveData();
+    showToast('Настройки сохранены');
+}
+
+// Start
+window.addEventListener('load', () => {
+    // Check auth
+    // For demo, we just show login screen immediately
 });
 
-// ===================== RESPONSIVE =====================
-function checkResponsive() {
-  const menuBtn = document.getElementById('menuBtn');
-  if(window.innerWidth <= 768) {
-    menuBtn.style.display = 'flex';
-  } else {
-    menuBtn.style.display = 'none';
-    document.getElementById('sidebar').classList.remove('open');
-  }
-}
-window.addEventListener('resize', checkResponsive);
-checkResponsive();
-
-// ===================== INIT DEMO DATA (if empty) =====================
-(function initDemoIfEmpty() {
-  if(products.length === 0 && shelves.length > 0) {
-    // Add some demo products
-    products = [
-      {id:'prod_demo1', name:'Крем для лица увлажняющий', sku:'CRM-001', barcode:'4601234567890', kiz:'0104601234567890', category:'Косметика', qty:150, shelfId:shelves[0]?.id, expiry:'2027-12-31', photo:'', desc:'Увлажняющий крем 50мл', createdAt: new Date().toISOString()},
-      {id:'prod_demo2', name:'Шампунь восстанавливающий', sku:'SHM-001', barcode:'4609876543210', kiz:'0104609876543210', category:'Косметика', qty:200, shelfId:shelves[1]?.id, expiry:'2027-06-30', photo:'', desc:'Шампунь 250мл', createdAt: new Date().toISOString()},
-      {id:'prod_demo3', name:'Витамин D3 2000 МЕ', sku:'VIT-003', barcode:'4605555666777', kiz:'0104605555666777', category:'БАД', qty:500, shelfId:shelves[2]?.id, expiry:'2026-12-31', photo:'', desc:'Витамин D3, 60 капсул', createdAt: new Date().toISOString()},
-    ];
-    saveAll();
-  }
-  if(!currentReceivingDoc) {
-    currentReceivingDoc = { id:'recv_init', num:'ПР-0001', items:[], status:'open', createdAt: new Date().toISOString() };
-    saveAll();
-  }
-})();
-
-// Trigger initial render
-setTimeout(() => { if(document.getElementById('app').classList.contains('active')) renderAll(); }, 2500);
 </script>
 </body>
 </html>
+
