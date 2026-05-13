@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FulFillPro — Ozon FBO / WB FBO</title>
+    <title>FulFillPro — Маркетплейсы</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -11,16 +11,15 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d' },
-                        ozon: { 500:'#005bff',600:'#0045cc',700:'#003399' },
-                        wb: { 500:'#cb11ab',600:'#a00e8a',700:'#7a0b69' },
-                        dark: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617' }
-                    }
+            theme: { extend: {
+                colors: {
+                    ozon: { 500:'#005bff',600:'#0044cc' },
+                    wb: { 500:'#cb11ab',600:'#a50e8a' },
+                    fbs: { 500:'#f59e0b',600:'#d97706' },
+                    primary: { 500:'#22c55e',600:'#16a34a' },
+                    dark: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617' }
                 }
-            }
+            }}
         }
     </script>
     <style>
@@ -29,80 +28,68 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        .splash-screen { animation: splashFade 1.5s ease-in-out forwards; }
-        @keyframes splashFade { 0%{opacity:1} 80%{opacity:1} 100%{opacity:0;visibility:hidden} }
-        @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes spin-slow { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-        @keyframes pulse-ring { 0%{transform:scale(0.8);opacity:1} 100%{transform:scale(2);opacity:0} }
-        .animate-slideUp { animation: slideUp 0.5s ease-out; }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
         .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .dark .glass { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); }
         .light .glass { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.08); }
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
         .sidebar-link { transition: all 0.2s ease; }
-        .sidebar-link:hover, .sidebar-link.active { color: white; }
-        .sidebar-link.ozon-active { background: linear-gradient(135deg, #005bff, #0045cc); color: white; }
-        .sidebar-link.wb-active { background: linear-gradient(135deg, #cb11ab, #a00e8a); color: white; }
+        .sidebar-link:hover, .sidebar-link.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
         .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: #1e293b; border-radius: 16px; max-height: 90vh; overflow-y: auto; width: 90%; max-width: 800px; }
-        .theme-transition { transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease; }
-        @media print { .no-print { display: none !important; } .print-only { display: block !important; } .print-label { page-break-after: always; } }
+        .modal-content { background: #1e293b; border-radius: 16px; max-height: 90vh; overflow-y: auto; width: 95%; max-width: 900px; }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         .print-only { display: none; }
-        .print-label { width: 58mm; height: 40mm; padding: 2mm; border: 1px solid #000; font-family: monospace; font-size: 8pt; display: flex; flex-direction: column; }
-        .step-indicator { display: flex; align-items: center; gap: 8px; }
-        .step-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-        .step-dot.completed { background: #22c55e; color: white; }
-        .step-dot.current { background: #005bff; color: white; }
-        .step-dot.pending { background: #334155; color: #64748b; }
-        .box-slot { border: 2px dashed #475569; border-radius: 12px; padding: 12px; min-height: 100px; transition: all 0.2s; cursor: pointer; }
-        .box-slot:hover { border-color: #22c55e; background: rgba(34,197,94,0.05); }
-        .box-slot.filled { border-style: solid; border-color: #22c55e; background: rgba(34,197,94,0.1); }
-        .box-slot.selected { border-color: #005bff; background: rgba(0,91,255,0.1); }
-        .drag-ghost { opacity: 0.5; }
+        @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .animate-slideUp { animation: slideUp 0.5s ease-out; }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes pulse-ring { 0%{transform:scale(0.8);opacity:1} 100%{transform:scale(2);opacity:0} }
+        .pulse-dot { animation: pulse-ring 1.5s ease-out infinite; }
+        .tab-btn { padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; cursor: pointer; }
+        .tab-btn.active { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+        .tab-btn:not(.active) { background: transparent; color: #94a3b8; border: 1px solid transparent; }
+        .tab-btn:not(.active):hover { background: rgba(255,255,255,0.05); }
+        .col-mapper { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #0f172a; border-radius: 6px; margin-bottom: 4px; }
+        .col-mapper select { flex: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .box-item { border: 2px solid #334155; border-radius: 8px; padding: 8px; min-height: 80px; }
+        .box-item.filled { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+        .auto-update-bar { height: 3px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+        .auto-update-bar .fill { height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); transition: width 0.5s linear; }
     </style>
 </head>
-<body class="theme-transition bg-dark-900 text-dark-100 min-h-screen">
+<body class="bg-dark-900 text-dark-100 min-h-screen">
 
-<!-- SPLASH SCREEN -->
-<div id="splashScreen" class="fixed inset-0 z-[9999] bg-dark-950 flex items-center justify-center splash-screen">
+<!-- SPLASH -->
+<div id="splashScreen" class="fixed inset-0 z-[9999] bg-dark-950 flex items-center justify-center" style="animation: fadeIn 1.5s ease-in-out forwards;">
     <div class="text-center">
         <div class="relative mb-8">
-            <div class="w-24 h-24 mx-auto border-4 border-primary-500 border-t-transparent rounded-full animate-spin-slow"></div>
-            <div class="absolute inset-0 flex items-center justify-center">
-                <i class="fas fa-warehouse text-primary-500 text-3xl animate-float"></i>
-            </div>
+            <div class="w-24 h-24 mx-auto border-4 border-primary-500 border-t-transparent rounded-full" style="animation: spin 1s linear infinite;"></div>
+            <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-warehouse text-primary-500 text-3xl"></i></div>
         </div>
         <h1 class="text-3xl font-bold text-white mb-2">FulFill<span class="text-primary-500">Pro</span></h1>
-        <p class="text-dark-400 text-sm">Маркетплейс модуль v4.0</p>
-        <div class="mt-6 w-48 h-1 bg-dark-800 rounded-full mx-auto overflow-hidden">
-            <div class="h-full bg-primary-500 rounded-full" style="animation: slideUp 1.2s ease-out forwards; width: 100%; transform-origin: left; transform: scaleX(0);"></div>
-        </div>
+        <p class="text-dark-400 text-sm">Маркетплейсы v4.0</p>
     </div>
 </div>
+<style>@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
 <div id="loginScreen" class="fixed inset-0 z-[999] bg-dark-950 hidden">
     <div class="min-h-screen flex items-center justify-center p-4">
-        <div class="w-full max-w-md animate-slideUp">
+        <div class="w-full max-w-md">
             <div class="glass rounded-2xl p-8 shadow-2xl">
                 <div class="text-center mb-8">
-                    <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                        <i class="fas fa-warehouse text-white text-2xl"></i>
-                    </div>
+                    <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg"><i class="fas fa-warehouse text-white text-2xl"></i></div>
                     <h1 class="text-2xl font-bold text-white">FulFill<span class="text-primary-500">Pro</span></h1>
-                    <p class="text-dark-400 text-sm mt-1">Маркетплейс модуль</p>
+                    <p class="text-dark-400 text-sm mt-1">Вход в систему</p>
                 </div>
                 <form id="loginForm" class="space-y-4">
-                    <div><label class="block text-sm font-medium text-dark-300 mb-1">Логин</label><div class="relative"><i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"></i><input type="text" id="loginUsername" class="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500" value="admin"></div></div>
-                    <div><label class="block text-sm font-medium text-dark-300 mb-1">Пароль</label><div class="relative"><i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"></i><input type="password" id="loginPassword" class="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500" value="admin123"><button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-500"><i class="fas fa-eye" id="toggleEyeIcon"></i></button></div></div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-primary-500/20"><i class="fas fa-sign-in-alt mr-2"></i>Войти</button>
-                    <p class="text-xs text-dark-500 text-center mt-4">Демо: admin / admin123</p>
+                    <div class="relative"><i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"></i>
+                        <input type="text" id="loginUsername" value="admin" class="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500"></div>
+                    <div class="relative"><i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"></i>
+                        <input type="password" id="loginPassword" value="admin123" class="w-full bg-dark-800 border border-dark-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500"></div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold py-3 rounded-lg shadow-lg shadow-primary-500/20"><i class="fas fa-sign-in-alt mr-2"></i>Войти</button>
+                    <p class="text-xs text-dark-500 text-center">admin / admin123</p>
                 </form>
             </div>
         </div>
@@ -116,360 +103,323 @@
         <div class="p-4 border-b border-dark-800">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center"><i class="fas fa-warehouse text-white"></i></div>
-                <div><h1 class="font-bold text-white text-lg leading-tight">FulFill<span class="text-primary-500">Pro</span></h1><p class="text-dark-500 text-xs">Маркетплейс v4.0</p></div>
+                <div><h1 class="font-bold text-white text-lg">FulFill<span class="text-primary-500">Pro</span></h1><p class="text-dark-500 text-xs">Маркетплейсы v4.0</p></div>
             </div>
         </div>
-        <nav class="p-3 space-y-1 overflow-y-auto h-[calc(100%-140px)]">
-            <button onclick="navigate('ozon')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="ozon"><i class="fas fa-store w-5 text-center text-blue-400"></i><span>Ozon FBO</span></button>
-            <button onclick="navigate('wb')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="wb"><i class="fas fa-store w-5 text-center text-purple-400"></i><span>WB FBO</span></button>
+        <nav class="p-3 space-y-1 overflow-y-auto h-[calc(100%-80px)]">
             <button onclick="navigate('dashboard')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="dashboard"><i class="fas fa-chart-pie w-5 text-center"></i><span>Дашборд</span></button>
+            <div class="px-4 py-2 text-xs text-dark-500 font-semibold uppercase tracking-wider mt-2">ФБО — fulfilment by operator</div>
+            <button onclick="navigate('ozonFBO')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="ozonFBO"><i class="fas fa-store w-5 text-center" style="color:#005bff"></i><span>Озон ФБО</span></button>
+            <button onclick="navigate('wbFBO')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="wbFBO"><i class="fas fa-store w-5 text-center" style="color:#cb11ab"></i><span>ВБ ФБО</span></button>
+            <div class="px-4 py-2 text-xs text-dark-500 font-semibold uppercase tracking-wider mt-2">ФБС — fulfilment by seller</div>
+            <button onclick="navigate('ozonFBS')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="ozonFBS"><i class="fas fa-truck w-5 text-center" style="color:#005bff"></i><span>Озон ФБС</span></button>
+            <button onclick="navigate('wbFBS')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="wbFBS"><i class="fas fa-truck w-5 text-center" style="color:#cb11ab"></i><span>ВБ ФБС</span></button>
+            <div class="px-4 py-2 text-xs text-dark-500 font-semibold uppercase tracking-wider mt-2">Склад</div>
+            <button onclick="navigate('warehouse')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="warehouse"><i class="fas fa-boxes-stacked w-5 text-center"></i><span>Склад</span></button>
+            <button onclick="navigate('boxes')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="boxes"><i class="fas fa-box-open w-5 text-center"></i><span>Короба</span></button>
             <button onclick="navigate('settings')" class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-dark-300 text-sm" data-nav="settings"><i class="fas fa-gear w-5 text-center"></i><span>Настройки</span></button>
         </nav>
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-dark-800">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-primary-500/20 rounded-full flex items-center justify-center"><i class="fas fa-user text-primary-500 text-sm"></i></div>
                 <div class="flex-1 min-w-0"><p class="text-sm font-medium text-white truncate" id="sidebarUserName">Админ</p><p class="text-xs text-dark-500">Онлайн</p></div>
-                <button onclick="logout()" class="text-dark-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket"></i></button>
+                <button onclick="logout()" class="text-dark-500 hover:text-red-500"><i class="fas fa-right-from-bracket"></i></button>
             </div>
         </div>
     </aside>
 
     <!-- HEADER -->
-    <header class="fixed top-0 left-0 right-0 h-16 bg-dark-900/80 backdrop-blur-lg border-b border-dark-800 z-40 flex items-center px-4 lg:px-6 no-print theme-transition">
+    <header class="fixed top-0 left-0 right-0 h-16 bg-dark-900/80 backdrop-blur-lg border-b border-dark-800 z-40 flex items-center px-4 lg:px-6 no-print">
         <button onclick="toggleSidebar()" class="lg:hidden text-dark-300 hover:text-white mr-4"><i class="fas fa-bars text-xl"></i></button>
-        <div class="flex-1"><h2 id="pageTitle" class="text-lg font-semibold text-white">Ozon FBO</h2></div>
+        <div class="flex-1"><h2 id="pageTitle" class="text-lg font-semibold text-white">Дашборд</h2></div>
         <div class="flex items-center gap-3">
-            <button onclick="toggleTheme()" class="w-9 h-9 rounded-lg bg-dark-800 flex items-center justify-center text-dark-400 hover:text-yellow-400 transition"><i class="fas fa-moon" id="themeIcon"></i></button>
             <span class="text-dark-400 text-sm hidden md:block" id="headerTime"></span>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="lg:ml-64 pt-16 min-h-screen theme-transition">
+    <main class="lg:ml-64 pt-16 min-h-screen">
+
+        <!-- DASHBOARD -->
+        <section id="page-dashboard" class="page-content p-4 lg:p-6 animate-fadeIn">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass rounded-xl p-4 card-hover"><div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">Озон ФБО</span><div class="w-8 h-8 bg-ozon-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-store text-blue-500 text-sm"></i></div></div><p class="text-2xl font-bold text-white" id="dashOzonFBO">0</p></div>
+                <div class="glass rounded-xl p-4 card-hover"><div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">ВБ ФБО</span><div class="w-8 h-8 bg-wb-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-store text-purple-500 text-sm"></i></div></div><p class="text-2xl font-bold text-white" id="dashWbFBO">0</p></div>
+                <div class="glass rounded-xl p-4 card-hover"><div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">Озон ФБС (активные)</span><div class="w-8 h-8 bg-ozon-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-truck text-blue-500 text-sm"></i></div></div><p class="text-2xl font-bold text-white" id="dashOzonFBS">0</p></div>
+                <div class="glass rounded-xl p-4 card-hover"><div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">ВБ ФБС (активные)</span><div class="w-8 h-8 bg-wb-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-truck text-purple-500 text-sm"></i></div></div><p class="text-2xl font-bold text-white" id="dashWbFBS">0</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="glass rounded-xl p-4"><h3 class="font-semibold text-white mb-4">Последние операции</h3><div id="recentOps" class="space-y-3 max-h-64 overflow-y-auto"></div></div>
+                <div class="glass rounded-xl p-4"><h3 class="font-semibold text-white mb-4">Статистика по городам (ФБО)</h3><div id="cityStats" class="space-y-2"></div></div>
+            </div>
+        </section>
+
         <!-- OZON FBO -->
-        <section id="page-ozon" class="page-content p-4 lg:p-6 animate-fadeIn">
-            <!-- Steps -->
-            <div class="glass rounded-2xl p-4 mb-6">
-                <div class="flex items-center justify-center gap-4">
-                    <div class="step-indicator"><div class="step-dot completed" id="ozon-step1">1</div><span class="text-sm text-dark-400 hidden sm:inline">Загрузка ТЗ</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="ozon-step2">2</div><span class="text-sm text-dark-400 hidden sm:inline">Настройка</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="ozon-step3">3</div><span class="text-sm text-dark-400 hidden sm:inline">Фильтры</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="ozon-step4">4</div><span class="text-sm text-dark-400 hidden sm:inline">Печать</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="ozon-step5">5</div><span class="text-sm text-dark-400 hidden sm:inline">Короба</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="ozon-step6">6</div><span class="text-sm text-dark-400 hidden sm:inline">Отчёт</span></div>
+        <section id="page-ozonFBO" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-ozon-500/20 rounded-xl flex items-center justify-center"><i class="fas fa-store text-blue-500"></i></div>
+                    <div><h3 class="text-lg font-bold text-white">Озон ФБО</h3><p class="text-xs text-dark-400">Загрузка ТЗ, печать этикеток, раскладка по коробам</p></div>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="document.getElementById('ozonFBOFile').click()" class="bg-ozon-500 hover:bg-ozon-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Загрузить ТЗ</button>
+                    <input type="file" id="ozonFBOFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importFBO('ozon',event)">
+                    <button onclick="openModal('ozonFBOColumnMap')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-columns mr-1"></i>Маппинг колонок</button>
+                    <button onclick="printFBOLabels('ozon')" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать этикеток</button>
+                    <button onclick="generateFBOReport('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-chart-bar mr-1"></i>Отчёт</button>
+                    <button onclick="openModal('ozonFBOBoxAssign')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-box-open mr-1"></i>Раскладка по коробам</button>
                 </div>
             </div>
-
-            <!-- Step 1: Upload TZ -->
-            <div id="ozon-upload-section" class="glass rounded-2xl p-6 mb-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-upload mr-2 text-blue-400"></i>Загрузка ТЗ (Excel)</h3>
-                    <div class="flex gap-2">
-                        <button onclick="document.getElementById('ozonTzFile').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Загрузить ТЗ</button>
-                        <input type="file" id="ozonTzFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="uploadTz(event, 'ozon')">
-                        <button onclick="downloadTzTemplate('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Шаблон</button>
-                    </div>
-                </div>
-                <div class="border-2 border-dashed border-dark-700 rounded-xl p-8 text-center" id="ozon-drop-zone">
-                    <i class="fas fa-cloud-upload-alt text-4xl text-dark-500 mb-3"></i>
-                    <p class="text-dark-400">Перетащите Excel файл или нажмите кнопку загрузки</p>
-                    <p class="text-xs text-dark-600 mt-1">Поддерживаются .xlsx, .xls, .csv</p>
+            <!-- Filters -->
+            <div class="glass rounded-xl p-4 mb-4">
+                <div class="flex flex-wrap gap-3">
+                    <select id="ozonFBOCityFilter" onchange="renderFBOOrders('ozon')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="">Все города</option>
+                    </select>
+                    <select id="ozonFBOQuantFilter" onchange="renderFBOOrders('ozon')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="">Все кванты спаек</option>
+                    </select>
+                    <select id="ozonFBOStatusFilter" onchange="renderFBOOrders('ozon')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="">Все статусы</option>
+                        <option value="new">Новый</option>
+                        <option value="label_printed">Этикетка напечатана</option>
+                        <option value="in_box">В коробе</option>
+                        <option value="shipped">Отгружен</option>
+                    </select>
+                    <input type="text" id="ozonFBOSearch" placeholder="Поиск..." class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" oninput="renderFBOOrders('ozon')">
                 </div>
             </div>
-
-            <!-- Step 2: Mapping -->
-            <div id="ozon-mapping-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-cog mr-2 text-blue-400"></i>Настройка полей ТЗ</h3>
-                    <button onclick="applyMapping('ozon')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-check mr-1"></i>Применить</button>
-                </div>
-                <p class="text-sm text-dark-400 mb-4">Укажите какие столбцы Excel соответствуют полям системы. Загруженные данные:</p>
-                <div id="ozon-mapping-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4"></div>
-                <div class="overflow-x-auto max-h-64 overflow-y-auto">
-                    <table class="w-full text-xs">
-                        <thead class="bg-dark-800/50"><tr><th class="text-left px-2 py-2 text-dark-400">Строка #</th><th id="ozon-headers"></th></tr></thead>
-                        <tbody id="ozon-data-preview" class="text-dark-300"></tbody>
+            <!-- Orders Table -->
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50"><tr>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium"><input type="checkbox" id="ozonFBOSelectAll" onchange="toggleAllFBO('ozon',this.checked)" class="rounded bg-dark-800 border-dark-700"></th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Наименование</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Артикул</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Баркод</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Годен до</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Кол-во</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Город</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Квант спаек</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Статус</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Короб</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Действия</th>
+                        </tr></thead>
+                        <tbody id="ozonFBOTableBody"></tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Step 3: Filters -->
-            <div id="ozon-filters-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-filter mr-2 text-blue-400"></i>Фильтры</h3>
-                    <div class="flex gap-2">
-                        <button onclick="resetFilters('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-undo mr-1"></i>Сбросить</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm text-dark-400 mb-1">Город доставки</label>
-                        <select id="ozon-filter-city" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('ozon')">
-                            <option value="all">Все города</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-dark-400 mb-1">Квант спаек (шт)</label>
-                        <select id="ozon-filter-quantity" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('ozon')">
-                            <option value="all">Все количества</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-dark-400 mb-1">Статус</label>
-                        <select id="ozon-filter-status" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('ozon')">
-                            <option value="all">Все статусы</option>
-                            <option value="new">Новый</option>
-                            <option value="processing">В обработке</option>
-                            <option value="labeled">Этикетки напечатаны</option>
-                            <option value="boxed">В коробах</option>
-                            <option value="shipped">Отгружен</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-dark-400 mb-1">Поиск</label>
-                        <input type="text" id="ozon-filter-search" placeholder="Артикул, название..." class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" oninput="applyFilters('ozon')">
-                    </div>
-                </div>
-                <div class="flex gap-2 mb-4 flex-wrap">
-                    <button onclick="updateAllStatus('ozon', 'processing')" class="bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded text-xs hover:bg-yellow-600/30 transition">В обработку</button>
-                    <button onclick="updateAllStatus('ozon', 'labeled')" class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-600/30 transition">Этикетки</button>
-                    <button onclick="updateAllStatus('ozon', 'boxed')" class="bg-purple-600/20 text-purple-400 px-3 py-1 rounded text-xs hover:bg-purple-600/30 transition">В короба</button>
-                    <button onclick="updateAllStatus('ozon', 'shipped')" class="bg-green-600/20 text-green-400 px-3 py-1 rounded text-xs hover:bg-green-600/30 transition">Отгружены</button>
-                </div>
-                <div class="glass rounded-xl overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="bg-dark-800/50"><tr>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium"><input type="checkbox" id="ozon-select-all" onchange="toggleSelectAll('ozon')"></th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Название</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Артикул</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Баркод</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Город</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Квант</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Годен до</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Статус</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Короб</th>
-                            </tr></thead>
-                            <tbody id="ozon-tz-data"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Print Labels -->
-            <div id="ozon-print-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-print mr-2 text-blue-400"></i>Печать этикеток 58×40</h3>
-                    <div class="flex gap-2">
-                        <button onclick="printSelectedLabels('ozon')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать выбранных</button>
-                        <button onclick="printAllLabels('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать всех</button>
-                    </div>
-                </div>
-                <div id="ozon-labels-preview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
-            </div>
-
-            <!-- Step 5: Boxes -->
-            <div id="ozon-boxes-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-boxes-stacked mr-2 text-blue-400"></i>Раскладка по коробам</h3>
-                    <div class="flex gap-2">
-                        <button onclick="addBox('ozon')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Новый короб</button>
-                        <button onclick="autoDistribute('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-magic mr-1"></i>Авто-раскладка</button>
-                    </div>
-                </div>
-                <div id="ozon-boxes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
-
-            <!-- Step 6: Report -->
-            <div id="ozon-report-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Отчёт по городам</h3>
-                    <button onclick="exportReport('ozon')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Экспорт</button>
-                </div>
-                <div id="ozon-report-content"></div>
             </div>
         </section>
 
         <!-- WB FBO -->
-        <section id="page-wb" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
-            <!-- Steps -->
-            <div class="glass rounded-2xl p-4 mb-6">
-                <div class="flex items-center justify-center gap-4">
-                    <div class="step-indicator"><div class="step-dot completed" id="wb-step1">1</div><span class="text-sm text-dark-400 hidden sm:inline">Загрузка ТЗ</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="wb-step2">2</div><span class="text-sm text-dark-400 hidden sm:inline">Настройка</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="wb-step3">3</div><span class="text-sm text-dark-400 hidden sm:inline">Фильтры</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="wb-step4">4</div><span class="text-sm text-dark-400 hidden sm:inline">Печать</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="wb-step5">5</div><span class="text-sm text-dark-400 hidden sm:inline">Короба</span></div>
-                    <div class="w-8 h-px bg-dark-700"></div>
-                    <div class="step-indicator"><div class="step-dot pending" id="wb-step6">6</div><span class="text-sm text-dark-400 hidden sm:inline">Отчёт</span></div>
+        <section id="page-wbFBO" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-wb-500/20 rounded-xl flex items-center justify-center"><i class="fas fa-store text-pink-500"></i></div>
+                    <div><h3 class="text-lg font-bold text-white">ВБ ФБО</h3><p class="text-xs text-dark-400">Загрузка ТЗ, печать этикеток, раскладка по коробам</p></div>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="document.getElementById('wbFBOFile').click()" class="bg-wb-500 hover:bg-wb-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Загрузить ТЗ</button>
+                    <input type="file" id="wbFBOFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importFBO('wb',event)">
+                    <button onclick="openModal('wbFBOColumnMap')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-columns mr-1"></i>Маппинг колонок</button>
+                    <button onclick="printFBOLabels('wb')" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать этикеток</button>
+                    <button onclick="generateFBOReport('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-chart-bar mr-1"></i>Отчёт</button>
+                    <button onclick="openModal('wbFBOBoxAssign')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-box-open mr-1"></i>Раскладка по коробам</button>
                 </div>
             </div>
-
-            <!-- Step 1: Upload TZ -->
-            <div id="wb-upload-section" class="glass rounded-2xl p-6 mb-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-upload mr-2 text-purple-400"></i>Загрузка ТЗ (Excel)</h3>
-                    <div class="flex gap-2">
-                        <button onclick="document.getElementById('wbTzFile').click()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Загрузить ТЗ</button>
-                        <input type="file" id="wbTzFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="uploadTz(event, 'wb')">
-                        <button onclick="downloadTzTemplate('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Шаблон</button>
-                    </div>
-                </div>
-                <div class="border-2 border-dashed border-dark-700 rounded-xl p-8 text-center" id="wb-drop-zone">
-                    <i class="fas fa-cloud-upload-alt text-4xl text-dark-500 mb-3"></i>
-                    <p class="text-dark-400">Перетащите Excel файл или нажмите кнопку загрузки</p>
-                    <p class="text-xs text-dark-600 mt-1">Поддерживаются .xlsx, .xls, .csv</p>
+            <div class="glass rounded-xl p-4 mb-4">
+                <div class="flex flex-wrap gap-3">
+                    <select id="wbFBOCityFilter" onchange="renderFBOOrders('wb')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"><option value="">Все города</option></select>
+                    <select id="wbFBOQuantFilter" onchange="renderFBOOrders('wb')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"><option value="">Все кванты спаек</option></select>
+                    <select id="wbFBOStatusFilter" onchange="renderFBOOrders('wb')" class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"><option value="">Все статусы</option><option value="new">Новый</option><option value="label_printed">Этикетка напечатана</option><option value="in_box">В коробе</option><option value="shipped">Отгружен</option></select>
+                    <input type="text" id="wbFBOSearch" placeholder="Поиск..." class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" oninput="renderFBOOrders('wb')">
                 </div>
             </div>
-
-            <!-- Step 2: Mapping -->
-            <div id="wb-mapping-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-cog mr-2 text-purple-400"></i>Настройка полей ТЗ</h3>
-                    <button onclick="applyMapping('wb')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-check mr-1"></i>Применить</button>
-                </div>
-                <p class="text-sm text-dark-400 mb-4">Укажите какие столбцы Excel соответствуют полям системы:</p>
-                <div id="wb-mapping-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4"></div>
-                <div class="overflow-x-auto max-h-64 overflow-y-auto">
-                    <table class="w-full text-xs">
-                        <thead class="bg-dark-800/50"><tr><th class="text-left px-2 py-2 text-dark-400">Строка #</th><th id="wb-headers"></th></tr></thead>
-                        <tbody id="wb-data-preview" class="text-dark-300"></tbody>
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50"><tr>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium"><input type="checkbox" id="wbFBOSelectAll" onchange="toggleAllFBO('wb',this.checked)" class="rounded bg-dark-800 border-dark-700"></th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Наименование</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Артикул</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Баркод</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Годен до</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Кол-во</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Город</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Квант спаек</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Статус</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Короб</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Действия</th>
+                        </tr></thead>
+                        <tbody id="wbFBOTableBody"></tbody>
                     </table>
                 </div>
             </div>
+        </section>
 
-            <!-- Step 3: Filters -->
-            <div id="wb-filters-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-filter mr-2 text-purple-400"></i>Фильтры</h3>
-                    <div class="flex gap-2"><button onclick="resetFilters('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-undo mr-1"></i>Сбросить</button></div>
+        <!-- OZON FBS -->
+        <section id="page-ozonFBS" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-ozon-500/20 rounded-xl flex items-center justify-center"><i class="fas fa-truck text-blue-500"></i></div>
+                    <div><h3 class="text-lg font-bold text-white">Озон ФБС</h3><p class="text-xs text-dark-400">Автообновление заказов каждые 30 сек</p></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div><label class="block text-sm text-dark-400 mb-1">Город доставки</label><select id="wb-filter-city" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('wb')"><option value="all">Все города</option></select></div>
-                    <div><label class="block text-sm text-dark-400 mb-1">Квант спаек (шт)</label><select id="wb-filter-quantity" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('wb')"><option value="all">Все количества</option></select></div>
-                    <div><label class="block text-sm text-dark-400 mb-1">Статус</label><select id="wb-filter-status" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" onchange="applyFilters('wb')"><option value="all">Все статусы</option><option value="new">Новый</option><option value="processing">В обработке</option><option value="labeled">Этикетки напечатаны</option><option value="boxed">В коробах</option><option value="shipped">Отгружен</option></select></div>
-                    <div><label class="block text-sm text-dark-400 mb-1">Поиск</label><input type="text" id="wb-filter-search" placeholder="Артикул, название..." class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white" oninput="applyFilters('wb')"></div>
-                </div>
-                <div class="flex gap-2 mb-4 flex-wrap">
-                    <button onclick="updateAllStatus('wb', 'processing')" class="bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded text-xs hover:bg-yellow-600/30 transition">В обработку</button>
-                    <button onclick="updateAllStatus('wb', 'labeled')" class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-600/30 transition">Этикетки</button>
-                    <button onclick="updateAllStatus('wb', 'boxed')" class="bg-purple-600/20 text-purple-400 px-3 py-1 rounded text-xs hover:bg-purple-600/30 transition">В короба</button>
-                    <button onclick="updateAllStatus('wb', 'shipped')" class="bg-green-600/20 text-green-400 px-3 py-1 rounded text-xs hover:bg-green-600/30 transition">Отгружены</button>
-                </div>
-                <div class="glass rounded-xl overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="bg-dark-800/50"><tr>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium"><input type="checkbox" id="wb-select-all" onchange="toggleSelectAll('wb')"></th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Название</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Артикул</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Баркод</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Город</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Квант</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Годен до</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Статус</th>
-                                <th class="text-left px-3 py-2 text-dark-400 font-medium">Короб</th>
-                            </tr></thead>
-                            <tbody id="wb-tz-data"></tbody>
-                        </table>
-                    </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="connectOzonFBS()" id="btnConnectOzonFBS" class="bg-ozon-500 hover:bg-ozon-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plug mr-1"></i>Подключить API</button>
+                    <button onclick="syncOzonFBS()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-sync mr-1"></i>Синхронизировать</button>
                 </div>
             </div>
-
-            <!-- Step 4: Print Labels -->
-            <div id="wb-print-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-print mr-2 text-purple-400"></i>Печать этикеток 58×40</h3>
-                    <div class="flex gap-2">
-                        <button onclick="printSelectedLabels('wb')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать выбранных</button>
-                        <button onclick="printAllLabels('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать всех</button>
-                    </div>
+            <!-- Auto-update bar -->
+            <div class="glass rounded-xl p-3 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-dark-400"><i class="fas fa-sync-alt mr-1" id="ozonFBSRefreshIcon"></i> Автообновление</span>
+                    <span class="text-xs text-dark-500" id="ozonFBSNextUpdate">Следующее обновление через 30 сек</span>
                 </div>
-                <div id="wb-labels-preview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+                <div class="auto-update-bar"><div class="fill" id="ozonFBSProgressBar" style="width:0%"></div></div>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="text-xs text-dark-500">API URL:</span>
+                    <input type="text" id="ozonFBSApiUrl" placeholder="https://api-seller.ozon.ru" class="flex-1 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-xs text-white font-mono">
+                    <span class="text-xs text-dark-500">Ключ:</span>
+                    <input type="password" id="ozonFBSApiKey" placeholder="API Key" class="w-32 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-xs text-white font-mono">
+                </div>
             </div>
-
-            <!-- Step 5: Boxes -->
-            <div id="wb-boxes-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-boxes-stacked mr-2 text-purple-400"></i>Раскладка по коробам</h3>
-                    <div class="flex gap-2">
-                        <button onclick="addBox('wb')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Новый короб</button>
-                        <button onclick="autoDistribute('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-magic mr-1"></i>Авто-раскладка</button>
-                    </div>
-                </div>
-                <div id="wb-boxes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">Новые заказы</p><p class="text-2xl font-bold text-blue-400" id="ozonFBSNew">0</p></div>
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">В сборке</p><p class="text-2xl font-bold text-yellow-400" id="ozonFBSAwaits">0</p></div>
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">Отгружены</p><p class="text-2xl font-bold text-green-400" id="ozonFBSShipped">0</p></div>
             </div>
-
-            <!-- Step 6: Report -->
-            <div id="wb-report-section" class="glass rounded-2xl p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white"><i class="fas fa-chart-bar mr-2 text-purple-400"></i>Отчёт по городам</h3>
-                    <button onclick="exportReport('wb')" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Экспорт</button>
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50"><tr>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">№ Заказа</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Товар</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Артикул</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Кол-во</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Цена</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Статус</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Срок</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Действия</th>
+                        </tr></thead>
+                        <tbody id="ozonFBSTableBody"></tbody>
+                    </table>
                 </div>
-                <div id="wb-report-content"></div>
             </div>
         </section>
 
-        <!-- DASHBOARD -->
-        <section id="page-dashboard" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass rounded-xl p-4 card-hover">
-                    <div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">Ozon FBO заявок</span><div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-store text-blue-500 text-sm"></i></div></div>
-                    <p class="text-2xl font-bold text-white" id="dashOzonCount">0</p>
+        <!-- WB FBS -->
+        <section id="page-wbFBS" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-wb-500/20 rounded-xl flex items-center justify-center"><i class="fas fa-truck text-pink-500"></i></div>
+                    <div><h3 class="text-lg font-bold text-white">ВБ ФБС</h3><p class="text-xs text-dark-400">Автообновление заказов каждые 30 сек</p></div>
                 </div>
-                <div class="glass rounded-xl p-4 card-hover">
-                    <div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">WB FBO заявок</span><div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-store text-purple-500 text-sm"></i></div></div>
-                    <p class="text-2xl font-bold text-white" id="dashWbCount">0</p>
-                </div>
-                <div class="glass rounded-xl p-4 card-hover">
-                    <div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">Городов</span><div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-map-marker-alt text-green-500 text-sm"></i></div></div>
-                    <p class="text-2xl font-bold text-white" id="dashCities">0</p>
-                </div>
-                <div class="glass rounded-xl p-4 card-hover">
-                    <div class="flex items-center justify-between mb-3"><span class="text-dark-400 text-sm">Коробов</span><div class="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-box text-orange-500 text-sm"></i></div></div>
-                    <p class="text-2xl font-bold text-white" id="dashBoxes">0</p>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="connectWbFBS()" id="btnConnectWbFBS" class="bg-wb-500 hover:bg-wb-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plug mr-1"></i>Подключить API</button>
+                    <button onclick="syncWbFBS()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-sync mr-1"></i>Синхронизировать</button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                <div class="glass rounded-xl p-4">
-                    <h3 class="font-semibold text-white mb-4">Распределение по городам</h3>
-                    <div id="dashCitiesReport"></div>
+            <div class="glass rounded-xl p-3 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-dark-400"><i class="fas fa-sync-alt mr-1" id="wbFBSRefreshIcon"></i> Автообновление</span>
+                    <span class="text-xs text-dark-500" id="wbFBSNextUpdate">Следующее обновление через 30 сек</span>
                 </div>
-                <div class="glass rounded-xl p-4">
-                    <h3 class="font-semibold text-white mb-4">Последние операции</h3>
-                    <div id="dashOperations" class="space-y-2 max-h-64 overflow-y-auto"></div>
+                <div class="auto-update-bar"><div class="fill" id="wbFBSProgressBar" style="width:0%"></div></div>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="text-xs text-dark-500">API URL:</span>
+                    <input type="text" id="wbFBSApiUrl" placeholder="https://suppliers-api.wildberries.ru" class="flex-1 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-xs text-white font-mono">
+                    <span class="text-xs text-dark-500">Ключ:</span>
+                    <input type="password" id="wbFBSApiKey" placeholder="API Key" class="w-32 bg-dark-800 border border-dark-700 rounded px-2 py-1 text-xs text-white font-mono">
                 </div>
             </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">Новые заказы</p><p class="text-2xl font-bold text-pink-400" id="wbFBSNew">0</p></div>
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">В сборке</p><p class="text-2xl font-bold text-yellow-400" id="wbFBSAwaits">0</p></div>
+                <div class="glass rounded-xl p-4"><p class="text-dark-400 text-sm">Отгружены</p><p class="text-2xl font-bold text-green-400" id="wbFBSShipped">0</p></div>
+            </div>
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50"><tr>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">№ Заказа</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Товар</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Артикул</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Кол-во</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Цена</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Статус</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Срок</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Действия</th>
+                        </tr></thead>
+                        <tbody id="wbFBSTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- WAREHOUSE -->
+        <section id="page-warehouse" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 class="text-lg font-bold text-white">Остатки на складе</h3>
+                <div class="flex gap-2">
+                    <button onclick="openModal('addProduct')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Добавить товар</button>
+                    <button onclick="exportAllData()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Экспорт</button>
+                </div>
+            </div>
+            <div class="glass rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-800/50"><tr>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Артикул</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Название</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Баркод</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Остаток</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Ячейка</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Срок годности</th>
+                            <th class="text-left px-3 py-3 text-dark-400 font-medium">Характеристики</th>
+                        </tr></thead>
+                        <tbody id="warehouseTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOXES -->
+        <section id="page-boxes" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 class="text-lg font-bold text-white">Короба для отгрузки</h3>
+                <button onclick="addNewBox()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Новый короб</button>
+            </div>
+            <div id="boxesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
         </section>
 
         <!-- SETTINGS -->
         <section id="page-settings" class="page-content p-4 lg:p-6 animate-fadeIn hidden">
-            <div class="glass rounded-xl p-6 max-w-2xl">
-                <h3 class="font-semibold text-white mb-4">Настройки модуля</h3>
-                <div class="space-y-4">
-                    <div><label class="block text-sm text-dark-400 mb-1">Название склада</label><input type="text" id="settingWarehouseName" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
-                    <div><label class="block text-sm text-dark-400 mb-1">Размер этикетки (мм)</label><div class="flex gap-2"><input type="number" id="settingLabelWidth" value="58" class="w-24 bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"><span class="self-center text-dark-400">×</span><input type="number" id="settingLabelHeight" value="40" class="w-24 bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"><span class="self-center text-dark-400">мм</span></div></div>
-                    <button onclick="saveSettings()" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition">Сохранить</button>
-                    <hr class="border-dark-700">
-                    <button onclick="exportAllData()" class="w-full bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Экспорт всех данных</button>
-                    <button onclick="document.getElementById('importDataFile').click()" class="w-full bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-upload mr-1"></i>Импорт данных</button>
-                    <input type="file" id="importDataFile" accept=".json" class="hidden" onchange="importData(event)">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-semibold text-white mb-4">Настройки маркетплейсов</h3>
+                    <div class="space-y-4">
+                        <div><label class="block text-sm text-dark-400 mb-1">Название компании</label><input type="text" id="settingCompanyName" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                        <div><label class="block text-sm text-dark-400 mb-1">Адрес склада</label><input type="text" id="settingAddress" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                        <button onclick="saveSettings()" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg text-sm transition">Сохранить</button>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-6">
+                    <h3 class="font-semibold text-white mb-4">Управление данными</h3>
+                    <div class="space-y-4">
+                        <button onclick="exportAllData()" class="w-full bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-download mr-1"></i>Экспорт JSON</button>
+                        <input type="file" id="importJsonFile" accept=".json" class="hidden" onchange="importJsonData(event)">
+                        <button onclick="document.getElementById('importJsonFile').click()" class="w-full bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-upload mr-1"></i>Импорт JSON</button>
+                        <button onclick="resetAllData()" class="w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-trash mr-1"></i>Сбросить всё</button>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 </div>
 
-<!-- PRINT AREA -->
+<!-- MODALS -->
+<div id="modalContainer"></div>
 <div id="printArea" class="print-only"></div>
 
 <script>
@@ -479,11 +429,20 @@ const DB_KEY = 'fulfillpro_mp_v4';
 function getDefaultData() {
     return {
         users: [{ username: 'admin', password: 'admin123', role: 'admin', name: 'Администратор' }],
-        marketplace: {
-            ozon: { tzData: [], rawHeaders: [], mapping: {}, boxes: [], operations: [] },
-            wb: { tzData: [], rawHeaders: [], mapping: {}, boxes: [], operations: [] }
+        products: [],
+        ozonFBO: [],
+        wbFBO: [],
+        ozonFBS: [],
+        wbFBS: [],
+        boxes: [],
+        columnMapping: {
+            ozonFBO: { name: null, sku: null, barcode: null, expiry: null, qty: null, city: null, quant: null },
+            wbFBO: { name: null, sku: null, barcode: null, expiry: null, qty: null, city: null, quant: null }
         },
-        settings: { warehouseName: 'FulFillPro Склад', labelWidth: 58, labelHeight: 40 }
+        settings: { companyName: 'FulFillPro', address: '', ozonFBSApiUrl: '', ozonFBSApiKey: '', wbFBSApiUrl: '', wbFBSApiKey: '' },
+        operations: [],
+        warehouseCells: {},
+        nextId: { product: 1, box: 1, fbo: 1 }
     };
 }
 
@@ -501,755 +460,1035 @@ function loadData() {
 }
 
 function saveData() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
 let db = loadData();
 
 // ==================== UTILITIES ====================
-function formatDate(d) { if (!d) return ''; return new Date(d).toLocaleDateString('ru-RU'); }
-function generateBarcode() { return '200' + String(Math.floor(Math.random() * 90000000)).padStart(8, '0'); }
-function generateKIZ() { return '010' + String(Math.floor(Math.random() * 90000000000000)).padStart(14, '0'); }
-
-function statusBadge(status) {
-    const map = {
-        'new': ['Новый', 'bg-blue-500/20 text-blue-400'],
-        'processing': ['В обработке', 'bg-yellow-500/20 text-yellow-400'],
-        'labeled': ['Этикетки', 'bg-indigo-500/20 text-indigo-400'],
-        'boxed': ['В коробах', 'bg-purple-500/20 text-purple-400'],
-        'shipped': ['Отгружен', 'bg-green-500/20 text-green-400']
-    };
+function genId(type) { const id = db.nextId[type]++; saveData(); return id; }
+function formatDate(d) { if (!d) return ''; return new Date(d).toLocaleDateString('ru-RU') + ' ' + new Date(d).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}); }
+function formatDateShort(d) { if (!d) return ''; return new Date(d).toLocaleDateString('ru-RU'); }
+function statusBadgeFBO(status) {
+    const map = { 'new': ['Новый', 'bg-blue-500/20 text-blue-400'], 'label_printed': ['Этикетка напечатана', 'bg-yellow-500/20 text-yellow-400'], 'in_box': ['В коробе', 'bg-purple-500/20 text-purple-400'], 'shipped': ['Отгружен', 'bg-green-500/20 text-green-400'] };
     const s = map[status] || [status, 'bg-dark-500/20 text-dark-400'];
     return `<span class="status-badge ${s[1]}">${s[0]}</span>`;
 }
-
-function addOperation(marketplace, text) {
-    db.marketplace[marketplace].operations.unshift({ text, date: new Date().toISOString() });
-    if (db.marketplace[marketplace].operations.length > 50) db.marketplace[marketplace].operations = db.marketplace[marketplace].operations.slice(0, 50);
+function statusBadgeFBS(status) {
+    const map = { 'new': ['Новый', 'bg-blue-500/20 text-blue-400'], 'awaiting_packaging': ['В сборке', 'bg-yellow-500/20 text-yellow-400'], 'awaiting_deliver': ['Ожидает отгрузки', 'bg-orange-500/20 text-orange-400'], 'delivered': ['Доставлен', 'bg-green-500/20 text-green-400'], 'cancelled': ['Отменён', 'bg-red-500/20 text-red-400'] };
+    const s = map[status] || [status, 'bg-dark-500/20 text-dark-400'];
+    return `<span class="status-badge ${s[1]}">${s[0]}</span>`;
+}
+function addOperation(text, type) {
+    db.operations.unshift({ id: Date.now(), text, type, date: new Date().toISOString() });
+    if (db.operations.length > 100) db.operations = db.operations.slice(0, 100);
     saveData();
 }
-
+function fileToBase64(file) { return new Promise((resolve) => { const r = new FileReader(); r.onload = (e) => resolve(e.target.result); r.readAsDataURL(file); }); }
 function showToast(msg, type = 'success') {
     const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600' };
     const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
-    const toast = document.createElement('div');
-    toast.className = `fixed top-20 right-4 z-[9999] ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg animate-slideUp flex items-center gap-2`;
-    toast.innerHTML = `<i class="fas fa-${icons[type]}"></i>${msg}`;
-    document.body.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
-}
-
-function updateSteps(marketplace, currentStep) {
-    for (let i = 1; i <= 6; i++) {
-        const dot = document.getElementById(`${marketplace}-step${i}`);
-        if (!dot) continue;
-        dot.className = 'step-dot';
-        if (i < currentStep) dot.classList.add('completed');
-        else if (i === currentStep) dot.classList.add('current');
-        else dot.classList.add('pending');
-    }
+    const t = document.createElement('div');
+    t.className = `fixed top-20 right-4 z-[9999] ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2`;
+    t.style.animation = 'slideUp 0.3s ease-out';
+    t.innerHTML = `<i class="fas fa-${icons[type]}"></i>${msg}`;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
 // ==================== AUTH ====================
-function togglePassword() {
-    const inp = document.getElementById('loginPassword');
-    const icon = document.getElementById('toggleEyeIcon');
-    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye-slash'; }
-    else { inp.type = 'password'; icon.className = 'fas fa-eye'; }
-}
-
 document.getElementById('loginForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const u = document.getElementById('loginUsername').value;
     const p = document.getElementById('loginPassword').value;
-    if (db.users.find(user => user.username === u && user.password === p)) {
+    const user = db.users.find(x => x.username === u && x.password === p);
+    if (user) {
         sessionStorage.setItem('loggedIn', 'true');
-        sessionStorage.setItem('currentUser', JSON.stringify(db.users[0]));
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('sidebarUserName').textContent = user.name;
         initApp();
-    } else {
-        showToast('Неверный логин или пароль', 'error');
-    }
+    } else { showToast('Неверный логин или пароль', 'error'); }
 });
 
-function logout() { sessionStorage.removeItem('loggedIn'); location.reload(); }
+function logout() {
+    sessionStorage.removeItem('loggedIn'); sessionStorage.removeItem('currentUser');
+    document.getElementById('mainApp').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+}
 
 // ==================== NAVIGATION ====================
+let currentPage = 'dashboard';
+
 function navigate(page) {
+    currentPage = page;
     document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
     const el = document.getElementById('page-' + page);
     if (el) { el.classList.remove('hidden'); el.classList.add('animate-fadeIn'); }
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active', 'ozon-active', 'wb-active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
     const link = document.querySelector(`[data-nav="${page}"]`);
-    if (link) {
-        link.classList.add('active');
-        if (page === 'ozon') link.classList.add('ozon-active');
-        if (page === 'wb') link.classList.add('wb-active');
-    }
-    const titles = { ozon: 'Ozon FBO', wb: 'WB FBO', dashboard: 'Дашборд', settings: 'Настройки' };
+    if (link) link.classList.add('active');
+    const titles = { dashboard:'Дашборд', ozonFBO:'Озон ФБО', wbFBO:'ВБ ФБО', ozonFBS:'Озон ФБС', wbFBS:'ВБ ФБС', warehouse:'Склад', boxes:'Короба', settings:'Настройки' };
     document.getElementById('pageTitle').textContent = titles[page] || page;
-    if (page === 'ozon') renderOzon();
-    if (page === 'wb') renderWb();
-    if (page === 'dashboard') renderDashboard();
+    const renders = { dashboard: renderDashboard, ozonFBO: () => renderFBOOrders('ozon'), wbFBO: () => renderFBOOrders('wb'), ozonFBS: renderOzonFBS, wbFBS: renderWbFBS, warehouse: renderWarehouse, boxes: renderBoxes, settings: loadSettings };
+    if (renders[page]) renders[page]();
     if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-// ==================== THEME ====================
-function toggleTheme() {
-    const html = document.documentElement;
-    const icon = document.getElementById('themeIcon');
-    if (html.classList.contains('dark')) {
-        html.classList.remove('dark'); html.classList.add('light');
-        icon.className = 'fas fa-sun';
+// ==================== CLOCK ====================
+function updateClock() {
+    const el = document.getElementById('headerTime');
+    if (el) el.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+setInterval(updateClock, 1000);
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+    document.getElementById('dashOzonFBO').textContent = db.ozonFBO.length;
+    document.getElementById('dashWbFBO').textContent = db.wbFBO.length;
+    document.getElementById('dashOzonFBS').textContent = db.ozonFBS.filter(o => o.status === 'new' || o.status === 'awaiting_packaging').length;
+    document.getElementById('dashWbFBS').textContent = db.wbFBS.filter(o => o.status === 'new' || o.status === 'awaiting_packaging').length;
+
+    document.getElementById('recentOps').innerHTML = db.operations.slice(0, 10).map(o => `
+        <div class="flex items-start gap-2 text-sm"><div class="w-2 h-2 rounded-full bg-primary-500 mt-1.5 flex-shrink-0"></div><div><p class="text-dark-300">${o.text}</p><p class="text-xs text-dark-600">${formatDate(o.date)}</p></div></div>`).join('') || '<p class="text-dark-500 text-center py-4">Нет операций</p>';
+
+    // City stats
+    const cityMap = {};
+    [...db.ozonFBO, ...db.wbFBO].forEach(item => {
+        if (item.city) cityMap[item.city] = (cityMap[item.city] || 0) + item.qty;
+    });
+    const cityStatsEl = document.getElementById('cityStats');
+    if (Object.keys(cityMap).length === 0) {
+        cityStatsEl.innerHTML = '<p class="text-dark-500 text-center py-4">Нет данных</p>';
     } else {
-        html.classList.remove('light'); html.classList.add('dark');
-        icon.className = 'fas fa-moon';
+        cityStatsEl.innerHTML = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).map(([city, qty]) => `
+            <div class="flex items-center justify-between p-2 bg-dark-800/50 rounded-lg">
+                <span class="text-sm text-white"><i class="fas fa-map-marker-alt text-primary-500 mr-2"></i>${city}</span>
+                <span class="text-sm font-semibold text-primary-400">${qty} шт</span>
+            </div>`).join('');
     }
 }
 
-// ==================== TZ UPLOAD ====================
-let currentStep = {};
-let rawData = {};
+// ==================== COLUMN MAPPING ====================
+let fboRawData = { ozon: null, wb: null };
 
-function uploadTz(e, marketplace) {
+function importFBO(marketplace, e) {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function(ev) {
         try {
             const wb = XLSX.read(ev.target.result, { type: 'array' });
             const ws = wb.Sheets[wb.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            if (data.length === 0) { showToast('Файл пустой', 'error'); return; }
 
-            if (jsonData.length < 2) { showToast('Файл пуст или содержит только заголовки', 'error'); return; }
+            fboRawData[marketplace] = data;
+            const columns = Object.keys(data[0]);
+            const mp = marketplace === 'ozon' ? 'ozon' : 'wb';
+            const mapping = db.columnMapping[mp + 'FBO'];
 
-            const headers = jsonData[0].map((h, i) => h || `Столбец_${i + 1}`);
-            const dataRows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== null && cell !== ''));
-
-            rawData[marketplace] = { headers, rows: dataRows };
-            db.marketplace[marketplace].rawHeaders = headers;
-            currentStep[marketplace] = 2;
-
-            renderMapping(marketplace);
-            showToast(`Загружено ${dataRows.length} строк`);
-            updateSteps(marketplace, 2);
-        } catch(err) {
-            showToast('Ошибка чтения файла: ' + err.message, 'error');
-        }
+            openColumnMappingModal(mp, columns, mapping);
+        } catch(err) { showToast('Ошибка чтения файла: ' + err.message, 'error'); }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
 }
 
-function downloadTzTemplate(marketplace) {
-    const headers = ['Наименование товара', 'Артикул', 'Баркод (ШК)', 'Город доставки', 'Квант спаек (шт)', 'Срок годности', 'Количество'];
-    const sampleData = [
-        ['Товар 1', 'ART-001', '20012345678', 'Москва', 10, '2025-12-31', 100],
-        ['Товар 2', 'ART-002', '20087654321', 'Санкт-Петербург', 5, '2025-06-30', 50],
-        ['Товар 3', 'ART-003', '20011223344', 'Казань', 20, '2026-01-15', 200]
+function openColumnMappingModal(mp, columns, mapping) {
+    const container = document.getElementById('modalContainer');
+    const fields = [
+        { key: 'name', label: 'Наименование' },
+        { key: 'sku', label: 'Артикул' },
+        { key: 'barcode', label: 'Баркод' },
+        { key: 'expiry', label: 'Годен до' },
+        { key: 'qty', label: 'Количество' },
+        { key: 'city', label: 'Город' },
+        { key: 'quant', label: 'Квант спаек' }
     ];
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'ТЗ');
-    XLSX.writeFile(wb, `template_${marketplace.toUpperCase()}.xlsx`);
-    showToast('Шаблон скачан');
-}
-
-// ==================== MAPPING ====================
-function renderMapping(marketplace) {
-    const section = document.getElementById(`${marketplace}-mapping-section`);
-    section.classList.remove('hidden');
-
-    const { headers } = rawData[marketplace];
-    const fields = ['name', 'sku', 'barcode', 'city', 'quantity', 'expiry', 'count'];
-    const fieldLabels = {
-        name: 'Наименование товара', sku: 'Артикул', barcode: 'Баркод (ШК)',
-        city: 'Город доставки', quantity: 'Квант спаек (шт)', expiry: 'Срок годности', count: 'Количество'
-    };
-    const savedMapping = db.marketplace[marketplace].mapping || {};
-
-    // Generate mapping form
-    const form = document.getElementById(`${marketplace}-mapping-form`);
-    form.innerHTML = fields.map(field => {
-        const options = headers.map((h, i) => `<option value="${i}" ${savedMapping[field] == i ? 'selected' : ''}>${h}</option>`).join('');
-        return `
-        <div>
-            <label class="block text-sm text-dark-400 mb-1">${fieldLabels[field]} *</label>
-            <select id="mapping-${marketplace}-${field}" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
-                <option value="">— Не выбрано —</option>
-                ${options}
-            </select>
-        </div>`;
-    }).join('');
-
-    // Preview headers
-    const headersRow = document.getElementById(`${marketplace}-headers`);
-    headersRow.innerHTML = headers.map(h => `<th class="text-left px-2 py-2 text-dark-400">${h}</th>`).join('');
-
-    // Preview data
-    const preview = document.getElementById(`${marketplace}-data-preview`);
-    preview.innerHTML = rawData[marketplace].rows.slice(0, 5).map((row, i) => {
-        const cells = headers.map((_, j) => `<td class="px-2 py-1">${row[j] !== undefined ? row[j] : ''}</td>`).join('');
-        return `<tr><td class="px-2 py-1 text-dark-500">${i + 1}</td>${cells}</tr>`;
-    }).join('');
-}
-
-function applyMapping(marketplace) {
-    const fields = ['name', 'sku', 'barcode', 'city', 'quantity', 'expiry', 'count'];
-    const mapping = {};
-    let valid = true;
-
-    fields.forEach(field => {
-        const select = document.getElementById(`mapping-${marketplace}-${field}`);
-        if (select.value !== '') {
-            mapping[field] = parseInt(select.value);
-        } else {
-            if (['name', 'sku', 'barcode', 'city', 'quantity', 'count'].includes(field)) {
-                valid = false;
-                select.classList.add('border-red-500');
-                setTimeout(() => select.classList.remove('border-red-500'), 2000);
-            }
-        }
-    });
-
-    if (!valid) {
-        showToast('Заполните все обязательные поля', 'error');
-        return;
-    }
-
-    db.marketplace[marketplace].mapping = mapping;
-
-    // Process data
-    const processedData = rawData[marketplace].rows.map(row => ({
-        name: row[mapping.name] || 'Без названия',
-        sku: row[mapping.sku] || '',
-        barcode: row[mapping.barcode] || generateBarcode(),
-        city: row[mapping.city] || 'Не указан',
-        quantity: parseInt(row[mapping.quantity]) || 1,
-        expiry: row[mapping.expiry] || '',
-        count: parseInt(row[mapping.count]) || 0,
-        status: 'new',
-        boxId: null,
-        selected: false,
-        id: Date.now() + Math.random()
-    }));
-
-    db.marketplace[marketplace].tzData = processedData;
-    currentStep[marketplace] = 3;
-    saveData();
-
-    renderFilters(marketplace);
-    updateSteps(marketplace, 3);
-    showToast(`Обработано ${processedData.length} записей`);
-}
-
-// ==================== FILTERS ====================
-function renderFilters(marketplace) {
-    document.getElementById(`${marketplace}-filters-section`).classList.remove('hidden');
-    populateFilterOptions(marketplace);
-    renderTzTable(marketplace);
-}
-
-function populateFilterOptions(marketplace) {
-    const data = db.marketplace[marketplace].tzData;
-
-    // Cities
-    const cities = [...new Set(data.map(d => d.city))].sort();
-    const citySelect = document.getElementById(`${marketplace}-filter-city`);
-    citySelect.innerHTML = '<option value="all">Все города</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
-
-    // Quantities
-    const quantities = [...new Set(data.map(d => d.quantity))].sort((a, b) => a - b);
-    const qtySelect = document.getElementById(`${marketplace}-filter-quantity`);
-    qtySelect.innerHTML = '<option value="all">Все количества</option>' + quantities.map(q => `<option value="${q}">${q} шт</option>`).join('');
-}
-
-function applyFilters(marketplace) {
-    const city = document.getElementById(`${marketplace}-filter-city`).value;
-    const quantity = document.getElementById(`${marketplace}-filter-quantity`).value;
-    const status = document.getElementById(`${marketplace}-filter-status`).value;
-    const search = document.getElementById(`${marketplace}-filter-search`).value.toLowerCase();
-
-    let filtered = db.marketplace[marketplace].tzData;
-    if (city !== 'all') filtered = filtered.filter(d => d.city === city);
-    if (quantity !== 'all') filtered = filtered.filter(d => d.quantity === parseInt(quantity));
-    if (status !== 'all') filtered = filtered.filter(d => d.status === status);
-    if (search) filtered = filtered.filter(d => d.name.toLowerCase().includes(search) || d.sku.toLowerCase().includes(search) || d.barcode.includes(search));
-
-    renderTzTable(marketplace, filtered);
-}
-
-function resetFilters(marketplace) {
-    document.getElementById(`${marketplace}-filter-city`).value = 'all';
-    document.getElementById(`${marketplace}-filter-quantity`).value = 'all';
-    document.getElementById(`${marketplace}-filter-status`).value = 'all';
-    document.getElementById(`${marketplace}-filter-search`).value = '';
-    applyFilters(marketplace);
-}
-
-function renderTzTable(marketplace, data = null) {
-    const tzData = data || db.marketplace[marketplace].tzData;
-    const tbody = document.getElementById(`${marketplace}-tz-data`);
-
-    tbody.innerHTML = tzData.map((item, idx) => `
-        <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
-            <td class="px-3 py-2"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItem('${marketplace}', ${idx})"></td>
-            <td class="px-3 py-2 text-white text-sm truncate max-w-[150px]" title="${item.name}">${item.name}</td>
-            <td class="px-3 py-2 text-sm font-mono text-primary-400">${item.sku}</td>
-            <td class="px-3 py-2 text-sm font-mono">${item.barcode}</td>
-            <td class="px-3 py-2 text-sm">${item.city}</td>
-            <td class="px-3 py-2 text-sm font-semibold">${item.quantity} шт</td>
-            <td class="px-3 py-2 text-sm">${item.expiry || '-'}</td>
-            <td class="px-3 py-2">${statusBadge(item.status)}</td>
-            <td class="px-3 py-2 text-sm">${item.boxId ? `Короб #${item.boxId}` : '-'}</td>
-        </tr>`).join('') || '<tr><td colspan="9" class="px-4 py-8 text-center text-dark-500">Нет данных</td></tr>';
-}
-
-function toggleItem(marketplace, idx) {
-    db.marketplace[marketplace].tzData[idx].selected = !db.marketplace[marketplace].tzData[idx].selected;
-    saveData();
-}
-
-function toggleSelectAll(marketplace) {
-    const checked = document.getElementById(`${marketplace}-select-all`).checked;
-    db.marketplace[marketplace].tzData.forEach(item => item.selected = checked);
-    saveData();
-    applyFilters(marketplace);
-}
-
-function updateAllStatus(marketplace, status) {
-    const data = db.marketplace[marketplace].tzData;
-    data.forEach(item => { if (item.selected || !data.some(i => i.selected)) item.status = status; });
-    saveData();
-    applyFilters(marketplace);
-    addOperation(marketplace, `Статус обновлён: ${status}`);
-    showToast(`Статус обновлён: ${status}`);
-}
-
-// ==================== PRINT LABELS ====================
-function printSelectedLabels(marketplace) {
-    const selected = db.marketplace[marketplace].tzData.filter(d => d.selected);
-    if (selected.length === 0) {
-        // Print all filtered
-        const all = getFilteredData(marketplace);
-        if (all.length === 0) { showToast('Нет данных для печати', 'error'); return; }
-        printLabelsForItems(marketplace, all);
-    } else {
-        printLabelsForItems(marketplace, selected);
-    }
-}
-
-function printAllLabels(marketplace) {
-    const all = getFilteredData(marketplace);
-    if (all.length === 0) { showToast('Нет данных для печати', 'error'); return; }
-    printLabelsForItems(marketplace, all);
-}
-
-function getFilteredData(marketplace) {
-    let data = db.marketplace[marketplace].tzData;
-    const city = document.getElementById(`${marketplace}-filter-city`).value;
-    const quantity = document.getElementById(`${marketplace}-filter-quantity`).value;
-    if (city !== 'all') data = data.filter(d => d.city === city);
-    if (quantity !== 'all') data = data.filter(d => d.quantity === parseInt(quantity));
-    return data;
-}
-
-function printLabelsForItems(marketplace, items) {
-    const printArea = document.getElementById('printArea');
-    const width = db.settings.labelWidth || 58;
-    const height = db.settings.labelHeight || 40;
-
-    let html = `<div style="display:flex;flex-wrap:wrap;gap:0;">`;
-    items.forEach(item => {
-        html += `<div class="print-label" style="width:${width}mm;height:${height}mm;">
-            <div style="font-weight:bold;font-size:10pt;margin-bottom:2px;text-align:center;">${item.name}</div>
-            <div style="display:flex;justify-content:space-between;font-size:7pt;margin-bottom:2px;">
-                <span>Арт: ${item.sku}</span>
-                <span>Кол-во: ${item.count || item.quantity}</span>
+    let html = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Маппинг колонок — ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО</h3>
+                <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-            <div style="margin-bottom:2px;"><svg class="label-bc-${item.id}" data-barcode="${item.barcode}"></svg></div>
-            <div style="font-size:7pt;text-align:center;">${item.barcode}</div>
-            ${item.expiry ? `<div style="font-size:7pt;margin-top:2px;text-align:center;">Годен до: ${item.expiry}</div>` : ''}
-        </div>`;
-    });
-    html += `</div>`;
-    printArea.innerHTML = html;
-
-    // Render barcodes
-    setTimeout(() => {
-        document.querySelectorAll('.print-area .label-bc-' || `[class^="label-bc-"]`).forEach(el => {
-            try { JsBarcode(el, el.dataset.barcode, { width: 1.5, height: 20, displayValue: false }); } catch(e) {}
-        });
-        // Re-render for print area
-        const allSvg = printArea.querySelectorAll('svg[class*="label-bc-"]');
-        allSvg.forEach(el => {
-            try { JsBarcode(el, el.dataset.barcode, { width: 1.5, height: 20, displayValue: false }); } catch(e) {}
-        });
-    }, 200);
-
-    // Update status to labeled
-    items.forEach(item => { item.status = 'labeled'; });
-    saveData();
-
-    setTimeout(() => {
-        window.print();
-        addOperation(marketplace, `Напечатано этикеток: ${items.length}`);
-        showToast(`Напечатано ${items.length} этикеток`);
-
-        // Show print section
-        document.getElementById(`${marketplace}-print-section`).classList.remove('hidden');
-        renderLabelsPreview(marketplace, items);
-        updateSteps(marketplace, 4);
-    }, 500);
-}
-
-function renderLabelsPreview(marketplace, items) {
-    const container = document.getElementById(`${marketplace}-labels-preview`);
-    const width = db.settings.labelWidth || 58;
-    const height = db.settings.labelHeight || 40;
-
-    container.innerHTML = items.slice(0, 15).map(item => `
-        <div class="bg-white rounded-lg p-2 text-[8pt] font-mono" style="width:${width * 3}px;height:${height * 3}px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-            <div style="font-weight:bold;font-size:10pt;text-align:center;color:#000;">${item.name}</div>
-            <div style="display:flex;justify-content:space-between;font-size:7pt;color:#333;width:100%;margin:2px 0;">
-                <span>Арт: ${item.sku}</span><span>${item.count || item.quantity} шт</span>
-            </div>
-            <div class="mt-1"><svg class="preview-bc-${item.id}" data-barcode="${item.barcode}"></svg></div>
-            <div style="font-size:7pt;color:#333;">${item.barcode}</div>
-            ${item.expiry ? `<div style="font-size:7pt;color:#333;margin-top:2px;">Годен до: ${item.expiry}</div>` : ''}
-        </div>`).join('');
-
-    setTimeout(() => {
-        container.querySelectorAll('svg[class*="preview-bc-"]').forEach(el => {
-            try { JsBarcode(el, el.dataset.barcode, { width: 1, height: 15, displayValue: false }); } catch(e) {}
-        });
-    }, 100);
-}
-
-// ==================== BOXES ====================
-function addBox(marketplace) {
-    const boxes = db.marketplace[marketplace].boxes;
-    const boxNum = boxes.length + 1;
-    const boxId = `box-${marketplace}-${boxNum}`;
-
-    boxes.push({
-        id: boxId,
-        number: boxNum,
-        items: [],
-        createdAt: new Date().toISOString()
-    });
-
-    saveData();
-    renderBoxes(marketplace);
-    showToast(`Короб #${boxNum} создан`);
-    updateSteps(marketplace, 5);
-}
-
-function autoDistribute(marketplace) {
-    const data = db.marketplace[marketplace].tzData.filter(d => d.status !== 'shipped' && !d.boxId);
-    const boxes = db.marketplace[marketplace].boxes;
-
-    if (boxes.length === 0) {
-        // Create boxes automatically - one per city
-        const cities = [...new Set(data.map(d => d.city))];
-        cities.forEach((city, i) => {
-            boxes.push({
-                id: `box-${marketplace}-${boxes.length + 1}`,
-                number: boxes.length + 1,
-                city: city,
-                items: [],
-                createdAt: new Date().toISOString()
-            });
-        });
-    }
-
-    // Distribute items by city to boxes
-    data.forEach(item => {
-        const box = boxes.find(b => b.city === item.city || !b.city);
-        if (box) {
-            item.boxId = box.number;
-            box.items.push(item.id);
-        }
-    });
-
-    // Update status
-    data.forEach(item => { if (item.boxId) item.status = 'boxed'; });
-
-    saveData();
-    renderBoxes(marketplace);
-    renderTzTable(marketplace);
-    showToast('Авто-раскладка выполнена');
-    addOperation(marketplace, 'Авто-раскладка по коробам');
-}
-
-function renderBoxes(marketplace) {
-    document.getElementById(`${marketplace}-boxes-section`).classList.remove('hidden');
-    const container = document.getElementById(`${marketplace}-boxes-container`);
-    const boxes = db.marketplace[marketplace].boxes;
-
-    container.innerHTML = boxes.map(box => {
-        const items = box.items.map(id => db.marketplace[marketplace].tzData.find(d => d.id === id)).filter(Boolean);
-        const totalQty = items.reduce((s, i) => s + (i.count || i.quantity), 0);
-
-        return `
-        <div class="box-slot ${box.items.length > 0 ? 'filled' : ''}">
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-box text-primary-500"></i></div>
-                    <div>
-                        <h4 class="font-semibold text-white text-sm">Короб #${box.number}</h4>
-                        ${box.city ? `<p class="text-xs text-dark-400">${box.city}</p>` : ''}
-                    </div>
-                </div>
-                <button onclick="removeBox('${marketplace}', '${box.id}')" class="text-dark-500 hover:text-red-500"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="flex items-center justify-between text-xs mb-2">
-                <span class="text-dark-400">Позиций: ${items.length}</span>
-                <span class="text-dark-400">Всего: ${totalQty} шт</span>
-            </div>
-            <div class="space-y-1 max-h-32 overflow-y-auto">
-                ${items.map(item => `
-                <div class="flex items-center justify-between p-1.5 bg-dark-800/50 rounded text-xs">
-                    <span class="text-dark-300 truncate flex-1">${item.name}</span>
-                    <span class="text-primary-400 ml-2">${item.count || item.quantity} шт</span>
-                </div>`).join('') || '<p class="text-dark-600 text-center py-2">Пусто</p>'}
-            </div>
-        </div>`;
-    }).join('') || '<div class="col-span-3 text-center text-dark-500 py-8">Нет коробов. Нажмите "Новый короб" или "Авто-раскладка"</div>';
-}
-
-function removeBox(marketplace, boxId) {
-    const boxes = db.marketplace[marketplace].boxes;
-    const box = boxes.find(b => b.id === boxId);
-    if (box) {
-        box.items.forEach(id => {
-            const item = db.marketplace[marketplace].tzData.find(d => d.id === id);
-            if (item) { item.boxId = null; item.status = 'new'; }
-        });
-    }
-    db.marketplace[marketplace].boxes = boxes.filter(b => b.id !== boxId);
-    saveData();
-    renderBoxes(marketplace);
-    renderTzTable(marketplace);
-    showToast('Короб удалён', 'info');
-}
-
-// ==================== REPORTS ====================
-function renderReport(marketplace) {
-    document.getElementById(`${marketplace}-report-section`).classList.remove('hidden');
-    const container = document.getElementById(`${marketplace}-report-content`);
-    const data = db.marketplace[marketplace].tzData;
-
-    // Group by city
-    const cityMap = {};
-    data.forEach(item => {
-        if (!cityMap[item.city]) {
-            cityMap[item.city] = { name: item.city, count: 0, items: 0, totalQty: 0, boxes: new Set(), statuses: {} };
-        }
-        cityMap[item.city].count++;
-        cityMap[item.city].totalQty += (item.count || item.quantity);
-        cityMap[item.city].items++;
-        if (item.boxId) cityMap[item.city].boxes.add(item.boxId);
-        cityMap[item.city].statuses[item.status] = (cityMap[item.city].statuses[item.status] || 0) + 1;
-    });
-
-    const cities = Object.values(cityMap).sort((a, b) => b.totalQty - a.totalQty);
-
-    container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            ${cities.map(city => `
-            <div class="glass rounded-xl p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-bold text-white"><i class="fas fa-map-marker-alt text-red-400 mr-2"></i>${city.name}</h4>
-                    <span class="text-xs text-dark-400">${city.boxes.size} короб(ов)</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-                    <div class="bg-dark-800 rounded-lg p-2"><p class="text-dark-500">Позиций</p><p class="text-white font-semibold">${city.items}</p></div>
-                    <div class="bg-dark-800 rounded-lg p-2"><p class="text-dark-500">Всего шт</p><p class="text-primary-400 font-semibold">${city.totalQty}</p></div>
-                </div>
-                <div class="space-y-1">
-                    ${Object.entries(city.statuses).map(([status, count]) => `
-                    <div class="flex items-center justify-between text-xs">
-                        ${statusBadge(status)}
-                        <span class="text-dark-400">${count}</span>
+            <div class="p-6">
+                <p class="text-sm text-dark-400 mb-4">Сопоставьте колонки из Excel с полями системы. Доступные колонки в файле:</p>
+                <div class="flex flex-wrap gap-2 mb-4">${columns.map(c => `<span class="bg-dark-800 px-2 py-1 rounded text-xs text-dark-300">${c}</span>`).join('')}</div>
+                <div class="space-y-2">
+                    ${fields.map(f => `
+                    <div class="col-mapper">
+                        <span class="text-sm text-white w-32">${f.label}</span>
+                        <select id="map_${mp}_${f.key}">
+                            <option value="">— Не выбрано —</option>
+                            ${columns.map(c => `<option value="${c}" ${mapping[f.key] === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
                     </div>`).join('')}
                 </div>
-            </div>`).join('')}
+                <div class="flex gap-2 mt-6">
+                    <button onclick="applyColumnMapping('${mp}')" class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg text-sm transition">Применить и загрузить</button>
+                    <button onclick="closeModal()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition">Отмена</button>
+                </div>
+            </div>
         </div>
-
-        <div class="glass rounded-xl p-4 overflow-x-auto">
-            <h4 class="font-semibold text-white mb-3">Сводная таблица</h4>
-            <table class="w-full text-sm">
-                <thead class="bg-dark-800/50"><tr>
-                    <th class="text-left px-3 py-2 text-dark-400">Город</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Позиций</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Всего шт</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Коробов</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Новых</th>
-                    <th class="text-left px-3 py-2 text-dark-400">В обработке</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Этикетки</th>
-                    <th class="text-left px-3 py-2 text-dark-400">В коробах</th>
-                    <th class="text-left px-3 py-2 text-dark-400">Отгружены</th>
-                </tr></thead>
-                <tbody>
-                    ${cities.map(city => `
-                    <tr class="border-b border-dark-800">
-                        <td class="px-3 py-2 text-white font-medium">${city.name}</td>
-                        <td class="px-3 py-2">${city.items}</td>
-                        <td class="px-3 py-2 font-semibold text-primary-400">${city.totalQty}</td>
-                        <td class="px-3 py-2">${city.boxes.size}</td>
-                        <td class="px-3 py-2">${city.statuses['new'] || 0}</td>
-                        <td class="px-3 py-2">${city.statuses['processing'] || 0}</td>
-                        <td class="px-3 py-2">${city.statuses['labeled'] || 0}</td>
-                        <td class="px-3 py-2">${city.statuses['boxed'] || 0}</td>
-                        <td class="px-3 py-2">${city.statuses['shipped'] || 0}</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>`;
-
-    updateSteps(marketplace, 6);
+    </div>`;
+    container.innerHTML = html;
 }
 
-function exportReport(marketplace) {
-    const data = db.marketplace[marketplace].tzData;
-    const cityMap = {};
-    data.forEach(item => {
-        if (!cityMap[item.city]) cityMap[item.city] = { name: item.city, count: 0, totalQty: 0, statuses: {} };
-        cityMap[item.city].count++;
-        cityMap[item.city].totalQty += (item.count || item.quantity);
-        cityMap[item.city].statuses[item.status] = (cityMap[item.city].statuses[item.status] || 0) + 1;
+function applyColumnMapping(mp) {
+    const fields = ['name', 'sku', 'barcode', 'expiry', 'qty', 'city', 'quant'];
+    const mapping = {};
+    fields.forEach(f => {
+        const sel = document.getElementById(`map_${mp}_${f}`);
+        mapping[f] = sel ? sel.value : null;
     });
 
-    const rows = Object.values(cityMap).map(c => ({
-        'Город': c.name, 'Позиций': c.count, 'Всего шт': c.totalQty,
-        'Новых': c.statuses['new'] || 0, 'В обработке': c.statuses['processing'] || 0,
-        'Этикетки': c.statuses['labeled'] || 0, 'В коробах': c.statuses['boxed'] || 0, 'Отгружены': c.statuses['shipped'] || 0
-    }));
+    db.columnMapping[mp + 'FBO'] = mapping;
+    saveData();
 
+    const data = fboRawData[mp];
+    if (!data || data.length === 0) { showToast('Нет данных для загрузки', 'error'); return; }
+
+    const items = data.map((row, idx) => ({
+        id: genId('fbo') * 10000 + idx,
+        name: mapping.name ? (row[mapping.name] || '').toString().trim() : '',
+        sku: mapping.sku ? (row[mapping.sku] || '').toString().trim() : '',
+        barcode: mapping.barcode ? (row[mapping.barcode] || '').toString().trim() : '',
+        expiry: mapping.expiry ? (row[mapping.expiry] || '').toString().trim() : '',
+        qty: parseInt(row[mapping.qty]) || 1,
+        city: mapping.city ? (row[mapping.city] || '').toString().trim() : '',
+        quant: mapping.quant ? (row[mapping.quant] || '').toString().trim() : '',
+        status: 'new',
+        boxId: null,
+        labelPrinted: false,
+        createdAt: new Date().toISOString()
+    })).filter(item => item.name || item.sku || item.barcode);
+
+    if (mp === 'ozon') {
+        db.ozonFBO = [...db.ozonFBO, ...items];
+    } else {
+        db.wbFBO = [...db.wbFBO, ...items];
+    }
+
+    addOperation(`Загружено ${items.length} позиций в ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО`, 'fbo');
+    saveData();
+    closeModal();
+    renderFBOOrders(mp);
+    showToast(`Загружено ${items.length} позиций`);
+}
+
+// ==================== FBO ORDERS ====================
+function renderFBOOrders(mp) {
+    const orders = mp === 'ozon' ? db.ozonFBO : db.wbFBO;
+    const tbody = document.getElementById(mp + 'FBOTableBody');
+    if (!tbody) return;
+
+    // Populate filters
+    const cities = [...new Set(orders.map(o => o.city).filter(Boolean))];
+    const quants = [...new Set(orders.map(o => o.quant).filter(Boolean))];
+
+    const cityFilter = document.getElementById(mp + 'FBOCityFilter');
+    const quantFilter = document.getElementById(mp + 'FBOQuantFilter');
+
+    if (cityFilter) {
+        const currentVal = cityFilter.value;
+        cityFilter.innerHTML = '<option value="">Все города</option>' + cities.map(c => `<option value="${c}" ${currentVal === c ? 'selected' : ''}>${c}</option>`).join('');
+    }
+    if (quantFilter) {
+        const currentVal = quantFilter.value;
+        quantFilter.innerHTML = '<option value="">Все кванты спаек</option>' + quants.map(q => `<option value="${q}" ${currentVal === q ? 'selected' : ''}>${q}</option>`).join('');
+    }
+
+    const cityF = document.getElementById(mp + 'FBOCityFilter')?.value || '';
+    const quantF = document.getElementById(mp + 'FBOQuantFilter')?.value || '';
+    const statusF = document.getElementById(mp + 'FBOStatusFilter')?.value || '';
+    const search = document.getElementById(mp + 'FBOSearch')?.value?.toLowerCase() || '';
+
+    let filtered = orders;
+    if (cityF) filtered = filtered.filter(o => o.city === cityF);
+    if (quantF) filtered = filtered.filter(o => o.quant === quantF);
+    if (statusF) filtered = filtered.filter(o => o.status === statusF);
+    if (search) filtered = filtered.filter(o => o.name.toLowerCase().includes(search) || o.sku.toLowerCase().includes(search) || o.barcode.includes(search) || o.city.toLowerCase().includes(search));
+
+    tbody.innerHTML = filtered.map(o => `
+        <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
+            <td class="px-3 py-2"><input type="checkbox" class="fbo-check rounded bg-dark-800 border-dark-700" value="${o.id}"></td>
+            <td class="px-3 py-2 text-white text-sm max-w-[200px] truncate">${o.name}</td>
+            <td class="px-3 py-2 font-mono text-xs text-primary-400">${o.sku}</td>
+            <td class="px-3 py-2 font-mono text-xs">${o.barcode}</td>
+            <td class="px-3 py-2 text-xs">${o.expiry ? formatDateShort(o.expiry) : '-'}</td>
+            <td class="px-3 py-2 font-semibold text-white">${o.qty}</td>
+            <td class="px-3 py-2 text-sm"><i class="fas fa-map-marker-alt text-dark-500 mr-1"></i>${o.city || '-'}</td>
+            <td class="px-3 py-2 text-sm">${o.quant || '-'}</td>
+            <td class="px-3 py-2">${statusBadgeFBO(o.status)}</td>
+            <td class="px-3 py-2 text-xs">${o.boxId ? 'Короб #' + o.boxId : '-'}</td>
+            <td class="px-3 py-2">
+                <button onclick="printSingleFBOLabel('${mp}',${o.id})" class="text-green-400 hover:text-green-300 mr-1" title="Печать этикетки"><i class="fas fa-print"></i></button>
+                <select onchange="updateFBOStatus('${mp}',${o.id},this.value)" class="bg-dark-800 border border-dark-700 rounded px-1 py-1 text-xs text-white">
+                    <option value="new" ${o.status==='new'?'selected':''}>Новый</option>
+                    <option value="label_printed" ${o.status==='label_printed'?'selected':''}>Этикетка</option>
+                    <option value="in_box" ${o.status==='in_box'?'selected':''}>В коробе</option>
+                    <option value="shipped" ${o.status==='shipped'?'selected':''}>Отгружен</option>
+                </select>
+            </td>
+        </tr>`).join('') || '<tr><td colspan="11" class="px-3 py-8 text-center text-dark-500">Нет заказов</td></tr>';
+}
+
+function toggleAllFBO(mp, checked) {
+    document.querySelectorAll('.fbo-check').forEach(cb => cb.checked = checked);
+}
+
+function updateFBOStatus(mp, id, status) {
+    const list = mp === 'ozon' ? db.ozonFBO : db.wbFBO;
+    const item = list.find(o => o.id === id);
+    if (!item) return;
+    item.status = status;
+    addOperation(`Статус ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО #${id} → ${status}`, 'fbo');
+    saveData();
+}
+
+// ==================== FBO LABEL PRINTING ====================
+function printFBOLabels(mp) {
+    const selected = Array.from(document.querySelectorAll('.fbo-check:checked')).map(cb => parseInt(cb.value));
+    const orders = (mp === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => selected.length > 0 ? selected.includes(o.id) : true);
+
+    if (orders.length === 0) { showToast('Нет товаров для печати', 'error'); return; }
+
+    // Open print dialog with quantity selection
+    const container = document.getElementById('modalContainer');
+    let html = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Печать этикеток 58×40 — ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО</h3>
+                <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="space-y-2 max-h-64 overflow-y-auto mb-4">
+                    ${orders.map(o => `
+                    <div class="flex items-center gap-3 p-2 bg-dark-800 rounded-lg">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-white truncate">${o.name}</p>
+                            <p class="text-xs text-dark-500">${o.sku} | ${o.barcode} | ${o.city || '—'}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-dark-400">Кол-во:</span>
+                            <input type="number" id="labelQty_${o.id}" value="${o.qty}" min="1" class="w-16 bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm text-white text-center">
+                        </div>
+                    </div>`).join('')}
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="executeFBOLabelPrint('${mp}', [${orders.map(o => o.id).join(',')}])" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-print mr-1"></i>Печать</button>
+                    <button onclick="closeModal()" class="bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg text-sm transition">Отмена</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    container.innerHTML = html;
+}
+
+function executeFBOLabelPrint(mp, ids) {
+    const orders = (mp === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => ids.includes(o.id));
+    let labelsHtml = '';
+
+    orders.forEach(o => {
+        const qtyInput = document.getElementById(`labelQty_${o.id}`);
+        const qty = qtyInput ? parseInt(qtyInput.value) || 1 : o.qty;
+
+        for (let i = 0; i < qty; i++) {
+            const labelId = `lbl_${mp}_${o.id}_${i}`;
+            labelsHtml += `
+            <div style="width:58mm;height:40mm;padding:2mm;border:1px solid #000;font-family:monospace;font-size:8pt;page-break-after:always;color:#000;">
+                <div style="font-weight:bold;font-size:9pt;margin-bottom:2px;word-break:break-word;">${o.name}</div>
+                <div style="font-size:7pt;margin-bottom:2px;">Арт: ${o.sku}</div>
+                <div style="margin-bottom:2px;text-align:center;"><svg id="${labelId}"></svg></div>
+                <div style="font-size:7pt;text-align:center;">${o.barcode}</div>
+                ${o.expiry ? `<div style="font-size:6pt;margin-top:2px;">Годен до: ${formatDateShort(o.expiry)}</div>` : ''}
+                <div style="font-size:6pt;margin-top:1px;">${o.city || ''} | ${o.quant ? 'Квант: ' + o.quant : ''} | ${i + 1}/${qty}</div>
+            </div>`;
+        }
+
+        // Mark as printed
+        o.labelPrinted = true;
+        if (o.status === 'new') o.status = 'label_printed';
+    });
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html><head><title>Этикетки ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО</title>
+        <style>@media print{body{margin:0;}} body{background:#fff;}</style></head>
+        <body>${labelsHtml}
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+        <script>
+            ${orders.map(o => {
+                const qtyInput = document.getElementById(`labelQty_${o.id}`);
+                const qty = qtyInput ? parseInt(qtyInput.value) || 1 : o.qty;
+                let scripts = '';
+                for (let i = 0; i < qty; i++) {
+                    scripts += `JsBarcode('#lbl_${mp}_${o.id}_${i}','${o.barcode}',{width:1.2,height:22,displayValue:false});\n`;
+                }
+                return scripts;
+            }).join('')}
+            setTimeout(()=>window.print(),500);
+        <\/script></body></html>`);
+    printWindow.document.close();
+
+    saveData();
+    closeModal();
+    renderFBOOrders(mp);
+    showToast(`Печать ${orders.reduce((s, o) => s + (parseInt(document.getElementById(`labelQty_${o.id}`)?.value) || o.qty), 0)} этикеток`);
+}
+
+function printSingleFBOLabel(mp, id) {
+    executeFBOLabelPrint(mp, [id]);
+}
+
+// ==================== FBO REPORT ====================
+function generateFBOReport(mp) {
+    const orders = mp === 'ozon' ? db.ozonFBO : db.wbFBO;
+    const cityReport = {};
+    const statusReport = { new: 0, label_printed: 0, in_box: 0, shipped: 0 };
+
+    orders.forEach(o => {
+        if (o.city) {
+            if (!cityReport[o.city]) cityReport[o.city] = { count: 0, totalQty: 0, items: [] };
+            cityReport[o.city].count++;
+            cityReport[o.city].totalQty += o.qty;
+            cityReport[o.city].items.push(o);
+        }
+        statusReport[o.status] = (statusReport[o.status] || 0) + 1;
+    });
+
+    const container = document.getElementById('modalContainer');
+    let html = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Отчёт ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО</h3>
+                <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-4 gap-3">
+                    <div class="bg-dark-800 rounded-lg p-3 text-center"><p class="text-xs text-dark-500">Новые</p><p class="text-lg font-bold text-blue-400">${statusReport.new}</p></div>
+                    <div class="bg-dark-800 rounded-lg p-3 text-center"><p class="text-xs text-dark-500">Этикетка</p><p class="text-lg font-bold text-yellow-400">${statusReport.label_printed}</p></div>
+                    <div class="bg-dark-800 rounded-lg p-3 text-center"><p class="text-xs text-dark-500">В коробе</p><p class="text-lg font-bold text-purple-400">${statusReport.in_box}</p></div>
+                    <div class="bg-dark-800 rounded-lg p-3 text-center"><p class="text-xs text-dark-500">Отгружен</p><p class="text-lg font-bold text-green-400">${statusReport.shipped}</p></div>
+                </div>
+                <h4 class="font-semibold text-white">По городам</h4>
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    ${Object.entries(cityReport).map(([city, data]) => `
+                    <div class="bg-dark-800 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-semibold text-white"><i class="fas fa-map-marker-alt text-primary-500 mr-2"></i>${city}</span>
+                            <span class="text-sm text-primary-400">${data.totalQty} шт (${data.count} позиций)</span>
+                        </div>
+                        <div class="text-xs text-dark-500">${data.items.map(i => `${i.name} ×${i.qty}`).join(', ')}</div>
+                    </div>`).join('')}
+                </div>
+                <button onclick="exportFBOReport('${mp}')" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg text-sm transition"><i class="fas fa-file-excel mr-1"></i>Экспорт в Excel</button>
+            </div>
+        </div>
+    </div>`;
+    container.innerHTML = html;
+}
+
+function exportFBOReport(mp) {
+    const orders = mp === 'ozon' ? db.ozonFBO : db.wbFBO;
+    const rows = orders.map(o => ({
+        'Наименование': o.name, 'Артикул': o.sku, 'Баркод': o.barcode,
+        'Годен до': o.expiry, 'Количество': o.qty, 'Город': o.city,
+        'Квант спаек': o.quant, 'Статус': o.status, 'Короб': o.boxId || ''
+    }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
-    XLSX.writeFile(wb, `report_${marketplace}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, `${mp}FBO`);
+    XLSX.writeFile(wb, `${mp}FBO_report_${new Date().toISOString().split('T')[0]}.xlsx`);
     showToast('Отчёт экспортирован');
 }
 
-// ==================== RENDER FUNCTIONS ====================
-function renderOzon() {
-    const mp = db.marketplace.ozon;
-    if (mp.tzData.length > 0) {
-        currentStep.ozon = 3;
-        renderFilters('ozon');
-        updateSteps('ozon', 3);
-    }
+// ==================== FBO BOX ASSIGNMENT ====================
+function openBoxAssignmentModal(mp) {
+    const orders = (mp === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => o.status === 'new' || o.status === 'label_printed');
+
+    const container = document.getElementById('modalContainer');
+    let html = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Раскладка по коробам — ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБО</h3>
+                <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <button onclick="addBoxForFBO('${mp}')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-plus mr-1"></i>Новый короб</button>
+                    <span class="text-sm text-dark-400">Выберите товары и назначьте короб</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-sm font-semibold text-white mb-2">Товары</h4>
+                        <div class="bg-dark-800 rounded-lg p-2 max-h-80 overflow-y-auto space-y-1">
+                            ${orders.map(o => `
+                            <div class="flex items-center gap-2 p-2 bg-dark-900 rounded">
+                                <input type="checkbox" class="fbo-box-check rounded bg-dark-800 border-dark-700" value="${o.id}">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-white truncate">${o.name}</p>
+                                    <p class="text-[10px] text-dark-500">${o.sku} | ${o.qty} шт | ${o.city || ''}</p>
+                                </div>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white mb-2">Короба</h4>
+                        <div class="bg-dark-800 rounded-lg p-2 max-h-80 overflow-y-auto space-y-1" id="fboBoxList">
+                            ${renderBoxOptions(mp)}
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <select id="fboBoxSelect" class="flex-1 bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                                ${db.boxes.map(b => `<option value="${b.id}">Короб #${b.id} (${b.city || 'Без города'})</option>`).join('')}
+                            </select>
+                            <button onclick="assignToFBOBox('${mp}')" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    container.innerHTML = html;
 }
 
-function renderWb() {
-    const mp = db.marketplace.wb;
-    if (mp.tzData.length > 0) {
-        currentStep.wb = 3;
-        renderFilters('wb');
-        updateSteps('wb', 3);
-    }
+function renderBoxOptions(mp) {
+    if (db.boxes.length === 0) return '<p class="text-xs text-dark-500 text-center py-4">Нет коробов</p>';
+    return db.boxes.map(b => {
+        const items = (mp === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => o.boxId === b.id);
+        return `
+        <div class="p-2 bg-dark-900 rounded ${items.length > 0 ? 'border border-green-500/30' : ''}">
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-white font-semibold">Короб #${b.id}</span>
+                <span class="text-[10px] text-dark-500">${items.length} поз. | ${b.city || '—'}</span>
+            </div>
+            <div class="text-[10px] text-dark-500 mt-1">${items.map(i => i.name).slice(0, 3).join(', ')}${items.length > 3 ? '...' : ''}</div>
+        </div>`;
+    }).join('');
 }
 
-function renderDashboard() {
-    const ozonCount = db.marketplace.ozon.tzData.length;
-    const wbCount = db.marketplace.wb.tzData.length;
+function addBoxForFBO(mp) {
+    const city = prompt('Город назначения короба:') || '';
+    const box = {
+        id: genId('box'),
+        city: city,
+        marketplace: mp,
+        items: [],
+        createdAt: new Date().toISOString()
+    };
+    db.boxes.push(box);
+    saveData();
+    // Refresh modal
+    const boxList = document.getElementById('fboBoxList');
+    if (boxList) boxList.innerHTML = renderBoxOptions(mp);
+    const boxSelect = document.getElementById('fboBoxSelect');
+    if (boxSelect) boxSelect.innerHTML = db.boxes.map(b => `<option value="${b.id}">Короб #${b.id} (${b.city || 'Без города'})</option>`).join('');
+    showToast(`Короб #${box.id} создан`);
+}
 
-    const allData = [...db.marketplace.ozon.tzData, ...db.marketplace.wb.tzData];
-    const cities = [...new Set(allData.map(d => d.city))];
-    const boxes = db.marketplace.ozon.boxes.length + db.marketplace.wb.boxes.length;
+function assignToFBOBox(mp) {
+    const selected = Array.from(document.querySelectorAll('.fbo-box-check:checked')).map(cb => parseInt(cb.value));
+    const boxId = parseInt(document.getElementById('fboBoxSelect')?.value);
+    if (!boxId || selected.length === 0) { showToast('Выберите товары и короб', 'error'); return; }
 
-    document.getElementById('dashOzonCount').textContent = ozonCount;
-    document.getElementById('dashWbCount').textContent = wbCount;
-    document.getElementById('dashCities').textContent = cities.length;
-    document.getElementById('dashBoxes').textContent = boxes;
-
-    // Cities report
-    const cityMap = {};
-    allData.forEach(item => {
-        if (!cityMap[item.city]) cityMap[item.city] = { total: 0, ozon: 0, wb: 0 };
-        cityMap[item.city].total += (item.count || item.quantity);
-        if (db.marketplace.ozon.tzData.includes(item)) cityMap[item.city].ozon += (item.count || item.quantity);
-        if (db.marketplace.wb.tzData.includes(item)) cityMap[item.city].wb += (item.count || item.quantity);
+    const orders = mp === 'ozon' ? db.ozonFBO : db.wbFBO;
+    selected.forEach(id => {
+        const item = orders.find(o => o.id === id);
+        if (item) {
+            item.boxId = boxId;
+            item.status = 'in_box';
+        }
     });
 
-    document.getElementById('dashCitiesReport').innerHTML = Object.entries(cityMap).sort((a, b) => b[1].total - a[1].total).map(([city, data]) => `
-        <div class="flex items-center justify-between py-2 border-b border-dark-800">
-            <span class="text-white text-sm">${city}</span>
-            <div class="flex gap-4 text-xs">
-                <span class="text-blue-400">Ozon: ${data.ozon}</span>
-                <span class="text-purple-400">WB: ${data.wb}</span>
-                <span class="text-primary-400 font-semibold">Всего: ${data.total}</span>
-            </div>
-        </div>`).join('') || '<p class="text-dark-500 text-center py-4">Нет данных</p>';
+    const box = db.boxes.find(b => b.id === boxId);
+    if (box) {
+        box.items = [...box.items, ...selected];
+        box.marketplace = mp;
+    }
 
-    // Operations
-    const allOps = [
-        ...db.marketplace.ozon.operations.map(o => ({ ...o, marketplace: 'Ozon' })),
-        ...db.marketplace.wb.operations.map(o => ({ ...o, marketplace: 'WB' }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+    addOperation(`${selected.length} позиций назначены в короб #${boxId} (${mp})`, 'box');
+    saveData();
+    closeModal();
+    renderFBOOrders(mp);
+    showToast(`${selected.length} позиций в короб #${boxId}`);
+}
 
-    document.getElementById('dashOperations').innerHTML = allOps.map(op => `
-        <div class="flex items-center gap-3 p-2 bg-dark-800/50 rounded-lg">
-            <div class="w-6 h-6 rounded-full ${op.marketplace === 'Ozon' ? 'bg-blue-500/20' : 'bg-purple-500/20'} flex items-center justify-center">
-                <i class="fas ${op.marketplace === 'Ozon' ? 'fa-store text-blue-400' : 'fa-store text-purple-400'} text-xs"></i>
+// ==================== FBS AUTO-UPDATE ====================
+let fbsUpdateTimers = { ozon: null, wb: null };
+let fbsCountdowns = { ozon: 30, wb: 30 };
+
+function connectOzonFBS() {
+    const url = document.getElementById('ozonFBSApiUrl').value || 'https://api-seller.ozon.ru';
+    const key = document.getElementById('ozonFBSApiKey').value;
+    db.settings.ozonFBSApiUrl = url;
+    db.settings.ozonFBSApiKey = key;
+    saveData();
+
+    document.getElementById('btnConnectOzonFBS').innerHTML = '<i class="fas fa-check mr-1"></i>Подключено';
+    document.getElementById('btnConnectOzonFBS').classList.replace('bg-ozon-500', 'bg-green-600');
+    document.getElementById('btnConnectOzonFBS').classList.replace('hover:bg-ozon-600', 'hover:bg-green-500');
+
+    showToast('Озон ФБС подключен');
+    startFBSAutoUpdate('ozon');
+}
+
+function connectWbFBS() {
+    const url = document.getElementById('wbFBSApiUrl').value || 'https://suppliers-api.wildberries.ru';
+    const key = document.getElementById('wbFBSApiKey').value;
+    db.settings.wbFBSApiUrl = url;
+    db.settings.wbFBSApiKey = key;
+    saveData();
+
+    document.getElementById('btnConnectWbFBS').innerHTML = '<i class="fas fa-check mr-1"></i>Подключено';
+    document.getElementById('btnConnectWbFBS').classList.replace('bg-wb-500', 'bg-green-600');
+    document.getElementById('btnConnectWbFBS').classList.replace('hover:bg-wb-600', 'hover:bg-green-500');
+
+    showToast('ВБ ФБС подключен');
+    startFBSAutoUpdate('wb');
+}
+
+function startFBSAutoUpdate(mp) {
+    if (fbsUpdateTimers[mp]) clearInterval(fbsUpdateTimers[mp]);
+    fbsCountdowns[mp] = 30;
+
+    fbsUpdateTimers[mp] = setInterval(() => {
+        fbsCountdowns[mp]--;
+        const bar = document.getElementById(mp + 'FBSProgressBar');
+        const nextText = document.getElementById(mp + 'FBSNextUpdate');
+        const icon = document.getElementById(mp + 'FBSRefreshIcon');
+
+        if (bar) bar.style.width = ((30 - fbsCountdowns[mp]) / 30 * 100) + '%';
+        if (nextText) nextText.textContent = `Следующее обновление через ${fbsCountdowns[mp]} сек`;
+        if (icon && fbsCountdowns[mp] <= 3) icon.classList.add('animate-spin');
+
+        if (fbsCountdowns[mp] <= 0) {
+            fbsCountdowns[mp] = 30;
+            if (icon) icon.classList.remove('animate-spin');
+            syncFBSData(mp);
+        }
+    }, 1000);
+}
+
+function syncOzonFBS() { syncFBSData('ozon'); }
+function syncWbFBS() { syncFBSData('wb'); }
+
+function syncFBSData(mp) {
+    const apiUrl = mp === 'ozon' ? db.settings.ozonFBSApiUrl : db.settings.wbFBSApiUrl;
+    const apiKey = mp === 'ozon' ? db.settings.ozonFBSApiKey : db.settings.wbFBSApiKey;
+
+    // Simulate API call (in production, this would be a real fetch)
+    const icon = document.getElementById(mp + 'FBSRefreshIcon');
+    if (icon) { icon.classList.add('animate-spin'); setTimeout(() => icon.classList.remove('animate-spin'), 1000); }
+
+    // Generate simulated orders if none exist
+    const currentOrders = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+    if (currentOrders.length === 0) {
+        generateSampleFBSOrders(mp);
+    }
+
+    // Simulate fetching new orders
+    const newOrdersCount = Math.floor(Math.random() * 3);
+    for (let i = 0; i < newOrdersCount; i++) {
+        const newOrder = generateFBSOrder(mp);
+        const list = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+        // Avoid duplicates
+        if (!list.find(o => o.orderNumber === newOrder.orderNumber)) {
+            list.unshift(newOrder);
+        }
+    }
+
+    saveData();
+    if (mp === 'ozon') renderOzonFBS(); else renderWbFBS();
+    addOperation(`Синхронизация ${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБС: +${newOrdersCount} заказов`, 'fbs');
+}
+
+function generateFBSOrder(mp) {
+    const statuses = ['new', 'awaiting_packaging', 'awaiting_deliver'];
+    const products = db.products.length > 0 ? db.products : [
+        { sku: 'SKU-001', name: 'Товар 1', barcode: '20000000001' },
+        { sku: 'SKU-002', name: 'Товар 2', barcode: '20000000002' },
+        { sku: 'SKU-003', name: 'Товар 3', barcode: '20000000003' }
+    ];
+    const prod = products[Math.floor(Math.random() * products.length)];
+    const orderNum = mp === 'ozon' ? 'OZ-' + Date.now().toString().slice(-8) : 'WB-' + Date.now().toString().slice(-8);
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + Math.floor(Math.random() * 5) + 1);
+
+    return {
+        orderNumber: orderNum,
+        productName: prod.name,
+        sku: prod.sku,
+        barcode: prod.barcode,
+        qty: Math.floor(Math.random() * 5) + 1,
+        price: Math.floor(Math.random() * 5000) + 100,
+        status: status,
+        deadline: deadline.toISOString(),
+        characteristics: { weight: (Math.random() * 2 + 0.1).toFixed(2) + ' кг', dimensions: `${Math.floor(Math.random() * 30 + 5)}x${Math.floor(Math.random() * 20 + 5)}x${Math.floor(Math.random() * 15 + 3)} см`, color: ['Красный', 'Синий', 'Чёрный', 'Белый'][Math.floor(Math.random() * 4)], brand: ['BrandA', 'BrandB', 'BrandC'][Math.floor(Math.random() * 3)] },
+        createdAt: new Date().toISOString()
+    };
+}
+
+function generateSampleFBSOrders(mp) {
+    const list = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+    for (let i = 0; i < 8; i++) {
+        list.push(generateFBSOrder(mp));
+    }
+    saveData();
+}
+
+function renderFBSOrders(mp) {
+    const orders = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+    const tbody = document.getElementById(mp + 'FBSTableBody');
+    if (!tbody) return;
+
+    const counts = { new: 0, awaiting_packaging: 0, awaiting_deliver: 0, delivered: 0, cancelled: 0 };
+    orders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+
+    document.getElementById(mp + 'FBSNew').textContent = counts.new;
+    document.getElementById(mp + 'FBSAwaits').textContent = counts.awaiting_packaging;
+    document.getElementById(mp + 'FBSShipped').textContent = counts.delivered;
+
+    tbody.innerHTML = orders.map(o => `
+        <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
+            <td class="px-3 py-2 font-mono text-xs text-${mp === 'ozon' ? 'blue' : 'pink'}-400">${o.orderNumber}</td>
+            <td class="px-3 py-2 text-white text-sm max-w-[180px] truncate">${o.productName}</td>
+            <td class="px-3 py-2 font-mono text-xs text-primary-400">${o.sku}</td>
+            <td class="px-3 py-2 font-semibold text-white">${o.qty}</td>
+            <td class="px-3 py-2 text-sm">${o.price}₽</td>
+            <td class="px-3 py-2">${statusBadgeFBS(o.status)}</td>
+            <td class="px-3 py-2 text-xs">${formatDateShort(o.deadline)}</td>
+            <td class="px-3 py-2">
+                <button onclick="viewProductCard('${mp}','${o.orderNumber}')" class="text-blue-400 hover:text-blue-300 mr-1" title="Карточка товара"><i class="fas fa-id-card"></i></button>
+                <select onchange="updateFBSStatus('${mp}','${o.orderNumber}',this.value)" class="bg-dark-800 border border-dark-700 rounded px-1 py-1 text-xs text-white">
+                    <option value="new" ${o.status==='new'?'selected':''}>Новый</option>
+                    <option value="awaiting_packaging" ${o.status==='awaiting_packaging'?'selected':''}>Сборка</option>
+                    <option value="awaiting_deliver" ${o.status==='awaiting_deliver'?'selected':''}>Ожидает</option>
+                    <option value="delivered" ${o.status==='delivered'?'selected':''}>Доставлен</option>
+                    <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Отменён</option>
+                </select>
+            </td>
+        </tr>`).join('') || '<tr><td colspan="8" class="px-3 py-8 text-center text-dark-500">Нет заказов</td></tr>';
+}
+
+function renderOzonFBS() { renderFBSOrders('ozon'); }
+function renderWbFBS() { renderFBSOrders('wb'); }
+
+function updateFBSStatus(mp, orderNum, status) {
+    const list = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+    const order = list.find(o => o.orderNumber === orderNum);
+    if (!order) return;
+    order.status = status;
+    addOperation(`${mp === 'ozon' ? 'Озон' : 'ВБ'} ФБС #${orderNum} → ${status}`, 'fbs');
+    saveData();
+    if (mp === 'ozon') renderOzonFBS(); else renderWbFBS();
+}
+
+// ==================== PRODUCT CARD MODAL ====================
+function viewProductCard(mp, orderNum) {
+    const list = mp === 'ozon' ? db.ozonFBS : db.wbFBS;
+    const order = list.find(o => o.orderNumber === orderNum);
+    if (!order) return;
+
+    const container = document.getElementById('modalContainer');
+    container.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Карточка товара</h3>
+                <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-            <div class="flex-1 min-w-0"><p class="text-sm text-dark-300 truncate">${op.text}</p><p class="text-xs text-dark-600">${new Date(op.date).toLocaleString('ru-RU')}</p></div>
-        </div>`).join('') || '<p class="text-dark-500 text-center py-4">Нет операций</p>';
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div><span class="text-xs text-dark-500">Заказ:</span><p class="text-sm text-white font-mono">${order.orderNumber}</p></div>
+                    <div><span class="text-xs text-dark-500">Товар:</span><p class="text-sm text-white">${order.productName}</p></div>
+                    <div><span class="text-xs text-dark-500">Артикул:</span><p class="text-sm text-white font-mono">${order.sku}</p></div>
+                    <div><span class="text-xs text-dark-500">Баркод:</span><p class="text-sm text-white font-mono">${order.barcode}</p></div>
+                    <div><span class="text-xs text-dark-500">Количество:</span><p class="text-sm text-white">${order.qty}</p></div>
+                    <div><span class="text-xs text-dark-500">Цена:</span><p class="text-sm text-white">${order.price}₽</p></div>
+                    <div><span class="text-xs text-dark-500">Статус:</span>${statusBadgeFBS(order.status)}</div>
+                    <div><span class="text-xs text-dark-500">Срок:</span><p class="text-sm text-white">${formatDateShort(order.deadline)}</p></div>
+                </div>
+                <h4 class="text-sm font-semibold text-white mb-2">Характеристики</h4>
+                <div class="bg-dark-800 rounded-lg p-3 space-y-1 text-sm">
+                    ${order.characteristics ? Object.entries(order.characteristics).map(([k, v]) => `
+                    <div class="flex justify-between"><span class="text-dark-400">${k}</span><span class="text-white">${v}</span></div>`).join('') : '<p class="text-dark-500 text-xs">Нет характеристик</p>'}
+                </div>
+                <div class="mt-4 p-3 bg-dark-800 rounded-lg">
+                    <h5 class="text-xs text-dark-500 mb-2">Остаток на складе</h5>
+                    ${(() => {
+                        const prod = db.products.find(p => p.sku === order.sku || p.barcode === order.barcode);
+                        if (prod) return `<p class="text-sm text-white">${prod.name}: <span class="text-green-400 font-semibold">${prod.quantity} шт</span> (ячейка: ${prod.cell || '—'})</p>`;
+                        return '<p class="text-sm text-red-400">Товар не найден на складе</p>';
+                    })()}
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ==================== WAREHOUSE ====================
+function renderWarehouse() {
+    const tbody = document.getElementById('warehouseTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = db.products.map(p => {
+        const charStr = p.characteristics ? Object.entries(p.characteristics).map(([k,v]) => `${k}: ${v}`).join('; ') : '';
+        return `
+        <tr class="border-b border-dark-800 hover:bg-dark-800/30 transition">
+            <td class="px-3 py-2 font-mono text-sm text-primary-400">${p.sku}</td>
+            <td class="px-3 py-2 text-white">${p.name}</td>
+            <td class="px-3 py-2 font-mono text-xs">${p.barcode}</td>
+            <td class="px-3 py-2 font-semibold ${p.quantity <= 5 ? 'text-red-400' : 'text-white'}">${p.quantity}</td>
+            <td class="px-3 py-2 text-sm">${p.cell || '-'}</td>
+            <td class="px-3 py-2 text-sm">${p.expiry ? formatDateShort(p.expiry) : '-'}</td>
+            <td class="px-3 py-2 text-xs text-dark-400 max-w-[200px] truncate">${charStr || '-'}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="7" class="px-3 py-8 text-center text-dark-500">Нет товаров</td></tr>';
+}
+
+// ==================== BOXES ====================
+function renderBoxes() {
+    const container = document.getElementById('boxesGrid');
+    if (!container) return;
+
+    if (db.boxes.length === 0) {
+        container.innerHTML = '<div class="col-span-4 text-center text-dark-500 py-8">Нет коробов. Создайте короб из раздела ФБО.</div>';
+        return;
+    }
+
+    container.innerHTML = db.boxes.map(b => {
+        const mpOrders = (b.marketplace === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => o.boxId === b.id);
+        const totalQty = mpOrders.reduce((s, o) => s + o.qty, 0);
+        const colors = b.marketplace === 'ozon' ? 'border-blue-500' : 'border-pink-500';
+        const iconColor = b.marketplace === 'ozon' ? 'text-blue-500' : 'text-pink-500';
+        const label = b.marketplace === 'ozon' ? 'Озон' : 'ВБ';
+
+        return `
+        <div class="glass rounded-xl p-4 border-t-4 ${colors} card-hover">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-box-open ${iconColor} text-lg"></i>
+                    <span class="font-semibold text-white">Короб #${b.id}</span>
+                </div>
+                <span class="text-xs bg-dark-800 px-2 py-1 rounded text-dark-400">${label}</span>
+            </div>
+            <div class="space-y-2 text-sm mb-3">
+                <div class="flex justify-between"><span class="text-dark-500">Город:</span><span class="text-white">${b.city || '—'}</span></div>
+                <div class="flex justify-between"><span class="text-dark-500">Позиций:</span><span class="text-white">${mpOrders.length}</span></div>
+                <div class="flex justify-between"><span class="text-dark-500">Всего шт:</span><span class="text-white">${totalQty}</span></div>
+            </div>
+            <div class="bg-dark-800 rounded-lg p-2 max-h-24 overflow-y-auto text-xs space-y-1">
+                ${mpOrders.map(o => `<div class="flex justify-between"><span class="text-dark-400 truncate flex-1">${o.name}</span><span class="text-white ml-2">×${o.qty}</span></div>`).join('') || '<p class="text-dark-600 text-center">Пусто</p>'}
+            </div>
+            <div class="mt-3 flex gap-2">
+                <button onclick="printBoxLabel(${b.id})" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-1 rounded text-xs transition"><i class="fas fa-print mr-1"></i>Этикетка</button>
+                <button onclick="markBoxShipped(${b.id})" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1 rounded text-xs transition"><i class="fas fa-truck mr-1"></i>Отгрузить</button>
+                <button onclick="deleteBox(${b.id})" class="bg-red-600/20 text-red-400 px-2 py-1 rounded text-xs hover:bg-red-600/30"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function addNewBox() {
+    const city = prompt('Город назначения:') || '';
+    const mp = confirm('Озон ФБО? (Отмена = ВБ ФБО)') ? 'ozon' : 'wb';
+    const box = { id: genId('box'), city, marketplace: mp, items: [], createdAt: new Date().toISOString() };
+    db.boxes.push(box);
+    saveData(); renderBoxes();
+    showToast(`Короб #${box.id} создан`);
+}
+
+function printBoxLabel(boxId) {
+    const box = db.boxes.find(b => b.id === boxId);
+    if (!box) return;
+    const mpOrders = (box.marketplace === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => o.boxId === boxId);
+    const totalQty = mpOrders.reduce((s, o) => s + o.qty, 0);
+
+    const printWindow = window.open('', '_blank');
+    const labelId = 'boxLabelBC';
+    printWindow.document.write(`
+        <html><head><title>Короб #${box.id}</title>
+        <style>body{font-family:Arial;margin:0;padding:10px;}.label{width:100mm;height:150mm;border:2px solid #000;padding:5mm;}
+        h2{margin:0 0 5px;font-size:16pt;}table{width:100%;border-collapse:collapse;margin-top:5px;}th,td{border:1px solid #333;padding:3px;font-size:8pt;text-align:left;}th{background:#f0f0f0;}</style></head>
+        <body><div class="label">
+        <h2>Короб #${box.id}</h2>
+        <p><strong>Маркетплейс:</strong> ${box.marketplace === 'ozon' ? 'Озон ФБО' : 'ВБ ФБО'}</p>
+        <p><strong>Город:</strong> ${box.city || '—'}</p>
+        <p><strong>Позиций:</strong> ${mpOrders.length} | <strong>Всего:</strong> ${totalQty} шт</p>
+        <table><tr><th>Товар</th><th>Артикул</th><th>Кол-во</th></tr>
+        ${mpOrders.map(o => `<tr><td>${o.name}</td><td>${o.sku}</td><td>${o.qty}</td></tr>`).join('')}
+        </table>
+        <div style="margin-top:10px;text-align:center;"><svg id="${labelId}"></svg></div>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+        <script>JsBarcode('#${labelId}','BOX-${box.id}',{width:2,height:40,displayValue:true});setTimeout(()=>window.print(),500);<\/script>
+        </div></body></html>`);
+    printWindow.document.close();
+}
+
+function markBoxShipped(boxId) {
+    const box = db.boxes.find(b => b.id === boxId);
+    if (!box) return;
+    const mpOrders = (box.marketplace === 'ozon' ? db.ozonFBO : db.wbFBO).filter(o => o.boxId === boxId);
+    mpOrders.forEach(o => o.status = 'shipped');
+    addOperation(`Короб #${boxId} (${box.city}) отгружен`, 'box');
+    saveData(); renderBoxes();
+    showToast(`Короб #${boxId} отгружен`);
+}
+
+function deleteBox(boxId) {
+    if (!confirm('Удалить короб?')) return;
+    const mpOrders = (db.ozonFBO.filter(o => o.boxId === boxId)).concat(db.wbFBO.filter(o => o.boxId === boxId));
+    mpOrders.forEach(o => { o.boxId = null; if (o.status === 'shipped') o.status = 'label_printed'; });
+    db.boxes = db.boxes.filter(b => b.id !== boxId);
+    saveData(); renderBoxes();
+    showToast('Короб удалён', 'info');
 }
 
 // ==================== SETTINGS ====================
 function saveSettings() {
-    db.settings.warehouseName = document.getElementById('settingWarehouseName').value;
-    db.settings.labelWidth = parseInt(document.getElementById('settingLabelWidth').value) || 58;
-    db.settings.labelHeight = parseInt(document.getElementById('settingLabelHeight').value) || 40;
+    db.settings.companyName = document.getElementById('settingCompanyName').value;
+    db.settings.address = document.getElementById('settingAddress').value;
     saveData();
     showToast('Настройки сохранены');
 }
 
 function loadSettings() {
-    document.getElementById('settingWarehouseName').value = db.settings.warehouseName || '';
-    document.getElementById('settingLabelWidth').value = db.settings.labelWidth || 58;
-    document.getElementById('settingLabelHeight').value = db.settings.labelHeight || 40;
+    document.getElementById('settingCompanyName').value = db.settings.companyName || '';
+    document.getElementById('settingAddress').value = db.settings.address || '';
+    document.getElementById('ozonFBSApiUrl').value = db.settings.ozonFBSApiUrl || '';
+    document.getElementById('ozonFBSApiKey').value = db.settings.ozonFBSApiKey || '';
+    document.getElementById('wbFBSApiUrl').value = db.settings.wbFBSApiUrl || '';
+    document.getElementById('wbFBSApiKey').value = db.settings.wbFBSApiKey || '';
 }
 
+// ==================== DATA EXPORT/IMPORT ====================
 function exportAllData() {
-    const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+    const data = JSON.stringify(db, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `fulfillpro_mp_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.href = url; a.download = `fulfillpro_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click(); URL.revokeObjectURL(url);
     showToast('Данные экспортированы');
 }
 
-function importData(e) {
+function importJsonData(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(ev) {
         try {
-            db = JSON.parse(ev.target.result);
+            const imported = JSON.parse(ev.target.result);
+            db = { ...getDefaultData(), ...imported };
             saveData(); initApp();
             showToast('Данные импортированы');
-        } catch(err) { showToast('Ошибка импорта', 'error'); }
+        } catch(err) { showToast('Ошибка импорта: ' + err.message, 'error'); }
     };
     reader.readAsText(file);
+    e.target.value = '';
 }
 
-// ==================== CLOCK ====================
-function updateClock() {
-    const el = document.getElementById('headerTime');
-    if (el) el.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+function resetAllData() {
+    if (!confirm('ВНИМАНИЕ: Все данные будут удалены. Продолжить?')) return;
+    if (!confirm('Вы уверены?')) return;
+    localStorage.removeItem(DB_KEY);
+    db = getDefaultData(); saveData(); initApp();
+    showToast('Все данные сброшены', 'info');
+}
+
+// ==================== MODAL CLOSE ====================
+function closeModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('modalContainer').innerHTML = '';
+}
+
+// ==================== PRODUCT ADD ====================
+function openModal(type) {
+    if (type === 'addProduct') {
+        document.getElementById('modalContainer').innerHTML = `
+        <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal-content animate-slideUp" onclick="event.stopPropagation()">
+                <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white">Добавить товар</h3>
+                    <button onclick="closeModal()" class="text-dark-400 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <form onsubmit="saveProduct(event)" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm text-dark-400 mb-1">Артикул *</label><input type="text" name="sku" required class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                        <div><label class="block text-sm text-dark-400 mb-1">Название *</label><input type="text" name="name" required class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                    </div>
+                    <div><label class="block text-sm text-dark-400 mb-1">Баркод</label><input type="text" name="barcode" value="200${String(Math.floor(Math.random()*90000000)).padStart(8,'0')}" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm text-dark-400 mb-1">Количество</label><input type="number" name="quantity" value="0" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                        <div><label class="block text-sm text-dark-400 mb-1">Ячейка</label><input type="text" name="cell" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                    </div>
+                    <div><label class="block text-sm text-dark-400 mb-1">Срок годности</label><input type="date" name="expiry" class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></div>
+                    <div><label class="block text-sm text-dark-400 mb-1">Характеристики (JSON)</label><textarea name="characteristics" rows="2" placeholder='{"weight":"0.5 кг","color":"Красный"}' class="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"></textarea></div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg text-sm transition">Сохранить</button>
+                        <button type="button" onclick="closeModal()" class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg text-sm transition">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+    } else if (type === 'ozonFBOColumnMap') {
+        // Trigger file select if no raw data
+        if (!fboRawData.ozon) {
+            document.getElementById('ozonFBOFile').click();
+        } else {
+            const columns = Object.keys(fboRawData.ozon[0]);
+            const mapping = db.columnMapping.ozonFBO;
+            openColumnMappingModal('ozon', columns, mapping);
+        }
+    } else if (type === 'wbFBOColumnMap') {
+        if (!fboRawData.wb) {
+            document.getElementById('wbFBOFile').click();
+        } else {
+            const columns = Object.keys(fboRawData.wb[0]);
+            const mapping = db.columnMapping.wbFBO;
+            openColumnMappingModal('wb', columns, mapping);
+        }
+    } else if (type === 'ozonFBOBoxAssign') {
+        openBoxAssignmentModal('ozon');
+    } else if (type === 'wbFBOBoxAssign') {
+        openBoxAssignmentModal('wb');
+    }
+}
+
+async function saveProduct(e) {
+    e.preventDefault();
+    const form = e.target;
+    let characteristics = {};
+    try { characteristics = JSON.parse(form.characteristics.value || '{}'); } catch(err) {}
+
+    const product = {
+        id: genId('product'), sku: form.sku.value, name: form.name.value,
+        barcode: form.barcode.value, quantity: parseInt(form.quantity.value) || 0,
+        cell: form.cell.value, expiry: form.expiry.value, characteristics: characteristics,
+        createdAt: new Date().toISOString()
+    };
+
+    db.products.push(product);
+    if (product.cell) db.warehouseCells[product.cell] = (db.warehouseCells[product.cell] || 0) + product.quantity;
+    saveData(); closeModal(); renderWarehouse();
+    showToast('Товар добавлен');
 }
 
 // ==================== INIT ====================
 function initApp() {
+    renderDashboard();
     loadSettings();
-    navigate('ozon');
+
+    // Start auto-update if API keys are set
+    if (db.settings.ozonFBSApiKey) startFBSAutoUpdate('ozon');
+    if (db.settings.wbFBSApiKey) startFBSAutoUpdate('wb');
 }
 
 // ==================== STARTUP ====================
@@ -1264,9 +1503,9 @@ window.addEventListener('load', () => {
         } else {
             document.getElementById('loginScreen').classList.remove('hidden');
         }
-    }, 1800);
+    }, 1500);
 
-    setInterval(updateClock, 1000);
+    updateClock();
 });
 </script>
 </body>
