@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Этикетки ТЗ 58x40 | Заказ №47</title>
+    <title>Этикетки ТЗ 58x40 | Универсальный загрузчик</title>
     <!-- Библиотеки -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -40,8 +40,6 @@
             #print-area, #print-area * { visibility: visible; }
             #print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
             
-            /* Сетка для листа А4, если печатаете на обычном принтере для нарезки, 
-               или просто поток этикеток для термопринтера */
             .label-grid { 
                 display: flex; 
                 flex-direction: column; 
@@ -52,50 +50,49 @@
             .label { 
                 width: 58mm; 
                 height: 40mm; 
-                border: 1px dotted #ccc; /* Граница для визуализации, на термопринтере можно убрать */
+                border: 1px dotted #ccc; /* Граница для визуализации */
                 padding: 2mm; 
                 box-sizing: border-box; 
                 font-family: Arial, sans-serif; 
                 display: flex; 
                 flex-direction: column; 
                 justify-content: space-between; 
-                page-break-after: always; /* Разрыв страницы после каждой этикетки для термопринтера */
+                page-break-after: always; /* Разрыв страницы после каждой этикетки */
                 background: white; 
                 overflow: hidden;
                 position: relative;
             }
 
-            /* Убираем разрыв страницы для последней этикетки, чтобы не печатать пустой лист */
             .label:last-child { page-break-after: auto; }
 
             .label .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1mm; }
-            .label .sku { font-size: 11px; font-weight: bold; color: #000; line-height: 1.1; }
-            .label .qty-badge { font-size: 9px; background: #eee; padding: 1px 3px; border-radius: 2px; }
+            .label .sku { font-size: 10px; font-weight: bold; color: #000; line-height: 1.1; max-width: 70%; }
+            .label .qty-badge { font-size: 9px; background: #eee; padding: 1px 3px; border-radius: 2px; white-space: nowrap; }
             
             .label .barcode-container { text-align: center; margin: 1mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-            .label .barcode svg { max-width: 100%; height: 12mm !important; } /* Фиксированная высота штрихкода */
+            .label .barcode svg { max-width: 100%; height: 12mm !important; } 
             
             .label .info-row { display: flex; justify-content: space-between; font-size: 9px; color: #333; margin-top: 1mm; }
-            .label .name { font-size: 9px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 1mm; }
+            .label .name { font-size: 9px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 1mm; height: 2.2em; }
             
-            @page { size: 58mm 40mm; margin: 0; } /* Ключевая настройка для термопринтера */
+            @page { size: 58mm 40mm; margin: 0; } 
             .no-print { display: none !important; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="no-print">🏷️ Этикетки 58x40 мм <span style="font-size:12px; color:#64748b;">Заказ №47</span></h1>
+        <h1 class="no-print">🏷️ Этикетки 58x40 мм <span style="font-size:12px; color:#64748b;">Поддержка XLSX, XLS, CSV</span></h1>
         
         <div class="upload-box no-print" id="dropZone">
-            <p style="margin:0;">📂 Выберите файл Excel (.xlsx)</p>
+            <p style="margin:0;">📂 Выберите файл (.xlsx, .xls, .csv)</p>
             <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Загрузить с компьютера</button>
-            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
         </div>
 
         <div id="editor" style="display:none;">
             <div class="controls no-print">
-                <input type="text" id="filterText" placeholder="Поиск (Артикул, Имя, ТЗ)...">
+                <input type="text" id="filterText" placeholder="Поиск (Артикул, Имя, ШК)...">
                 <input type="number" id="filterQty" placeholder="Мин. кол-во" min="0">
                 <button class="action-btn" onclick="applyFilters()">Фильтр</button>
                 <button class="action-btn secondary" onclick="resetFilters()">Сброс</button>
@@ -127,6 +124,7 @@
             name: 'наименование составляющего в наборе', 
             sku_label: 'ШК на этикетку ВБ', 
             art_label: 'Артикул на этикетку ВБ',
+            quant: 'квант спайки',
             qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек', 
             expiry: 'ГОДЕН ДО', 
             tz: 'ТЗ'
@@ -140,24 +138,41 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
-                    const data = new Uint8Array(ev.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
+                    const data = ev.target.result;
+                    let workbook;
+                    
+                    // Определяем тип файла
+                    if (file.name.endsWith('.csv')) {
+                        // Для CSV используем массив байтов или строку, SheetJS сам определит разделитель
+                        workbook = XLSX.read(data, {type: 'string'});
+                    } else {
+                        // Для Excel используем ArrayBuffer
+                        const arrayBuffer = new Uint8Array(data);
+                        workbook = XLSX.read(arrayBuffer, {type: 'array'});
+                    }
+
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
+                    // defval: '' заменяет undefined на пустую строку
                     const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
                     processData(json);
                 } catch (err) {
                     console.error(err);
-                    alert('Ошибка чтения файла. Убедитесь, что это корректный .xlsx');
+                    alert('Ошибка чтения файла. Убедитесь, что это корректный файл Excel или CSV.');
                 }
             };
-            reader.readAsArrayBuffer(file);
+            
+            if (file.name.endsWith('.csv')) {
+                reader.readAsText(file, 'UTF-8'); // Читаем CSV как текст
+            } else {
+                reader.readAsArrayBuffer(file); // Читаем Excel как бинарный файл
+            }
         }
 
         function processData(sheet) {
             // Поиск заголовка
             let headerIdx = sheet.findIndex(r => r.some(c => String(c).includes('Артикул ВБ')));
-            if (headerIdx === -1) return alert('Не найден заголовок "Артикул ВБ"');
+            if (headerIdx === -1) return alert('Не найден заголовок "Артикул ВБ". Проверьте формат файла.');
 
             headerRow = sheet[headerIdx].map(h => String(h).trim());
             const colIndices = {};
@@ -183,13 +198,13 @@
                         val = val.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
                     }
                     // Обработка чисел с запятыми (2,550 -> 2550)
-                    if (key === 'qty_ship') {
+                    if (key === 'qty_ship' || key === 'quant') {
                         val = String(val).replace(/\s/g, '').replace(/,/g, '');
                     }
                     obj[key] = val;
                 });
                 
-                // Добавляем только если есть артикул
+                // Добавляем только если есть артикул или ШК
                 if (obj.art_wb || obj.sku_label) {
                     rawData.push(obj);
                 }
@@ -208,16 +223,10 @@
             const thead = document.querySelector('#dataTable thead');
             const tbody = document.querySelector('#dataTable tbody');
             
-            // Показываем только ключевые колонки в таблице для удобства
-            const visibleCols = ['art_wb', 'name', 'sku_label', 'qty_ship', 'expiry'];
+            // Показываем ключевые колонки для редактирования
+            const visibleCols = ['art_wb', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry'];
             
-            thead.innerHTML = '<tr>' + visibleCols.map(k => `<th>${COL_MAP[k]}</th>`).join('') + '</tr>';
-            
-            tbody.innerHTML = data.map((row, i) => {
-                const idx = rawData.indexOf(row);
-                return '<tr>' + visibleCols.map(k => {
-                    let val = row[k] || '';
-                    return `<td contenteditable="true" data-idx="${idx}" data-key="${k}" onblur="syncCell(this)">${val}</td>`;
+            thead.innerHTML = '<tr>' + visibleCols.map(k => `<th><LaTex>id_12</LaTex>{idx}" data-key="<LaTex>id_11</LaTex>{val}</td>`;
                 }).join('') + '</tr>';
             }).join('');
             
@@ -238,92 +247,39 @@
             filteredData = rawData.filter(r => {
                 let match = true;
                 if (text) {
-                    const str = `${r.art_wb} ${r.name} ${r.sku_label} ${r.tz}`.toLowerCase();
-                    match = str.includes(text);
-                }
-                if (minQty > 0) match = match && parseQty(r.qty_ship) >= minQty;
-                return match;
-            });
-            renderTable(filteredData);
-        }
-
-        function resetFilters() {
-            document.getElementById('filterText').value = '';
-            document.getElementById('filterQty').value = '';
-            renderTable(rawData);
-        }
-
-        function updateStats(count) {
-            document.getElementById('statsTotal').textContent = `Всего: ${rawData.length}`;
-            document.getElementById('statsFiltered').textContent = `Показано: ${count}`;
-        }
-
-        function generateLabels() {
-            const grid = document.getElementById('labelGrid');
-            grid.innerHTML = '';
-            const data = filteredData.length ? filteredData : rawData;
-            
-            if (!data.length) return alert('Нет данных для печати');
-
-            let labelCount = 0;
-            data.forEach(row => {
-                const qty = parseQty(row.qty_ship);
-                if (qty <= 0) return;
-
-                for (let i = 0; i < qty; i++) {
-                    const id = `bc_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 5)}`;
+                    const str = `<LaTex>id_10</LaTex>{r.name} <LaTex>id_9</LaTex>{r.art_label} <LaTex>id_8</LaTex>{rawData.length}`;
+            document.getElementById('statsFiltered').textContent = `Показано: <LaTex>id_7</LaTex>{Date.now()}_<LaTex>id_6</LaTex>{Math.random().toString(36).substr(2, 5)}`;
+                    
+                    // Данные для этикетки согласно запросу
                     const sku = row.sku_label || row.art_wb || 'NO-SKU';
                     const art = row.art_label || row.art_wb || '';
-                    const exp = row.expiry || '';
                     const name = row.name || '';
+                    const exp = row.expiry || '';
+                    const quant = row.quant || '1';
                     
-                    // Для 58мм ширины важно сократить текст ТЗ, если он длинный
+                    // Сокращаем ТЗ для 58мм
                     let tzText = row.tz || '';
-                    if (tzText.length > 60) tzText = tzText.substring(0, 57) + '...';
+                    if (tzText.length > 50) tzText = tzText.substring(0, 47) + '...';
 
                     const el = document.createElement('div');
                     el.className = 'label';
                     el.innerHTML = `
                         <div class="header">
-                            <div class="sku">Арт: ${art}</div>
-                            ${qty > 1 ? `<div class="qty-badge">${i+1}/${qty}</div>` : ''}
+                            <div class="sku">Арт: <LaTex>id_5</LaTex>{qty > 1 ? `<div class="qty-badge">${i+1}/${qty}</div>` : ''}
                         </div>
                         <div class="barcode-container">
-                            <svg id="${id}"></svg>
-                        </div>
-                        <div class="info-row">
-                            <span>Годен до: ${exp}</span>
-                        </div>
-                        <div class="name">${name}</div>
-                        ${tzText ? `<div style="font-size:8px; color:#666; margin-top:1px; text-align:center;">${tzText}</div>` : ''}
+                            <svg id="<LaTex>id_4</LaTex>{exp}</span>
+                            <span>Квант: <LaTex>id_3</LaTex>{name}</div>
+                        <LaTex>id_2</LaTex>{tzText}</div>` : ''}
                     `;
                     grid.appendChild(el);
 
-                    // Генерация штрихкода CODE128 (оптимально для WB/Ozon)
+                    // Генерация штрихкода CODE128
                     try {
-                        JsBarcode(`#${id}`, sku, {
-                            format: "CODE128",
-                            width: 1.2,       // Толщина линий
-                            height: 30,       // Высота в пикселях (примерно 10-12мм)
-                            displayValue: true,
-                            fontSize: 10,
-                            margin: 0,
-                            textMargin: 2
-                        });
-                    } catch(e) {
-                        console.error("Barcode error", e);
-                    }
-                    labelCount++;
-                }
-            });
+                        JsBarcode(`#<LaTex>id_1</LaTex>{labelCount} шт.`;
             
-            document.getElementById('statsLabels').textContent = `К печати: ${labelCount} шт.`;
-            
-            // Небольшая задержка для рендеринга SVG перед печатью
             setTimeout(() => {
                 window.print();
             }, 500);
         }
     </script>
-</body>
-</html>
