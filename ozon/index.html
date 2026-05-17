@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Генератор этикеток 58x40 (Озон/ВБ)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #2563eb; --primary-hover: #1d4ed8; --success: #16a34a; --success-hover: #15803d; --gray: #64748b; --border: #e2e8f0; --text: #1e293b; --text-light: #64748b; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; line-height: 1.5; }
+        .container { max-width: 1400px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h1 { margin: 0 0 18px; font-size: 22px; font-weight: 700; }
+        
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; color: white; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { filter: brightness(0.9); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-secondary { background: var(--gray); }
+        .btn-danger { background: #ef4444; }
+        
+        .upload-area { border: 2px dashed var(--border); padding: 50px; text-align: center; margin-bottom: 20px; cursor: pointer; border-radius: 10px; transition: 0.2s; background: #f8fafc; }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--primary); background: #eff6ff; }
+        .upload-area p { margin: 0 0 12px; color: var(--text-light); font-size: 14px; }
+        
+        input, select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; transition: 0.15s; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+        .controls { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+        .filter-group { display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .filter-group label { font-size: 12px; font-weight: 500; color: var(--text-light); white-space: nowrap; }
+        
+        .table-wrap { overflow-x: auto; max-height: 450px; border: 1px solid var(--border); border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
+        th, td { border: 1px solid var(--border); padding: 8px 6px; text-align: left; vertical-align: top; }
+        th { background: #f8fafc; font-weight: 600; position: sticky; top: 0; z-index: 2; border-bottom: 2px solid var(--border); }
+        td[contenteditable] { background: #fffbeb; cursor: text; } td[contenteditable]:focus { background: #fef3c7; outline: none; }
+        tbody tr:hover { background: #f8fafc; }
+        .badge { display: inline-block; background: #e0e7ff; color: #1e3a8a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .hidden { display: none !important; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(2px); }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal { background: white; width: 96%; max-width: 1200px; max-height: 92vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; }
+        .modal-header h2 { margin: 0; font-size: 16px; }
+        .modal-body { flex: 1; overflow: auto; padding: 14px; background: #fafbfc; }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border); background: white; }
+        
+        .modal-col-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; margin-bottom: 10px; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .modal-col-filter { padding: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; width: 100%; background: #f8fafc; }
+        .modal-col-filter::placeholder { color: #94a3b8; }
+        .modal-table { border-collapse: collapse; width: 100%; background: white; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        .modal-table th, .modal-table td { font-size: 11px; padding: 6px 5px; white-space: nowrap; border-bottom: 1px solid #f1f5f9; }
+        .modal-table thead th { background: #e2e8f0; position: sticky; top: 0; z-index: 3; }
+        .modal-table tbody tr { transition: background 0.1s; }
+        .modal-table tbody tr:hover { background: #f0f7ff; }
+        .modal-table tbody tr.row-hidden { display: none; }
+        .modal-table .col-check { width: 30px; text-align: center; }
+        .modal-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; background: white; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .modal-toolbar label { font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+        /* PRINT */
+        #print-area { position: absolute; left: -9999px; top: 0; width: 100%; }
+        .label-grid { display: flex; flex-direction: column; }
+        .label {
+            width: 58mm; height: 40mm; padding: 2mm; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif; overflow: hidden; background: white;
+            border: 0.5px solid #ccc;
+        }
+        .lbl-warning {
+            text-align: center; font-size: 7.5px; font-weight: 900; color: #000;
+            margin-bottom: 1mm; padding: 0.5mm 0; border-bottom: 1px solid #000;
+            letter-spacing: 0.5px; line-height: 1; text-transform: uppercase;
+        }
+        .lbl-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5mm; }
+        .lbl-title { font-size: 9px; font-weight: bold; }
+        .lbl-counter { font-size: 8px; color: #555; }
+        .lbl-barcode { text-align: center; margin: 1mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        .lbl-barcode svg { max-height: 11mm; max-width: 100%; display: block; }
+        .lbl-name { font-size: 8px; line-height: 1.15; max-height: 1.8em; overflow: hidden; margin-bottom: 0.5mm; color: #222; font-weight: 500; }
+        .lbl-meta { display: flex; justify-content: space-between; font-size: 7.5px; color: #444; margin-top: auto; padding-top: 0.5mm; border-top: 0.5px solid #eee; }
+        .lbl-tz { font-size: 6.5px; color: #666; line-height: 1.1; max-height: 1em; overflow: hidden; margin-top: 0.5mm; background: #f8fafc; padding: 0.5mm; border-radius: 2px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .label { page-break-after: always; border: none; margin: 0; box-shadow: none; }
+            .label:last-child { page-break-after: auto; }
+            @page { size: 58mm 40mm; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container no-print">
+    <h1>📦 Генератор этикеток 58×40 мм (Озон/ВБ)</h1>
+    <div class="upload-area" id="dropZone">
+        <p>Нажмите сюда или перетащите файл Excel (.xlsx, .xls)</p>
+        <button class="btn btn-primary" id="uploadBtn" type="button">📂 Выбрать файл ТЗ</button>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+    </div>
+
+    <div id="editor" class="hidden">
+        <div class="controls">
+            <div class="filter-group">
+                <label>🔍 Поиск:</label>
+                <input type="text" id="search" placeholder="Артикул, Название..." style="width:220px">
+            </div>
+            <div class="filter-group">
+                <label>🏙️ Город:</label>
+                <select id="cityFilter"><option value="">Все города</option></select>
+            </div>
+            <div class="filter-group">
+                <label>📦 Мин. кол-во:</label>
+                <input type="number" id="minQty" value="1" style="width:70px">
+            </div>
+            <button class="btn btn-primary" onclick="applyFilter()">Применить фильтр</button>
+            <button class="btn btn-success" onclick="openPrintDialog()">🖨️ Настроить и Печать</button>
+        </div>
+        <div style="margin-bottom:8px"><span class="badge" id="statsBadge">—</span></div>
+        <div class="table-wrap">
+            <table id="mainTable"><thead></thead><tbody></tbody></table>
+        </div>
+    </div>
+</div>
+
+<!-- PRINT MODAL -->
+<div id="modal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>⚙️ Настройка печати этикеток</h2>
+            <button class="btn btn-secondary" onclick="closeModal()">✕ Закрыть</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <div class="modal-toolbar">
+                <label><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)"> Выбрать всё</label>
+                <select id="bcFormat" style="padding:6px 8px;">
+                    <option value="CODE128">CODE128 (Озон/ВБ)</option>
+                    <option value="EAN13">EAN13</option>
+                    <option value="UPC">UPC</option>
+                    <option value="CODE39">CODE39</option>
+                    <option value="ITF14">ITF14</option>
+                </select>
+                <span class="badge" id="selCount">Выбрано: 0</span>
+                <span class="badge" id="totalCount">Всего: 0</span>
+            </div>
+            <div class="modal-col-filters" id="colFilters"></div>
+            <table class="modal-table" id="modalTable">
+                <thead id="modalHead"></thead>
+                <tbody id="modalBodyInner"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-danger" onclick="deselectAll()">✖ Снять всё</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            <button class="btn btn-success" id="doPrintBtn" onclick="executePrint()">🖨️ Печать выбранных</button>
+        </div>
+    </div>
+</div>
+
+<div id="print-area"><div class="label-grid" id="labelGrid"></div></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof XLSX === 'undefined') {
+        document.getElementById('editor').innerHTML = '<p style="color:red;font-weight:bold;padding:20px;">Ошибка: Не удалось загрузить библиотеку SheetJS. Проверьте интернет-соединение.</p>';
+        return;
+    }
+
+    let allData = [], filteredData = [], cityColumns = [];
+    const FIXED_COLS = { 'наименование составляющего в наборе': 'name', 'шк на этикетку': 'sku', 'Артикул продавца': 'art', 'ИТОГО К ОТГРУЗКЕ спаек': 'total_qty', 'ГОДЕН ДО': 'expiry', 'ТЗ': 'tz' };
+    
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    uploadBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => { if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if(e.dataTransfer.files[0]){ loadFile(e.dataTransfer.files[0]); fileInput.files = e.dataTransfer.files; } });
+
+    function loadFile(file) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+                if(!wb.SheetNames.length) throw new Error('Файл пуст');
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                parseData(XLSX.utils.sheet_to_json(ws, {header:1, defval:''}));
+            } catch(err) { alert('Ошибка чтения файла: ' + err.message); console.error(err); }
+        };
+        reader.onerror = () => alert('Не удалось прочитать файл');
+        reader.readAsArrayBuffer(file);
+    }
+
+    function cleanVal(v) {
+        if(v === null || v === undefined) return '';
+        let s = String(v).trim();
+        if(s === 'ERROR:#REF!' || s === 'ERROR:#N/A') return '';
+        if(s === '0' || s === '0,00') return 0;
+        return isNaN(Number(s.replace(/,/g,'.'))) ? s : Number(s.replace(/,/g,'.'));
+    }
+
+    function parseData(rows) {
+        let hi = -1;
+        for(let i=0;i<rows.length;i++) if((rows[i]||[]).join(' ').includes('Артикул продавца')){hi=i;break;}
+        if(hi===-1){alert('Не найдена строка заголовков "Артикул продавца". Проверьте файл.');return;}
+
+        const headers = rows[hi];
+        const idxMap = {}, cities = [];
+        headers.forEach((h, i) => {
+            const cleanH = h.toString().trim();
+            if(FIXED_COLS[cleanH]) idxMap[FIXED_COLS[cleanH]] = i;
+            else if(cleanH.length > 1 && isNaN(Number(cleanH))) cities.push({name: cleanH, idx: i});
+        });
+        cityColumns = cities.map(c=>c.name);
+        
+        allData = [];
+        for(let i=hi+1;i<rows.length;i++){
+            const row = rows[i]||[];
+            if(String(row[0]||'').toUpperCase().includes('ИТОГО') && String(row[0]).length<20) break;
+            const item = { name:'', sku:'', art:'', total_qty:0, expiry:'', tz:'', cities:{} };
+            if(idxMap.name) item.name = cleanVal(row[idxMap.name]);
+            if(idxMap.sku) item.sku = cleanVal(row[idxMap.sku]);
+            if(idxMap.art) item.art = cleanVal(row[idxMap.art]);
+            if(idxMap.total_qty) item.total_qty = Number(cleanVal(row[idxMap.total_qty])) || 0;
+            if(idxMap.expiry) item.expiry = cleanVal(row[idxMap.expiry]);
+            if(idxMap.tz) item.tz = cleanVal(row[idxMap.tz]);
+            
+            cities.forEach(c => { item.cities[c.name] = Number(cleanVal(row[c.idx])) || 0; });
+            if(item.sku || item.art || item.name) allData.push(item);
+        }
+
+        if(!allData.length){alert('Данные не найдены');return;}
+        
+        const citySel = document.getElementById('cityFilter');
+        citySel.innerHTML = '<option value="">Все города</option>' + cityColumns.sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        filteredData = [...allData];
+        renderTable(filteredData);
+        document.getElementById('editor').classList.remove('hidden');
+        dropZone.style.display = 'none';
+    }
+
+    function renderTable(data){
+        document.querySelector('#mainTable thead').innerHTML = '<tr><th>Наименование</th><th>ШК</th><th>Артикул</th><th>Итого</th><th id="cityColHead">Город</th><th>Годен</th></tr>';
+        let h='';
+        const selCity = document.getElementById('cityFilter').value;
+        data.forEach((it,i)=>{
+            const cQty = selCity ? (it.cities[selCity]||0) : it.total_qty;
+            h += `<tr>
+                <td contenteditable onblur="updData(${i},'name',this.innerText)">${esc(it.name)}</td>
+                <td>${it.sku}</td><td contenteditable onblur="updData(${i},'art',this.innerText)">${it.art}</td>
+                <td>${it.total_qty}</td>
+                <td style="font-weight:bold;color:${cQty>0?'#16a34a':'#ef4444'}">${cQty}</td>
+                <td>${it.expiry}</td>
+            </tr>`;
+        });
+        document.querySelector('#mainTable tbody').innerHTML = h;
+        if(selCity) document.getElementById('cityColHead').textContent = selCity;
+        document.getElementById('statsBadge').textContent = `Загружено: ${allData.length} | Отображено: ${data.length}`;
+    }
+
+    window.updData = function(i,k,v){ if(allData[i]){allData[i][k]=v.trim(); applyFilter();} };
+
+    window.applyFilter = function(){
+        const s = document.getElementById('search').value.toLowerCase();
+        const c = document.getElementById('cityFilter').value;
+        const mq = parseFloat(document.getElementById('minQty').value)||0;
+        
+        filteredData = allData.filter(it => {
+            const cQty = c ? (it.cities[c]||0) : it.total_qty;
+            const matchSearch = !s || (String(it.name)+String(it.sku)+String(it.art)).toLowerCase().includes(s);
+            return matchSearch && cQty >= mq;
+        });
+        renderTable(filteredData);
+    };
+
+    document.getElementById('search').addEventListener('input', applyFilter);
+    document.getElementById('cityFilter').addEventListener('change', applyFilter);
+    document.getElementById('minQty').addEventListener('input', applyFilter);
+
+    // ==================== MODAL ====================
+    const modalCols = ['name','sku','art','total_qty','expiry','tz'];
+    const modalLabels = {name:'Наименование', sku:'ШК', art:'Артикул', total_qty:'Итого', expiry:'Годен до', tz:'ТЗ'};
+
+    window.openPrintDialog = function(){
+        buildModal();
+        document.getElementById('modal').classList.add('open');
+    };
+
+    window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
+
+    function buildModal(){
+        const cf = document.getElementById('colFilters');
+        const selCity = document.getElementById('cityFilter').value;
+        cf.innerHTML = `
+            <input class="modal-col-filter" data-col="name" placeholder="Фильтр: Наименование" oninput="applyModalFilters()">
+            <input class="modal-col-filter" data-col="sku" placeholder="Фильтр: ШК" oninput="applyModalFilters()">
+            <input class="modal-col-filter" data-col="art" placeholder="Фильтр: Артикул" oninput="applyModalFilters()">
+            <input class="modal-col-filter" data-col="city" value="${selCity}" readonly placeholder="Город" style="background:#e2e8f0;font-weight:bold;">
+            <input class="modal-col-filter" data-col="total_qty" placeholder="Мин. кол-во" type="number" oninput="applyModalFilters()">
+        `;
+
+        document.getElementById('modalHead').innerHTML = '<tr><th class="col-check">✔</th><th>Наименование</th><th>ШК</th><th>Артикул</th><th>Итого</th><th>'+selCity+'</th><th>Годен</th></tr>';
+
+        let h = '';
+        filteredData.forEach((it,i)=>{
+            const q = it.cities[selCity] || 0;
+            if(q <= 0) return;
+            h += `<tr data-idx="${i}" data-qty="${q}" data-city="${selCity}">
+                <td class="col-check"><input type="checkbox" class="mchk" data-idx="${i}" onchange="updSelCount()"></td>
+                <td>${esc(String(it.name))}</td><td>${it.sku}</td><td>${it.art}</td><td>${it.total_qty}</td>
+                <td style="font-weight:bold">${q}</td><td>${it.expiry}</td>
+            </tr>`;
+        });
+        document.getElementById('modalBodyInner').innerHTML = h || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#666;">Нет строк с количеством > 0 для выбранного города</td></tr>';
+        document.getElementById('totalCount').textContent = `Всего: ${filteredData.length}`;
+        updSelCount();
+        applyModalFilters();
+    }
+
+    window.applyModalFilters = function(){
+        const filters = {
+            name: (document.querySelector('.modal-col-filter[data-col="name"]').value || '').toLowerCase(),
+            sku: (document.querySelector('.modal-col-filter[data-col="sku"]').value || '').toLowerCase(),
+            art: (document.querySelector('.modal-col-filter[data-col="art"]').value || '').toLowerCase(),
+            minQty: parseFloat(document.querySelector('.modal-col-filter[data-col="total_qty"]').value) || 0
+        };
+        document.querySelectorAll('#modalBodyInner tr').forEach(tr => {
+            if(!tr.dataset.qty) return;
+            const q = parseInt(tr.dataset.qty);
+            const cells = tr.querySelectorAll('td');
+            const match = (!filters.name || cells[1].textContent.toLowerCase().includes(filters.name)) &&
+                          (!filters.sku || cells[2].textContent.toLowerCase().includes(filters.sku)) &&
+                          (!filters.art || cells[3].textContent.toLowerCase().includes(filters.art)) &&
+                          (q >= filters.minQty);
+            tr.classList.toggle('row-hidden', !match);
+        });
+        document.querySelectorAll('#modalBodyInner tr.row-hidden .mchk').forEach(cb => cb.checked = false);
+        updSelCount();
+    }
+
+    window.toggleSelectAll = function(checked){
+        document.querySelectorAll('#modalBodyInner tr:not(.row-hidden) .mchk').forEach(cb => cb.checked = checked);
+        updSelCount();
+    };
+    window.deselectAll = function(){
+        document.querySelectorAll('#modalBodyInner .mchk').forEach(cb => cb.checked = false);
+        document.getElementById('selectAllChk').checked = false;
+        updSelCount();
+    };
+    window.updSelCount = function(){ document.getElementById('selCount').textContent = `Выбрано: ${document.querySelectorAll('#modalBodyInner .mchk:checked').length}`; };
+
+    window.executePrint = function(){
+        const grid = document.getElementById('labelGrid');
+        grid.innerHTML = '';
+        const bcFmt = document.getElementById('bcFormat').value;
+        const sel = Array.from(document.querySelectorAll('#modalBodyInner .mchk:checked')).map(cb=>parseInt(cb.dataset.idx));
+        const selCity = document.getElementById('cityFilter').value || document.querySelector('.modal-col-filter[data-col="city"]').value;
+        
+        if(!sel.length){alert('Выберите хотя бы одну строку');return;}
+
+        let lblN = 0;
+        sel.forEach(idx => {
+            const it = filteredData[idx];
+            const qty = it.cities[selCity] || 0;
+            if(qty<=0) return;
+
+            for(let i=0;i<qty;i++){
+                lblN++;
+                const svgId = 'lb'+lblN;
+                const sku = it.sku || it.art || '0000';
+                let tz = it.tz||''; if(tz.length>45) tz=tz.substring(0,42)+'…';
+
+                const d = document.createElement('div');
+                d.className = 'label';
+                d.innerHTML = `
+                    <div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
+                    <div class="lbl-row"><span class="lbl-title">${esc(it.art)}</span>${qty>1?`<span class="lbl-counter">${i+1}/${qty}</span>`:''}</div>
+                    <div class="lbl-barcode"><svg id="${svgId}"></svg></div>
+                    <div class="lbl-name">${esc(it.name)}</div>
+                    <div class="lbl-meta"><span>Годен: ${esc(it.expiry)}</span><span>ТЗ: ${selCity}</span></div>
+                    ${tz?`<div class="lbl-tz">${esc(tz)}</div>`:''}
+                `;
+                grid.appendChild(d);
+
+                try { JsBarcode('#'+svgId, String(sku), {format:bcFmt, width:1.5, height:24, displayValue:true, fontSize:8, margin:0}); } 
+                catch(e){ d.querySelector('.lbl-barcode').innerHTML = `<span style="font-size:8px;color:red">ШК: ${esc(sku)}</span>`; }
+            }
+        });
+
+        if(!lblN){alert('Нет этикеток для печати');return;}
+        closeModal();
+        setTimeout(()=>window.print(), 300);
+    };
+
+    function esc(s){ const d=document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+});
+</script>
+</body>
+</html>
+
