@@ -2,265 +2,293 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Этикетки ТЗ 58x40 | Заказ №47</title>
-    <!-- Библиотеки -->
+    <title>Этикетки ТЗ 58x40</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --text: #0f172a; --success: #16a34a; }
-        * { box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
-        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { margin: 0 0 15px 0; font-size: 20px; display: flex; justify-content: space-between; align-items: center; }
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; color: #333; }
         
         /* Загрузка */
-        .upload-box { border: 2px dashed var(--border); padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 20px; background: #f1f5f9; cursor: pointer; transition: 0.2s; }
-        .upload-box:hover { background: #e2e8f0; border-color: var(--primary); }
-        .btn-upload { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin-bottom: 20px; cursor: pointer; border-radius: 8px; transition: 0.3s; }
+        .upload-area:hover { background: #eef; border-color: #2563eb; }
+        .btn { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn:hover { background: #1d4ed8; }
         
-        /* Интерфейс */
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; align-items: center; }
-        input, button.action-btn { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-        button.action-btn { background: var(--primary); color: white; border: none; cursor: pointer; }
-        button.secondary { background: #64748b; }
-        button.success { background: var(--success); }
+        /* Таблица и фильтры */
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 200px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        th { background: #f9fafb; }
+        td[contenteditable] { background: #fffbe6; }
         
-        .table-wrap { overflow-x: auto; max-height: 50vh; border: 1px solid var(--border); border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
-        th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: #f1f5f9; position: sticky; top: 0; z-index: 10; }
-        td[contenteditable="true"]:focus { background: #e0f2fe; outline: 2px solid var(--primary); }
-        
-        .stats { font-size: 13px; color: #475569; margin: 8px 0; display: flex; gap: 15px; }
-
         /* ПЕЧАТЬ 58x40 мм */
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
             
-            .label-grid { 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                width: 100%; 
-            }
-
-            .label { 
-                width: 58mm; 
-                height: 40mm; 
-                border: 1px dotted #ccc; 
-                padding: 2mm; 
-                box-sizing: border-box; 
-                font-family: Arial, sans-serif; 
-                display: flex; 
-                flex-direction: column; 
-                justify-content: space-between; 
-                page-break-after: always; 
-                background: white; 
+            .label-grid { display: flex; flex-direction: column; align-items: center; width: 100%; }
+            
+            .label {
+                width: 58mm;
+                height: 40mm;
+                border: 1px dotted #ccc; /* Для визуализации границ */
+                padding: 2mm;
+                box-sizing: border-box;
+                page-break-after: always; /* Каждая этикетка на новой странице/отрезе */
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                font-family: Arial, sans-serif;
                 overflow: hidden;
-                position: relative;
             }
-
+            
             .label:last-child { page-break-after: auto; }
-
-            .label .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1mm; }
-            .label .sku { font-size: 10px; font-weight: bold; color: #000; line-height: 1.1; max-width: 70%; }
-            .label .qty-badge { font-size: 9px; background: #eee; padding: 1px 3px; border-radius: 2px; white-space: nowrap; }
             
-            .label .barcode-container { text-align: center; margin: 1mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-            .label .barcode svg { max-width: 100%; height: 12mm !important; } 
+            .lbl-header { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; }
+            .lbl-art { font-size: 10px; }
+            .lbl-barcode { text-align: center; margin: 2mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+            .lbl-barcode svg { max-height: 12mm; max-width: 100%; }
+            .lbl-info { font-size: 9px; display: flex; justify-content: space-between; }
+            .lbl-name { font-size: 9px; line-height: 1.1; height: 2.2em; overflow: hidden; }
             
-            .label .info-row { display: flex; justify-content: space-between; font-size: 9px; color: #333; margin-top: 1mm; }
-            .label .name { font-size: 9px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 1mm; height: 2.2em; }
-            
-            @page { size: 58mm 40mm; margin: 0; } 
+            @page { size: 58mm 40mm; margin: 0; }
             .no-print { display: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="no-print">🏷️ Этикетки 58x40 мм <span style="font-size:12px; color:#64748b;">Заказ №47</span></h1>
-        
-        <div class="upload-box no-print" id="dropZone">
-            <p style="margin:0;">📂 Выберите файл Excel (.xlsx)</p>
-            <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Загрузить с компьютера</button>
-            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
-        </div>
 
-        <div id="editor" style="display:none;">
-            <div class="controls no-print">
-                <input type="text" id="filterText" placeholder="Поиск: Артикул, ШК, Имя, Квант...">
-                <input type="number" id="filterQty" placeholder="Мин. кол-во" min="0">
-                <button class="action-btn" onclick="applyFilters()">Фильтр</button>
-                <button class="action-btn secondary" onclick="resetFilters()">Сброс</button>
-                <button class="action-btn success" onclick="generateLabels()">🖨️ Печать (58x40)</button>
-            </div>
-            <div class="stats no-print">
-                <span id="statsTotal">Всего: 0</span>
-                <span id="statsFiltered">Показано: 0</span>
-                <span id="statsLabels">К печати: 0 шт.</span>
-            </div>
-            <div class="table-wrap">
-                <table id="dataTable"><thead></thead><tbody></tbody></table>
-            </div>
-        </div>
-
-        <div id="print-area" class="no-print">
-            <div class="label-grid" id="labelGrid"></div>
-        </div>
+<div class="container no-print">
+    <h1>🏷️ Генератор этикеток 58x40 мм</h1>
+    
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>Нажмите сюда или перетащите файл Excel (.xlsx)</p>
+        <button class="btn">Загрузить ТЗ</button>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
     </div>
 
-    <script>
-        let rawData = [];
-        let filteredData = [];
-        let headerRow = [];
-        
-        // Карта колонок из вашего файла
-        const COL_MAP = {
-            art_wb: 'Артикул ВБ', 
-            name: 'наименование составляющего в наборе', 
-            sku_label: 'ШК на этикетку ВБ', 
-            art_label: 'Артикул на этикетку ВБ',
-            quant: 'квант спайки',
-            qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек', 
-            expiry: 'ГОДЕН ДО', 
-            tz: 'ТЗ'
+    <div id="editor" style="display:none;">
+        <div class="controls">
+            <input type="text" id="search" placeholder="Поиск: Артикул, ШК, Название, Квант...">
+            <input type="number" id="minQty" placeholder="Мин. кол-во к отгрузке">
+            <button class="btn" onclick="applyFilter()">Применить фильтр</button>
+            <button class="btn" style="background:#16a34a" onclick="printLabels()">🖨️ Печать этикеток</button>
+        </div>
+        <div id="stats" style="margin-bottom:10px; color:#666;"></div>
+        <div style="overflow-x:auto; max-height: 500px;">
+            <table id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="print-area" class="no-print">
+    <div class="label-grid" id="labelGrid"></div>
+</div>
+
+<script>
+    let allData = [];
+    let filteredData = [];
+    
+    // Названия колонок из вашего файла
+    const COLUMNS = {
+        art_wb: 'Артикул ВБ',
+        name: 'наименование составляющего в наборе',
+        sku_label: 'ШК на этикетку ВБ',
+        art_label: 'Артикул на этикетку ВБ',
+        quant: 'квант спайки',
+        qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек',
+        expiry: 'ГОДЕН ДО',
+        tz: 'ТЗ'
+    };
+
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+
+    function handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                
+                // Читаем как массив массивов, чтобы найти заголовок вручную
+                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+                parseData(json);
+            } catch (err) {
+                alert("Ошибка чтения файла: " + err.message);
+                console.error(err);
+            }
         };
+        reader.readAsArrayBuffer(file);
+    }
 
-        document.getElementById('fileInput').addEventListener('change', handleFile);
-
-        function handleFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = new Uint8Array(ev.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-                    processData(json);
-                } catch (err) {
-                    console.error(err);
-                    alert('Ошибка чтения файла. Убедитесь, что это корректный .xlsx');
-                }
-            };
-            reader.readAsArrayBuffer(file);
+    function parseData(rows) {
+        // 1. Ищем индекс строки заголовка
+        let headerIndex = -1;
+        for (let i = 0; i < rows.length; i++) {
+            const rowStr = rows[i].join(' ');
+            if (rowStr.includes('Артикул ВБ')) {
+                headerIndex = i;
+                break;
+            }
         }
 
-        function processData(sheet) {
-            // Поиск заголовка
-            let headerIdx = sheet.findIndex(r => r.some(c => String(c).includes('Артикул ВБ')));
-            if (headerIdx === -1) return alert('Не найден заголовок "Артикул ВБ"');
+        if (headerIndex === -1) {
+            alert('Не найден заголовок "Артикул ВБ". Проверьте файл.');
+            return;
+        }
 
-            headerRow = sheet[headerIdx].map(h => String(h).trim());
-            const colIndices = {};
-            Object.values(COL_MAP).forEach(colName => {
-                colIndices[colName] = headerRow.findIndex(h => h === colName);
+        const headers = rows[headerIndex];
+        
+        // 2. Находим индексы нужных колонок
+        const idx = {};
+        Object.keys(COLUMNS).forEach(key => {
+            idx[key] = headers.findIndex(h => String(h).trim() === COLUMNS[key]);
+        });
+
+        // 3. Парсим данные
+        allData = [];
+        for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            
+            // Останавливаемся на итоговой строке
+            if (String(row[0]).includes('ИТОГО') && String(row[0]).length < 20) break;
+
+            const item = {};
+            Object.keys(COLUMNS).forEach(key => {
+                let val = row[idx[key]] !== undefined ? row[idx[key]] : '';
+                
+                // Очистка значений
+                if (typeof val === 'string') {
+                    val = val.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
+                }
+                
+                // Преобразование чисел (2,550 -> 2550)
+                if (key === 'qty_ship' || key === 'quant') {
+                    val = String(val).replace(/\s/g, '').replace(/,/g, '');
+                }
+                
+                item[key] = val;
             });
 
-            rawData = [];
-            for (let i = headerIdx + 1; i < sheet.length; i++) {
-                const row = sheet[i];
-                if (!row || row.length === 0) continue;
-                
-                // Пропуск итоговых строк
-                if (String(row[0]).includes('ИТОГО')) break;
+            // Добавляем только если есть артикул
+            if (item.art_wb || item.sku_label) {
+                allData.push(item);
+            }
+        }
 
-                const obj = {};
-                Object.keys(COL_MAP).forEach(key => {
-                    const idx = colIndices[COL_MAP[key]];
-                    let val = (idx !== -1 && row[idx] !== undefined) ? row[idx] : '';
-                    
-                    // Очистка значений
-                    if (typeof val === 'string') {
-                        val = val.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
-                    }
-                    // Обработка чисел с запятыми (2,550 -> 2550)
-                    if (key === 'qty_ship' || key === 'quant') {
-                        val = String(val).replace(/\s/g, '').replace(/,/g, '');
-                    }
-                    obj[key] = val;
-                });
+        if (allData.length === 0) {
+            alert('Данные не найдены. Проверьте структуру файла.');
+            return;
+        }
+
+        renderTable(allData);
+        document.getElementById('editor').style.display = 'block';
+        document.querySelector('.upload-area').style.display = 'none';
+    }
+
+    function renderTable(data) {
+        const thead = document.querySelector('#dataTable thead');
+        const tbody = document.querySelector('#dataTable tbody');
+        
+        // Показываем только важные колонки
+        const visibleKeys = ['art_wb', 'name', 'sku_label', 'quant', 'qty_ship', 'expiry'];
+        
+        thead.innerHTML = '<tr>' + visibleKeys.map(k => `<th><LaTex>id_6</LaTex>{visibleKeys.map(k => `<td contenteditable="true" onblur="updateData(${index}, '${k}', this.innerText)">${item[k]}</td>`).join('')}
+            </tr>`;
+        }).join('');
+        
+        document.getElementById('stats').innerText = `Всего позиций: ${data.length}`;
+    }
+
+    function updateData(index, key, value) {
+        allData[index][key] = value.trim();
+        applyFilter(); // Обновляем фильтр при изменении
+    }
+
+    function applyFilter() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const minQty = parseFloat(document.getElementById('minQty').value) || 0;
+
+        filteredData = allData.filter(item => {
+            const qty = parseFloat(String(item.qty_ship).replace(',', '.')) || 0;
+            const matchesSearch = 
+                String(item.art_wb).toLowerCase().includes(search) ||
+                String(item.name).toLowerCase().includes(search) ||
+                String(item.sku_label).toLowerCase().includes(search) ||
+                String(item.quant).toLowerCase().includes(search);
+            
+            return matchesSearch && qty >= minQty;
+        });
+
+        renderTable(filteredData);
+    }
+
+    function printLabels() {
+        const grid = document.getElementById('labelGrid');
+        grid.innerHTML = '';
+        
+        const dataToPrint = filteredData.length > 0 ? filteredData : allData;
+        
+        if (dataToPrint.length === 0) {
+            alert('Нет данных для печати');
+            return;
+        }
+
+        let count = 0;
+        dataToPrint.forEach(item => {
+            const qty = Math.ceil(parseFloat(String(item.qty_ship).replace(',', '.')) || 0);
+            if (qty <= 0) return;
+
+            for (let i = 0; i < qty; i++) {
+                const id = `bc_<LaTex>id_5</LaTex>{Date.now()}`;
+                const sku = item.sku_label || item.art_wb;
+                const art = item.art_label || item.art_wb;
                 
-                // Добавляем только если есть артикул или ШК
-                if (obj.art_wb || obj.sku_label) {
-                    rawData.push(obj);
+                // Сокращаем ТЗ для этикетки
+                let tzShort = item.tz || '';
+                if (tzShort.length > 60) tzShort = tzShort.substring(0, 57) + '...';
+
+                const div = document.createElement('div');
+                div.className = 'label';
+                div.innerHTML = `
+                    <div class="lbl-header">
+                        <span class="lbl-art">Арт: <LaTex>id_4</LaTex>{qty > 1 ? (i+1)+'/'+qty : ''}</span>
+                    </div>
+                    <div class="lbl-barcode">
+                        <svg id="<LaTex>id_3</LaTex>{item.expiry}</span>
+                        <span>Квант: <LaTex>id_2</LaTex>{item.name}</div>
+                    <LaTex>id_1</LaTex>{tzShort}</div>` : ''}
+                `;
+                grid.appendChild(div);
+
+                // Генерация штрихкода
+                try {
+                    JsBarcode(`#${id}`, sku, {
+                        format: "CODE128",
+                        width: 1.5,
+                        height: 30,
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 0
+                    });
+                } catch(e) {
+                    console.error(e);
                 }
             }
+        });
 
-            renderTable(rawData);
-            document.getElementById('editor').style.display = 'block';
-            document.querySelector('.upload-box').style.display = 'none';
-        }
-
-        function parseQty(val) {
-            return Math.ceil(parseFloat(String(val).replace(/\s/g, '').replace(/,/g, '.')) || 0);
-        }
-
-        function renderTable(data) {
-            const thead = document.querySelector('#dataTable thead');
-            const tbody = document.querySelector('#dataTable tbody');
-            
-            // Показываем ключевые колонки для редактирования
-            const visibleCols = ['art_wb', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry'];
-            
-            thead.innerHTML = '<tr>' + visibleCols.map(k => `<th><LaTex>id_13</LaTex>{idx}" data-key="<LaTex>id_12</LaTex>{val}</td>`;
-                }).join('') + '</tr>';
-            }).join('');
-            
-            updateStats(data.length);
-        }
-
-        function syncCell(td) {
-            const idx = parseInt(td.dataset.idx);
-            const key = td.dataset.key;
-            rawData[idx][key] = td.textContent.trim();
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const text = document.getElementById('filterText').value.toLowerCase().trim();
-            const minQty = parseFloat(document.getElementById('filterQty').value) || 0;
-
-            filteredData = rawData.filter(r => {
-                let match = true;
-                if (text) {
-                    // Фильтрация по всем запрошенным полям: Наименование, ШК, Артикул, Квант, Итог
-                    const str = `<LaTex>id_11</LaTex>{r.name} <LaTex>id_10</LaTex>{r.art_label} <LaTex>id_9</LaTex>{r.qty_ship} <LaTex>id_8</LaTex>{rawData.length}`;
-            document.getElementById('statsFiltered').textContent = `Показано: <LaTex>id_7</LaTex>{Date.now()}_<LaTex>id_6</LaTex>{Math.random().toString(36).substr(2, 5)}`;
-                    
-                    // Данные для этикетки согласно запросу
-                    const sku = row.sku_label || row.art_wb || 'NO-SKU';
-                    const art = row.art_label || row.art_wb || '';
-                    const name = row.name || '';
-                    const exp = row.expiry || '';
-                    const quant = row.quant || '1';
-                    
-                    // Сокращаем ТЗ для 58мм
-                    let tzText = row.tz || '';
-                    if (tzText.length > 50) tzText = tzText.substring(0, 47) + '...';
-
-                    const el = document.createElement('div');
-                    el.className = 'label';
-                    el.innerHTML = `
-                        <div class="header">
-                            <div class="sku">Арт: <LaTex>id_5</LaTex>{qty > 1 ? `<div class="qty-badge">${i+1}/${qty}</div>` : ''}
-                        </div>
-                        <div class="barcode-container">
-                            <svg id="<LaTex>id_4</LaTex>{exp}</span>
-                            <span>Квант: <LaTex>id_3</LaTex>{name}</div>
-                        <LaTex>id_2</LaTex>{tzText}</div>` : ''}
-                    `;
-                    grid.appendChild(el);
-
-                    // Генерация штрихкода CODE128
-                    try {
-                        JsBarcode(`#<LaTex>id_1</LaTex>{labelCount} шт.`;
-            
-            setTimeout(() => {
-
+        setTimeout(() => window.print(), 500);
+        
