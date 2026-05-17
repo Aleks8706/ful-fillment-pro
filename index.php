@@ -1,0 +1,285 @@
+<?php
+// install.php
+header('Content-Type: text/html; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система этикеток ТЗ | Заказ №47</title>
+    <!-- Библиотеки для работы с Excel и Штрихкодами -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --text: #0f172a; --success: #16a34a; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+        .container { max-width: 1600px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0 0 15px 0; color: #0f172a; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .upload-box { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 10px; margin-bottom: 20px; background: #f1f5f9; cursor: pointer; transition: 0.2s; }
+        .upload-box:hover { background: #e2e8f0; border-color: var(--primary); }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; align-items: center; }
+        input, select, button { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button.secondary { background: #64748b; }
+        button.success { background: var(--success); }
+        .table-wrap { overflow-x: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; position: sticky; top: 0; z-index: 10; font-weight: 600; }
+        td[contenteditable="true"]:focus { background: #e0f2fe; outline: 2px solid var(--primary); border-radius: 4px; }
+        .stats { font-size: 14px; color: #475569; margin: 8px 0; display: flex; gap: 15px; }
+        .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+        
+        /* Настройки печати */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
+            .label-grid { display: grid; grid-template-columns: repeat(2, 100mm); grid-auto-rows: 60mm; gap: 3mm; padding: 5mm; }
+            .label { border: 1px dashed #999; padding: 4mm 5mm; box-sizing: border-box; font-family: Arial, sans-serif; display: flex; flex-direction: column; justify-content: space-between; page-break-inside: avoid; background: white; overflow: hidden; }
+            .label .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2mm; }
+            .label .sku { font-size: 15px; font-weight: bold; color: #000; }
+            .label .barcode svg { max-width: 90%; height: auto; }
+            .label .expiry { font-size: 12px; color: #444; font-weight: 500; margin-top: 1mm; }
+            .label .name { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+            .label .tz { font-size: 9px; color: #666; margin-top: auto; font-style: italic; border-top: 1px dotted #eee; padding-top: 2px; }
+            @page { size: A4; margin: 0; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="no-print">📦 Система этикеток ТЗ <span style="font-size:14px; font-weight:normal; color:#64748b;">v2.0 | Под заказ №47</span></h1>
+        
+        <div class="upload-box no-print" onclick="document.getElementById('fileInput').click()">
+            <p style="margin:0 0 10px 0; font-weight:500;">📎 Перетащите файл .xlsx или нажмите для выбора</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+            <small>Автоматически пропускает шапку, очищает #N/A, парсит русские числа</small>
+        </div>
+
+        <div id="editor" style="display:none;">
+            <div class="controls no-print">
+                <input type="text" id="filterText" placeholder="🔍 Артикул, ШК, Наименование, ТЗ...">
+                <input type="number" id="filterQty" placeholder="📦 Мин. спаек" min="0" step="1">
+                <button onclick="applyFilters()">Применить</button>
+                <button class="secondary" onclick="resetFilters()">Сброс</button>
+                <button class="success" onclick="generateLabels()">🖨️ Сформировать этикетки</button>
+                <button class="secondary" onclick="exportCSV()">📥 Экспорт CSV</button>
+            </div>
+            <div class="stats no-print">
+                <span id="statsTotal">Всего: 0</span>
+                <span id="statsFiltered">Показано: 0</span>
+                <span id="statsLabels">Этикеток: 0</span>
+                <span class="badge" id="orderMeta"></span>
+            </div>
+            <div class="table-wrap">
+                <table id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="print-area" class="no-print">
+            <div class="label-grid" id="labelGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        let rawData = [];
+        let filteredData = [];
+        let headerRow = [];
+        const COL_MAP = {
+            art_wb: 'Артикул ВБ', name: 'наименование составляющего в наборе', art_orig: 'Исходный артикул (арт штуки)',
+            sku_orig: 'ШК исход. штуки', sku_label: 'ШК на этикетку ВБ', art_label: 'Артикул на этикетку ВБ',
+            quant: 'квант спайки', qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек', qty_total: 'ИТОГО, шт.',
+            expiry: 'ГОДЕН ДО', tz: 'ТЗ', boxes: 'коробов', sku_box: 'спаек в коробе', items_box: 'штук в коробе', comment: 'Комментарий'
+        };
+
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const wb = XLSX.read(ev.target.result, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                processData(json);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processData(sheet) {
+            // 1. Находим строку заголовков (ищем "Артикул ВБ")
+            let headerIdx = sheet.findIndex(r => r.some(c => String(c).includes('Артикул ВБ')));
+            if (headerIdx === -1) return alert('Не найдена строка заголовков "Артикул ВБ"');
+            
+            headerRow = sheet[headerIdx].map(h => String(h).trim());
+            const colIndices = {};
+            Object.values(COL_MAP).forEach(colName => {
+                colIndices[colName] = headerRow.findIndex(h => h === colName);
+            });
+
+            // 2. Извлекаем данные, пропуская шапку и пустые строки
+            rawData = [];
+            for (let i = headerIdx + 1; i < sheet.length; i++) {
+                const row = sheet[i];
+                if (!row.some(v => v !== '' && v !== null && String(v).trim() !== '')) continue;
+                // Остановка на итоговой строке с суммами
+                if (row.some(v => String(v).includes('ИТОГО') && String(v).includes(','))) break; 
+
+                const obj = {};
+                Object.keys(COL_MAP).forEach(key => {
+                    const idx = colIndices[COL_MAP[key]];
+                    let val = idx !== -1 && row[idx] !== undefined ? row[idx] : '';
+                    obj[key] = cleanValue(val, key);
+                });
+                rawData.push(obj);
+            }
+
+            // Мета-информация из шапки
+            const meta = extractMeta(sheet);
+            document.getElementById('orderMeta').textContent = meta || '';
+
+            renderTable(rawData);
+            document.getElementById('editor').style.display = 'block';
+        }
+
+        function cleanValue(val, key) {
+            let v = String(val).trim();
+            // Очистка артефактов Excel
+            if (v.includes('ERROR:') || v.includes('#N/A') || v.includes('#REF!')) return '';
+            // Числа с запятой как разделитель тысяч (2,550 -> 2550)
+            if (key === 'qty_ship' || key === 'qty_total' || key === 'boxes' || key === 'sku_box' || key === 'items_box') {
+                return v.replace(/\s/g, '').replace(/,/g, '');
+            }
+            return v;
+        }
+
+        function extractMeta(sheet) {
+            const firstRows = sheet.slice(0, 5).flat().join(' ');
+            const matchDate = firstRows.match(/Отгрузка:\s*(\d{2}\.\d{2}\.\d{4})/);
+            const matchClient = firstRows.match(/Заказчик\s*(.{2,50}?)(?=Тип|Отгрузка|$)/);
+            return matchDate ? `📅 ${matchDate[1]}` + (matchClient ? ` | 🏢 ${matchClient[1].trim()}` : '') : '';
+        }
+
+        function parseQty(val) {
+            return Math.ceil(parseFloat(String(val).replace(/\s/g, '').replace(/,/g, '.')) || 0);
+        }
+
+        function renderTable(data) {
+            const thead = document.querySelector('#dataTable thead');
+            const tbody = document.querySelector('#dataTable tbody');
+            thead.innerHTML = '<tr>' + headerRow.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            tbody.innerHTML = data.map((row, i) => {
+                const idx = rawData.indexOf(row);
+                return '<tr>' + headerRow.map(h => {
+                    let key = Object.keys(COL_MAP).find(k => COL_MAP[k] === h);
+                    let val = row[key] !== undefined ? row[key] : '';
+                    return `<td contenteditable="true" data-idx="${idx}" data-key="${key}" onblur="syncCell(this)">${val}</td>`;
+                }).join('') + '</tr>';
+            }).join('');
+            updateStats(data.length);
+        }
+
+        function syncCell(td) {
+            const idx = parseInt(td.dataset.idx);
+            const key = td.dataset.key;
+            rawData[idx][key] = td.textContent.trim();
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const text = document.getElementById('filterText').value.toLowerCase().trim();
+            const minQty = parseFloat(document.getElementById('filterQty').value) || 0;
+
+            filteredData = rawData.filter(r => {
+                let match = true;
+                if (text) {
+                    const searchStr = `${r.art_wb} ${r.art_label} ${r.sku_label} ${r.sku_orig} ${r.name} ${r.tz}`.toLowerCase();
+                    match = match && searchStr.includes(text);
+                }
+                if (minQty > 0) match = match && parseQty(r.qty_ship) >= minQty;
+                return match;
+            });
+            renderTable(filteredData);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterText').value = '';
+            document.getElementById('filterQty').value = '';
+            renderTable(rawData);
+        }
+
+        function updateStats(count) {
+            document.getElementById('statsTotal').textContent = `Всего: ${rawData.length}`;
+            document.getElementById('statsFiltered').textContent = `Показано: ${count}`;
+        }
+
+        function generateLabels() {
+            const grid = document.getElementById('labelGrid');
+            grid.innerHTML = '';
+            const data = filteredData.length ? filteredData : rawData;
+            if (!data.length) return alert('Нет данных для печати. Загрузите файл или примените фильтры.');
+
+            let labelCount = 0;
+            data.forEach(row => {
+                const qty = parseQty(row.qty_ship);
+                if (qty <= 0) return;
+
+                for (let i = 0; i < qty; i++) {
+                    const id = `lbl_${Date.now()}_${i}`;
+                    const sku = row.sku_label || row.sku_orig || 'Н/Д';
+                    const art = row.art_label || row.art_wb || 'Н/Д';
+                    const exp = row.expiry || '—';
+                    const name = row.name || '';
+                    const tzShort = row.tz ? row.tz.substring(0, 80) + (row.tz.length > 80 ? '...' : '') : '';
+
+                    const el = document.createElement('div');
+                    el.className = 'label';
+                    el.innerHTML = `
+                        <div class="header">
+                            <div class="sku">Арт: ${art}</div>
+                            <div style="font-size:11px;color:#666;">${qty > 1 ? `${i+1}/${qty}` : ''}</div>
+                        </div>
+                        <div class="barcode" id="${id}"></div>
+                        <div class="expiry">Годен до: ${exp}</div>
+                        <div class="name">${name}</div>
+                        ${tzShort ? `<div class="tz">📦 ${tzShort}</div>` : ''}
+                    `;
+                    grid.appendChild(el);
+
+                    // Генерация штрихкода
+                    try { JsBarcode(`#${id}`, sku, { format: "CODE128", width: 1.5, height: 25, displayValue: true, fontSize: 10, margin: 0 }); } 
+                    catch(e) { document.getElementById(id).innerHTML = `<div style="font-size:12px;text-align:center;">ШК: ${sku}</div>`; }
+                    
+                    labelCount++;
+                }
+            });
+            document.getElementById('statsLabels').textContent = `Этикеток: ${labelCount}`;
+            setTimeout(() => window.print(), 300);
+        }
+
+        function exportCSV() {
+            const data = filteredData.length ? filteredData : rawData;
+            let csv = headerRow.join(',') + '\n';
+            data.forEach(r => {
+                csv += Object.keys(COL_MAP).map(k => `"${(r[k]||'').replace(/"/g,'""')}"`).join(',') + '\n';
+            });
+            const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Заказ_№47_Этикетки.csv';
+            link.click();
+        }
+    </script>
+</body>
+</html>
