@@ -2,84 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Этикетки ТЗ 58x40</title>
+    <title>Этикетки ТЗ 58x40 Озон/ВБ</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; color: #333; }
-        
-        /* Загрузка */
-        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin-bottom: 20px; cursor: pointer; border-radius: 8px; transition: 0.3s; }
-        .upload-area:hover { background: #eef; border-color: #2563eb; }
-        .btn { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        :root { --primary: #2563eb; --success: #16a34a; --bg: #f0f2f5; --text: #333; --border: #ddd; }
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { margin: 0 0 20px; font-size: 24px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn:hover { background: #1d4ed8; }
-        
-        /* Таблица и фильтры */
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #15803d; }
+        .btn-secondary { background: #6b7280; }
+        .btn-secondary:hover { background: #4b5563; }
+        .upload-area { border: 2px dashed var(--border); padding: 40px; text-align: center; margin-bottom: 20px; cursor: pointer; border-radius: 8px; transition: 0.3s; }
+        .upload-area:hover, .upload-area.dragover { background: #f8fafc; border-color: var(--primary); }
+        input, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
         .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 200px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-        th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
-        th { background: #f9fafb; }
-        td[contenteditable] { background: #fffbe6; }
-        
-        /* ПЕЧАТЬ 58x40 мм */
+        th, td { border: 1px solid #eee; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f9fafb; position: sticky; top: 0; font-weight: 600; }
+        td[contenteditable] { background: #fffbe6; outline: none; }
+        td[contenteditable]:focus { background: #fff3cd; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal { background: white; width: 95%; max-width: 950px; max-height: 85vh; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .modal-body { flex: 1; overflow: auto; margin-bottom: 15px; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid #eee; flex-wrap: wrap; }
+        .modal-table { width: 100%; border-collapse: collapse; }
+        .modal-table th, .modal-table td { padding: 6px 8px; font-size: 12px; white-space: nowrap; }
+        .modal-table tr { border-bottom: 1px solid #f3f4f6; }
+        .modal-table tr:hover { background: #f8fafc; }
+        .checkbox-cell { width: 30px; text-align: center; }
+        .modal-controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+        .info-badge { background: #e0e7ff; color: #1e3a8a; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+
+        #print-area { position: absolute; left: -9999px; top: 0; width: 100%; }
+        .label-grid { display: flex; flex-direction: column; align-items: flex-start; }
+        .label {
+            width: 58mm; height: 40mm; padding: 2mm; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between;
+            font-family: Arial, sans-serif; overflow: hidden; background: white;
+        }
+        .lbl-header { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; margin-bottom: 1mm; }
+        .lbl-barcode { text-align: center; margin: 1mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        .lbl-barcode svg { max-height: 14mm; max-width: 100%; display: block; }
+        .lbl-info { display: flex; justify-content: space-between; font-size: 8px; color: #444; }
+        .lbl-name { font-size: 9px; line-height: 1.2; max-height: 2.4em; overflow: hidden; margin-bottom: 1mm; }
+        .lbl-counter { font-size: 9px; color: #666; }
+
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            
-            .label-grid { display: flex; flex-direction: column; align-items: center; width: 100%; }
-            
-            .label {
-                width: 58mm;
-                height: 40mm;
-                border: 1px dotted #ccc; /* Для визуализации границ */
-                padding: 2mm;
-                box-sizing: border-box;
-                page-break-after: always; /* Каждая этикетка на новой странице/отрезе */
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                font-family: Arial, sans-serif;
-                overflow: hidden;
-            }
-            
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; z-index: 9999; }
+            .label { page-break-after: always; border: 1px dashed #999; }
             .label:last-child { page-break-after: auto; }
-            
-            .lbl-header { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; }
-            .lbl-art { font-size: 10px; }
-            .lbl-barcode { text-align: center; margin: 2mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-            .lbl-barcode svg { max-height: 12mm; max-width: 100%; }
-            .lbl-info { font-size: 9px; display: flex; justify-content: space-between; }
-            .lbl-name { font-size: 9px; line-height: 1.1; height: 2.2em; overflow: hidden; }
-            
             @page { size: 58mm 40mm; margin: 0; }
             .no-print { display: none !important; }
         }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div class="container no-print">
-    <h1>🏷️ Генератор этикеток 58x40 мм</h1>
+    <h1>🏷️ Генератор этикеток 58x40 мм (Озон/ВБ)</h1>
     
-    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-area" id="dropZone">
         <p>Нажмите сюда или перетащите файл Excel (.xlsx)</p>
-        <button class="btn">Загрузить ТЗ</button>
+        <button class="btn" id="uploadBtn" type="button">Загрузить ТЗ</button>
         <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
     </div>
 
-    <div id="editor" style="display:none;">
+    <div id="editor" class="hidden">
         <div class="controls">
-            <input type="text" id="search" placeholder="Поиск: Артикул, ШК, Название, Квант...">
-            <input type="number" id="minQty" placeholder="Мин. кол-во к отгрузке">
-            <button class="btn" onclick="applyFilter()">Применить фильтр</button>
-            <button class="btn" style="background:#16a34a" onclick="printLabels()">🖨️ Печать этикеток</button>
+            <input type="text" id="search" placeholder="Поиск: Артикул, ШК, Название...">
+            <input type="number" id="minQty" placeholder="Мин. кол-во к отгрузке" value="0">
+            <button class="btn" onclick="applyFilter()">🔍 Применить фильтр</button>
+            <button class="btn btn-success" onclick="openPrintDialog()">🖨️ Настроить и Печать</button>
         </div>
-        <div id="stats" style="margin-bottom:10px; color:#666;"></div>
-        <div style="overflow-x:auto; max-height: 500px;">
+        <div id="stats" style="margin-bottom:10px; color:#666; font-size:13px;"></div>
+        <div style="overflow-x:auto; max-height: 500px; border: 1px solid #eee; border-radius: 6px;">
             <table id="dataTable">
                 <thead></thead>
                 <tbody></tbody>
@@ -88,15 +94,47 @@
     </div>
 </div>
 
-<div id="print-area" class="no-print">
+<div id="print-modal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 style="margin:0; font-size:18px;">⚙️ Настройка печати</h2>
+            <button class="btn-secondary btn" onclick="closePrintDialog()">✕ Закрыть</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-controls">
+                <input type="text" id="modalSearch" placeholder="Фильтр строк (по всем колонкам)..." style="flex:2;">
+                <select id="bcFormat" style="flex:1;">
+                    <option value="CODE128">ШК: CODE128 (рекомендуется)</option>
+                    <option value="EAN13">ШК: EAN13</option>
+                    <option value="UPC">ШК: UPC</option>
+                    <option value="CODE39">ШК: CODE39</option>
+                </select>
+                <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+                    <input type="checkbox" id="selectAllModal" onchange="toggleModalSelectAll(this.checked)"> Выбрать всё
+                </label>
+                <span class="info-badge" id="modalCount">Выбрано: 0</span>
+            </div>
+            <table class="modal-table" id="modalTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary btn" onclick="closePrintDialog()">Отмена</button>
+            <button class="btn btn-success" id="btnExecutePrint" onclick="executePrint()">🖨️ Печать выбранных</button>
+        </div>
+    </div>
+</div>
+
+<div id="print-area">
     <div class="label-grid" id="labelGrid"></div>
 </div>
 
 <script>
     let allData = [];
     let filteredData = [];
+    let modalData = [];
     
-    // Названия колонок из вашего файла
     const COLUMNS = {
         art_wb: 'Артикул ВБ',
         name: 'наименование составляющего в наборе',
@@ -108,187 +146,198 @@
         tz: 'ТЗ'
     };
 
-    document.getElementById('fileInput').addEventListener('change', handleFile);
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const uploadBtn = document.getElementById('uploadBtn');
 
-    function handleFile(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => { if(fileInput.files[0]) loadFile(fileInput.files[0]); });
 
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) { loadFile(e.dataTransfer.files[0]); fileInput.files = e.dataTransfer.files; }
+    });
+
+    function loadFile(file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (ev) => {
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                
-                // Читаем как массив массивов, чтобы найти заголовок вручную
+                const workbook = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
                 parseData(json);
-            } catch (err) {
-                alert("Ошибка чтения файла: " + err.message);
-                console.error(err);
-            }
+            } catch (err) { alert('Ошибка: ' + err.message); console.error(err); }
         };
         reader.readAsArrayBuffer(file);
     }
 
     function parseData(rows) {
-        // 1. Ищем индекс строки заголовка
         let headerIndex = -1;
-        for (let i = 0; i < rows.length; i++) {
-            const rowStr = rows[i].join(' ');
-            if (rowStr.includes('Артикул ВБ')) {
-                headerIndex = i;
-                break;
-            }
-        }
-
-        if (headerIndex === -1) {
-            alert('Не найден заголовок "Артикул ВБ". Проверьте файл.');
-            return;
-        }
+        for(let i=0; i<rows.length; i++) { if((rows[i]||[]).join(' ').includes('Артикул ВБ')) { headerIndex = i; break; } }
+        if(headerIndex === -1) { alert('Заголовок "Артикул ВБ" не найден'); return; }
 
         const headers = rows[headerIndex];
-        
-        // 2. Находим индексы нужных колонок
         const idx = {};
         Object.keys(COLUMNS).forEach(key => {
             idx[key] = headers.findIndex(h => String(h).trim() === COLUMNS[key]);
         });
 
-        // 3. Парсим данные
         allData = [];
-        for (let i = headerIndex + 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0) continue;
+        for(let i=headerIndex+1; i<rows.length; i++) {
+            const row = rows[i] || [];
+            if(String(row[0]||'').toUpperCase().includes('ИТОГО') && String(row[0]).length < 30) break;
             
-            // Останавливаемся на итоговой строке
-            if (String(row[0]).includes('ИТОГО') && String(row[0]).length < 20) break;
-
             const item = {};
             Object.keys(COLUMNS).forEach(key => {
-                let val = row[idx[key]] !== undefined ? row[idx[key]] : '';
-                
-                // Очистка значений
-                if (typeof val === 'string') {
-                    val = val.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
-                }
-                
-                // Преобразование чисел (2,550 -> 2550)
-                if (key === 'qty_ship' || key === 'quant') {
-                    val = String(val).replace(/\s/g, '').replace(/,/g, '');
-                }
-                
-                item[key] = val;
+                let v = (idx[key] >= 0 && idx[key] < row.length) ? row[idx[key]] : '';
+                if(typeof v === 'string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
+                if(['qty_ship','quant'].includes(key)) v = String(v).replace(/\s/g, '').replace(/,/g, '');
+                item[key] = v;
             });
-
-            // Добавляем только если есть артикул
-            if (item.art_wb || item.sku_label) {
-                allData.push(item);
-            }
+            if(item.art_wb || item.sku_label) allData.push(item);
         }
 
-        if (allData.length === 0) {
-            alert('Данные не найдены. Проверьте структуру файла.');
-            return;
-        }
-
-        renderTable(allData);
-        document.getElementById('editor').style.display = 'block';
-        document.querySelector('.upload-area').style.display = 'none';
+        if(!allData.length) { alert('Данные не найдены'); return; }
+        filteredData = [...allData];
+        renderTable(filteredData);
+        document.getElementById('editor').classList.remove('hidden');
+        dropZone.style.display = 'none';
     }
 
     function renderTable(data) {
+        const keys = ['art_wb','name','sku_label','quant','qty_ship','expiry'];
+        const labels = {art_wb:'Арт.ВБ', name:'Наименование', sku_label:'ШК этикетки', quant:'Квант', qty_ship:'К отгрузке', expiry:'Годен до'};
+        
         const thead = document.querySelector('#dataTable thead');
-        const tbody = document.querySelector('#dataTable tbody');
+        thead.innerHTML = '<tr>' + keys.map(k => `<th>${labels[k]}</th>`).join('') + '</tr>';
         
-        // Показываем только важные колонки
-        const visibleKeys = ['art_wb', 'name', 'sku_label', 'quant', 'qty_ship', 'expiry'];
-        
-        thead.innerHTML = '<tr>' + visibleKeys.map(k => `<th><LaTex>id_6</LaTex>{visibleKeys.map(k => `<td contenteditable="true" onblur="updateData(${index}, '${k}', this.innerText)">${item[k]}</td>`).join('')}
-            </tr>`;
-        }).join('');
-        
-        document.getElementById('stats').innerText = `Всего позиций: ${data.length}`;
+        let html = '';
+        data.forEach((item, i) => {
+            html += `<tr>${keys.map(k => `<td contenteditable="true" onblur="updateData(${i},'${k}',this.innerText)">${escapeHtml(item[k]||'')}</td>`).join('')}</tr>`;
+        });
+        document.querySelector('#dataTable tbody').innerHTML = html;
+        document.getElementById('stats').textContent = `Загружено: ${allData.length} | Отображено: ${data.length}`;
     }
 
-    function updateData(index, key, value) {
-        allData[index][key] = value.trim();
-        applyFilter(); // Обновляем фильтр при изменении
-    }
+    function updateData(index, key, value) { if(allData[index]) { allData[index][key] = value.trim(); applyFilter(); } }
 
     function applyFilter() {
         const search = document.getElementById('search').value.toLowerCase();
-        const minQty = parseFloat(document.getElementById('minQty').value) || 0;
-
+        const minQ = parseFloat(document.getElementById('minQty').value) || 0;
         filteredData = allData.filter(item => {
-            const qty = parseFloat(String(item.qty_ship).replace(',', '.')) || 0;
-            const matchesSearch = 
-                String(item.art_wb).toLowerCase().includes(search) ||
-                String(item.name).toLowerCase().includes(search) ||
-                String(item.sku_label).toLowerCase().includes(search) ||
-                String(item.quant).toLowerCase().includes(search);
-            
-            return matchesSearch && qty >= minQty;
+            const q = parseFloat(String(item.qty_ship).replace(/,/g,'.')) || 0;
+            const match = Object.values(item).some(v => String(v).toLowerCase().includes(search));
+            return match && q >= minQ;
         });
-
         renderTable(filteredData);
     }
 
-    function printLabels() {
+    // MODAL & PRINT LOGIC
+    function openPrintDialog() {
+        modalData = filteredData.length > 0 ? filteredData : allData;
+        renderModalTable(modalData);
+        document.getElementById('modalSearch').value = '';
+        document.getElementById('print-modal').classList.add('active');
+    }
+
+    function closePrintDialog() { document.getElementById('print-modal').classList.remove('active'); }
+
+    function renderModalTable(data) {
+        const keys = ['art_wb','name','sku_label','qty_ship','expiry'];
+        const labels = {art_wb:'Артикул', name:'Наименование', sku_label:'ШК', qty_ship:'Кол-во', expiry:'Годен до'};
+        
+        const thead = document.querySelector('#modalTable thead');
+        thead.innerHTML = '<tr><th class="checkbox-cell">✔</th>' + keys.map(k => `<th>${labels[k]}</th></tr>`).join('');
+        
+        let html = '';
+        data.forEach((item, i) => {
+            const qty = Math.ceil(parseFloat(String(item.qty_ship).replace(/,/g,'.')) || 0);
+            if(qty <= 0) return;
+            html += `<tr data-index="${i}" data-search="${escapeHtml(Object.values(item).join(' '))}">
+                <td class="checkbox-cell"><input type="checkbox" class="print-row-check" data-idx="${i}" onchange="updateModalCount()"></td>
+                ${keys.map(k => `<td>${escapeHtml(String(item[k]||''))}</td>`).join('')}
+            </tr>`;
+        });
+        document.querySelector('#modalTable tbody').innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#888;">Нет строк с количеством > 0</td></tr>';
+        document.getElementById('modalCount').textContent = 'Выбрано: 0';
+    }
+
+    document.getElementById('modalSearch').addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('#modalTable tbody tr').forEach(tr => {
+            const txt = tr.dataset.search || '';
+            tr.style.display = txt.includes(q) ? '' : 'none';
+        });
+    });
+
+    function toggleModalSelectAll(checked) {
+        document.querySelectorAll('#modalTable tbody tr').forEach(tr => {
+            if(tr.style.display !== 'none') { tr.querySelector('.print-row-check').checked = checked; }
+        });
+        updateModalCount();
+    }
+
+    function updateModalCount() {
+        const checked = document.querySelectorAll('#modalTable tbody .print-row-check:checked').length;
+        document.getElementById('modalCount').textContent = `Выбрано: ${checked}`;
+    }
+
+    function executePrint() {
         const grid = document.getElementById('labelGrid');
         grid.innerHTML = '';
+        const bcFormat = document.getElementById('bcFormat').value;
+        const selectedIndices = Array.from(document.querySelectorAll('#modalTable .print-row-check:checked')).map(cb => parseInt(cb.dataset.idx));
         
-        const dataToPrint = filteredData.length > 0 ? filteredData : allData;
-        
-        if (dataToPrint.length === 0) {
-            alert('Нет данных для печати');
-            return;
-        }
+        if(!selectedIndices.length) { alert('Выберите хотя бы одну строку для печати'); return; }
 
-        let count = 0;
-        dataToPrint.forEach(item => {
-            const qty = Math.ceil(parseFloat(String(item.qty_ship).replace(',', '.')) || 0);
-            if (qty <= 0) return;
+        let labelIdx = 0;
+        selectedIndices.forEach(idx => {
+            const item = allData[idx];
+            const qty = Math.ceil(parseFloat(String(item.qty_ship).replace(/,/g,'.')) || 0);
+            if(qty <= 0) return;
 
-            for (let i = 0; i < qty; i++) {
-                const id = `bc_<LaTex>id_5</LaTex>{Date.now()}`;
-                const sku = item.sku_label || item.art_wb;
-                const art = item.art_label || item.art_wb;
-                
-                // Сокращаем ТЗ для этикетки
-                let tzShort = item.tz || '';
-                if (tzShort.length > 60) tzShort = tzShort.substring(0, 57) + '...';
+            for(let i=0; i<qty; i++) {
+                labelIdx++;
+                const id = 'lbl_bc_' + labelIdx;
+                const sku = item.sku_label || item.art_wb || '';
+                const art = item.art_label || item.art_wb || '';
+                let tz = item.tz || ''; if(tz.length>60) tz = tz.substring(0,57)+'...';
 
                 const div = document.createElement('div');
                 div.className = 'label';
                 div.innerHTML = `
-                    <div class="lbl-header">
-                        <span class="lbl-art">Арт: <LaTex>id_4</LaTex>{qty > 1 ? (i+1)+'/'+qty : ''}</span>
+                    <div class="lbl-header"><span>Арт: ${escapeHtml(art)}</span>${qty>1 ? `<span class="lbl-counter">${i+1}/${qty}</span>` : ''}</div>
+                    <div class="lbl-barcode"><svg id="${id}"></svg></div>
+                    <div class="lbl-name">${escapeHtml(item.name)}</div>
+                    <div class="lbl-info">
+                        <span>Годен до: ${escapeHtml(item.expiry)}</span>
+                        <span>Квант: ${escapeHtml(item.quant)}</span>
                     </div>
-                    <div class="lbl-barcode">
-                        <svg id="<LaTex>id_3</LaTex>{item.expiry}</span>
-                        <span>Квант: <LaTex>id_2</LaTex>{item.name}</div>
-                    <LaTex>id_1</LaTex>{tzShort}</div>` : ''}
+                    ${tz ? `<div class="lbl-name" style="margin-top:0.5mm; color:#555;">${escapeHtml(tz)}</div>` : ''}
                 `;
                 grid.appendChild(div);
 
-                // Генерация штрихкода
-                try {
-                    JsBarcode(`#${id}`, sku, {
-                        format: "CODE128",
-                        width: 1.5,
-                        height: 30,
-                        displayValue: true,
-                        fontSize: 10,
-                        margin: 0
-                    });
-                } catch(e) {
-                    console.error(e);
+                if(sku) {
+                    try {
+                        JsBarcode('#' + id, sku, {
+                            format: bcFormat, width: 1.5, height: 30, displayValue: true, fontSize: 10, margin: 0
+                        });
+                    } catch(e) { console.warn('Barcode error', e); div.querySelector('#'+id).innerHTML = '<span style="font-size:9px;color:red">Ошибка ШК: '+escapeHtml(sku)+'</span>'; }
                 }
             }
         });
 
-        setTimeout(() => window.print(), 500);
-        
+        if(!labelIdx) { alert('Нет этикеток для печати (количество = 0)'); return; }
+        closePrintDialog();
+        setTimeout(() => window.print(), 300);
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div'); d.appendChild(document.createTextNode(str)); return d.innerHTML;
+    }
+</script>
+</body>
+</html>
