@@ -13,19 +13,50 @@
         body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
         .container { max-width: 1600px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         h1 { margin: 0 0 15px 0; color: #0f172a; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .upload-box { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 10px; margin-bottom: 20px; background: #f1f5f9; cursor: pointer; transition: 0.2s; }
+        
+        /* Область загрузки */
+        .upload-box { 
+            border: 2px dashed var(--border); 
+            padding: 40px; 
+            text-align: center; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            background: #f1f5f9; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            position: relative;
+        }
         .upload-box:hover { background: #e2e8f0; border-color: var(--primary); }
+        
+        /* Явная кнопка внутри зоны загрузки */
+        .btn-upload {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            display: inline-block;
+            pointer-events: auto; /* Важно для клика */
+        }
+        .btn-upload:hover { opacity: 0.9; transform: translateY(-1px); }
+
         .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; align-items: center; }
-        input, select, button { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 500; transition: 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        input, select, button.action-btn { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        button.action-btn { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        button.action-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         button.secondary { background: #64748b; }
         button.success { background: var(--success); }
+        
         .table-wrap { overflow-x: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
         th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
         th { background: #f1f5f9; position: sticky; top: 0; z-index: 10; font-weight: 600; }
         td[contenteditable="true"]:focus { background: #e0f2fe; outline: 2px solid var(--primary); border-radius: 4px; }
+        
         .stats { font-size: 14px; color: #475569; margin: 8px 0; display: flex; gap: 15px; }
         .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
         
@@ -49,22 +80,26 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="no-print">📦 Система этикеток ТЗ <span style="font-size:14px; font-weight:normal; color:#64748b;">v2.0 | Под заказ №47</span></h1>
+        <h1 class="no-print">📦 Система этикеток ТЗ <span style="font-size:14px; font-weight:normal; color:#64748b;">v2.1 | Под заказ №47</span></h1>
         
-        <div class="upload-box no-print" onclick="document.getElementById('fileInput').click()">
-            <p style="margin:0 0 10px 0; font-weight:500;">📎 Перетащите файл .xlsx или нажмите для выбора</p>
+        <!-- Зона загрузки с явной кнопкой -->
+        <div class="upload-box no-print" id="dropZone">
+            <p style="margin:0 0 10px 0; font-weight:500;">📎 Перетащите файл .xlsx сюда</p>
+            <small>или</small><br>
+            <!-- Явная кнопка вызова диалога выбора файла -->
+            <button class="btn-upload" onclick="document.getElementById('fileInput').click()">📂 Загрузить ТЗ с компьютера</button>
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
-            <small>Автоматически пропускает шапку, очищает #N/A, парсит русские числа</small>
+            <p style="margin-top: 15px; font-size: 12px; color: #64748b;">Автоматически пропускает шапку, очищает #N/A, парсит русские числа</p>
         </div>
 
         <div id="editor" style="display:none;">
             <div class="controls no-print">
                 <input type="text" id="filterText" placeholder="🔍 Артикул, ШК, Наименование, ТЗ...">
                 <input type="number" id="filterQty" placeholder="📦 Мин. спаек" min="0" step="1">
-                <button onclick="applyFilters()">Применить</button>
-                <button class="secondary" onclick="resetFilters()">Сброс</button>
-                <button class="success" onclick="generateLabels()">🖨️ Сформировать этикетки</button>
-                <button class="secondary" onclick="exportCSV()">📥 Экспорт CSV</button>
+                <button class="action-btn" onclick="applyFilters()">Применить</button>
+                <button class="action-btn secondary" onclick="resetFilters()">Сброс</button>
+                <button class="action-btn success" onclick="generateLabels()">🖨️ Сформировать этикетки</button>
+                <button class="action-btn secondary" onclick="exportCSV()">📥 Экспорт CSV</button>
             </div>
             <div class="stats no-print">
                 <span id="statsTotal">Всего: 0</span>
@@ -96,17 +131,54 @@
             expiry: 'ГОДЕН ДО', tz: 'ТЗ', boxes: 'коробов', sku_box: 'спаек в коробе', items_box: 'штук в коробе', comment: 'Комментарий'
         };
 
-        document.getElementById('fileInput').addEventListener('change', handleFile);
+        // Обработчики событий для загрузки
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
 
-        function handleFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag & Drop поддержка
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#e2e8f0';
+            dropZone.style.borderColor = 'var(--primary)';
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f1f5f9';
+            dropZone.style.borderColor = 'var(--border)';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f1f5f9';
+            dropZone.style.borderColor = 'var(--border)';
+            if (e.dataTransfer.files.length > 0) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                alert('Пожалуйста, выберите файл Excel (.xlsx или .xls)');
+                return;
+            }
             const reader = new FileReader();
             reader.onload = (ev) => {
-                const wb = XLSX.read(ev.target.result, { type: 'array' });
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                processData(json);
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    processData(json);
+                } catch (err) {
+                    console.error(err);
+                    alert('Ошибка при чтении файла. Убедитесь, что это корректный Excel файл.');
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -114,7 +186,7 @@
         function processData(sheet) {
             // 1. Находим строку заголовков (ищем "Артикул ВБ")
             let headerIdx = sheet.findIndex(r => r.some(c => String(c).includes('Артикул ВБ')));
-            if (headerIdx === -1) return alert('Не найдена строка заголовков "Артикул ВБ"');
+            if (headerIdx === -1) return alert('Не найдена строка заголовков "Артикул ВБ". Проверьте формат файла.');
             
             headerRow = sheet[headerIdx].map(h => String(h).trim());
             const colIndices = {};
@@ -126,9 +198,11 @@
             rawData = [];
             for (let i = headerIdx + 1; i < sheet.length; i++) {
                 const row = sheet[i];
+                // Пропускаем полностью пустые строки
                 if (!row.some(v => v !== '' && v !== null && String(v).trim() !== '')) continue;
-                // Остановка на итоговой строке с суммами
-                if (row.some(v => String(v).includes('ИТОГО') && String(v).includes(','))) break; 
+                
+                // Остановка на итоговой строке с суммами (обычно содержит "ИТОГО" и запятые в числах)
+                if (row.some(v => String(v).includes('ИТОГО') && String(v).match(/,/))) break; 
 
                 const obj = {};
                 Object.keys(COL_MAP).forEach(key => {
@@ -139,12 +213,19 @@
                 rawData.push(obj);
             }
 
+            if (rawData.length === 0) {
+                alert('Данные не найдены. Проверьте, есть ли товары после заголовка.');
+                return;
+            }
+
             // Мета-информация из шапки
             const meta = extractMeta(sheet);
             document.getElementById('orderMeta').textContent = meta || '';
 
             renderTable(rawData);
             document.getElementById('editor').style.display = 'block';
+            // Скрываем зону загрузки после успешной загрузки
+            document.querySelector('.upload-box').style.display = 'none';
         }
 
         function cleanValue(val, key) {
