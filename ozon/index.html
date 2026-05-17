@@ -172,8 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     let allData = [], filteredData = [], cityColumns = [];
-    const FIXED_COLS = { 'наименование составляющего в наборе': 'name', 'шк на этикетку': 'sku', 'Артикул продавца': 'art', 'ИТОГО К ОТГРУЗКЕ спаек': 'total_qty', 'ГОДЕН ДО': 'expiry', 'ТЗ': 'tz' };
-    
     const fileInput = document.getElementById('fileInput');
     const dropZone = document.getElementById('dropZone');
     const uploadBtn = document.getElementById('uploadBtn');
@@ -209,33 +207,62 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function parseData(rows) {
+        // Находим строку заголовков, ищем строку где есть "Артикул продавца"
         let hi = -1;
-        for(let i=0;i<rows.length;i++) if((rows[i]||[]).join(' ').includes('Артикул продавца')){hi=i;break;}
+        for(let i=0; i<rows.length; i++){
+            let rowStr = (rows[i]||[]).join(' ').toLowerCase();
+            if(rowStr.includes('артикул продавца')){ hi = i; break; }
+        }
         if(hi===-1){alert('Не найдена строка заголовков "Артикул продавца". Проверьте файл.');return;}
 
         const headers = rows[hi];
         const idxMap = {}, cities = [];
+
+        // Маппинг колонок через includes для надежности
         headers.forEach((h, i) => {
-            const cleanH = h.toString().trim();
-            if(FIXED_COLS[cleanH]) idxMap[FIXED_COLS[cleanH]] = i;
-            else if(cleanH.length > 1 && isNaN(Number(cleanH))) cities.push({name: cleanH, idx: i});
+            const hStr = String(h).trim().toLowerCase();
+            if(hStr.includes('наименование')) idxMap['name'] = i;
+            else if(hStr.includes('шк')) idxMap['sku'] = i;
+            else if(hStr.includes('артикул')) idxMap['art'] = i;
+            else if(hStr.includes('итого к отгрузке')) idxMap['total_qty'] = i;
+            else if(hStr.includes('годен до')) idxMap['expiry'] = i;
+            else if(hStr === 'тз') idxMap['tz'] = i;
+        });
+
+        // Определяем города (все остальные непустые заголовки)
+        const knownIndices = new Set(Object.values(idxMap));
+        headers.forEach((h, i) => {
+            if(!knownIndices.has(i) && h && String(h).trim() !== '') {
+                cities.push({name: String(h).trim(), idx: i});
+            }
         });
         cityColumns = cities.map(c=>c.name);
         
         allData = [];
-        for(let i=hi+1;i<rows.length;i++){
+        for(let i=hi+1; i<rows.length; i++){
             const row = rows[i]||[];
-            if(String(row[0]||'').toUpperCase().includes('ИТОГО') && String(row[0]).length<20) break;
+            
+            // Пропускаем пустые строки или строки итогов
+            const artVal = (idxMap.art !== undefined) ? row[idxMap.art] : '';
+            if(String(artVal).trim() === '' && row.length < 5) continue; // Пропуск пустых строк
+            if(String(artVal).trim() === '' && (row[idxMap.total_qty] || '').toString().length > 10) continue; // Пропуск итоговой строки (где много нулей или большие суммы)
+
             const item = { name:'', sku:'', art:'', total_qty:0, expiry:'', tz:'', cities:{} };
-            if(idxMap.name) item.name = cleanVal(row[idxMap.name]);
-            if(idxMap.sku) item.sku = cleanVal(row[idxMap.sku]);
-            if(idxMap.art) item.art = cleanVal(row[idxMap.art]);
-            if(idxMap.total_qty) item.total_qty = Number(cleanVal(row[idxMap.total_qty])) || 0;
-            if(idxMap.expiry) item.expiry = cleanVal(row[idxMap.expiry]);
-            if(idxMap.tz) item.tz = cleanVal(row[idxMap.tz]);
+            if(idxMap.name !== undefined) item.name = cleanVal(row[idxMap.name]);
+            if(idxMap.sku !== undefined) item.sku = cleanVal(row[idxMap.sku]);
+            if(idxMap.art !== undefined) item.art = cleanVal(row[idxMap.art]);
+            if(idxMap.total_qty !== undefined) item.total_qty = Number(cleanVal(row[idxMap.total_qty])) || 0;
+            if(idxMap.expiry !== undefined) item.expiry = cleanVal(row[idxMap.expiry]);
+            if(idxMap.tz !== undefined) item.tz = cleanVal(row[idxMap.tz]);
             
             cities.forEach(c => { item.cities[c.name] = Number(cleanVal(row[c.idx])) || 0; });
-            if(item.sku || item.art || item.name) allData.push(item);
+            
+            // Добавляем только если есть артикул или шк
+            if(item.sku || item.art || item.name) {
+                // Если наименования нет, берем из ТЗ или артикула
+                if(!item.name && item.tz) item.name = item.tz;
+                allData.push(item);
+            }
         }
 
         if(!allData.length){alert('Данные не найдены');return;}
