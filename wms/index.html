@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система фильтрации заказов и генерации этикеток</title>
+    <title>Система фильтрации заказов и генерации этикеток Ozon/ВБ</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
@@ -22,6 +22,9 @@
             --border: #e2e8f0;
             --text: #1e293b;
             --text-light: #64748b;
+            --wb-color: #cb11ab;
+            --wb-hover: #a00e8a;
+            --ozon-color: #005bff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -65,24 +68,25 @@
 
         .tab-btn {
             flex: 1;
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 1rem;
             border: none;
             background: transparent;
             border-radius: 8px;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-light);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .tab-btn:hover { background: #f1f5f9; color: var(--text); }
         .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn.active.wb-tab { background: var(--wb-color); }
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -110,6 +114,11 @@
             background: #eff6ff;
         }
 
+        .upload-zone.wb-zone:hover, .upload-zone.wb-zone.dragover {
+            border-color: var(--wb-color);
+            background: #fdf2f8;
+        }
+
         .upload-zone.has-file {
             border-color: var(--success);
             background: #ecfdf5;
@@ -122,6 +131,7 @@
         }
 
         .upload-zone:hover .upload-icon { color: var(--primary); }
+        .upload-zone.wb-zone:hover .upload-icon { color: var(--wb-color); }
 
         .upload-text { font-size: 1.125rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem; }
         .upload-hint { font-size: 0.875rem; color: #94a3b8; }
@@ -159,6 +169,7 @@
         }
 
         .data-info.visible { display: flex; }
+        .data-info.wb-info { background: #fdf2f8; color: #9d174d; }
 
         /* CONTROLS */
         .controls {
@@ -182,13 +193,13 @@
         .city-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
         .city-btn {
-            padding: 0.625rem 1.25rem;
+            padding: 0.5rem 1rem;
             border: 2px solid var(--border);
             background: white;
             border-radius: 8px;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
             color: #475569;
             transition: all 0.2s;
@@ -196,13 +207,15 @@
 
         .city-btn:hover { border-color: var(--primary); color: var(--primary); }
         .city-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .city-btn.wb-city:hover { border-color: var(--wb-color); color: var(--wb-color); }
+        .city-btn.wb-city.active { background: var(--wb-color); color: white; border-color: var(--wb-color); }
 
         .city-btn .badge {
             display: inline-block;
             padding: 0.125rem 0.5rem;
             background: rgba(255,255,255,0.2);
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             margin-left: 0.5rem;
         }
@@ -224,6 +237,25 @@
 
         .search-input:focus { outline: none; border-color: var(--primary); }
 
+        .filter-row {
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+        }
+
+        .filter-group {
+            display: flex; align-items: center; gap: 6px;
+            background: #f8fafc; padding: 4px 8px;
+            border-radius: 6px; border: 1px solid var(--border);
+        }
+
+        .filter-group label {
+            font-size: 12px; font-weight: 500; color: #475569; white-space: nowrap;
+        }
+
+        .filter-group input, .filter-group select {
+            padding: 6px 8px; border: 1px solid var(--border);
+            border-radius: 4px; font-size: 12px; font-family: 'Inter', sans-serif;
+        }
+
         /* ACTIONS BAR */
         .actions-bar {
             display: none;
@@ -242,6 +274,7 @@
         .stat-label { font-size: 0.75rem; color: var(--text-light); font-weight: 500; }
         .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text); }
         .stat-value.primary { color: var(--primary); }
+        .stat-value.wb { color: var(--wb-color); }
 
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -269,14 +302,8 @@
         .btn-secondary { background: var(--gray); }
         .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); color: #000; }
-
-        .btn-outline {
-            background: white;
-            color: var(--text);
-            border: 2px solid var(--border);
-        }
-
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-wb { background: var(--wb-color); }
+        .btn-wb:hover { background: var(--wb-hover); }
 
         .select-all-btn {
             padding: 0.5rem 1rem;
@@ -310,7 +337,7 @@
 
         th {
             background: #f8fafc;
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             text-align: left;
             font-size: 0.75rem;
             font-weight: 600;
@@ -324,7 +351,7 @@
         }
 
         td {
-            padding: 0.75rem 1rem;
+            padding: 0.625rem 1rem;
             font-size: 0.875rem;
             border-bottom: 1px solid #f1f5f9;
         }
@@ -349,12 +376,12 @@
 
         .quantity-badge.zero { background: #fef2f2; color: var(--danger); }
         .quantity-badge.high { background: #ecfdf5; color: var(--success); }
+        .quantity-badge.wb-badge { background: #fdf2f8; color: var(--wb-color); }
 
         .expiry-date { font-size: 0.8rem; color: var(--text-light); }
         .pack-info { font-size: 0.8rem; color: #94a3b8; }
 
         .empty-state { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
-
         .empty-state svg { width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.5; }
         .empty-state h3 { font-size: 1.125rem; color: #64748b; margin-bottom: 0.5rem; }
         .empty-state p { font-size: 0.875rem; }
@@ -362,6 +389,9 @@
         .sort-btn { cursor: pointer; user-select: none; }
         .sort-btn:hover { color: var(--primary); }
         .sort-indicator { font-size: 0.6rem; margin-left: 0.25rem; }
+
+        td[contenteditable] { background: #fffbeb; cursor: text; }
+        td[contenteditable]:focus { background: #fef3c7; outline: none; }
 
         /* MODAL */
         .modal-overlay {
@@ -411,9 +441,9 @@
 
         .modal-col-filters {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 6px;
-            margin-bottom: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 4px;
+            margin-bottom: 8px;
             background: white;
             padding: 10px;
             border-radius: 8px;
@@ -421,7 +451,7 @@
         }
 
         .modal-col-filter {
-            padding: 6px;
+            padding: 5px 6px;
             font-size: 11px;
             border: 1px solid var(--border);
             border-radius: 4px;
@@ -436,14 +466,12 @@
             border-collapse: collapse;
             width: 100%;
             background: white;
-            border-radius: 8px;
-            overflow: hidden;
             border: 1px solid var(--border);
         }
 
         .modal-table th, .modal-table td {
             font-size: 11px;
-            padding: 6px 5px;
+            padding: 5px 6px;
             white-space: nowrap;
             border-bottom: 1px solid #f1f5f9;
         }
@@ -462,7 +490,7 @@
 
         .modal-toolbar {
             display: flex; gap: 8px; flex-wrap: wrap;
-            margin-bottom: 10px; align-items: center;
+            margin-bottom: 8px; align-items: center;
             background: white; padding: 8px 10px;
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -491,8 +519,11 @@
             font-weight: 600;
         }
 
+        .modal-badge.wb { background: #fce7f3; color: #9d174d; }
+
         /* PRINT LABELS */
         #print-area { position: absolute; left: -9999px; top: 0; width: 100%; }
+        #print-list-area { position: absolute; left: -9999px; top: 0; width: 100%; }
 
         .label-grid { display: flex; flex-direction: column; }
 
@@ -506,10 +537,10 @@
         }
 
         .lbl-warning {
-            text-align: center; font-size: 7.5px; font-weight: 900; color: #000;
+            text-align: center; font-size: 7px; font-weight: 900; color: #000;
             margin-bottom: 1mm; padding: 0.5mm 0;
             border-bottom: 1px solid #000;
-            letter-spacing: 0.5px; line-height: 1; text-transform: uppercase;
+            letter-spacing: 0.4px; line-height: 1; text-transform: uppercase;
         }
 
         .lbl-row {
@@ -586,14 +617,12 @@
         @media print {
             body * { visibility: hidden; }
 
-            /* Packing list print */
             .print-list-mode #print-list-area,
             .print-list-mode #print-list-area * { visibility: visible; }
             .print-list-mode #print-list-area {
                 position: absolute; left: 0; top: 0; width: 100%;
             }
 
-            /* Label print */
             .print-label-mode #print-area,
             .print-label-mode #print-area * { visibility: visible; }
             .print-label-mode #print-area {
@@ -611,9 +640,6 @@
 
             .print-list-mode @page { size: A4; margin: 15mm; }
         }
-
-        /* Print list area */
-        #print-list-area { position: absolute; left: -9999px; top: 0; width: 100%; }
 
         .print-list-header {
             text-align: center; margin-bottom: 1rem; padding: 1rem;
@@ -638,6 +664,16 @@
             border-top: 1px solid #ccc; font-size: 0.8rem; color: #666;
         }
 
+        .stats-badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             .app-container { padding: 1rem; }
             .header h1 { font-size: 1.5rem; }
@@ -645,6 +681,7 @@
             .actions-bar { flex-direction: column; align-items: stretch; }
             .btn-group { justify-content: stretch; }
             .btn-group .btn { flex: 1; justify-content: center; }
+            .tabs { flex-direction: column; }
         }
     </style>
 </head>
@@ -652,94 +689,90 @@
 
 <div class="app-container">
     <!-- HEADER -->
-    <div class="header no-print">
+    <div class="header">
         <h1>📦 Система фильтрации заказов и генерации этикеток</h1>
         <p>Загрузите файл ТЗ (.xlsx), выберите города, распечатайте накладную или этикетки Ozon/ВБ</p>
     </div>
 
     <!-- TABS -->
-    <div class="tabs no-print" id="tabsBar" style="display:none;">
+    <div class="tabs" id="tabsBar">
         <button class="tab-btn active" onclick="switchTab('list')">📋 Накладная на сборку</button>
-        <button class="tab-btn" onclick="switchTab('labels')">🏷️ Этикетки Ozon/ВБ</button>
-    </div>
-
-    <!-- UPLOAD SECTION -->
-    <div class="upload-section no-print" id="uploadSection">
-        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-            </svg>
-            <div class="upload-text">Загрузите файл ТЗ (.xlsx / .xls)</div>
-            <div class="upload-hint">Перетащите файл сюда или нажмите для выбора</div>
-            <input type="file" class="file-input" id="fileInput" accept=".xlsx,.xls">
-        </div>
-        <div id="fileInfo" style="display:none;">
-            <div class="upload-filename">
-                <span>📄</span>
-                <span id="fileName"></span>
-                <button class="remove-btn" onclick="removeFile()" title="Удалить файл">×</button>
-            </div>
-        </div>
-        <div class="data-info" id="dataInfo">
-            <span>✅</span>
-            <span id="dataInfoText"></span>
-        </div>
+        <button class="tab-btn" onclick="switchTab('ozon')">🏷️ Этикетки Ozon</button>
+        <button class="tab-btn wb-tab" onclick="switchTab('wb')">🏷️ Этикетки ВБ</button>
     </div>
 
     <!-- ==================== TAB 1: PACKING LIST ==================== -->
     <div class="tab-content active" id="tab-list">
-        <div class="controls no-print" id="controls">
+        <div class="upload-section" id="uploadSectionList">
+            <div class="upload-zone" id="uploadZoneList" onclick="document.getElementById('fileInputList').click()">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <div class="upload-text">Загрузите файл ТЗ (.xlsx / .xls)</div>
+                <div class="upload-hint">Перетащите файл сюда или нажмите для выбора</div>
+                <input type="file" class="file-input" id="fileInputList" accept=".xlsx,.xls">
+            </div>
+            <div id="fileInfoList" style="display:none;">
+                <div class="upload-filename">
+                    <span>📄</span>
+                    <span id="fileNameList"></span>
+                    <button class="remove-btn" onclick="removeFileList()" title="Удалить файл">×</button>
+                </div>
+            </div>
+            <div class="data-info" id="dataInfoList">
+                <span>✅</span>
+                <span id="dataInfoTextList"></span>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsList">
             <div class="filter-section">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
                     <span class="filter-label">Выберите города</span>
                     <div>
-                        <button class="select-all-btn" onclick="selectAllCities()">Выбрать все</button>
-                        <button class="select-all-btn" onclick="deselectAllCities()" style="margin-left:0.5rem;">Сбросить</button>
+                        <button class="select-all-btn" onclick="selectAllCitiesList()">Выбрать все</button>
+                        <button class="select-all-btn" onclick="deselectAllCitiesList()" style="margin-left:0.5rem;">Сбросить</button>
                     </div>
                 </div>
-                <div class="city-filters" id="cityFilters"></div>
+                <div class="city-filters" id="cityFiltersList"></div>
             </div>
             <div class="search-section">
-                <input type="text" class="search-input" id="searchInput"
-                       placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyFilters()">
+                <input type="text" class="search-input" id="searchInputList"
+                       placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyFiltersList()">
             </div>
         </div>
 
-        <div class="actions-bar no-print" id="actionsBar">
+        <div class="actions-bar" id="actionsBarList">
             <div class="stats">
                 <div class="stat-item">
                     <span class="stat-label">Выбрано городов</span>
-                    <span class="stat-value primary" id="cityCount">0</span>
+                    <span class="stat-value primary" id="cityCountList">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Позиций</span>
-                    <span class="stat-value" id="itemCount">0</span>
+                    <span class="stat-value" id="itemCountList">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Итого штук</span>
-                    <span class="stat-value" id="totalQty">0</span>
+                    <span class="stat-value" id="totalQtyList">0</span>
                 </div>
             </div>
             <div class="btn-group">
                 <button class="btn btn-primary" id="printListBtn" onclick="printPackingList()" disabled>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                    </svg>
-                    Печать накладной
+                    🖨️ Печать накладной
                 </button>
             </div>
         </div>
 
-        <div class="table-container" id="tableContainer">
+        <div class="table-container" id="tableContainerList">
             <div class="table-wrapper">
-                <table id="productsTable">
-                    <thead><tr id="tableHeader"></tr></thead>
-                    <tbody id="tableBody"></tbody>
+                <table id="productsTableList">
+                    <thead><tr id="tableHeaderList"></tr></thead>
+                    <tbody id="tableBodyList"></tbody>
                 </table>
             </div>
-            <div class="empty-state" id="emptyState" style="display:none;">
+            <div class="empty-state" id="emptyStateList" style="display:none;">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
@@ -750,55 +783,78 @@
         </div>
     </div>
 
-    <!-- ==================== TAB 2: LABELS ==================== -->
-    <div class="tab-content" id="tab-labels">
-        <div class="controls no-print" id="labelControls">
-            <div class="filter-section">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                    <span class="filter-label">Город для этикеток</span>
-                    <div>
-                        <button class="select-all-btn" onclick="labelSelectAllCities()">Выбрать все</button>
-                        <button class="select-all-btn" onclick="labelDeselectAllCities()" style="margin-left:0.5rem;">Сбросить</button>
-                    </div>
-                </div>
-                <div class="city-filters" id="labelCityFilters"></div>
+    <!-- ==================== TAB 2: OZON LABELS ==================== -->
+    <div class="tab-content" id="tab-ozon">
+        <div class="upload-section" id="uploadSectionOzon">
+            <div class="upload-zone" id="uploadZoneOzon" onclick="document.getElementById('fileInputOzon').click()">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <div class="upload-text">Загрузите файл ТЗ для этикеток Ozon (.xlsx / .xls)</div>
+                <div class="upload-hint">Перетащите файл сюда или нажмите для выбора</div>
+                <input type="file" class="file-input" id="fileInputOzon" accept=".xlsx,.xls">
             </div>
-            <div class="search-section">
-                <input type="text" class="search-input" id="labelSearchInput"
-                       placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyLabelFilters()">
+            <div id="fileInfoOzon" style="display:none;">
+                <div class="upload-filename">
+                    <span>📄</span>
+                    <span id="fileNameOzon"></span>
+                    <button class="remove-btn" onclick="removeFileOzon()" title="Удалить файл">×</button>
+                </div>
+            </div>
+            <div class="data-info" id="dataInfoOzon">
+                <span>✅</span>
+                <span id="dataInfoTextOzon"></span>
             </div>
         </div>
 
-        <div class="actions-bar no-print" id="labelActionsBar">
+        <div class="controls" id="controlsOzon">
+            <div class="filter-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                    <span class="filter-label">Города для этикеток</span>
+                    <div>
+                        <button class="select-all-btn" onclick="selectAllCitiesOzon()">Выбрать все</button>
+                        <button class="select-all-btn" onclick="deselectAllCitiesOzon()" style="margin-left:0.5rem;">Сбросить</button>
+                    </div>
+                </div>
+                <div class="city-filters" id="cityFiltersOzon"></div>
+            </div>
+            <div class="search-section">
+                <input type="text" class="search-input" id="searchInputOzon"
+                       placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyFiltersOzon()">
+            </div>
+        </div>
+
+        <div class="actions-bar" id="actionsBarOzon">
             <div class="stats">
                 <div class="stat-item">
                     <span class="stat-label">Выбрано городов</span>
-                    <span class="stat-value primary" id="labelCityCount">0</span>
+                    <span class="stat-value primary" id="cityCountOzon">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Позиций</span>
-                    <span class="stat-value" id="labelItemCount">0</span>
+                    <span class="stat-value" id="itemCountOzon">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Этикеток</span>
-                    <span class="stat-value" id="labelTotalLabels">0</span>
+                    <span class="stat-value" id="totalLabelsOzon">0</span>
                 </div>
             </div>
             <div class="btn-group">
-                <button class="btn btn-success" id="openLabelModalBtn" onclick="openLabelModal()" disabled>
+                <button class="btn btn-success" id="openOzonModalBtn" onclick="openOzonModal()" disabled>
                     🏷️ Настроить и Печать этикеток
                 </button>
             </div>
         </div>
 
-        <div class="table-container" id="labelTableContainer">
+        <div class="table-container" id="tableContainerOzon">
             <div class="table-wrapper">
-                <table id="labelProductsTable">
-                    <thead><tr id="labelTableHeader"></tr></thead>
-                    <tbody id="labelTableBody"></tbody>
+                <table id="productsTableOzon">
+                    <thead><tr id="tableHeaderOzon"></tr></thead>
+                    <tbody id="tableBodyOzon"></tbody>
                 </table>
             </div>
-            <div class="empty-state" id="labelEmptyState" style="display:none;">
+            <div class="empty-state" id="emptyStateOzon" style="display:none;">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
@@ -808,38 +864,126 @@
             </div>
         </div>
     </div>
+
+    <!-- ==================== TAB 3: WB LABELS ==================== -->
+    <div class="tab-content" id="tab-wb">
+        <div class="upload-section" id="uploadSectionWb">
+            <div class="upload-zone wb-zone" id="uploadZoneWb" onclick="document.getElementById('fileInputWb').click()">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <div class="upload-text">Загрузите файл ТЗ для этикеток ВБ (.xlsx / .xls)</div>
+                <div class="upload-hint">Файл с колонками: Артикул ВБ, ШК на этикетку ВБ, Город и т.д.</div>
+                <input type="file" class="file-input" id="fileInputWb" accept=".xlsx,.xls">
+            </div>
+            <div id="fileInfoWb" style="display:none;">
+                <div class="upload-filename">
+                    <span>📄</span>
+                    <span id="fileNameWb"></span>
+                    <button class="remove-btn" onclick="removeFileWb()" title="Удалить файл">×</button>
+                </div>
+            </div>
+            <div class="data-info wb-info" id="dataInfoWb">
+                <span>✅</span>
+                <span id="dataInfoTextWb"></span>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsWb">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>🔍 Поиск:</label>
+                    <input type="text" id="searchWb" placeholder="Артикул, Название..." style="width:220px" oninput="applyFilterWb()">
+                </div>
+                <div class="filter-group">
+                    <label>🏙️ Город:</label>
+                    <select id="cityFilterWb" onchange="applyFilterWb()"><option value="">Все города</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>📦 Мин. кол-во:</label>
+                    <input type="number" id="minQtyWb" value="0" style="width:70px" oninput="applyFilterWb()">
+                </div>
+                <button class="btn btn-wb" onclick="openWbModal()">🏷️ Настроить и Печать</button>
+            </div>
+            <div style="margin-top:8px;"><span class="stats-badge" id="statsBadgeWb">—</span></div>
+        </div>
+
+        <div class="table-container" id="tableContainerWb">
+            <div class="table-wrapper" style="max-height:450px;overflow-y:auto;">
+                <table id="productsTableWb">
+                    <thead><tr id="tableHeaderWb"></tr></thead>
+                    <tbody id="tableBodyWb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- LABEL MODAL -->
-<div id="labelModal" class="modal-overlay">
+<!-- ==================== OZON LABEL MODAL ==================== -->
+<div id="ozonModal" class="modal-overlay">
     <div class="modal">
         <div class="modal-header">
-            <h2>⚙️ Настройка печати этикеток 58×40 мм</h2>
-            <button class="btn btn-secondary" onclick="closeLabelModal()">✕ Закрыть</button>
+            <h2>⚙️ Настройка печати этикеток Ozon 58×40 мм</h2>
+            <button class="btn btn-secondary" onclick="closeOzonModal()">✕ Закрыть</button>
         </div>
-        <div class="modal-body" id="modalBody">
+        <div class="modal-body">
             <div class="modal-toolbar">
-                <label><input type="checkbox" id="selectAllChk" onchange="modalToggleSelectAll(this.checked)"> Выбрать всё</label>
-                <select id="bcFormat">
+                <label><input type="checkbox" id="ozonSelectAllChk" onchange="ozonModalToggleSelectAll(this.checked)"> Выбрать всё</label>
+                <select id="ozonBcFormat">
                     <option value="CODE128">CODE128 (Озон/ВБ)</option>
                     <option value="EAN13">EAN13</option>
                     <option value="UPC">UPC</option>
                     <option value="CODE39">CODE39</option>
                     <option value="ITF14">ITF14</option>
                 </select>
-                <span class="modal-badge" id="modalSelCount">Выбрано: 0</span>
-                <span class="modal-badge" id="modalTotalCount">Всего: 0</span>
+                <span class="modal-badge" id="ozonModalSelCount">Выбрано: 0</span>
+                <span class="modal-badge" id="ozonModalTotalCount">Всего: 0</span>
             </div>
-            <div class="modal-col-filters" id="modalColFilters"></div>
-            <table class="modal-table" id="modalTable">
-                <thead id="modalHead"></thead>
-                <tbody id="modalBodyInner"></tbody>
+            <div class="modal-col-filters" id="ozonColFilters"></div>
+            <table class="modal-table">
+                <thead id="ozonModalHead"></thead>
+                <tbody id="ozonModalBodyInner"></tbody>
             </table>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-danger" onclick="modalDeselectAll()">✖ Снять всё</button>
-            <button class="btn btn-secondary" onclick="closeLabelModal()">Отмена</button>
-            <button class="btn btn-success" onclick="executeLabelPrint()">🖨️ Печать выбранных</button>
+            <button class="btn btn-danger" onclick="ozonModalDeselectAll()">✖ Снять всё</button>
+            <button class="btn btn-secondary" onclick="closeOzonModal()">Отмена</button>
+            <button class="btn btn-success" onclick="executeOzonPrint()">🖨️ Печать выбранных</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== WB LABEL MODAL ==================== -->
+<div id="wbModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 style="color:var(--wb-color);">⚙️ Настройка печати этикеток ВБ 58×40 мм</h2>
+            <button class="btn btn-secondary" onclick="closeWbModal()">✕ Закрыть</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-toolbar">
+                <label><input type="checkbox" id="wbSelectAllChk" onchange="wbModalToggleSelectAll(this.checked)"> Выбрать всё</label>
+                <select id="wbBcFormat">
+                    <option value="CODE128">CODE128</option>
+                    <option value="EAN13">EAN13</option>
+                    <option value="UPC">UPC</option>
+                    <option value="CODE39">CODE39</option>
+                    <option value="ITF14">ITF14</option>
+                </select>
+                <span class="modal-badge wb" id="wbModalSelCount">Выбрано: 0</span>
+                <span class="modal-badge wb" id="wbModalTotalCount">Всего: 0</span>
+            </div>
+            <div class="modal-col-filters" id="wbColFilters"></div>
+            <table class="modal-table">
+                <thead id="wbModalHead"></thead>
+                <tbody id="wbModalBodyInner"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-danger" onclick="wbModalDeselectAll()">✖ Снять всё</button>
+            <button class="btn btn-secondary" onclick="closeWbModal()">Отмена</button>
+            <button class="btn btn-wb" onclick="executeWbPrint()">🖨️ Печать выбранных</button>
         </div>
     </div>
 </div>
@@ -863,40 +1007,58 @@
 (function() {
     'use strict';
 
-    // ==================== STATE ====================
-    let products = [];
-    let allCities = [];
-    let selectedCities = new Set();
-    let labelSelectedCities = new Set();
-    let filteredProducts = [];
-    let labelFilteredProducts = [];
-    let currentSort = { field: null, ascending: true };
-    let columnMapping = {};
-
-    // ==================== DOM REFS ====================
     const $ = id => document.getElementById(id);
-    const uploadZone = $('uploadZone');
-    const fileInput = $('fileInput');
 
-    // ==================== FILE UPLOAD ====================
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-    uploadZone.addEventListener('drop', e => {
-        e.preventDefault();
-        uploadZone.classList.remove('dragover');
-        if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+    // ==================== TABS ====================
+    window.switchTab = function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const tabs = { list: 0, ozon: 1, wb: 2 };
+        document.querySelectorAll('.tab-btn')[tabs[tab]].classList.add('active');
+        $('tab-' + tab).classList.add('active');
+    };
+
+    // ==================== TOAST ====================
+    function showToast(message, type = '') {
+        const toast = $('toast');
+        toast.textContent = message;
+        toast.className = 'toast ' + type;
+        toast.classList.add('visible');
+        setTimeout(() => toast.classList.remove('visible'), 4000);
+    }
+
+    function escHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function cityId(city) { return city.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g, '_'); }
+
+    // ==================== TAB 1: PACKING LIST ====================
+    let listProducts = [];
+    let listCities = [];
+    let listSelectedCities = new Set();
+    let listFiltered = [];
+    let listSort = { field: null, ascending: true };
+
+    // Upload
+    const fileInputList = $('fileInputList');
+    const uploadZoneList = $('uploadZoneList');
+
+    uploadZoneList.addEventListener('dragover', e => { e.preventDefault(); uploadZoneList.classList.add('dragover'); });
+    uploadZoneList.addEventListener('dragleave', () => uploadZoneList.classList.remove('dragover'));
+    uploadZoneList.addEventListener('drop', e => {
+        e.preventDefault(); uploadZoneList.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) processFileList(e.dataTransfer.files[0]);
     });
-    fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+    fileInputList.addEventListener('change', e => { if (e.target.files[0]) processFileList(e.target.files[0]); });
 
-    function processFile(file) {
-        if (!file.name.match(/\.xlsx?$/i)) {
-            showToast('Пожалуйста, выберите файл .xlsx или .xls', 'error');
-            return;
-        }
-
-        $('fileName').textContent = file.name;
-        $('fileInfo').style.display = 'block';
-        uploadZone.classList.add('has-file');
+    function processFileList(file) {
+        if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; }
+        $('fileNameList').textContent = file.name;
+        $('fileInfoList').style.display = 'block';
+        uploadZoneList.classList.add('has-file');
         $('loadingOverlay').classList.add('visible');
 
         const reader = new FileReader();
@@ -904,555 +1066,560 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const wb = XLSX.read(data, { type: 'array' });
-                const sheetName = wb.SheetNames[0];
-                const ws = wb.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                parseExcelData(jsonData);
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                parseListData(rows);
                 $('loadingOverlay').classList.remove('visible');
-                showToast(`Файл загружен: ${products.length} позиций, ${allCities.length} городов`, 'success');
+                showToast(`Загружено: ${listProducts.length} позиций, ${listCities.length} городов`, 'success');
             } catch (err) {
                 $('loadingOverlay').classList.remove('visible');
-                showToast('Ошибка при чтении файла: ' + err.message, 'error');
-                console.error(err);
+                showToast('Ошибка: ' + err.message, 'error');
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    // ==================== EXCEL PARSING ====================
     function cleanVal(v) {
         if (v === null || v === undefined) return '';
         let s = String(v).trim();
-        if (s === 'ERROR:#REF!' || s === 'ERROR:#N/A' || s === '#REF!' || s === '#N/A') return '';
-        if (s === '0' || s === '0,00') return 0;
+        if (s.includes('#REF') || s.includes('#N/A')) return '';
         const numStr = s.replace(/,/g, '.');
         return isNaN(Number(numStr)) ? s : Number(numStr);
     }
 
-    function parseExcelData(rows) {
-        if (rows.length < 2) { showToast('Файл не содержит данных', 'error'); return; }
-
-        // Find header row
-        let headerRowIndex = -1;
+    function parseListData(rows) {
+        let hi = -1;
         for (let i = 0; i < Math.min(rows.length, 10); i++) {
-            const row = rows[i];
-            if (!row) continue;
-            const rowStr = row.join(' ').toLowerCase();
-            if (rowStr.includes('артикул продавца') || rowStr.includes('наименование')) {
-                headerRowIndex = i;
-                break;
-            }
+            if (!rows[i]) continue;
+            const rs = rows[i].join(' ').toLowerCase();
+            if (rs.includes('артикул продавца') || rs.includes('наименование')) { hi = i; break; }
         }
-
-        if (headerRowIndex === -1) {
+        if (hi === -1) {
             for (let i = 0; i < Math.min(rows.length, 10); i++) {
-                if (rows[i] && rows[i].length > 10) { headerRowIndex = i; break; }
+                if (rows[i] && rows[i].length > 10) { hi = i; break; }
             }
         }
+        if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
 
-        if (headerRowIndex === -1) { showToast('Не удалось найти заголовок таблицы', 'error'); return; }
+        const headers = rows[hi].map(h => String(h).trim());
+        const colMap = {};
+        const cityCols = [];
 
-        const headers = rows[headerRowIndex].map(h => String(h).trim());
-        columnMapping = {};
-        const cityColumns = [];
-
-        headers.forEach((header, index) => {
-            const h = header.toLowerCase();
-            if (h.includes('наименование')) { columnMapping.name = index; }
-            else if (h.includes('исходный артикул')) { if (!columnMapping.sku) columnMapping.sku = index; }
-            else if (h.includes('шк производителя') || h.includes('шк на этикетку')) { if (!columnMapping.barcode) columnMapping.barcode = index; }
-            else if (h.includes('артикул продавца')) { if (!columnMapping.art) columnMapping.art = index; }
-            else if (h.includes('кол-во в упаковку')) { columnMapping.packQty = index; }
-            else if (h.includes('итого к отгрузке') || h.includes('спаек')) { columnMapping.totalSpikes = index; }
-            else if (h.includes('годен до') || h.includes('годен')) { columnMapping.expiry = index; }
-            else if (h === 'тз') { columnMapping.tz = index; }
+        headers.forEach((h, i) => {
+            const hl = h.toLowerCase();
+            if (hl.includes('наименование')) { colMap.name = i; }
+            else if (hl.includes('исходный артикул')) { if (!colMap.sku) colMap.sku = i; }
+            else if (hl.includes('шк производителя')) { if (!colMap.barcode) colMap.barcode = i; }
+            else if (hl.includes('артикул продавца')) { if (!colMap.art) colMap.art = i; }
+            else if (hl.includes('кол-во в упаковку')) { colMap.packQty = i; }
+            else if (hl.includes('итого к отгрузке') || hl.includes('спаек')) { colMap.totalSpikes = i; }
+            else if (hl.includes('годен до') || hl.includes('годен')) { colMap.expiry = i; }
+            else if (h === 'тз') { colMap.tz = i; }
         });
 
-        // City columns: remaining non-empty headers that aren't mapped
-        const knownIndices = new Set(Object.values(columnMapping));
-        const cityKeywords = ['хабаровск', 'омск', 'пермь', 'екатеринбург', 'саратов',
-            'волгоград', 'тюмень', 'ростов', 'самара', 'уфа', 'новосиб', 'ярославль',
-            'краснодар', 'адыгейск', 'сп', 'казань', 'жуковский', 'москв', 'кросс'];
+        const knownIdx = new Set(Object.values(colMap));
+        const cityKW = ['хабаровск','омск','пермь','екатеринбург','саратов','волгоград','тюмень','ростов','самара','уфа','новосиб','ярославль','краснодар','адыгейск','сп','казань','жуковский','москв','кросс'];
 
-        headers.forEach((header, index) => {
-            if (knownIndices.has(index) || !header || header.trim() === '' || header === '---' || header === '|') return;
-            const hLow = header.toLowerCase();
-            const isCity = cityKeywords.some(kw => hLow.includes(kw));
-            if (isCity || (header.length > 1 && header.length < 40 && isNaN(header))) {
-                cityColumns.push({ name: header, index: index });
+        headers.forEach((h, i) => {
+            if (knownIdx.has(i) || !h || h.trim() === '' || h === '---' || h === '|') return;
+            const hl = h.toLowerCase();
+            const isCity = cityKW.some(kw => hl.includes(kw));
+            if (isCity || (h.length > 1 && h.length < 40 && isNaN(h))) {
+                cityCols.push({ name: h, index: i });
             }
         });
 
-        allCities = cityColumns.map(c => c.name);
+        listCities = cityCols.map(c => c.name);
+        listProducts = [];
 
-        // Parse products
-        products = [];
-        for (let i = headerRowIndex + 1; i < rows.length; i++) {
+        for (let i = hi + 1; i < rows.length; i++) {
             const row = rows[i];
             if (!row || row.length < 3) continue;
-
-            const nameVal = columnMapping.name !== undefined ? row[columnMapping.name] : '';
+            const nameVal = colMap.name !== undefined ? row[colMap.name] : '';
             const name = String(nameVal).trim();
             if (!name || name === '---' || name === '|') continue;
 
-            const sku = columnMapping.sku !== undefined ? String(row[columnMapping.sku] || '').trim() : '';
-            const barcode = columnMapping.barcode !== undefined ? String(row[columnMapping.barcode] || '').trim() : '';
-            const art = columnMapping.art !== undefined ? String(row[columnMapping.art] || '').trim() : sku;
-            const packQty = columnMapping.packQty !== undefined ? (parseInt(row[columnMapping.packQty]) || 1) : 1;
-            const totalSpikes = columnMapping.totalSpikes !== undefined ? (parseInt(row[columnMapping.totalSpikes]) || 0) : 0;
-            const expiry = columnMapping.expiry !== undefined ? String(row[columnMapping.expiry] || '').trim() : '';
-            const tz = columnMapping.tz !== undefined ? String(row[columnMapping.tz] || '').trim() : '';
+            const sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : '';
+            const barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : '';
+            const art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku;
+            const packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1;
+            const totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0;
+            const expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : '';
+            const tz = colMap.tz !== undefined ? String(row[colMap.tz] || '').trim() : '';
 
             const cities = {};
-            cityColumns.forEach(cityCol => {
-                const val = row[cityCol.index];
-                const num = parseInt(val);
-                if (!isNaN(num) && num > 0) {
-                    cities[cityCol.name] = num;
-                }
+            cityCols.forEach(cc => {
+                const num = parseInt(row[cc.index]);
+                if (!isNaN(num) && num > 0) cities[cc.name] = num;
             });
 
             if (Object.keys(cities).length > 0) {
-                products.push({ name, sku, barcode, art, packQty, totalSpikes, expiry, tz, cities });
+                listProducts.push({ name, sku, barcode, art, packQty, totalSpikes, expiry, tz, cities });
             }
         }
 
-        if (products.length === 0) { showToast('Не удалось распознать данные', 'error'); return; }
+        if (!listProducts.length) { showToast('Данные не найдены', 'error'); return; }
 
-        $('dataInfoText').textContent = `Загружено: ${products.length} позиций, ${allCities.length} городов`;
-        $('dataInfo').classList.add('visible');
-
-        selectedCities.clear();
-        labelSelectedCities.clear();
-
-        renderCityFilters();
-        renderLabelCityFilters();
-
-        $('controls').classList.add('visible');
-        $('actionsBar').classList.add('visible');
-        $('tableContainer').classList.add('visible');
-        $('labelControls').classList.add('visible');
-        $('labelActionsBar').classList.add('visible');
-        $('labelTableContainer').classList.add('visible');
-        $('tabsBar').style.display = 'flex';
-
-        applyFilters();
-        applyLabelFilters();
+        $('dataInfoTextList').textContent = `Загружено: ${listProducts.length} позиций, ${listCities.length} городов`;
+        $('dataInfoList').classList.add('visible');
+        listSelectedCities.clear();
+        renderCityFiltersList();
+        $('controlsList').classList.add('visible');
+        $('actionsBarList').classList.add('visible');
+        $('tableContainerList').classList.add('visible');
+        applyFiltersList();
     }
 
-    // ==================== REMOVE FILE ====================
-    window.removeFile = function() {
-        fileInput.value = '';
-        $('fileInfo').style.display = 'none';
-        uploadZone.classList.remove('has-file');
-        $('dataInfo').classList.remove('visible');
-        $('controls').classList.remove('visible');
-        $('actionsBar').classList.remove('visible');
-        $('tableContainer').classList.remove('visible');
-        $('labelControls').classList.remove('visible');
-        $('labelActionsBar').classList.remove('visible');
-        $('labelTableContainer').classList.remove('visible');
-        $('tabsBar').style.display = 'none';
-        products = []; allCities = [];
-        selectedCities.clear(); labelSelectedCities.clear();
+    window.removeFileList = function() {
+        fileInputList.value = '';
+        $('fileInfoList').style.display = 'none';
+        uploadZoneList.classList.remove('has-file');
+        $('dataInfoList').classList.remove('visible');
+        $('controlsList').classList.remove('visible');
+        $('actionsBarList').classList.remove('visible');
+        $('tableContainerList').classList.remove('visible');
+        listProducts = []; listCities = []; listSelectedCities.clear();
         showToast('Файл удалён', 'success');
     };
 
-    // ==================== TABS ====================
-    window.switchTab = function(tab) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        if (tab === 'list') {
-            document.querySelectorAll('.tab-btn')[0].classList.add('active');
-            $('tab-list').classList.add('active');
-        } else {
-            document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            $('tab-labels').classList.add('active');
-        }
-    };
-
-    // ==================== CITY FILTERS (Tab 1) ====================
-    function renderCityFilters() {
-        const container = $('cityFilters');
-        container.innerHTML = '';
-        allCities.forEach(city => {
+    function renderCityFiltersList() {
+        const c = $('cityFiltersList');
+        c.innerHTML = '';
+        listCities.forEach(city => {
             const btn = document.createElement('button');
             btn.className = 'city-btn';
-            btn.onclick = () => toggleCity(city);
-            btn.id = `city-${cityId(city)}`;
-            const count = products.filter(p => p.cities[city] && p.cities[city] > 0).length;
-            btn.innerHTML = `${escHtml(city)} <span class="badge">${count}</span>`;
-            container.appendChild(btn);
-        });
-    }
-
-    function cityId(city) { return city.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g, '_'); }
-
-    window.toggleCity = function(city) {
-        const btnId = `city-${cityId(city)}`;
-        if (selectedCities.has(city)) {
-            selectedCities.delete(city);
-            $(btnId).classList.remove('active');
-        } else {
-            selectedCities.add(city);
-            $(btnId).classList.add('active');
-        }
-        $('cityCount').textContent = selectedCities.size;
-        applyFilters();
-    };
-
-    window.selectAllCities = function() {
-        allCities.forEach(city => {
-            selectedCities.add(city);
-            $(`city-${cityId(city)}`).classList.add('active');
-        });
-        $('cityCount').textContent = selectedCities.size;
-        applyFilters();
-    };
-
-    window.deselectAllCities = function() {
-        selectedCities.clear();
-        allCities.forEach(city => $(`city-${cityId(city)}`).classList.remove('active'));
-        $('cityCount').textContent = 0;
-        applyFilters();
-    };
-
-    // ==================== CITY FILTERS (Tab 2 - Labels) ====================
-    function renderLabelCityFilters() {
-        const container = $('labelCityFilters');
-        container.innerHTML = '';
-        allCities.forEach(city => {
-            const btn = document.createElement('button');
-            btn.className = 'city-btn';
-            btn.onclick = () => toggleLabelCity(city);
+            btn.onclick = () => toggleCityList(city);
             btn.id = `lcity-${cityId(city)}`;
-            const count = products.filter(p => p.cities[city] && p.cities[city] > 0).length;
+            const count = listProducts.filter(p => p.cities[city] && p.cities[city] > 0).length;
             btn.innerHTML = `${escHtml(city)} <span class="badge">${count}</span>`;
-            container.appendChild(btn);
+            c.appendChild(btn);
         });
     }
 
-    window.toggleLabelCity = function(city) {
-        const btnId = `lcity-${cityId(city)}`;
-        if (labelSelectedCities.has(city)) {
-            labelSelectedCities.delete(city);
-            $(btnId).classList.remove('active');
-        } else {
-            labelSelectedCities.add(city);
-            $(btnId).classList.add('active');
-        }
-        $('labelCityCount').textContent = labelSelectedCities.size;
-        applyLabelFilters();
+    window.toggleCityList = function(city) {
+        const bid = `lcity-${cityId(city)}`;
+        if (listSelectedCities.has(city)) { listSelectedCities.delete(city); $(bid).classList.remove('active'); }
+        else { listSelectedCities.add(city); $(bid).classList.add('active'); }
+        $('cityCountList').textContent = listSelectedCities.size;
+        applyFiltersList();
     };
 
-    window.labelSelectAllCities = function() {
-        allCities.forEach(city => {
-            labelSelectedCities.add(city);
-            $(`lcity-${cityId(city)}`).classList.add('active');
+    window.selectAllCitiesList = function() {
+        listCities.forEach(c => { listSelectedCities.add(c); $(`lcity-${cityId(c)}`).classList.add('active'); });
+        $('cityCountList').textContent = listSelectedCities.size;
+        applyFiltersList();
+    };
+
+    window.deselectAllCitiesList = function() {
+        listSelectedCities.clear();
+        listCities.forEach(c => $(`lcity-${cityId(c)}`).classList.remove('active'));
+        $('cityCountList').textContent = 0;
+        applyFiltersList();
+    };
+
+    window.applyFiltersList = function() {
+        const s = ($('searchInputList').value || '').toLowerCase().trim();
+        listFiltered = listProducts.map(p => {
+            if (listSelectedCities.size === 0) return { ...p, cityQty: 0, total: 0 };
+            let cq = 0, t = 0;
+            listSelectedCities.forEach(c => { const q = p.cities[c] || 0; cq += q; t += q * p.packQty; });
+            return { ...p, cityQty: cq, total: t };
         });
-        $('labelCityCount').textContent = labelSelectedCities.size;
-        applyLabelFilters();
-    };
+        if (s) listFiltered = listFiltered.filter(p => p.name.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s) || p.barcode.toLowerCase().includes(s) || p.art.toLowerCase().includes(s));
+        listFiltered = listFiltered.filter(p => p.cityQty > 0);
 
-    window.labelDeselectAllCities = function() {
-        labelSelectedCities.clear();
-        allCities.forEach(city => $(`lcity-${cityId(city)}`).classList.remove('active'));
-        $('labelCityCount').textContent = 0;
-        applyLabelFilters();
-    };
-
-    // ==================== FILTER & RENDER (Tab 1) ====================
-    window.applyFilters = function() {
-        const searchTerm = ($('searchInput').value || '').toLowerCase().trim();
-
-        filteredProducts = products.map(product => {
-            if (selectedCities.size === 0) return { ...product, cityQty: 0, total: 0 };
-            let cityQty = 0, total = 0;
-            selectedCities.forEach(city => {
-                const qty = product.cities[city] || 0;
-                cityQty += qty;
-                total += qty * product.packQty;
-            });
-            return { ...product, cityQty, total };
-        });
-
-        if (searchTerm) {
-            filteredProducts = filteredProducts.filter(p =>
-                p.name.toLowerCase().includes(searchTerm) ||
-                p.sku.toLowerCase().includes(searchTerm) ||
-                p.barcode.toLowerCase().includes(searchTerm) ||
-                p.art.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        filteredProducts = filteredProducts.filter(p => p.cityQty > 0);
-
-        if (currentSort.field) {
-            filteredProducts.sort((a, b) => {
-                let vA = a[currentSort.field], vB = b[currentSort.field];
+        if (listSort.field) {
+            listFiltered.sort((a, b) => {
+                let vA = a[listSort.field], vB = b[listSort.field];
                 if (typeof vA === 'string') vA = vA.toLowerCase();
                 if (typeof vB === 'string') vB = vB.toLowerCase();
-                if (vA < vB) return currentSort.ascending ? -1 : 1;
-                if (vA > vB) return currentSort.ascending ? 1 : -1;
+                if (vA < vB) return listSort.ascending ? -1 : 1;
+                if (vA > vB) return listSort.ascending ? 1 : -1;
                 return 0;
             });
         }
 
-        renderTable();
-        updateStats();
+        renderListTable();
+        updateListStats();
     };
 
-    window.sortTable = function(field) {
-        if (currentSort.field === field) { currentSort.ascending = !currentSort.ascending; }
-        else { currentSort.field = field; currentSort.ascending = true; }
-        applyFilters();
+    window.sortTableList = function(field) {
+        if (listSort.field === field) listSort.ascending = !listSort.ascending;
+        else { listSort.field = field; listSort.ascending = true; }
+        applyFiltersList();
     };
 
-    function renderTable() {
-        const thead = $('tableHeader');
-        const tbody = $('tableBody');
-        const emptyState = $('emptyState');
-        const printBtn = $('printListBtn');
+    function renderListTable() {
+        const thead = $('tableHeaderList');
+        const tbody = $('tableBodyList');
+        const es = $('emptyStateList');
+        const pb = $('printListBtn');
 
         thead.innerHTML = `
             <th style="width:40px;">№</th>
-            <th class="sort-btn" onclick="sortTable('name')">Наименование <span class="sort-indicator">↕</span></th>
-            <th>Артикул</th>
-            <th>ШК</th>
-            <th class="sort-btn" onclick="sortTable('cityQty')">Кол-во в город <span class="sort-indicator">↕</span></th>
-            <th>В упак.</th>
-            <th>Итого спаек</th>
-            <th>Годен до</th>
-            <th class="sort-btn" onclick="sortTable('total')">Итого шт <span class="sort-indicator">↕</span></th>
-        `;
+            <th class="sort-btn" onclick="sortTableList('name')">Наименование <span class="sort-indicator">↕</span></th>
+            <th>Артикул</th><th>ШК</th>
+            <th class="sort-btn" onclick="sortTableList('cityQty')">Кол-во <span class="sort-indicator">↕</span></th>
+            <th>Упак.</th><th>Спаек</th><th>Годен</th>
+            <th class="sort-btn" onclick="sortTableList('total')">Итого <span class="sort-indicator">↕</span></th>`;
 
-        if (filteredProducts.length === 0) {
-            tbody.innerHTML = '';
-            emptyState.style.display = 'block';
-            printBtn.disabled = true;
-            return;
-        }
-
-        emptyState.style.display = 'none';
-        printBtn.disabled = false;
-
-        let html = '';
-        filteredProducts.forEach((product, index) => {
-            const qtyClass = product.cityQty > 50 ? 'high' : '';
-            html += `<tr>
-                <td>${index + 1}</td>
-                <td class="product-name">${escHtml(product.name)}</td>
-                <td><span class="sku">${escHtml(product.art)}</span></td>
-                <td><span class="sku">${escHtml(product.barcode)}</span></td>
-                <td><span class="quantity-badge ${qtyClass}">${product.cityQty}</span></td>
-                <td class="pack-info">${product.packQty} шт</td>
-                <td class="pack-info">${product.totalSpikes}</td>
-                <td class="expiry-date">${escHtml(product.expiry)}</td>
-                <td><span class="quantity-badge ${qtyClass}">${product.total}</span></td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-
-    function updateStats() {
-        let totalQty = 0;
-        filteredProducts.forEach(p => totalQty += p.total);
-        $('itemCount').textContent = filteredProducts.length;
-        $('totalQty').textContent = totalQty;
-    }
-
-    // ==================== FILTER & RENDER (Tab 2 - Labels) ====================
-    window.applyLabelFilters = function() {
-        const searchTerm = ($('labelSearchInput').value || '').toLowerCase().trim();
-
-        labelFilteredProducts = products.map(product => {
-            if (labelSelectedCities.size === 0) return { ...product, labelCityQty: 0, labelTotal: 0 };
-            let cityQty = 0, total = 0;
-            labelSelectedCities.forEach(city => {
-                const qty = product.cities[city] || 0;
-                cityQty += qty;
-                total += qty;
-            });
-            return { ...product, labelCityQty: cityQty, labelTotal: total };
-        });
-
-        if (searchTerm) {
-            labelFilteredProducts = labelFilteredProducts.filter(p =>
-                p.name.toLowerCase().includes(searchTerm) ||
-                p.sku.toLowerCase().includes(searchTerm) ||
-                p.barcode.toLowerCase().includes(searchTerm) ||
-                p.art.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        labelFilteredProducts = labelFilteredProducts.filter(p => p.labelCityQty > 0);
-
-        renderLabelTable();
-        updateLabelStats();
-    };
-
-    function renderLabelTable() {
-        const thead = $('labelTableHeader');
-        const tbody = $('labelTableBody');
-        const emptyState = $('labelEmptyState');
-        const modalBtn = $('openLabelModalBtn');
-
-        thead.innerHTML = `
-            <th style="width:40px;">№</th>
-            <th>Наименование</th>
-            <th>Артикул</th>
-            <th>ШК</th>
-            <th>Кол-во этикеток</th>
-            <th>В упак.</th>
-            <th>Годен до</th>
-            <th>ТЗ</th>
-        `;
-
-        if (labelFilteredProducts.length === 0) {
-            tbody.innerHTML = '';
-            emptyState.style.display = 'block';
-            modalBtn.disabled = true;
-            return;
-        }
-
-        emptyState.style.display = 'none';
-        modalBtn.disabled = false;
-
-        let html = '';
-        labelFilteredProducts.forEach((product, index) => {
-            html += `<tr>
-                <td>${index + 1}</td>
-                <td class="product-name">${escHtml(product.name)}</td>
-                <td><span class="sku">${escHtml(product.art)}</span></td>
-                <td><span class="sku">${escHtml(product.barcode)}</span></td>
-                <td><span class="quantity-badge ${product.labelCityQty > 50 ? 'high' : ''}">${product.labelCityQty}</span></td>
-                <td class="pack-info">${product.packQty} шт</td>
-                <td class="expiry-date">${escHtml(product.expiry)}</td>
-                <td style="font-size:0.75rem;color:#64748b;">${escHtml(product.tz)}</td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-
-    function updateLabelStats() {
-        let totalLabels = 0;
-        labelFilteredProducts.forEach(p => totalLabels += p.labelCityQty);
-        $('labelItemCount').textContent = labelFilteredProducts.length;
-        $('labelTotalLabels').textContent = totalLabels;
-    }
-
-    // ==================== LABEL MODAL ====================
-    window.openLabelModal = function() {
-        buildLabelModal();
-        $('labelModal').classList.add('open');
-    };
-
-    window.closeLabelModal = function() {
-        $('labelModal').classList.remove('open');
-    };
-
-    function buildLabelModal() {
-        const cf = $('modalColFilters');
-        const citiesArr = Array.from(labelSelectedCities);
-        const cityDisplay = citiesArr.length > 3 ? citiesArr.slice(0, 3).join(', ') + ` (+${citiesArr.length - 3})` : citiesArr.join(', ');
-
-        cf.innerHTML = `
-            <input class="modal-col-filter" data-col="name" placeholder="Фильтр: Наименование" oninput="applyModalFilters()">
-            <input class="modal-col-filter" data-col="sku" placeholder="Фильтр: ШК" oninput="applyModalFilters()">
-            <input class="modal-col-filter" data-col="art" placeholder="Фильтр: Артикул" oninput="applyModalFilters()">
-            <input class="modal-col-filter" data-col="city" value="${escHtml(cityDisplay)}" readonly placeholder="Город" style="background:#e2e8f0;font-weight:bold;">
-            <input class="modal-col-filter" data-col="qty" placeholder="Мин. кол-во" type="number" oninput="applyModalFilters()">
-        `;
-
-        $('modalHead').innerHTML = `<tr>
-            <th class="col-check">✔</th>
-            <th>Наименование</th>
-            <th>ШК</th>
-            <th>Артикул</th>
-            <th>Кол-во</th>
-            <th>Годен</th>
-            <th>ТЗ</th>
-        </tr>`;
+        if (!listFiltered.length) { tbody.innerHTML = ''; es.style.display = 'block'; pb.disabled = true; return; }
+        es.style.display = 'none'; pb.disabled = false;
 
         let h = '';
-        labelFilteredProducts.forEach((it, i) => {
-            const q = it.labelCityQty || 0;
+        listFiltered.forEach((p, i) => {
+            const qc = p.cityQty > 50 ? 'high' : '';
+            h += `<tr>
+                <td>${i+1}</td>
+                <td class="product-name">${escHtml(p.name)}</td>
+                <td><span class="sku">${escHtml(p.art)}</span></td>
+                <td><span class="sku">${escHtml(p.barcode)}</span></td>
+                <td><span class="quantity-badge ${qc}">${p.cityQty}</span></td>
+                <td class="pack-info">${p.packQty}</td>
+                <td class="pack-info">${p.totalSpikes}</td>
+                <td class="expiry-date">${escHtml(p.expiry)}</td>
+                <td><span class="quantity-badge ${qc}">${p.total}</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = h;
+    }
+
+    function updateListStats() {
+        let tq = 0; listFiltered.forEach(p => tq += p.total);
+        $('itemCountList').textContent = listFiltered.length;
+        $('totalQtyList').textContent = tq;
+    }
+
+    window.printPackingList = function() {
+        if (!listSelectedCities.size) return;
+        const ca = Array.from(listSelectedCities);
+        const cd = ca.length > 3 ? ca.slice(0,3).join(', ') + ` (+${ca.length-3})` : ca.join(', ');
+        const now = new Date();
+        const ds = now.toLocaleDateString('ru-RU');
+        const ts = now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+        let tq = 0; listFiltered.forEach(p => tq += p.total);
+
+        let rows = '';
+        listFiltered.forEach((p, i) => {
+            rows += `<tr><td>${i+1}</td><td>${escHtml(p.name)}</td><td>${escHtml(p.art)}</td><td>${escHtml(p.barcode)}</td><td style="text-align:center;font-weight:bold;">${p.cityQty}</td><td style="text-align:center;">${p.packQty}</td><td style="text-align:center;">${p.totalSpikes}</td><td>${escHtml(p.expiry)}</td><td style="text-align:center;font-weight:bold;">${p.total}</td></tr>`;
+        });
+
+        $('print-list-area').innerHTML = `
+            <div class="print-list-header"><h2>НАКЛАДНАЯ НА СБОРКУ ЗАКАЗА</h2><div class="city-name">${escHtml(cd)}</div><div style="font-size:0.85rem;color:#666;margin-top:0.5rem;">${ds} ${ts}</div></div>
+            <div class="print-list-info"><p><strong>Дата:</strong> ${ds} ${ts}</p><p><strong>Город:</strong> ${escHtml(cd)}</p><p><strong>Позиций:</strong> ${listFiltered.length}</p><p><strong>Итого штук:</strong> ${tq}</p></div>
+            <table class="print-list-table"><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Упак.</th><th>Спаек</th><th>Годен</th><th>Итого</th></tr></thead><tbody>${rows}</tbody></table>
+            <div class="print-list-footer"><p>Ответственный: _______________ / _______________ /</p><p style="margin-top:0.5rem;">Дата сборки: _______________</p></div>`;
+
+        setTimeout(() => { document.body.classList.add('print-list-mode'); window.print(); setTimeout(() => document.body.classList.remove('print-list-mode'), 1000); }, 300);
+    };
+
+    // ==================== TAB 2: OZON LABELS ====================
+    let ozonProducts = [];
+    let ozonCities = [];
+    let ozonSelectedCities = new Set();
+    let ozonFiltered = [];
+
+    const fileInputOzon = $('fileInputOzon');
+    const uploadZoneOzon = $('uploadZoneOzon');
+
+    uploadZoneOzon.addEventListener('dragover', e => { e.preventDefault(); uploadZoneOzon.classList.add('dragover'); });
+    uploadZoneOzon.addEventListener('dragleave', () => uploadZoneOzon.classList.remove('dragover'));
+    uploadZoneOzon.addEventListener('drop', e => {
+        e.preventDefault(); uploadZoneOzon.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) processFileOzon(e.dataTransfer.files[0]);
+    });
+    fileInputOzon.addEventListener('change', e => { if (e.target.files[0]) processFileOzon(e.target.files[0]); });
+
+    function processFileOzon(file) {
+        if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; }
+        $('fileNameOzon').textContent = file.name;
+        $('fileInfoOzon').style.display = 'block';
+        uploadZoneOzon.classList.add('has-file');
+        $('loadingOverlay').classList.add('visible');
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                parseOzonData(rows);
+                $('loadingOverlay').classList.remove('visible');
+                showToast(`Ozon: ${ozonProducts.length} позиций, ${ozonCities.length} городов`, 'success');
+            } catch (err) {
+                $('loadingOverlay').classList.remove('visible');
+                showToast('Ошибка: ' + err.message, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseOzonData(rows) {
+        let hi = -1;
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+            if (!rows[i]) continue;
+            const rs = rows[i].join(' ').toLowerCase();
+            if (rs.includes('артикул продавца') || rs.includes('наименование')) { hi = i; break; }
+        }
+        if (hi === -1) {
+            for (let i = 0; i < Math.min(rows.length, 10); i++) {
+                if (rows[i] && rows[i].length > 10) { hi = i; break; }
+            }
+        }
+        if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
+
+        const headers = rows[hi].map(h => String(h).trim());
+        const colMap = {};
+        const cityCols = [];
+
+        headers.forEach((h, i) => {
+            const hl = h.toLowerCase();
+            if (hl.includes('наименование')) colMap.name = i;
+            else if (hl.includes('исходный артикул')) { if (!colMap.sku) colMap.sku = i; }
+            else if (hl.includes('шк производителя')) { if (!colMap.barcode) colMap.barcode = i; }
+            else if (hl.includes('артикул продавца')) { if (!colMap.art) colMap.art = i; }
+            else if (hl.includes('кол-во в упаковку')) colMap.packQty = i;
+            else if (hl.includes('итого к отгрузке') || hl.includes('спаек')) colMap.totalSpikes = i;
+            else if (hl.includes('годен до') || hl.includes('годен')) colMap.expiry = i;
+            else if (h === 'тз') colMap.tz = i;
+        });
+
+        const knownIdx = new Set(Object.values(colMap));
+        const cityKW = ['хабаровск','омск','пермь','екатеринбург','саратов','волгоград','тюмень','ростов','самара','уфа','новосиб','ярославль','краснодар','адыгейск','сп','казань','жуковский','москв','кросс'];
+
+        headers.forEach((h, i) => {
+            if (knownIdx.has(i) || !h || h.trim() === '' || h === '---' || h === '|') return;
+            const hl = h.toLowerCase();
+            if (cityKW.some(kw => hl.includes(kw)) || (h.length > 1 && h.length < 40 && isNaN(h))) {
+                cityCols.push({ name: h, index: i });
+            }
+        });
+
+        ozonCities = cityCols.map(c => c.name);
+        ozonProducts = [];
+
+        for (let i = hi + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 3) continue;
+            const name = String(row[colMap.name] || '').trim();
+            if (!name || name === '---' || name === '|') continue;
+
+            const sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : '';
+            const barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : '';
+            const art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku;
+            const packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1;
+            const totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0;
+            const expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : '';
+            const tz = colMap.tz !== undefined ? String(row[colMap.tz] || '').trim() : '';
+
+            const cities = {};
+            cityCols.forEach(cc => { const num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) cities[cc.name] = num; });
+
+            if (Object.keys(cities).length > 0) {
+                ozonProducts.push({ name, sku, barcode, art, packQty, totalSpikes, expiry, tz, cities });
+            }
+        }
+
+        if (!ozonProducts.length) { showToast('Данные не найдены', 'error'); return; }
+
+        $('dataInfoTextOzon').textContent = `Ozon: ${ozonProducts.length} позиций, ${ozonCities.length} городов`;
+        $('dataInfoOzon').classList.add('visible');
+        ozonSelectedCities.clear();
+        renderCityFiltersOzon();
+        $('controlsOzon').classList.add('visible');
+        $('actionsBarOzon').classList.add('visible');
+        $('tableContainerOzon').classList.add('visible');
+        applyFiltersOzon();
+    }
+
+    window.removeFileOzon = function() {
+        fileInputOzon.value = '';
+        $('fileInfoOzon').style.display = 'none';
+        uploadZoneOzon.classList.remove('has-file');
+        $('dataInfoOzon').classList.remove('visible');
+        $('controlsOzon').classList.remove('visible');
+        $('actionsBarOzon').classList.remove('visible');
+        $('tableContainerOzon').classList.remove('visible');
+        ozonProducts = []; ozonCities = []; ozonSelectedCities.clear();
+        showToast('Файл удалён', 'success');
+    };
+
+    function renderCityFiltersOzon() {
+        const c = $('cityFiltersOzon');
+        c.innerHTML = '';
+        ozonCities.forEach(city => {
+            const btn = document.createElement('button');
+            btn.className = 'city-btn';
+            btn.onclick = () => toggleCityOzon(city);
+            btn.id = `ocity-${cityId(city)}`;
+            const count = ozonProducts.filter(p => p.cities[city] && p.cities[city] > 0).length;
+            btn.innerHTML = `${escHtml(city)} <span class="badge">${count}</span>`;
+            c.appendChild(btn);
+        });
+    }
+
+    window.toggleCityOzon = function(city) {
+        const bid = `ocity-${cityId(city)}`;
+        if (ozonSelectedCities.has(city)) { ozonSelectedCities.delete(city); $(bid).classList.remove('active'); }
+        else { ozonSelectedCities.add(city); $(bid).classList.add('active'); }
+        $('cityCountOzon').textContent = ozonSelectedCities.size;
+        applyFiltersOzon();
+    };
+
+    window.selectAllCitiesOzon = function() {
+        ozonCities.forEach(c => { ozonSelectedCities.add(c); $(`ocity-${cityId(c)}`).classList.add('active'); });
+        $('cityCountOzon').textContent = ozonSelectedCities.size;
+        applyFiltersOzon();
+    };
+
+    window.deselectAllCitiesOzon = function() {
+        ozonSelectedCities.clear();
+        ozonCities.forEach(c => $(`ocity-${cityId(c)}`).classList.remove('active'));
+        $('cityCountOzon').textContent = 0;
+        applyFiltersOzon();
+    };
+
+    window.applyFiltersOzon = function() {
+        const s = ($('searchInputOzon').value || '').toLowerCase().trim();
+        ozonFiltered = ozonProducts.map(p => {
+            if (ozonSelectedCities.size === 0) return { ...p, cityQty: 0 };
+            let cq = 0;
+            ozonSelectedCities.forEach(c => cq += (p.cities[c] || 0));
+            return { ...p, cityQty: cq };
+        });
+        if (s) ozonFiltered = ozonFiltered.filter(p => p.name.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s) || p.barcode.toLowerCase().includes(s) || p.art.toLowerCase().includes(s));
+        ozonFiltered = ozonFiltered.filter(p => p.cityQty > 0);
+
+        renderOzonTable();
+        updateOzonStats();
+    };
+
+    function renderOzonTable() {
+        const thead = $('tableHeaderOzon');
+        const tbody = $('tableBodyOzon');
+        const es = $('emptyStateOzon');
+        const mb = $('openOzonModalBtn');
+
+        thead.innerHTML = `<th style="width:40px;">№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Этикеток</th><th>Упак.</th><th>Годен</th><th>ТЗ</th>`;
+
+        if (!ozonFiltered.length) { tbody.innerHTML = ''; es.style.display = 'block'; mb.disabled = true; return; }
+        es.style.display = 'none'; mb.disabled = false;
+
+        let h = '';
+        ozonFiltered.forEach((p, i) => {
+            h += `<tr>
+                <td>${i+1}</td>
+                <td class="product-name">${escHtml(p.name)}</td>
+                <td><span class="sku">${escHtml(p.art)}</span></td>
+                <td><span class="sku">${escHtml(p.barcode)}</span></td>
+                <td><span class="quantity-badge ${p.cityQty>50?'high':''}">${p.cityQty}</span></td>
+                <td class="pack-info">${p.packQty}</td>
+                <td class="expiry-date">${escHtml(p.expiry)}</td>
+                <td style="font-size:0.75rem;color:#64748b;">${escHtml(p.tz)}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = h;
+    }
+
+    function updateOzonStats() {
+        let tl = 0; ozonFiltered.forEach(p => tl += p.cityQty);
+        $('itemCountOzon').textContent = ozonFiltered.length;
+        $('totalLabelsOzon').textContent = tl;
+    }
+
+    // Ozon Modal
+    window.openOzonModal = function() {
+        buildOzonModal();
+        $('ozonModal').classList.add('open');
+    };
+
+    window.closeOzonModal = function() { $('ozonModal').classList.remove('open'); };
+
+    function buildOzonModal() {
+        const cf = $('ozonColFilters');
+        const ca = Array.from(ozonSelectedCities);
+        const cd = ca.length > 3 ? ca.slice(0,3).join(', ') + ` (+${ca.length-3})` : ca.join(', ');
+
+        cf.innerHTML = `
+            <input class="modal-col-filter" data-col="name" placeholder="Фильтр: Наименование" oninput="applyOzonModalFilters()">
+            <input class="modal-col-filter" data-col="sku" placeholder="Фильтр: ШК" oninput="applyOzonModalFilters()">
+            <input class="modal-col-filter" data-col="art" placeholder="Фильтр: Артикул" oninput="applyOzonModalFilters()">
+            <input class="modal-col-filter" data-col="city" value="${escHtml(cd)}" readonly style="background:#e2e8f0;font-weight:bold;">
+            <input class="modal-col-filter" data-col="qty" placeholder="Мин. кол-во" type="number" oninput="applyOzonModalFilters()">`;
+
+        $('ozonModalHead').innerHTML = `<tr><th class="col-check">✔</th><th>Наименование</th><th>ШК</th><th>Артикул</th><th>Кол-во</th><th>Годен</th><th>ТЗ</th></tr>`;
+
+        let h = '';
+        ozonFiltered.forEach((it, i) => {
+            const q = it.cityQty || 0;
             if (q <= 0) return;
             h += `<tr data-idx="${i}" data-qty="${q}">
-                <td class="col-check"><input type="checkbox" class="mchk" data-idx="${i}" onchange="updModalSelCount()"></td>
+                <td class="col-check"><input type="checkbox" class="ozon-mchk" data-idx="${i}" onchange="updOzonModalSelCount()"></td>
                 <td>${escHtml(String(it.name))}</td>
                 <td>${escHtml(it.barcode)}</td>
                 <td>${escHtml(it.art)}</td>
-                <td style="font-weight:bold">${q}</td>
+                <td style="font-weight:bold;">${q}</td>
                 <td>${escHtml(it.expiry)}</td>
                 <td style="font-size:10px;color:#666;">${escHtml(it.tz)}</td>
             </tr>`;
         });
 
-        $('modalBodyInner').innerHTML = h || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#666;">Нет строк с количеством &gt; 0</td></tr>';
-        $('modalTotalCount').textContent = `Всего: ${labelFilteredProducts.length}`;
-        updModalSelCount();
+        $('ozonModalBodyInner').innerHTML = h || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#666;">Нет строк с количеством &gt; 0</td></tr>';
+        $('ozonModalTotalCount').textContent = `Всего: ${ozonFiltered.length}`;
+        updOzonModalSelCount();
     }
 
-    window.applyModalFilters = function() {
-        const filters = {
-            name: (document.querySelector('.modal-col-filter[data-col="name"]')?.value || '').toLowerCase(),
-            sku: (document.querySelector('.modal-col-filter[data-col="sku"]')?.value || '').toLowerCase(),
-            art: (document.querySelector('.modal-col-filter[data-col="art"]')?.value || '').toLowerCase(),
-            minQty: parseFloat(document.querySelector('.modal-col-filter[data-col="qty"]')?.value) || 0
-        };
-
-        document.querySelectorAll('#modalBodyInner tr').forEach(tr => {
+    window.applyOzonModalFilters = function() {
+        const filters = {};
+        document.querySelectorAll('#ozonColFilters .modal-col-filter').forEach(inp => { filters[inp.dataset.col] = (inp.value || '').toLowerCase(); });
+        document.querySelectorAll('#ozonModalBodyInner tr').forEach(tr => {
             if (!tr.dataset.qty) return;
             const q = parseInt(tr.dataset.qty);
             const cells = tr.querySelectorAll('td');
             const match = (!filters.name || cells[1].textContent.toLowerCase().includes(filters.name)) &&
                           (!filters.sku || cells[2].textContent.toLowerCase().includes(filters.sku)) &&
                           (!filters.art || cells[3].textContent.toLowerCase().includes(filters.art)) &&
-                          (q >= filters.minQty);
+                          (q >= (parseFloat(filters.minQty) || 0));
             tr.classList.toggle('row-hidden', !match);
         });
-
-        document.querySelectorAll('#modalBodyInner tr.row-hidden .mchk').forEach(cb => cb.checked = false);
-        updModalSelCount();
+        document.querySelectorAll('#ozonModalBodyInner tr.row-hidden .ozon-mchk').forEach(cb => cb.checked = false);
+        updOzonModalSelCount();
     };
 
-    window.modalToggleSelectAll = function(checked) {
-        document.querySelectorAll('#modalBodyInner tr:not(.row-hidden) .mchk').forEach(cb => cb.checked = checked);
-        updModalSelCount();
+    window.ozonModalToggleSelectAll = function(checked) {
+        document.querySelectorAll('#ozonModalBodyInner tr:not(.row-hidden) .ozon-mchk').forEach(cb => cb.checked = checked);
+        updOzonModalSelCount();
     };
 
-    window.modalDeselectAll = function() {
-        document.querySelectorAll('#modalBodyInner .mchk').forEach(cb => cb.checked = false);
-        $('selectAllChk').checked = false;
-        updModalSelCount();
+    window.ozonModalDeselectAll = function() {
+        document.querySelectorAll('#ozonModalBodyInner .ozon-mchk').forEach(cb => cb.checked = false);
+        $('ozonSelectAllChk').checked = false;
+        updOzonModalSelCount();
     };
 
-    window.updModalSelCount = function() {
-        $('modalSelCount').textContent = `Выбрано: ${document.querySelectorAll('#modalBodyInner .mchk:checked').length}`;
+    window.updOzonModalSelCount = function() {
+        $('ozonModalSelCount').textContent = `Выбрано: ${document.querySelectorAll('#ozonModalBodyInner .ozon-mchk:checked').length}`;
     };
 
-    // ==================== EXECUTE LABEL PRINT ====================
-    window.executeLabelPrint = function() {
+    window.executeOzonPrint = function() {
         const grid = $('labelGrid');
         grid.innerHTML = '';
-        const bcFmt = $('bcFormat').value;
-        const selectedIndices = Array.from(document.querySelectorAll('#modalBodyInner .mchk:checked')).map(cb => parseInt(cb.dataset.idx));
+        const bcFmt = $('ozonBcFormat').value;
+        const sel = Array.from(document.querySelectorAll('#ozonModalBodyInner .ozon-mchk:checked')).map(cb => parseInt(cb.dataset.idx));
+        if (!sel.length) { showToast('Выберите хотя бы одну строку', 'error'); return; }
 
-        if (!selectedIndices.length) { showToast('Выберите хотя бы одну строку', 'error'); return; }
+        const ca = Array.from(ozonSelectedCities);
+        const cd = ca.length > 2 ? ca.slice(0,2).join(', ') : ca.join(', ');
 
         let lblN = 0;
-        selectedIndices.forEach(idx => {
-            const it = labelFilteredProducts[idx];
-            const qty = it.labelCityQty || 0;
+        sel.forEach(idx => {
+            const it = ozonFiltered[idx];
+            const qty = it.cityQty || 0;
             if (qty <= 0) return;
-
-            const citiesArr = Array.from(labelSelectedCities);
-            const cityDisplay = citiesArr.length > 2 ? citiesArr.slice(0, 2).join(', ') : citiesArr.join(', ');
-
             for (let i = 0; i < qty; i++) {
                 lblN++;
-                const svgId = 'lb' + lblN;
+                const svgId = 'ozlb' + lblN;
                 const sku = it.barcode || it.art || it.sku || '0000';
                 let tz = it.tz || '';
                 if (tz.length > 45) tz = tz.substring(0, 42) + '…';
@@ -1461,129 +1628,301 @@
                 d.className = 'label';
                 d.innerHTML = `
                     <div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
-                    <div class="lbl-row">
-                        <span class="lbl-title">${escHtml(it.art)}</span>
-                        ${qty > 1 ? `<span class="lbl-counter">${i + 1}/${qty}</span>` : ''}
-                    </div>
+                    <div class="lbl-row"><span class="lbl-title">${escHtml(it.art)}</span>${qty>1?`<span class="lbl-counter">${i+1}/${qty}</span>`:''}</div>
                     <div class="lbl-barcode"><svg id="${svgId}"></svg></div>
                     <div class="lbl-name">${escHtml(it.name)}</div>
-                    <div class="lbl-meta">
-                        <span>Годен: ${escHtml(it.expiry)}</span>
-                        <span>${escHtml(cityDisplay)}</span>
-                    </div>
-                    ${tz ? `<div class="lbl-tz">${escHtml(tz)}</div>` : ''}
-                `;
+                    <div class="lbl-meta"><span>Годен: ${escHtml(it.expiry)}</span><span>${escHtml(cd)}</span></div>
+                    ${tz?`<div class="lbl-tz">${escHtml(tz)}</div>`:''}`;
                 grid.appendChild(d);
 
-                try {
-                    JsBarcode('#' + svgId, String(sku), {
-                        format: bcFmt, width: 1.5, height: 24,
-                        displayValue: true, fontSize: 8, margin: 0
-                    });
-                } catch (e) {
-                    d.querySelector('.lbl-barcode').innerHTML = `<span style="font-size:8px;color:red">ШК: ${escHtml(sku)}</span>`;
-                }
+                try { JsBarcode('#'+svgId, String(sku), { format: bcFmt, width: 1.5, height: 24, displayValue: true, fontSize: 8, margin: 0 }); }
+                catch(e) { d.querySelector('.lbl-barcode').innerHTML = `<span style="font-size:8px;color:red">ШК: ${escHtml(sku)}</span>`; }
             }
         });
 
         if (!lblN) { showToast('Нет этикеток для печати', 'error'); return; }
-
-        closeLabelModal();
-        showToast(`Сгенерировано ${lblN} этикеток`, 'success');
-
-        setTimeout(() => {
-            document.body.classList.add('print-label-mode');
-            window.print();
-            setTimeout(() => document.body.classList.remove('print-label-mode'), 1000);
-        }, 400);
+        closeOzonModal();
+        showToast(`Сгенерировано ${lblN} этикеток Ozon`, 'success');
+        setTimeout(() => { document.body.classList.add('print-label-mode'); window.print(); setTimeout(() => document.body.classList.remove('print-label-mode'), 1000); }, 400);
     };
 
-    // ==================== PRINT PACKING LIST ====================
-    window.printPackingList = function() {
-        if (selectedCities.size === 0) return;
+    // ==================== TAB 3: WB LABELS ====================
+    let wbData = [];
+    let wbFilteredData = [];
 
-        const citiesArr = Array.from(selectedCities);
-        const cityDisplay = citiesArr.length > 3
-            ? citiesArr.slice(0, 3).join(', ') + ` (+${citiesArr.length - 3})`
-            : citiesArr.join(', ');
+    const fileInputWb = $('fileInputWb');
+    const uploadZoneWb = $('uploadZoneWb');
 
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('ru-RU');
-        const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    uploadZoneWb.addEventListener('dragover', e => { e.preventDefault(); uploadZoneWb.classList.add('dragover'); });
+    uploadZoneWb.addEventListener('dragleave', () => uploadZoneWb.classList.remove('dragover'));
+    uploadZoneWb.addEventListener('drop', e => {
+        e.preventDefault(); uploadZoneWb.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) processFileWb(e.dataTransfer.files[0]);
+    });
+    fileInputWb.addEventListener('change', e => { if (e.target.files[0]) processFileWb(e.target.files[0]); });
 
-        let totalQty = 0;
-        filteredProducts.forEach(p => totalQty += p.total);
+    function processFileWb(file) {
+        if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; }
+        $('fileNameWb').textContent = file.name;
+        $('fileInfoWb').style.display = 'block';
+        uploadZoneWb.classList.add('has-file');
+        $('loadingOverlay').classList.add('visible');
 
-        let tableRows = '';
-        filteredProducts.forEach((p, i) => {
-            tableRows += `<tr>
-                <td>${i + 1}</td>
-                <td>${escHtml(p.name)}</td>
-                <td>${escHtml(p.art)}</td>
-                <td>${escHtml(p.barcode)}</td>
-                <td style="text-align:center;font-weight:bold;">${p.cityQty}</td>
-                <td style="text-align:center;">${p.packQty}</td>
-                <td style="text-align:center;">${p.totalSpikes}</td>
-                <td>${escHtml(p.expiry)}</td>
-                <td style="text-align:center;font-weight:bold;">${p.total}</td>
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                parseWbData(rows);
+                $('loadingOverlay').classList.remove('visible');
+                showToast(`ВБ: ${wbData.length} позиций`, 'success');
+            } catch (err) {
+                $('loadingOverlay').classList.remove('visible');
+                showToast('Ошибка: ' + err.message, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseWbData(rows) {
+        let hi = -1;
+        for (let i = 0; i < rows.length; i++) {
+            if (!rows[i]) continue;
+            const rs = (rows[i] || []).join(' ').toLowerCase();
+            if (rs.includes('артикул вб') || rs.includes('артикул wb')) { hi = i; break; }
+        }
+        if (hi === -1) {
+            // Try broader search
+            for (let i = 0; i < Math.min(rows.length, 10); i++) {
+                if (rows[i] && rows[i].length > 8) { hi = i; break; }
+            }
+        }
+        if (hi === -1) { showToast('Заголовок "Артикул ВБ" не найден', 'error'); return; }
+
+        const headers = rows[hi].map(h => String(h).trim());
+        const colMap = {};
+
+        const fieldMap = {
+            art_wb: ['артикул вб', 'артикул wb', 'артикул продавца вб'],
+            name: ['наименование составляющего в наборе', 'наименование', 'название'],
+            sku_label: ['шк на этикетку вб', 'шк на этикетку', 'шк этикетки вб'],
+            art_label: ['артикул на этикетку вб', 'артикул на этикетку'],
+            quant: ['квант спайки', 'квант', 'кол-во в упаковку'],
+            qty_ship: ['итого к отгрузке спаек', 'итого к отгрузке', 'к отгрузке'],
+            expiry: ['годен до', 'годен'],
+            tz: ['тз'],
+            city: ['город', 'город назначения', 'назначение', 'склад', 'city']
+        };
+
+        Object.keys(fieldMap).forEach(key => {
+            const variants = fieldMap[key];
+            for (let vi = 0; vi < variants.length; vi++) {
+                const idx = headers.findIndex(h => String(h).trim().toLowerCase() === variants[vi].toLowerCase());
+                if (idx !== -1) { colMap[key] = idx; break; }
+            }
+            // Partial match fallback
+            if (colMap[key] === undefined) {
+                for (let vi = 0; vi < variants.length; vi++) {
+                    const idx = headers.findIndex(h => String(h).trim().toLowerCase().includes(variants[vi].toLowerCase()));
+                    if (idx !== -1) { colMap[key] = idx; break; }
+                }
+            }
+        });
+
+        wbData = [];
+        const cities = new Set();
+
+        for (let i = hi + 1; i < rows.length; i++) {
+            const row = rows[i] || [];
+            if (String(row[0] || '').toUpperCase().includes('ИТОГО') && String(row[0]).length < 30) break;
+
+            const item = {};
+            Object.keys(colMap).forEach(k => {
+                let v = (colMap[k] >= 0 && colMap[k] < row.length) ? row[colMap[k]] : '';
+                if (typeof v === 'string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim();
+                if (['qty_ship', 'quant'].includes(k)) v = String(v).replace(/\s/g, '').replace(/,/g, '');
+                item[k] = v;
+            });
+
+            if (item.city) cities.add(item.city);
+            if (item.art_wb || item.sku_label || item.name) wbData.push(item);
+        }
+
+        if (!wbData.length) { showToast('Данные ВБ не найдены', 'error'); return; }
+
+        const citySel = $('cityFilterWb');
+        citySel.innerHTML = '<option value="">Все города</option>' + Array.from(cities).sort().map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+
+        $('dataInfoTextWb').textContent = `ВБ: ${wbData.length} позиций, ${cities.size} городов`;
+        $('dataInfoWb').classList.add('visible');
+        wbFilteredData = [...wbData];
+        renderWbTable();
+        $('controlsWb').classList.add('visible');
+        $('tableContainerWb').classList.add('visible');
+    }
+
+    window.removeFileWb = function() {
+        fileInputWb.value = '';
+        $('fileInfoWb').style.display = 'none';
+        uploadZoneWb.classList.remove('has-file');
+        $('dataInfoWb').classList.remove('visible');
+        $('controlsWb').classList.remove('visible');
+        $('tableContainerWb').classList.remove('visible');
+        wbData = []; wbFilteredData = [];
+        showToast('Файл удалён', 'success');
+    };
+
+    window.applyFilterWb = function() {
+        const s = ($('searchWb').value || '').toLowerCase();
+        const c = $('cityFilterWb').value;
+        const mq = parseFloat($('minQtyWb').value) || 0;
+
+        wbFilteredData = wbData.filter(it => {
+            const q = parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0;
+            const matchSearch = !s || Object.values(it).some(v => String(v).toLowerCase().includes(s));
+            const matchCity = !c || String(it.city || '').toLowerCase() === c.toLowerCase();
+            return matchSearch && matchCity && q >= mq;
+        });
+
+        renderWbTable();
+    };
+
+    function renderWbTable() {
+        const thead = $('tableHeaderWb');
+        const tbody = $('tableBodyWb');
+        const keys = ['art_wb', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry', 'city', 'tz'];
+        const labels = { art_wb: 'Арт.ВБ', name: 'Наименование', sku_label: 'ШК этикетки', art_label: 'Арт. этикетки', quant: 'Квант', qty_ship: 'К отгрузке', expiry: 'Годен до', city: 'Город', tz: 'ТЗ' };
+
+        thead.innerHTML = '<tr>' + keys.map(k => `<th>${labels[k]}</th>`).join('') + '</tr>';
+
+        let h = '';
+        wbFilteredData.forEach((it, i) => {
+            h += '<tr>' + keys.map(k => `<td contenteditable onblur="updWbData(${i},'${k}',this.innerText)">${escHtml(String(it[k] || ''))}</td>`).join('') + '</tr>';
+        });
+        tbody.innerHTML = h;
+        $('statsBadgeWb').textContent = `Загружено: ${wbData.length} | Отображено: ${wbFilteredData.length}`;
+    }
+
+    window.updWbData = function(i, k, v) {
+        if (wbData[i]) { wbData[i][k] = v.trim(); applyFilterWb(); }
+    };
+
+    // WB Modal
+    window.openWbModal = function() {
+        buildWbModal();
+        $('wbModal').classList.add('open');
+    };
+
+    window.closeWbModal = function() { $('wbModal').classList.remove('open'); };
+
+    function buildWbModal() {
+        const cf = $('wbColFilters');
+        const modalCols = ['art_wb', 'city', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry', 'tz'];
+        const modalLabels = { art_wb: 'Артикул', city: 'Город', name: 'Наименование', sku_label: 'ШК', art_label: 'Арт.этикетки', quant: 'Квант', qty_ship: 'Кол-во', expiry: 'Годен до', tz: 'ТЗ' };
+
+        cf.innerHTML = modalCols.map(k => `<input class="modal-col-filter" data-col="${k}" placeholder="Фильтр: ${modalLabels[k]}" oninput="applyWbModalFilters()">`).join('');
+
+        $('wbModalHead').innerHTML = '<tr><th class="col-check">✔</th>' + modalCols.map(k => `<th>${modalLabels[k]}</th>`).join('') + '</tr>';
+
+        const items = (wbFilteredData.length ? wbFilteredData : wbData).map((it, i) => ({ ...it, _idx: i }));
+        let h = '';
+        items.forEach((it, i) => {
+            const q = Math.ceil(parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0);
+            if (q <= 0) return;
+            const cols = modalCols.map(k => `<td>${escHtml(String(it[k] || ''))}</td>`).join('');
+            h += `<tr data-idx="${i}" data-qty="${q}">
+                <td class="col-check"><input type="checkbox" class="wb-mchk" data-idx="${i}" onchange="updWbModalSelCount()"></td>
+                ${cols}
             </tr>`;
         });
 
-        $('print-list-area').innerHTML = `
-            <div class="print-list-header">
-                <h2>НАКЛАДНАЯ НА СБОРКУ ЗАКАЗА</h2>
-                <div class="city-name">${escHtml(cityDisplay)}</div>
-                <div style="font-size:0.85rem;color:#666;margin-top:0.5rem;">${dateStr} ${timeStr}</div>
-            </div>
-            <div class="print-list-info">
-                <p><strong>Дата формирования:</strong> ${dateStr} ${timeStr}</p>
-                <p><strong>Город назначения:</strong> ${escHtml(cityDisplay)}</p>
-                <p><strong>Количество позиций:</strong> ${filteredProducts.length}</p>
-                <p><strong>Общее количество штук:</strong> ${totalQty}</p>
-            </div>
-            <table class="print-list-table">
-                <thead>
-                    <tr>
-                        <th style="width:30px;">№</th>
-                        <th>Наименование</th>
-                        <th>Артикул</th>
-                        <th>ШК</th>
-                        <th>Кол-во</th>
-                        <th>Упак.</th>
-                        <th>Спаек</th>
-                        <th>Годен</th>
-                        <th>Итого</th>
-                    </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-            <div class="print-list-footer">
-                <p>Ответственный: _______________ / _______________ /</p>
-                <p style="margin-top:0.5rem;">Дата сборки: _______________</p>
-            </div>
-        `;
+        $('wbModalBodyInner').innerHTML = h || '<tr><td colspan="10" style="text-align:center;color:#888;padding:20px;">Нет строк с количеством &gt; 0</td></tr>';
+        $('wbModalTotalCount').textContent = `Всего: ${items.length}`;
+        updWbModalSelCount();
+    }
 
-        setTimeout(() => {
-            document.body.classList.add('print-list-mode');
-            window.print();
-            setTimeout(() => document.body.classList.remove('print-list-mode'), 1000);
-        }, 300);
+    window.applyWbModalFilters = function() {
+        const filters = {};
+        document.querySelectorAll('#wbColFilters .modal-col-filter').forEach(inp => { filters[inp.dataset.col] = (inp.value || '').toLowerCase(); });
+        const modalCols = ['art_wb', 'city', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry', 'tz'];
+
+        document.querySelectorAll('#wbModalBodyInner tr').forEach(tr => {
+            if (tr.dataset.idx === undefined && tr.dataset.idx !== '0') return;
+            const idx = parseInt(tr.dataset.idx);
+            const items = (wbFilteredData.length ? wbFilteredData : wbData).map((it, i) => ({ ...it, _idx: i }));
+            const item = items.find(it => it._idx === idx);
+            if (!item) return;
+            let visible = true;
+            modalCols.forEach(k => { if (filters[k] && !String(item[k] || '').toLowerCase().includes(filters[k])) visible = false; });
+            tr.classList.toggle('row-hidden', !visible);
+        });
+        document.querySelectorAll('#wbModalBodyInner tr.row-hidden .wb-mchk').forEach(cb => cb.checked = false);
+        updWbModalSelCount();
     };
 
-    // ==================== UTILS ====================
-    function escHtml(s) {
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
+    window.wbModalToggleSelectAll = function(checked) {
+        document.querySelectorAll('#wbModalBodyInner tr:not(.row-hidden) .wb-mchk').forEach(cb => cb.checked = checked);
+        updWbModalSelCount();
+    };
 
-    function showToast(message, type = '') {
-        const toast = $('toast');
-        toast.textContent = message;
-        toast.className = 'toast ' + type;
-        toast.classList.add('visible');
-        setTimeout(() => toast.classList.remove('visible'), 4000);
-    }
+    window.wbModalDeselectAll = function() {
+        document.querySelectorAll('#wbModalBodyInner .wb-mchk').forEach(cb => cb.checked = false);
+        $('wbSelectAllChk').checked = false;
+        updWbModalSelCount();
+    };
+
+    window.updWbModalSelCount = function() {
+        $('wbModalSelCount').textContent = `Выбрано: ${document.querySelectorAll('#wbModalBodyInner .wb-mchk:checked').length}`;
+    };
+
+    window.executeWbPrint = function() {
+        const grid = $('labelGrid');
+        grid.innerHTML = '';
+        const bcFmt = $('wbBcFormat').value;
+        const sel = Array.from(document.querySelectorAll('#wbModalBodyInner .wb-mchk:checked')).map(cb => parseInt(cb.dataset.idx));
+        if (!sel.length) { showToast('Выберите хотя бы одну строку', 'error'); return; }
+
+        const items = wbFilteredData.length ? wbFilteredData : wbData;
+        let lblN = 0;
+
+        sel.forEach(idx => {
+            const it = items[idx];
+            const qty = Math.ceil(parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0);
+            if (qty <= 0) return;
+
+            for (let i = 0; i < qty; i++) {
+                lblN++;
+                const svgId = 'wblb' + lblN;
+                const sku = it.sku_label || it.art_wb || '';
+                const art = it.art_label || it.art_wb || '';
+                let tz = it.tz || '';
+                if (tz.length > 40) tz = tz.substring(0, 37) + '…';
+
+                const d = document.createElement('div');
+                d.className = 'label';
+                d.innerHTML = `
+                    <div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
+                    <div class="lbl-row"><span class="lbl-title">${escHtml(art)}</span>${qty>1?`<span class="lbl-counter">${i+1} / ${qty}</span>`:''}</div>
+                    <div class="lbl-barcode"><svg id="${svgId}"></svg></div>
+                    <div class="lbl-name">${escHtml(it.name || '')}</div>
+                    <div class="lbl-meta"><span>Годен: ${escHtml(it.expiry || '')}</span><span>Квант: ${escHtml(it.quant || '')}</span></div>
+                    ${tz?`<div class="lbl-tz">${escHtml(tz)}</div>`:''}`;
+                grid.appendChild(d);
+
+                if (sku) {
+                    try { JsBarcode('#' + svgId, String(sku), { format: bcFmt, width: 1.5, height: 40, displayValue: true, fontSize: 20, margin: 0 }); }
+                    catch(e) { d.querySelector('.lbl-barcode').innerHTML = `<span style="font-size:8px;color:red">ШК: ${escHtml(sku)}</span>`; }
+                }
+            }
+        });
+
+        if (!lblN) { showToast('Нет этикеток (количество 0)', 'error'); return; }
+        closeWbModal();
+        showToast(`Сгенерировано ${lblN} этикеток ВБ`, 'success');
+        setTimeout(() => { document.body.classList.add('print-label-mode'); window.print(); setTimeout(() => document.body.classList.remove('print-label-mode'), 1000); }, 400);
+    };
 
 })();
 </script>
