@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система фильтрации и печати заказов по городам</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/index.min.css');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .filter-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .city-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .city-btn {
+            padding: 0.625rem 1.25rem;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .city-btn:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+
+        .city-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .city-btn .badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .city-btn.active .badge {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            color: #1e293b;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-value.primary {
+            color: #2563eb;
+        }
+
+        .print-btn {
+            padding: 0.75rem 1.5rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .print-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .print-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .print-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .product-name {
+            font-weight: 500;
+            max-width: 300px;
+        }
+
+        .sku {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .quantity-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.5rem;
+            padding: 0.375rem 0.75rem;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .quantity-badge.zero {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .quantity-badge.high {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .expiry-date {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .pack-info {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #94a3b8;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.125rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.875rem;
+        }
+
+        .multi-select-info {
+            background: #eff6ff;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #1e40af;
+        }
+
+        .select-all-btn {
+            padding: 0.5rem 1rem;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .select-all-btn:hover {
+            background: #e2e8f0;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+
+            body {
+                background: white;
+            }
+
+            .app-container {
+                padding: 0;
+                max-width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .header {
+                background: white !important;
+                color: #000 !important;
+                box-shadow: none;
+                padding: 1rem 0;
+                margin-bottom: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+                color: #000;
+            }
+
+            .header p {
+                color: #333;
+            }
+
+            .controls {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .table-container {
+                box-shadow: none;
+            }
+
+            table {
+                font-size: 9pt;
+            }
+
+            th {
+                background: #f3f4f6 !important;
+                padding: 6pt 8pt;
+            }
+
+            td {
+                padding: 6pt 8pt;
+            }
+
+            .quantity-badge {
+                background: white !important;
+                color: #000 !important;
+                border: 1px solid #ccc;
+            }
+
+            .quantity-badge.high {
+                border-color: #059669;
+                color: #059669 !important;
+            }
+
+            .stats {
+                margin-bottom: 1rem;
+            }
+
+            .stat-value.primary {
+                color: #000;
+            }
+
+            .footer-print {
+                display: block !important;
+                margin-top: 2rem;
+                padding-top: 1rem;
+                border-top: 1px solid #ccc;
+                font-size: 0.8rem;
+                color: #666;
+            }
+
+            .print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border: 2px solid #000;
+            }
+
+            .print-header h2 {
+                font-size: 1.2rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .print-header .city-name {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #000;
+            }
+
+            .print-info {
+                display: block !important;
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        .print-only,
+        .print-header,
+        .footer-print,
+        .print-info {
+            display: none;
+        }
+
+        .sort-btn {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-btn:hover {
+            color: #2563eb;
+        }
+
+        .sort-indicator {
+            font-size: 0.6rem;
+            margin-left: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header no-print">
+            <h1>📦 Система фильтрации заказов по городам</h1>
+            <p>Выберите города для фильтрации и печати накладной на сборку</p>
+        </div>
+
+        <div class="controls no-print">
+            <div class="filter-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="filter-label">Выберите города</span>
+                    <div>
+                        <button class="select-all-btn" onclick="selectAllCities()">Выбрать все</button>
+                        <button class="select-all-btn" onclick="deselectAllCities()" style="margin-left: 0.5rem;">Сбросить</button>
+                    </div>
+                </div>
+                <div class="city-filters" id="cityFilters"></div>
+            </div>
+
+            <div class="search-section">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyFilters()">
+            </div>
+        </div>
+
+        <div class="actions-bar no-print">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Выбрано городов</span>
+                    <span class="stat-value primary" id="cityCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Позиций</span>
+                    <span class="stat-value" id="itemCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Итого штук</span>
+                    <span class="stat-value" id="totalQty">0</span>
+                </div>
+            </div>
+            <button class="print-btn" id="printBtn" onclick="printSelected()" disabled>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Печать накладной
+            </button>
+        </div>
+
+        <div class="print-header">
+            <h2>НАКЛАДНАЯ НА СБОРКУ ЗАКАЗА</h2>
+            <div class="city-name" id="printCityName">-</div>
+            <div id="printDate"></div>
+        </div>
+
+        <div class="print-info">
+            <p><strong>Дата формирования:</strong> <span id="printDateInfo"></span></p>
+            <p><strong>Город назначения:</strong> <span id="printCityInfo"></span></p>
+            <p><strong>Количество позиций:</strong> <span id="printItemCount"></span></p>
+            <p><strong>Общее количество штук:</strong> <span id="printTotalQty"></span></p>
+        </div>
+
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table id="productsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">№</th>
+                            <th class="sort-btn" onclick="sortTable('name')">Наименование <span class="sort-indicator">↕</span></th>
+                            <th>Артикул</th>
+                            <th>ШК производителя</th>
+                            <th class="sort-btn" onclick="sortTable('cityQty')">Кол-во в город <span class="sort-indicator">↕</span></th>
+                            <th>В упаковке</th>
+                            <th>Итого спаек</th>
+                            <th>Годен до</th>
+                            <th class="sort-btn" onclick="sortTable('total')">Итого штук <span class="sort-indicator">↕</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+                <h3>Нет данных для отображения</h3>
+                <p>Выберите хотя бы один город для фильтрации товаров</p>
+            </div>
+        </div>
+
+        <div class="footer-print">
+            <p>Ответственный: _______________ / _______________ /</p>
+            <p style="margin-top: 0.5rem;">Дата сборки: _______________</p>
+        </div>
+    </div>
+
+    <script>
+        // Product data extracted from the Excel file
+        const products = [
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая10х10х8 мм 10шт, 1уп", sku: "8891", barcode: "4605370003130", packQty: 1, totalSpikes: 626, expiry: "17.03.29", cities: { "Хабаровск": 2, "Омск": 50, "Пермь": 50, "Екатеринбург": 50, "Саратов": 10, "Волгоград": 3, "Ростов": 40, "Самара": 50, "Уфа": 25, "Ярославль": 20, "Новосиб": 9, "Краснодар-Адыгейск": 124, "СП": 55, "Казань": 89, "Жуковский-кросс док": 49 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая 10х10 мм 10шт, 3 уп", sku: "8891", barcode: "4605370003130", packQty: 3, totalSpikes: 20, expiry: "17.03.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 5, "Ростов": 2, "Уфа": 2, "Казань": 4, "Новосиб": 2, "Жуковский-кросс док": 0 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая10х10х8 мм 10шт, 5уп", sku: "8891", barcode: "4605370003130", packQty: 5, totalSpikes: 20, expiry: "17.03.29", cities: { "Хабаровск": 3, "Омск": 0, "Пермь": 2, "Екатеринбург": 5, "Ростов": 2, "Уфа": 2, "Казань": 2, "Краснодар-Адыгейск": 4, "Жуковский-кросс док": 0 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая10х10х8 мм 10 шт, 10 уп", sku: "8891", barcode: "4605370003130", packQty: 10, totalSpikes: 15, expiry: "17.03.29", cities: { "Хабаровск": 10, "Омск": 0, "Пермь": 2, "Екатеринбург": 2, "Ростов": 1, "Уфа": 0, "Жуковский-кросс док": 0 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая 50х50х8 мм, 1шт", sku: "8892", barcode: "4605370003536", packQty: 1, totalSpikes: 200, expiry: "12.02.29", cities: { "Омск": 10, "Пермь": 20, "Екатеринбург": 40, "Ростов": 10, "Уфа": 2, "Самара": 10, "Казань": 10, "Краснодар-Адыгейск": 5, "Новосиб": 10, "СП": 49, "Жуковский-кросс док": 34 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая 97х97х8 мм, 1шт", sku: "8896", barcode: "4605370003154", packQty: 1, totalSpikes: 156, expiry: "30.01.29", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 20, "Ростов": 10, "Уфа": 10, "Самара": 5, "Казань": 2, "Краснодар-Адыгейск": 80, "Новосиб": 2, "СП": 1, "Жуковский-кросс док": 11 } },
+            { name: "Губка гемостатическая кровоостанавливающая коллагеновая 50х50х8 мм, 9 шт.", sku: "8892", barcode: "4605370003536", packQty: 9, totalSpikes: 50, expiry: "12.02.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 5, "Ростов": 5, "Уфа": 5, "Самара": 1, "Краснодар-Адыгейск": 3, "СП": 1, "Жуковский-кросс док": 5, "Ярославль": 20 } },
+            { name: "Повязка на рану коллагеновая ДИГЕСТОЛ 50х50х5 мм", sku: "10394", barcode: "4605370002300", packQty: 1, totalSpikes: 80, expiry: "19.01.29", cities: { "Омск": 5, "Пермь": 5, "Екатеринбург": 10, "Ростов": 10, "Уфа": 1, "Саратов": 1, "Волгоград": 10, "Тюмень": 2, "Самара": 10, "Казань": 8, "Новосиб": 2, "СП": 29, "Жуковский-кросс док": 0 } },
+            { name: "Теймурова салфетки влажные антибактериальные от запаха и пота 15шт, 1уп", sku: "17200", barcode: "4605370015911", packQty: 1, totalSpikes: 200, expiry: "15.12.27", cities: { "Омск": 10, "Пермь": 20, "Екатеринбург": 3, "Ростов": 10, "Уфа": 20, "Саратов": 1, "Самара": 10, "Тюмень": 6, "Казань": 12, "Новосиб": 15, "Краснодар-Адыгейск": 2, "СП": 18, "Жуковский-кросс док": 83 } },
+            { name: "Теймурова крем пудра от запаха и пота для ног и подмышек 50г", sku: "18801", barcode: "4605370037876", packQty: 1, totalSpikes: 1512, expiry: "13.04.29", cities: { "Омск": 50, "Пермь": 100, "Екатеринбург": 43, "Ростов": 150, "Уфа": 52, "Самара": 100, "Саратов": 48, "Волгоград": 10, "Тюмень": 99, "Ярославль": 50, "Казань": 71, "Новосиб": 201, "СП": 359, "Жуковский-кросс док": 99, "Краснодар-Адыгейск": 90 } },
+            { name: "Крем для ног с мочевиной отшелушивающий Гидропилинг/ кератолитиг для пяток, 45 мл", sku: "15071", barcode: "4605370024081", packQty: 1, totalSpikes: 48, expiry: "18.10.28", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 1, "Ростов": 5, "Уфа": 5, "Саратов": 2, "Самара": 5, "Ярославль": 2, "Казань": 6, "Новосиб": 5, "СП": 3, "Жуковский-кросс док": 9 } },
+            { name: "Пантенол пенка спрей для лица и тела, 150 мл", sku: "21253", barcode: "4605370039689", packQty: 1, totalSpikes: 308, expiry: "01.04.28", cities: { "Омск": 30, "Пермь": 30, "Ростов": 10, "Уфа": 30, "Саратов": 5, "Самара": 10, "Тюмень": 10, "Казань": 1, "Ярославль": 14, "Новосиб": 6, "Краснодар-Адыгейск": 162, "СП": 55, "Жуковский-кросс док": 99 } },
+            { name: "Молочко для тела увлажняющее с пантенолом и витамином Е, крем для тела от сухости и шелушения кожи, восстановление и уход после солнца , 400 мл", sku: "21367", barcode: "4605370040197", packQty: 1, totalSpikes: 56, expiry: "07.04.29", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 4, "Самара": 1, "Тюмень": 3, "Казань": 3, "СП": 5, "Жуковский-кросс док": 13, "Ярославль": 12 } },
+            { name: "Крем с ретинолом для лица от морщин ZD, антивозрастной крем anti age, ночной крем с ретинолом, омолаживающий лифтинг уход, против морщин, 50 мл, 50 мл", sku: "22164", barcode: "4605370038507", packQty: 1, totalSpikes: 300, expiry: "12.03.29", cities: { "Омск": 50, "Пермь": 50, "Ростов": 48, "Уфа": 20, "Саратов": 26, "Тюмень": 10, "Казань": 10, "Ярославль": 11, "Новосиб": 10, "СП": 10, "Краснодар-Адыгейск": 55, "Жуковский-кросс док": 99 } },
+            { name: "Гель для умывания лица с салициловой кислотой и цинком для проблемной кожи от акне и прыщей", sku: "23338", barcode: "4605370040401", packQty: 1, totalSpikes: 36, expiry: "07.11.28", cities: { "Омск": 2, "Пермь": 5, "Ростов": 5, "Саратов": 1, "Уфа": 5, "Тюмень": 5, "Ярославль": 2, "Новосиб": 2, "Жуковский-кросс док": 11 } },
+            { name: "Набор уходовой косметики для лица глубокое увлажнение UREA", sku: "25194", barcode: "4605370042375", packQty: 1, totalSpikes: 50, expiry: "31.12.27", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Краснодар-Адыгейск": 5, "Ярославль": 5, "Жуковский-кросс док": 30 } },
+            { name: "Гель для умывания лица увлажняющий и очищающий с ниацинамидом NIACIN, 150 мл", sku: "95331", barcode: "4605370028904", packQty: 1, totalSpikes: 48, expiry: "19.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Ярославль": 5, "Краснодар-Адыгейск": 5, "СП": 5, "Жуковский-кросс док": 23 } },
+            { name: "Теймурова крем пудра от запаха и пота для ног и подмышек 50 г, 3шт", sku: "18801", barcode: "4605370037876", packQty: 3, totalSpikes: 56, expiry: "13.04.29", cities: { "Омск": 0, "Пермь": 0, "Ростов": 5, "Уфа": 2, "Ярославль": 2, "Краснодар-Адыгейск": 5, "СП": 4, "Жуковский-кросс док": 38 } },
+            { name: "Эмульсия для лица увлажняющая с ниацинамидом NIACIN , 50 мл", sku: "95349", barcode: "4605370028911", packQty: 1, totalSpikes: 45, expiry: "18.12.27", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 1, "Краснодар-Адыгейск": 5, "Новосиб": 5, "СП": 14 } },
+            { name: "Сыворотка для лица себорегулирующая против прыщей и черных точек с салициловой кислотой NIACIN, 50 мл", sku: "95350", barcode: "4605370028928", packQty: 1, totalSpikes: 45, expiry: "15.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Ярославль": 5, "Новосиб": 5, "СП": 20 } },
+            { name: "Крем для лица антивозрастной дневной коллаген ANTI-AGE, 75 мл", sku: "21524", barcode: "4605370036022", packQty: 1, totalSpikes: 36, expiry: "30.01.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 1, "Ростов": 5, "Уфа": 5, "Саратов": 1, "Самара": 2, "Ярославль": 1, "СП": 5, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 9 } },
+            { name: "Крем для лица и декольте с гиалуроновой кислотой, 75 мл", sku: "21526", barcode: "4605370035667", packQty: 1, totalSpikes: 48, expiry: "03.06.28", cities: { "Омск": 0, "Пермь": 10, "Ростов": 5, "Уфа": 4, "Самара": 1, "Ярославль": 3, "Жуковский-кросс док": 21 } },
+            { name: "Крем для лица антивозрастной ночной КОЛЛАГЕН ANTI-AGE 75 мл", sku: "21525", barcode: "4605370036039", packQty: 1, totalSpikes: 36, expiry: "07.03.29", cities: { "Омск": 0, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Тюмень": 1, "Ярославль": 2, "СП": 1, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 12 } },
+            { name: "Пенка для умывания pharmlevel ГИАЛУРОЛ, 150 мл", sku: "21543", barcode: "4605370034271", packQty: 1, totalSpikes: 45, expiry: "13.02.29", cities: { "Омск": 0, "Пермь": 10, "Ростов": 5, "Уфа": 5, "Тюмень": 3, "Ярославль": 2, "СП": 5, "Краснодар-Адыгейск": 4, "Новосиб": 6 } },
+            { name: "Пантенол крем бальзам 0+ для детей и взрослых 200 мл набор 2шт", sku: "21545", barcode: "4605370033076", packQty: 2, totalSpikes: 30, expiry: "09.03.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 4, "Саратов": 3, "Ростов": 5, "Самара": 5, "Уфа": 3, "Ярославль": 3, "СП": 0, "Жуковский-кросс док": 0 } },
+            { name: "Точечный гель от прыщей NIACIN с ниацинамидом, салициловой кислотой и цинком, средство от акне и воспаленийN, 20 мл", sku: "95351", barcode: "4605370028935", packQty: 1, totalSpikes: 45, expiry: "17.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Тюмень": 5, "Ярославль": 2, "Новосиб": 5, "СП": 3, "Краснодар-Адыгейск": 5 } },
+            { name: "Гидрофильный мусс для умывания лица увлажняющий UREA , 150 мл", sku: "95352", barcode: "4605370028942", packQty: 1, totalSpikes: 48, expiry: "22.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Ярославль": 5, "СП": 23, "Жуковский-кросс док": 5 } },
+            { name: "Крем для лица ночной восстанавливающий КОЛЛАГЕН ZD, 2шт, 50 мл", sku: "24762", barcode: "4605370025699", packQty: 2, totalSpikes: 54, expiry: "30.01.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 1, "Ростов": 5, "Уфа": 3, "Саратов": 1, "Тюмень": 5, "Ярославль": 2, "Краснодар-Адыгейск": 5, "СП": 1, "Жуковский-кросс док": 26 } },
+            { name: "Аква-гель для лица ультраувлажняющий UREA, 50 мл", sku: "95353", barcode: "4605370028959", packQty: 1, totalSpikes: 45, expiry: "24.12.27", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Ярославль": 5, "СП": 20 } },
+            { name: "Маска-сияние для лица увлажняющая UREA, 50 мл", sku: "95354", barcode: "4605370028966", packQty: 1, totalSpikes: 45, expiry: "23.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 5, "Новосиб": 9, "СП": 9 } },
+            { name: "Гель для кожи вокруг глаз от отеков и темных кругов увлажняющий, против морщин с мочевиной UREA 20мг", sku: "95355", barcode: "4605370028973", packQty: 1, totalSpikes: 45, expiry: "21.12.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 2, "Новосиб": 5, "СП": 10 } },
+            { name: "Молочко-гоммаж для лица COPPER с пептидами меди, мягкий пилинг, антивозрастной уход, отшелушивание и лифтинг, 150 мл", sku: "95356", barcode: "4605370028980", packQty: 1, totalSpikes: 48, expiry: "20.02.29", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Тюмень": 5, "Ярославль": 5, "Новосиб": 5, "Жуковский-кросс док": 8 } },
+            { name: "Эссенция для лица ночная антивозрастная, пептиды меди COPPER, лифтинг средство от морщин, для упругости и восстановления кожи", sku: "95358", barcode: "4605370029000", packQty: 1, totalSpikes: 45, expiry: "20.02.29", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 5, "СП": 5, "Жуковский-кросс док": 5 } },
+            { name: "Маска для глаз антивозрастная COPPER с пептидами меди, лифтинг для век, от морщин, мешков и темных кругов, 20 мл", sku: "95359", barcode: "24605370029011", packQty: 1, totalSpikes: 45, expiry: "20.02.29", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 5, "СП": 5 } },
+            { name: "Повязка коллагеновая ранозаживляющая 50х50х8 мм, 1шт", sku: "95494", barcode: "4605370029734", packQty: 1, totalSpikes: 120, expiry: "20.04.28", cities: { "Хабаровск": 3, "Омск": 5, "Пермь": 10, "Екатеринбург": 15, "Саратов": 5, "Волгоград": 10, "Ростов": 5, "Самара": 2, "Тюмень": 1, "Краснодар-Адыгейск": 4, "Новосиб": 28, "СП": 4, "Жуковский-кросс док": 28 } },
+            { name: "Повязка коллагеновая ранозаживляющая 100х100х8 мм 1шт", sku: "95495", barcode: "4605370029710", packQty: 1, totalSpikes: 105, expiry: "27.03.28", cities: { "Омск": 5, "Пермь": 38, "Екатеринбург": 10, "Саратов": 24, "Волгоград": 15, "Ростов": 10, "Уфа": 2, "Ярославль": 1, "Новосиб": 28, "СП": 4, "Жуковский-кросс док": 0 } },
+            { name: "Теймурова крем пудра от запаха и пота ног и подмышек 75 г", sku: "96189", barcode: "4605370033274", packQty: 1, totalSpikes: 208, expiry: "03.03.29", cities: { "Омск": 20, "Пермь": 10, "Саратов": 2, "Ростов": 8, "Уфа": 10, "Тюмень": 5, "Волгоград": 2, "Ярославль": 6, "СП": 10, "Новосиб": 5, "Краснодар-Адыгейск": 13, "Жуковский-кросс док": 87 } },
+            { name: "Теймурова жидкое антибактериальное мыло для ног, рук и подмышек от запаха и пота 150 мл", sku: "96190", barcode: "4605370014976", packQty: 1, totalSpikes: 300, expiry: "11.03.29", cities: { "Омск": 10, "Пермь": 50, "Ростов": 20, "Саратов": 1, "Уфа": 20, "Тюмень": 3, "Волгоград": 2, "Ярославль": 5, "Казань": 4, "Новосиб": 20, "Краснодар-Адыгейск": 10, "СП": 25, "Жуковский-кросс док": 150 } },
+            { name: "Теймурова дезодорант от запаха и пота део-гель 100 мл", sku: "96192", barcode: "4605370012668", packQty: 1, totalSpikes: 107, expiry: "05.08.28", cities: { "Омск": 5, "Пермь": 10, "Ростов": 4, "Саратов": 2, "Уфа": 2, "Ярославль": 4, "Жуковский-кросс док": 77 } },
+            { name: "Теймурова Дезодорант для обуви и спрей для ног от запаха и пота 2в1", sku: "96345", barcode: "4605370034196", packQty: 1, totalSpikes: 100, expiry: "05.04.29", cities: { "Омск": 10, "Пермь": 20, "Ростов": 5, "Волгоград": 2, "Ярославль": 2, "Новосиб": 2, "Краснодар-Адыгейск": 12, "СП": 2, "Жуковский-кросс док": 49 } },
+            { name: "Крем для ног с мочевиной, пантенолом и витамином Е, 100 мл", sku: "96346", barcode: "4605370034578", packQty: 1, totalSpikes: 60, expiry: "12.02.28", cities: { "Омск": 5, "Пермь": 10, "Ростов": 5, "Уфа": 5, "Самара": 10, "Ярославль": 5, "Жуковский-кросс док": 25 } },
+            { name: "Дезодорант для ног от запаха и пота, спрей Теймурова, от потливости и гипергидроза, антибактериальный 150мл", sku: "96593", barcode: "4605370009125", packQty: 1, totalSpikes: 2010, expiry: "29.01.29", cities: { "Омск": 30, "Пермь": 100, "Ростов": 100, "Уфа": 35, "Саратов": 8, "Волгоград": 10, "Самара": 13, "Ярославль": 35, "Казань": 81, "Краснодар-Адыгейск": 24, "СП": 47, "Новосиб": 1539 } },
+            { name: "Губка гемостатическая коллагеновая с серебром 97х97х7 мм, 1шт", sku: "95492", barcode: "4605370029741", packQty: 1, totalSpikes: 68, expiry: "31.01.29", cities: { "Омск": 0, "Пермь": 10, "Екатеринбург": 10, "Ростов": 5, "Уфа": 5, "Самара": 5, "Тюмень": 5, "Новосиб": 4, "Краснодар-Адыгейск": 11, "СП": 5, "Жуковский-кросс док": 13 } },
+            { name: "Губка гемостатическая коллагеновая с серебром 97х97х7 мм, 5 шт", sku: "95492", barcode: "4605370029741", packQty: 5, totalSpikes: 50, expiry: "31.01.29", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 10, "Ростов": 8, "Уфа": 5, "Самара": 5, "Новосиб": 17, "Жуковский-кросс док": 0 } },
+            { name: "Пантенол крем для лица и тела 0+, заживляющий бальзам от ожогов, сухости и раздражения кожи, декспантенол, для детей и взрослых Family Look 200 мл, 200 мл", sku: "96616", barcode: "4605370034615", packQty: 1, totalSpikes: 204, expiry: "06.08.27", cities: { "Омск": 15, "Пермь": 20, "Екатеринбург": 6, "Ростов": 10, "Уфа": 50, "Саратов": 1, "Волгоград": 10, "Тюмень": 10, "Ярославль": 4, "Новосиб": 4, "Краснодар-Адыгейск": 6, "СП": 1, "Жуковский-кросс док": 77 } },
+            { name: "Троксерутин Спрей для ног охлаждающий от усталости, 100 мл", sku: "96626", barcode: "4605370036190", packQty: 1, totalSpikes: 127, expiry: "18.10.28", cities: { "Омск": 4, "Пермь": 10, "Екатеринбург": 5, "Саратов": 4, "Волгоград": 2, "Ростов": 12, "Уфа": 8, "Самара": 3, "Тюмень": 16, "Ярославль": 2, "Новосиб": 2, "Краснодар-Адыгейск": 13, "СП": 5, "Жуковский-кросс док": 28 } },
+            { name: "Повязка коллагеновая ранозаживляющая 50х50х8 мм, 5 шт.", sku: "95494", barcode: "4605370029734", packQty: 5, totalSpikes: 56, expiry: "20.04.28", cities: { "Омск": 0, "Пермь": 5, "Екатеринбург": 5, "Ростов": 5, "Уфа": 5, "Самара": 3, "Новосиб": 2, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 26 } },
+            { name: "Пантенол крем для лица и тела 5%, заживляющий крем от ожогов, сухости и раздражения кожи, декспантенол, универсальный уход, 75 мл", sku: "96629", barcode: "4605370034301", packQty: 1, totalSpikes: 108, expiry: "09.03.29", cities: { "Омск": 10, "Пермь": 10, "Екатеринбург": 2, "Ростов": 10, "Самара": 2, "Ярославль": 5, "Новосиб": 4, "Краснодар-Адыгейск": 5, "СП": 4, "Жуковский-кросс док": 54 } },
+            { name: "Повязка коллагеновая ранозаживляющая 100х100х8 мм, 3 шт.", sku: "95495", barcode: "4605370029710", packQty: 3, totalSpikes: 17, expiry: "27.03.28", cities: { "Омск": 0, "Пермь": 2, "Екатеринбург": 2, "Ростов": 2, "Уфа": 2, "Новосиб": 3, "Жуковский-кросс док": 8 } },
+            { name: "Повязка коллагеновая ранозаживляющая 100х100х2 мм", sku: "95496", barcode: "4605370029727", packQty: 1, totalSpikes: 54, expiry: "27.03.28", cities: { "Хабаровск": 2, "Омск": 0, "Пермь": 10, "Екатеринбург": 5, "Саратов": 4, "Волгоград": 5, "Ростов": 5, "Самара": 2, "Уфа": 4, "Новосиб": 4, "Жуковский-кросс док": 13 } },
+            { name: "Повязка коллагеновая ранозаживляющая 100х100х2 мм, 3 шт", sku: "95496", barcode: "4605370029727", packQty: 3, totalSpikes: 70, expiry: "27.03.28", cities: { "Хабаровск": 8, "Пермь": 10, "Екатеринбург": 5, "Ростов": 2, "Уфа": 5, "Тюмень": 5, "Ярославль": 10, "Новосиб": 5, "Краснодар-Адыгейск": 20, "Жуковский-кросс док": 0 } },
+            { name: "Повязка коллагеновая ранозаживляющая 100х100х2 мм, 5 шт. / кровоостанавливающее средство / для нужд СВО", sku: "95496", barcode: "4605370029727", packQty: 5, totalSpikes: 20, expiry: "27.03.28", cities: { "Хабаровск": 2, "Пермь": 2, "Екатеринбург": 2, "Ростов": 2, "Уфа": 2, "Ярославль": 4, "Новосиб": 4, "Жуковский-кросс док": 0 } },
+            { name: "Бальзам для тела и суставов согревающий PRO РАСТИРОЛ, 75 мл", sku: "96656", barcode: "4605370034455", packQty: 1, totalSpikes: 48, expiry: "11.01.27", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 3, "Самара": 3, "Ярославль": 5, "Краснодар-Адыгейск": 5, "СП": 12 } },
+            { name: "Крем для комбинированной и проблемой кожи PRO Ихтиол / крем для жирной кожи лица и тела 75 мл", sku: "96657", barcode: "4605370034318", packQty: 1, totalSpikes: 72, expiry: "23.01.27", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 1, "Ростов": 5, "Уфа": 5, "Ярославль": 5, "Новосиб": 7, "Краснодар-Адыгейск": 10, "СП": 5, "Жуковский-кросс док": 9 } },
+            { name: "Крем-пудра для лица увлажняющая матирующая 75 мл", sku: "96902", barcode: "4605370035650", packQty: 1, totalSpikes: 100, expiry: "20.03.29", cities: { "Омск": 10, "Пермь": 10, "Екатеринбург": 3, "Саратов": 11, "Волгоград": 10, "Ростов": 4, "Уфа": 5, "Самара": 3, "Тюмень": 5, "Ярославль": 5, "Новосиб": 4, "Краснодар-Адыгейск": 5, "СП": 3, "Жуковский-кросс док": 22 } },
+            { name: "Крем для сухой кожи восстанавливающий регенерирующий PRO МУМИЕТОЛ, 75 мл", sku: "97087", barcode: "4605370035643", packQty: 1, totalSpikes: 24, expiry: "12.02.28", cities: { "Омск": 5, "Пермь": 5, "Ростов": 5, "Уфа": 3, "Ярославль": 6, "Жуковский-кросс док": 0 } },
+            { name: "Гель от варикоза, усталости и отека ног PRO Троксерутин, 75 мл", sku: "97357", barcode: "4605370034325", packQty: 1, totalSpikes: 204, expiry: "29.01.29", cities: { "Омск": 20, "Пермь": 20, "Екатеринбург": 1, "Саратов": 2, "Волгоград": 2, "Ростов": 20, "Уфа": 10, "Тюмень": 8, "Ярославль": 4, "Новосиб": 9, "Краснодар-Адыгейск": 19, "СП": 5, "Жуковский-кросс док": 64 } },
+            { name: "Гель для лица увлажняющий ГИАЛУРОЛ ZD 50 мл 2 шт.", sku: "14210", barcode: "4605370010046", packQty: 2, totalSpikes: 154, expiry: "02.11.28", cities: { "Омск": 10, "Пермь": 10, "Екатеринбург": 4, "Ростов": 10, "Уфа": 6, "Тюмень": 10, "Ярославль": 3, "Краснодар-Адыгейск": 10, "Новосиб": 21, "СП": 10, "Жуковский-кросс док": 19, "Жуковский-кросс док": 41 } },
+            { name: "Теймурова салфетки влажные от пота и запаха 15штбактериальные, 2 уп", sku: "17200", barcode: "4605370015911", packQty: 2, totalSpikes: 150, expiry: "15.12.27", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 1, "Саратов": 1, "Ростов": 10, "Уфа": 4, "Тюмень": 1, "Ярославль": 1, "Новосиб": 10, "СП": 2, "Краснодар-Адыгейск": 6, "Жуковский-кросс док": 11, "Жуковский-кросс док": 86 } },
+            { name: "Увлажняющий восстанавливающий крем для лица и тела с Церамидами ZD 2 шт., 50 мл", sku: "18762", barcode: "4605370038514", packQty: 2, totalSpikes: 42, expiry: "13.12.28", cities: { "Омск": 6, "Пермь": 10, "Екатеринбург": 1, "Саратов": 1, "Ростов": 3, "Уфа": 1, "Тюмень": 6, "Новосиб": 5, "Жуковский-кросс док": 9 } },
+            { name: "Теймурова крем пудра от запаха и пота для ног и подмышек 50г, 2шт", sku: "18801", barcode: "4605370037876", packQty: 2, totalSpikes: 300, expiry: "13.04.29", cities: { "Омск": 30, "Пермь": 30, "Саратов": 2, "Волгоград": 1, "Ростов": 10, "Уфа": 6, "Самара": 2, "Ярославль": 2, "Тюмень": 3, "Новосиб": 13, "Краснодар-Адыгейск": 5, "СП": 20, "Жуковский-кросс док": 171 } },
+            { name: "Теймурова крем пудра от запаха и пота 75 г, 2шт.", sku: "96189", barcode: "4605370033274", packQty: 2, totalSpikes: 400, expiry: "03.03.29", cities: { "Омск": 20, "Пермь": 30, "Саратов": 4, "Ростов": 22, "Уфа": 18, "Самара": 7, "Тюмень": 3, "Ярославль": 13, "Новосиб": 21, "Краснодар-Адыгейск": 30, "СП": 196 } },
+            { name: "Теймурова men Шампунь и гель для душа мужской 2 в1, 220 мл", sku: "96469", barcode: "4605370027822", packQty: 1, totalSpikes: 108, expiry: "03.12.28", cities: { "Омск": 0, "Пермь": 10, "Екатеринбург": 1, "Саратов": 4, "Волгоград": 2, "Ростов": 0, "Уфа": 5, "Тюмень": 2, "Ярославль": 5, "Новосиб": 4, "СП": 10, "Краснодар-Адыгейск": 3, "Жуковский-кросс док": 62 } },
+            { name: "Мицеллярная вода для снятия макияжа с гиалуроновой кислотой увлажняющая 250 мл", sku: "96502", barcode: "4605370034288", packQty: 1, totalSpikes: 36, expiry: "02.03.29", cities: { "Пермь": 5, "Ростов": 4, "Уфа": 2, "Ярославль": 1, "СП": 20, "Жуковский-кросс док": 4 } },
+            { name: "Теймурова дезодорант от запаха и пота део-гель 100 мл, 2 шт.", sku: "96192", barcode: "4605370012668", packQty: 2, totalSpikes: 50, expiry: "05.08.28", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 2, "Саратов": 4, "Волгоград": 2, "Ростов": 4, "Уфа": 1, "Тюмень": 2, "Ярославль": 5, "СП": 13, "Жуковский-кросс док": 0 } },
+            { name: "Теймурова Дезодорант спрей для ног и обуви от запаха и пота 2шт", sku: "96345", barcode: "4605370034196", packQty: 2, totalSpikes: 100, expiry: "05.04.29", cities: { "Омск": 10, "Пермь": 10, "Екатеринбург": 2, "Саратов": 1, "Ростов": 10, "Уфа": 1, "Тюмень": 1, "Ярославль": 5, "Новосиб": 5, "Краснодар-Адыгейск": 19, "СП": 26 } },
+            { name: "Крем для лица с цинком Чистая кожа 50 мл, 2 шт.", sku: "96628", barcode: "4605370014051", packQty: 2, totalSpikes: 36, expiry: "23.03.29", cities: { "Омск": 2, "Пермь": 5, "Ростов": 5, "Ярославль": 5, "Новосиб": 6, "СП": 8 } },
+            { name: "Теймурова дезодорант спрей для ног от запаха и пота Family Look 220 мл, 2 шт", sku: "96648", barcode: "4605370036183", packQty: 2, totalSpikes: 102, expiry: "25.05.27", cities: { "Омск": 10, "Пермь": 10, "Екатеринбург": 4, "Саратов": 1, "Волгоград": 1, "Ростов": 6, "Уфа": 5, "Тюмень": 1, "Ярославль": 5, "Новосиб": 3, "СП": 13, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 51 } },
+            { name: "Троксерутин Спрей для ног охлаждающий от усталости 2 шт.", sku: "96626", barcode: "4605370036190", packQty: 2, totalSpikes: 63, expiry: "18.10.28", cities: { "Омск": 0, "Пермь": 5, "Ростов": 5, "Уфа": 4, "Тюмень": 4, "Ярославль": 2, "СП": 6, "Жуковский-кросс док": 37 } },
+            { name: "Крем с бадягой от синяков и ушибов, средство от гематом и отеков, бадяга от синяков на лице и теле, PRO Синякол 75 мл", sku: "96627", barcode: "4605370034462", packQty: 1, totalSpikes: 96, expiry: "08.02.27", cities: { "Омск": 0, "Пермь": 10, "Екатеринбург": 1, "Саратов": 1, "Ростов": 5, "Уфа": 6, "Ярославль": 5, "Новосиб": 6, "СП": 8, "Краснодар-Адыгейск": 18, "Жуковский-кросс док": 31 } },
+            { name: "Крем-пудра для лица увлажняющая 75 мл 2шт.", sku: "96902", barcode: "4605370035650", packQty: 2, totalSpikes: 52, expiry: "20.03.29", cities: { "Омск": 5, "Пермь": 10, "Ростов": 5, "Уфа": 6, "Ярославль": 3, "Краснодар-Адыгейск": 7, "Жуковский-кросс док": 14 } },
+            { name: "Теймурова дезодорант спрей для ног от запаха и пота 200 мл, 2 шт.", sku: "97396", barcode: "4605370023244", packQty: 2, totalSpikes: 70, expiry: "13.11.28", cities: { "Омск": 2, "Пермь": 10, "Екатеринбург": 1, "Саратов": 2, "Волгоград": 1, "Ростов": 0, "Уфа": 7, "Самара": 5, "Ярославль": 2, "Новосиб": 14, "Краснодар-Адыгейск": 5, "СП": 21 } },
+            { name: "Лосьон болтушка от прыщей на лице и теле с цинком для проблемной кожи100 мл, 2 шт", sku: "96630", barcode: "4605370014068", packQty: 2, totalSpikes: 30, expiry: "02.04.29", cities: { "Омск": 0, "Пермь": 5, "Ростов": 5, "Уфа": 5, "Ярославль": 3, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 7 } },
+            { name: "Губка гемостатическая коллагеновая с серебром 97х97х7 мм, 3шт", sku: "95492", barcode: "4605370029741", packQty: 3, totalSpikes: 50, expiry: "31.01.29", cities: { "Омск": 5, "Пермь": 5, "Екатеринбург": 5, "Ростов": 5, "Уфа": 5, "Самара": 5, "Тюмень": 5, "Новосиб": 3, "Краснодар-Адыгейск": 5, "СП": 12, "Жуковский-кросс док": 0 } },
+            { name: "Теймурова жидкое антибактериальное мыло для ног, рук и подмышек от запаха и пота 150 мл, 3 шт.", sku: "96190", barcode: "4605370014976", packQty: 3, totalSpikes: 200, expiry: "11.03.29", cities: { "Омск": 10, "Пермь": 50, "Екатеринбург": 5, "Саратов": 3, "Волгоград": 2, "Ростов": 10, "Уфа": 10, "Самара": 10, "Тюмень": 6, "Ярославль": 7, "Новосиб": 14, "Краснодар-Адыгейск": 20, "СП": 10, "Жуковский-кросс док": 15, "Жуковский-кросс док": 38 } },
+            { name: "Дезодорант для ног спрей от запаха и пота, спрей Теймурова, от потливости и гипергидроза, антибактериальный , дезодорант для обуви 150мл, 3 шт, 3шт", sku: "96345", barcode: "4605370034196", packQty: 3, totalSpikes: 600, expiry: "05.04.29", cities: { "Омск": 6, "Пермь": 10, "Екатеринбург": 5, "Ростов": 28, "Уфа": 16, "Саратов": 1, "Волгоград": 1, "Тюмень": 11, "Ярославль": 16, "Новосиб": 37, "Краснодар-Адыгейск": 52, "СП": 418 } },
+            { name: "Дезодорант для ног от запаха и пота, спрей Теймурова, от потливости и гипергидроза, антибактериальный 150мл, 3 шт.", sku: "96593", barcode: "4605370009125", packQty: 3, totalSpikes: 250, expiry: "29.01.29", cities: { "Омск": 4, "Пермь": 30, "Екатеринбург": 3, "Саратов": 2, "Волгоград": 1, "Ростов": 8, "Уфа": 22, "Тюмень": 4, "Ярославль": 5, "Новосиб": 4, "Краснодар-Адыгейск": 25, "СП": 3, "Жуковский-кросс док": 24, "Жуковский-кросс док": 115 } },
+            { name: "Лосьон болтушка от прыщей на лице и теле с цинком для проблемной кожи100 мл, 3 шт", sku: "96630", barcode: "4605370014068", packQty: 3, totalSpikes: 404, expiry: "02.04.29", cities: { "Омск": 20, "Пермь": 50, "Ростов": 20, "Тюмень": 20, "Ярославль": 24, "Новосиб": 40, "Краснодар-Адыгейск": 16, "СП": 18, "Жуковский-кросс док": 26, "Жуковский-кросс док": 150 } },
+            { name: "Теймурова дезодорант спрей для ног от запаха и пота Family Look 220 мл, 3 шт", sku: "96648", barcode: "4605370036183", packQty: 3, totalSpikes: 100, expiry: "25.05.27", cities: { "Омск": 2, "Пермь": 10, "Екатеринбург": 4, "Саратов": 2, "Волгоград": 1, "Ростов": 6, "Уфа": 5, "Самара": 2, "Тюмень": 1, "Ярославль": 4, "Новосиб": 7, "Краснодар-Адыгейск": 13, "СП": 5, "Жуковский-кросс док": 6, "Жуковский-кросс док": 31 } },
+            { name: "ГИАЛУРОЛ Жидкие патчи для глаз от темными кругами, 30 мл, 3 шт", sku: "96905", barcode: "4605370036107", packQty: 3, totalSpikes: 100, expiry: "14.12.28", cities: { "Омск": 2, "Пермь": 10, "Ростов": 6, "Уфа": 1, "Самара": 6, "Ярославль": 5, "Новосиб": 2, "Краснодар-Адыгейск": 4, "Жуковский-кросс док": 63 } },
+            { name: "Сыворотка антивозрастная с коллагеном для лица и глаз ANTI-AGE, 30 мл", sku: "96903", barcode: "4605370036091", packQty: 1, totalSpikes: 45, expiry: "29.09.27", cities: { "Омск": 0, "Пермь": 5, "Ростов": 5, "Тюмень": 4, "Ярославль": 2, "Новосиб": 2, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 20 } },
+            { name: "Жидкие патчи для глаз от отеков и темных кругов 30 мл, 1шт", sku: "96905", barcode: "4605370036107", packQty: 1, totalSpikes: 150, expiry: "14.12.28", cities: { "Омск": 0, "Пермь": 10, "Екатеринбург": 2, "Саратов": 3, "Волгоград": 4, "Ростов": 10, "Уфа": 6, "Тюмень": 2, "Ярославль": 11, "СП": 10, "Краснодар-Адыгейск": 89, "Жуковский-кросс док": 3 } },
+            { name: "Губка гемостатическая коллагеновая кровоостанавливающая 50х50х8 мм, 5 шт.", sku: "8892", barcode: "4605370003536", packQty: 5, totalSpikes: 302, expiry: "12.02.29", cities: { "Хабаровск": 10, "Омск": 10, "Пермь": 40, "Екатеринбург": 40, "Саратов": 4, "Волгоград": 20, "Ростов": 4, "Уфа": 20, "Тюмень": 11, "Самара": 13, "Ярославль": 4, "Краснодар-Адыгейск": 31, "Новосиб": 10, "СП": 30, "Жуковский-кросс док": 35 } },
+            { name: "Теймурова дезодорирующие гигиенические салфетки влажные от пота и запаха 15шт, 5 уп", sku: "17200", barcode: "4605370015911", packQty: 5, totalSpikes: 100, expiry: "15.12.27", cities: { "Омск": 1, "Пермь": 10, "Ростов": 5, "Уфа": 4, "Тюмень": 1, "Самара": 1, "Ярославль": 5, "Новосиб": 4, "Краснодар-Адыгейск": 4, "СП": 4, "Жуковский-кросс док": 14, "Жуковский-кросс док": 43 } },
+            { name: "Гель для суставов и мышц от боли, для коленей, спины и шеи, восстанавливающий, PRO Сустав, 75 мл", sku: "97088", barcode: "4605370035674", packQty: 1, totalSpikes: 108, expiry: "12.02.29", cities: { "Омск": 0, "Пермь": 10, "Ростов": 7, "Тюмень": 1, "Ярославль": 6, "СП": 3, "Краснодар-Адыгейск": 5, "Жуковский-кросс док": 16, "Жуковский-кросс док": 60 } },
+            { name: "Губка гемостатическая коллагеновая с серебром 50х50х7 мм, 5 шт.", sku: "95490", barcode: "4605370020205", packQty: 5, totalSpikes: 60, expiry: "29.01.29", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 10, "Саратов": 6, "Волгоград": 5, "Ростов": 5, "Уфа": 2, "Самара": 2, "Тюмень": 1, "Новосиб": 6, "Жуковский-кросс док": 8 } },
+            { name: "Губка гемостатическая коллагеновая с серебром 50х50х7 мм, 9 шт.", sku: "95490", barcode: "4605370020205", packQty: 9, totalSpikes: 100, expiry: "29.01.29", cities: { "Омск": 5, "Пермь": 10, "Екатеринбург": 10, "Саратов": 5, "Ростов": 10, "Уфа": 10, "Тюмень": 6, "Новосиб": 1, "Краснодар-Адыгейск": 10, "СП": 12, "Жуковский-кросс док": 13 } }
+        ];
+
+        // Extract all unique cities
+        const allCities = [
+            "Хабаровск", "Омск", "Пермь", "Екатеринбург", "Саратов", "Волгоград", 
+            "Тюмень", "Ростов", "Самара", "Уфа", "Новосиб", "Ярославль", 
+            "Краснодар-Адыгейск", "СП", "Казань", "Жуковский-кросс док"
+        ];
+
+        let selectedCities = new Set();
+        let filteredProducts = [];
+        let currentSort = { field: null, ascending: true };
+
+        function init() {
+            renderCityFilters();
+            applyFilters();
+        }
+
+        function renderCityFilters() {
+            const container = document.getElementById('cityFilters');
+            container.innerHTML = '';
+            
+            allCities.forEach(city => {
+                const btn = document.createElement('button');
+                btn.className = 'city-btn';
+                btn.onclick = () => toggleCity(city);
+                btn.id = `city-${city}`;
+                
+                const count = products.filter(p => p.cities[city] && p.cities[city] > 0).length;
+                btn.innerHTML = `${city} <span class="badge">${count}</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function toggleCity(city) {
+            if (selectedCities.has(city)) {
+                selectedCities.delete(city);
+                document.getElementById(`city-${city}`).classList.remove('active');
+            } else {
+                selectedCities.add(city);
+                document.getElementById(`city-${city}`).classList.add('active');
+            }
+            updateCityCount();
+            applyFilters();
+        }
+
+        function selectAllCities() {
+            allCities.forEach(city => {
+                selectedCities.add(city);
+                document.getElementById(`city-${city}`).classList.add('active');
+            });
+            updateCityCount();
+            applyFilters();
+        }
+
+        function deselectAllCities() {
+            selectedCities.clear();
+            allCities.forEach(city => {
+                document.getElementById(`city-${city}`).classList.remove('active');
+            });
+            updateCityCount();
+            applyFilters();
+        }
+
+        function updateCityCount() {
+            document.getElementById('cityCount').textContent = selectedCities.size;
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            filteredProducts = products.map(product => {
+                if (selectedCities.size === 0) {
+                    return { ...product, cityQty: 0, total: 0 };
+                }
+
+                let cityQty = 0;
+                let total = 0;
+                selectedCities.forEach(city => {
+                    const qty = product.cities[city] || 0;
+                    cityQty += qty;
+                    total += qty * product.packQty;
+                });
+
+                return { ...product, cityQty, total };
+            });
+
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchTerm) || 
+                    p.sku.toLowerCase().includes(searchTerm) ||
+                    p.barcode.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Only show products with positive quantity for selected cities
+            filteredProducts = filteredProducts.filter(p => p.cityQty > 0);
+
+            if (currentSort.field) {
+                filteredProducts.sort((a, b) => {
+                    let valA = a[currentSort.field];
+                    let valB = b[currentSort.field];
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                    if (valA < valB) return currentSort.ascending ? -1 : 1;
+                    if (valA > valB) return currentSort.ascending ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            renderTable();
+            updateStats();
+        }
+
+        function sortTable(field) {
+            if (currentSort.field === field) {
+                currentSort.ascending = !currentSort.ascending;
+            } else {
+                currentSort.field = field;
+                currentSort.ascending = true;
+            }
+            applyFilters();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const printBtn = document.getElementById('printBtn');
+            
+            if (filteredProducts.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                printBtn.disabled = true;
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            printBtn.disabled = false;
+
+            let html = '';
+            filteredProducts.forEach((product, index) => {
+                const qtyClass = product.cityQty === 0 ? 'zero' : product.cityQty > 50 ? 'high' : '';
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="product-name">${product.name}</td>
+                        <td><span class="sku">${product.sku}</span></td>
+                        <td><span class="sku">${product.barcode}</span></td>
+                        <td><span class="quantity-badge ${qtyClass}">${product.cityQty}</span></td>
+                        <td class="pack-info">${product.packQty} шт</td>
+                        <td class="pack-info">${product.totalSpikes}</td>
+                        <td class="expiry-date">${product.expiry}</td>
+                        <td><span class="quantity-badge ${qtyClass}">${product.total}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function updateStats() {
+            let totalQty = 0;
+            filteredProducts.forEach(p => {
+                totalQty += p.total;
+            });
+            document.getElementById('itemCount').textContent = filteredProducts.length;
+            document.getElementById('totalQty').textContent = totalQty;
+        }
+
+        function printSelected() {
+            if (selectedCities.size === 0) return;
+
+            // Set print header info
+            const citiesArray = Array.from(selectedCities);
+            const cityDisplay = citiesArray.length > 3 
+                ? citiesArray.slice(0, 3).join(', ') + ` (+${citiesArray.length - 3})`
+                : citiesArray.join(', ');
+            
+            document.getElementById('printCityName').textContent = cityDisplay;
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ru-RU');
+            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('printDate').textContent = `${dateStr} ${timeStr}`;
+            document.getElementById('printDateInfo').textContent = `${dateStr} ${timeStr}`;
+            document.getElementById('printCityInfo').textContent = cityDisplay;
+            document.getElementById('printItemCount').textContent = filteredProducts.length;
+            
+            let totalQty = 0;
+            filteredProducts.forEach(p => totalQty += p.total);
+            document.getElementById('printTotalQty').textContent = totalQty;
+
+            window.print();
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
+
