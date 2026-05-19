@@ -45,13 +45,23 @@
         .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); } .btn-outline:hover { background: #f5f5f5; }
         
         /* === FILTERS === */
-        .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border); }
+        .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
+        .filter-group { display: flex; align-items: center; gap: 6px; margin-right: 15px; margin-bottom: 5px; }
+        .filter-group label { font-size: 12px; font-weight: 600; color: #555; white-space: nowrap; }
+        
+        select.filter-select, input.search-input {
+            padding: 6px 10px; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 13px;
+        }
+        input.search-input { flex-grow: 1; min-width: 200px; }
+
+        .city-filters { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: 8px; }
         .city-chip { padding: 5px 12px; background: white; border: 1px solid var(--border); border-radius: 15px; font-size: 12px; cursor: pointer; transition: 0.1s; }
         .city-chip:hover { border-color: var(--primary); }
         .city-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
         .city-chip.wb.active { background: var(--wb); border-color: var(--wb); }
-        
-        .search-input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; flex-grow: 1; min-width: 200px; }
         
         /* === TABLE === */
         .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; max-height: 600px; overflow-y: auto; }
@@ -154,11 +164,20 @@
                     </div>
                 </div>
                 <div class="city-filters" id="city-chips-list"></div>
-                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="renderTableList(this.value)">
+                
+                <!-- NEW: Filter by Pack Quantity -->
+                <div class="filter-group" style="margin-top: 10px;">
+                    <label>В упаковке:</label>
+                    <select id="filter-pack-list" class="filter-select" onchange="applyFilter('list')">
+                        <option value="">Все</option>
+                    </select>
+                </div>
+                
+                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="applyFilter('list')">
             </div>
             <div class="table-wrap hidden" id="table-wrap-list">
                 <table id="table-list">
-                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>Кол-во</th><th>Палета</th><th>Короб</th></tr></thead>
+                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>Упак.</th><th>Кол-во</th><th>Палета</th><th>Короб</th></tr></thead>
                     <tbody id="tbody-list"></tbody>
                 </table>
             </div>
@@ -184,11 +203,20 @@
                     </div>
                 </div>
                 <div class="city-filters" id="city-chips-label"></div>
-                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="renderTableLabel(this.value)">
+                
+                <!-- NEW: Filter by Pack Quantity -->
+                <div class="filter-group" style="margin-top: 10px;">
+                    <label>В упаковке:</label>
+                    <select id="filter-pack-label" class="filter-select" onchange="applyFilter('label')">
+                        <option value="">Все</option>
+                    </select>
+                </div>
+                
+                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="applyFilter('label')">
             </div>
             <div class="table-wrap hidden" id="table-wrap-label">
                 <table id="table-label">
-                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Кол-во</th></tr></thead>
+                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th></tr></thead>
                     <tbody id="tbody-label"></tbody>
                 </table>
             </div>
@@ -244,6 +272,7 @@
     // --- STATE ---
     var appData = [];
     var appCities = [];
+    var appPackQty = []; // To store unique pack quantities
     var selectedCities = new Set();
     var filteredData = [];
     var labelConfig = [
@@ -295,6 +324,7 @@
             else if(hStr.indexOf('шк производителя') > -1 && !colMap.barcode) colMap.barcode = i;
             else if(hStr.indexOf('артикул') > -1) colMap.art = i;
             else if(hStr.indexOf('годен') > -1) colMap.expiry = i;
+            else if(hStr.indexOf('кол-во в упаковку') > -1) colMap.pack = i; // NEW: Map Pack Qty
             else {
                 // Check if it's a known key to exclude
                 var isKnown = false;
@@ -312,17 +342,29 @@
         // 3. Parse Rows
         appData = [];
         var citySet = new Set();
+        var packSet = new Set();
         
         for(var r = hRow + 1; r < rows.length; r++) {
             var row = rows[r];
             var name = String(row[colMap.name] || "").trim();
             if(!name || name === '---' || name.length < 2) continue;
 
+            // NEW: Read Pack Quantity
+            var packVal = 1;
+            if(colMap.pack !== undefined && row[colMap.pack]) {
+                var parsedPack = parseInt(row[colMap.pack]);
+                if(!isNaN(parsedPack) && parsedPack > 0) {
+                    packVal = parsedPack;
+                }
+            }
+            packSet.add(packVal);
+
             var item = {
                 name: name,
                 art: colMap.art !== undefined ? String(row[colMap.art]||"").trim() : '',
                 barcode: colMap.barcode !== undefined ? String(row[colMap.barcode]||"").trim() : '',
                 expiry: colMap.expiry !== undefined ? String(row[colMap.expiry]||"").trim() : '',
+                packQty: packVal, // Store pack quantity
                 cities: {},
                 pallet: '', boxes: '',
                 totalQty: 0
@@ -347,6 +389,7 @@
 
         // 4. Update UI
         appCities = Array.from(citySet).sort();
+        appPackQty = Array.from(packSet).sort(function(a,b){return a-b;}); // NEW: Sorted pack quantities
         selectedCities = new Set(appCities);
         
         document.getElementById('actions-' + type).classList.remove('hidden');
@@ -354,8 +397,26 @@
         document.getElementById('table-wrap-' + type).classList.remove('hidden');
         
         renderCityChips(type);
-        if(type === 'list') renderTableList();
-        else renderTableLabel();
+        populatePackFilter(type); // NEW: Populate dropdown
+        applyFilter(type);
+    }
+
+    // NEW: Function to populate Pack Quantity Filter
+    function populatePackFilter(type) {
+        var select = document.getElementById('filter-pack-' + type);
+        if(!select) return;
+        
+        // Clear existing options except "All"
+        while(select.options.length > 1) {
+            select.remove(1);
+        }
+        
+        appPackQty.forEach(function(qty) {
+            var opt = document.createElement('option');
+            opt.value = qty;
+            opt.textContent = qty + ' шт.';
+            select.appendChild(opt);
+        });
     }
 
     // --- RENDERING ---
@@ -370,7 +431,7 @@
                 if(selectedCities.has(c)) selectedCities.delete(c);
                 else selectedCities.add(c);
                 renderCityChips(type);
-                if(type === 'list') renderTableList(); else renderTableLabel();
+                applyFilter(type);
             };
             cont.appendChild(d);
         });
@@ -379,41 +440,65 @@
     function toggleAllCities(type, state) {
         selectedCities = state ? new Set(appCities) : new Set();
         renderCityChips(type);
-        if(type === 'list') renderTableList(); else renderTableLabel();
+        applyFilter(type);
     }
 
-    function renderTableList(search) {
-        var tbody = document.getElementById('tbody-list');
-        tbody.innerHTML = '';
-        var s = search ? search.toLowerCase() : '';
-        var idx = 0;
+    function applyFilter(type) {
+        var sInput = document.querySelector('#filters-' + type + ' input.search-input');
+        var pInput = document.getElementById('filter-pack-' + type);
+        var search = sInput ? sInput.value.toLowerCase() : '';
+        var packFilter = pInput ? parseInt(pInput.value) : 0; // 0 means "All"
+
+        filteredData = [];
         
         appData.forEach(function(it) {
-            // Calc qty
+            // Check Cities
+            var hasCity = false;
+            for(var c in it.cities) {
+                if(selectedCities.has(c)) { hasCity = true; break; }
+            }
+            if(!hasCity) return;
+
+            // Check Search
+            if(search && it.name.toLowerCase().indexOf(search) === -1) return;
+
+            // NEW: Check Pack Quantity
+            if(packFilter > 0 && it.packQty !== packFilter) return;
+
+            filteredData.push(it);
+        });
+
+        if(type === 'list') renderTableList();
+        else renderTableLabel();
+    }
+
+    function renderTableList() {
+        var tbody = document.getElementById('tbody-list');
+        tbody.innerHTML = '';
+        var idx = 0;
+        
+        filteredData.forEach(function(it) {
             var qty = 0; 
             for(var c in it.cities) if(selectedCities.has(c)) qty += it.cities[c];
             if(qty === 0) return;
-            if(s && it.name.toLowerCase().indexOf(s) === -1) return;
             
             idx++;
-            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td class="val-bold">'+qty+'</td><td><input type="text" value="'+esc(it.pallet)+'" style="width:60px" onchange="it.pallet=this.value"></td><td><input type="text" value="'+esc(it.boxes)+'" style="width:60px" onchange="it.boxes=this.value"></td></tr>';
+            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td style="text-align:center">'+it.packQty+'</td><td class="val-bold">'+qty+'</td><td><input type="text" value="'+esc(it.pallet)+'" style="width:60px" onchange="it.pallet=this.value"></td><td><input type="text" value="'+esc(it.boxes)+'" style="width:60px" onchange="it.boxes=this.value"></td></tr>';
         });
     }
 
-    function renderTableLabel(search) {
+    function renderTableLabel() {
         var tbody = document.getElementById('tbody-label');
         tbody.innerHTML = '';
-        var s = search ? search.toLowerCase() : '';
         var idx = 0;
         
-        appData.forEach(function(it) {
+        filteredData.forEach(function(it) {
             var qty = 0; 
             for(var c in it.cities) if(selectedCities.has(c)) qty += it.cities[c];
             if(qty === 0) return;
-            if(s && it.name.toLowerCase().indexOf(s) === -1) return;
             
             idx++;
-            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.barcode)+'</td><td class="val-bold">'+qty+'</td></tr>';
+            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.barcode)+'</td><td style="text-align:center">'+it.packQty+'</td><td class="val-bold">'+qty+'</td></tr>';
         });
     }
 
@@ -424,7 +509,7 @@
         document.body.className = 'print-ttn-mode';
 
         var items = [];
-        appData.forEach(function(it) {
+        filteredData.forEach(function(it) { // Use filteredData
             var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
             if(q > 0) items.push({ name: it.name, art: it.art, qty: q, pallet: it.pallet, boxes: it.boxes });
         });
@@ -478,8 +563,7 @@
     function renderLabelTable() {
         var modalTbody = document.querySelector('#label-modal tbody');
         if(!modalTbody) {
-            // Create table structure in modal if missing (dynamic)
-            var modalBody = document.querySelector('#label-modal .modal-body .editor-panel').parentElement; // Right side
+            var modalBody = document.querySelector('#label-modal .modal-body .editor-panel').parentElement; 
             var tWrap = document.createElement('div');
             tWrap.style.cssText = 'flex:1; padding:15px; overflow:auto;';
             tWrap.innerHTML = '<h4 style="margin-top:0">Выберите товары для печати</h4><div class="table-wrap"><table class="t-check"><thead><tr><th>✔</th><th>Товар</th><th>Кол-во</th></tr></thead><tbody></tbody></table></div>';
@@ -488,10 +572,12 @@
         }
         
         modalTbody.innerHTML = '';
-        appData.forEach(function(it, i) {
+        filteredData.forEach(function(it) {
             var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
             if(q > 0) {
-                modalTbody.innerHTML += '<tr><td><input type="checkbox" checked class="lbl-check" data-idx="'+i+'"></td><td>'+esc(it.name)+'</td><td>'+q+'</td></tr>';
+                // Find index in appData to bind checkbox correctly if needed, or just use object ref
+                // Here we just store it in the row for printing
+                modalTbody.innerHTML += '<tr><td><input type="checkbox" checked class="lbl-check" data-val=\''+JSON.stringify(it).replace(/'/g, "\\'")+'\'></td><td>'+esc(it.name)+'</td><td>'+q+'</td></tr>';
             }
         });
     }
@@ -499,8 +585,7 @@
     // --- LABEL GENERATION ---
     function updatePreview() {
         var box = document.getElementById('preview-box');
-        // Use first item for preview
-        var it = appData.length ? appData[0] : { name: "Тестовое наименование товара", art: "12345", barcode: "4600000000000", expiry: "01.01.30" };
+        var it = filteredData.length ? filteredData[0] : { name: "Тестовое наименование товара", art: "12345", barcode: "4600000000000", expiry: "01.01.30" };
         box.innerHTML = '';
         box.appendChild(createLabelEl(it));
     }
@@ -512,7 +597,6 @@
         var hBC = parseInt(document.getElementById('bc-height').value);
         var fBC = document.getElementById('bc-format').value;
         
-        // Generate ID for barcode rendering
         var bcId = 'bc-' + Math.random().toString(36).substr(2, 9);
 
         labelConfig.forEach(function(el) {
@@ -524,9 +608,8 @@
         });
 
         div.innerHTML = html;
-        document.body.appendChild(div); // Add temporarily to DOM for JSBarcode calculation
+        document.body.appendChild(div);
 
-        // Render Barcode
         var svg = document.getElementById(bcId);
         if(svg && it.barcode) {
             try {
@@ -536,7 +619,7 @@
             }
         }
         
-        document.body.removeChild(div); // Remove from DOM, return element
+        document.body.removeChild(div);
         return div;
     }
 
@@ -549,8 +632,7 @@
         var count = 0;
 
         checks.forEach(function(chk) {
-            var idx = parseInt(chk.getAttribute('data-idx'));
-            var it = appData[idx];
+            var it = JSON.parse(chk.getAttribute('data-val'));
             var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
             
             for(var k=0; k<q; k++) {
@@ -565,7 +647,7 @@
             window.print(); 
             setTimeout(function(){ 
                 document.body.className = ''; 
-                out.innerHTML = ''; // Clear memory
+                out.innerHTML = ''; 
             }, 1000); 
         }, 300);
     }
@@ -608,11 +690,12 @@
         var demo = [
             ["наименование","Исходный артикул","шк производителя","шк на этикетку","Артикул продавца","кол-во в упаковку","ИТОГО К ОТГРУЗКЕ спаек","ГОДЕН ДО","Омск","Новосиб","Ростов","Пермь"],
             ["Губка гемостатическая 10х10","8891","4605370003130","4605370003130","8891","1","626","17.03.29","50","9","40","10"],
-            ["Теймурова крем пудра 50г","18801","4605370037876","2048605010770","25183","1","1512","13.04.29","100","201","150","50"]
+            ["Теймурова крем пудра 50г","18801","4605370037876","2048605010770","25183","1","1512","13.04.29","100","201","150","50"],
+            ["Набор уходовой косметики (5 уп)","25194","4605370042375","4605370042559","25406","5","50","31.12.27","5","5","0","0"]
         ];
         parseData(demo, 'list');
         parseData(demo, 'label');
-        alert('Система готова. Демо-данные загружены. Загрузите свой Excel файл.');
+        alert('Система готова. Демо-данные загружены.');
     };
 </script>
 </body>
