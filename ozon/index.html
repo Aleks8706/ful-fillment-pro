@@ -3,742 +3,606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система фильтрации заказов, ТТН и генерации этикеток Ozon/ВБ</title>
+    <title>Система фильтрации и печати этикеток</title>
+    <!-- Подключение библиотек -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        @import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/index.min.css');
-        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #2563eb; --success: #16a34a; --danger: #ef4444; --gray: #64748b; --border: #e2e8f0; --text: #1e293b; --text-light: #64748b; --wb-color: #cb11ab; --warning: #f59e0b; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-        .app-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-        .header { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 2rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3); }
-        .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .header p { font-size: 1rem; opacity: 0.9; }
-        .tabs { display: flex; gap: 4px; margin-bottom: 2rem; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .tab-btn { flex: 1; padding: 0.75rem 1rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--text-light); transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .tab-btn:hover { background: #f1f5f9; color: var(--text); }
-        .tab-btn.active { background: var(--primary); color: white; }
-        .tab-btn.active.wb-tab { background: var(--wb-color); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .upload-section { background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
-        .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 3rem 2rem; cursor: pointer; transition: all 0.3s; }
-        .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: #eff6ff; }
-        .upload-zone.wb-zone:hover, .upload-zone.wb-zone.dragover { border-color: var(--wb-color); background: #fdf2f8; }
-        .upload-zone.has-file { border-color: var(--success); background: #ecfdf5; }
-        .upload-icon { width: 64px; height: 64px; margin: 0 auto 1rem; color: #94a3b8; }
-        .upload-zone:hover .upload-icon { color: var(--primary); }
-        .upload-zone.wb-zone:hover .upload-icon { color: var(--wb-color); }
-        .upload-text { font-size: 1.125rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem; }
-        .upload-hint { font-size: 0.875rem; color: #94a3b8; }
-        .file-input { display: none; }
-        .upload-filename { margin-top: 1rem; padding: 0.75rem 1.25rem; background: #ecfdf5; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--success); }
-        .upload-filename .remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 0 0.25rem; }
-        .data-info { display: none; background: #eff6ff; padding: 0.75rem 1rem; border-radius: 8px; margin-top: 1rem; font-size: 0.875rem; color: #1e40af; align-items: center; gap: 0.5rem; }
-        .data-info.visible { display: flex; }
-        .data-info.wb-info { background: #fdf2f8; color: #9d174d; }
-        .controls { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: none; }
-        .controls.visible { display: block; }
-        .filter-section { display: flex; flex-direction: column; gap: 1rem; }
-        .filter-label { font-size: 0.875rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
-        .city-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .city-btn { padding: 0.5rem 1rem; border: 2px solid var(--border); background: white; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 500; color: #475569; transition: all 0.2s; }
-        .city-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .city-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .city-btn.wb-city:hover { border-color: var(--wb-color); color: var(--wb-color); }
-        .city-btn.wb-city.active { background: var(--wb-color); color: white; border-color: var(--wb-color); }
-        .city-btn .badge { display: inline-block; padding: 0.125rem 0.5rem; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 0.5rem; }
-        .city-btn.active .badge { background: rgba(255,255,255,0.3); }
-        .search-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-        .search-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--text); transition: border-color 0.2s; }
-        .search-input:focus { outline: none; border-color: var(--primary); }
-        .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .filter-group { display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
-        .filter-group label { font-size: 12px; font-weight: 500; color: #475569; white-space: nowrap; }
-        .filter-group input, .filter-group select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: 'Inter', sans-serif; }
-        .actions-bar { display: none; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
-        .actions-bar.visible { display: flex; }
-        .stats { display: flex; gap: 2rem; flex-wrap: wrap; }
-        .stat-item { display: flex; flex-direction: column; }
-        .stat-label { font-size: 0.75rem; color: var(--text-light); font-weight: 500; }
-        .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text); }
-        .stat-value.primary { color: var(--primary); }
-        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { padding: 0.625rem 1.25rem; border: none; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; color: white; }
-        .btn:hover { filter: brightness(0.9); transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; filter: none; }
-        .btn-primary { background: var(--primary); }
-        .btn-success { background: var(--success); }
-        .btn-secondary { background: var(--gray); }
-        .btn-danger { background: var(--danger); }
-        .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 4px; }
-        .btn-wb { background: var(--wb-color); }
-        .btn-wb:hover { background: #a00e8a; }
-        .select-all-btn { padding: 0.5rem 1rem; background: #f1f5f9; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 500; transition: background 0.2s; }
-        .select-all-btn:hover { background: #e2e8f0; }
-        .table-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; display: none; }
-        .table-container.visible { display: block; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8fafc; padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); position: sticky; top: 0; white-space: nowrap; }
-        td { padding: 0.625rem 1rem; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
-        tr:hover td { background: #f8fafc; }
-        .product-name { font-weight: 500; max-width: 280px; }
-        .sku { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--text-light); }
-        .quantity-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 2.5rem; padding: 0.375rem 0.75rem; background: #eff6ff; color: var(--primary); border-radius: 6px; font-weight: 600; font-size: 0.875rem; }
-        .quantity-badge.high { background: #ecfdf5; color: var(--success); }
-        .expiry-date { font-size: 0.8rem; color: var(--text-light); }
-        .pack-info { font-size: 0.8rem; color: #94a3b8; }
-        .editable-cell { background: #fffbeb; cursor: text; min-width: 60px; text-align: center; }
-        .editable-cell:focus { background: #fef3c7; outline: 2px solid var(--warning); }
-        .empty-state { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
-        .empty-state svg { width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.5; }
-        .empty-state h3 { font-size: 1.125rem; color: #64748b; margin-bottom: 0.5rem; }
-        .empty-state p { font-size: 0.875rem; }
-        .sort-btn { cursor: pointer; user-select: none; }
-        .sort-btn:hover { color: var(--primary); }
-        .sort-indicator { font-size: 0.6rem; margin-left: 0.25rem; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(2px); }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal { background: white; width: 96%; max-width: 1400px; max-height: 92vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; }
-        .modal-header h2 { margin: 0; font-size: 16px; }
-        .modal-body { flex: 1; overflow: auto; padding: 14px; background: #fafbfc; }
-        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border); background: white; flex-wrap: wrap; }
-        .modal-col-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; margin-bottom: 8px; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .modal-col-filter { padding: 5px 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; width: 100%; background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .modal-col-filter::placeholder { color: #94a3b8; }
-        .modal-table { border-collapse: collapse; width: 100%; background: white; border: 1px solid var(--border); }
-        .modal-table th, .modal-table td { font-size: 11px; padding: 5px 6px; white-space: nowrap; border-bottom: 1px solid #f1f5f9; }
-        .modal-table thead th { background: #e2e8f0; position: sticky; top: 0; z-index: 3; }
-        .modal-table tbody tr { transition: background 0.1s; }
-        .modal-table tbody tr:hover { background: #f0f7ff; }
-        .modal-table tbody tr.row-hidden { display: none; }
-        .modal-table .col-check { width: 30px; text-align: center; }
-        .modal-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; background: white; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); }
-        .modal-toolbar label { font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-        .modal-toolbar select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Inter', sans-serif; }
-        .modal-badge { display: inline-block; background: #e0e7ff; color: #1e3a8a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .modal-badge.wb { background: #fce7f3; color: #9d174d; }
-        #print-area { position: absolute; left: -9999px; top: 0; width: 100%; }
-        #print-list-area { position: absolute; left: -9999px; top: 0; width: 100%; }
+        :root {
+            --primary: #2563eb; --success: #16a34a; --danger: #ef4444; --gray: #64748b; --bg: #f1f5f9;
+            --card: #ffffff; --text: #0f172a; --wb-color: #cb11ab;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; font-size: 14px; }
+        * { box-sizing: border-box; }
+        
+        /* Layout */
+        .container { max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        /* Header & Tabs */
+        .header h1 { margin: 0 0 15px 0; font-size: 24px; }
+        .tabs { display: flex; gap: 5px; background: #e2e8f0; padding: 5px; border-radius: 8px; width: fit-content; }
+        .tab { padding: 8px 16px; cursor: pointer; border-radius: 6px; font-weight: 500; transition: 0.2s; }
+        .tab:hover { background: rgba(255,255,255,0.5); }
+        .tab.active { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab.wb.active { background: var(--wb-color); color: white; }
+
+        /* Upload & Actions */
+        .upload-zone { border: 2px dashed #cbd5e1; padding: 30px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .upload-zone:hover { border-color: var(--primary); background: #eff6ff; }
+        .actions { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; color: white; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .btn-primary { background: var(--primary); } .btn-success { background: var(--success); } .btn-wb { background: var(--wb-color); } .btn-danger { background: var(--danger); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Filters */
+        .city-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .city-chip { padding: 4px 10px; background: #f1f5f9; border-radius: 12px; cursor: pointer; font-size: 12px; border: 1px solid #e2e8f0; }
+        .city-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .city-chip.wb.active { background: var(--wb-color); }
+
+        /* Table */
+        .table-wrap { overflow: auto; max-height: 500px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8fafc; position: sticky; top: 0; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover { background: #f8fafc; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: white; width: 90%; height: 90%; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .modal-body { flex: 1; overflow: auto; padding: 20px; background: #f1f5f9; display: flex; gap: 20px; }
+        .modal-sidebar { width: 350px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-content { flex: 1; overflow: auto; }
+        
+        /* Label Editor */
+        .editor-panel { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .label-preview { background: white; border: 2px solid #cbd5e1; padding: 20px; display: flex; justify-content: center; border-radius: 8px; margin-top: 10px; }
+        .label-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #f8fafc; margin-bottom: 4px; border-radius: 4px; border: 1px solid #e2e8f0; }
+        
+        /* LABEL STYLES (58x40mm) */
         .label-grid { display: flex; flex-direction: column; }
-        .label { width: 58mm; height: 40mm; padding: 1.5mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, Helvetica, sans-serif; overflow: hidden; background: white; border: 0.5px solid #ccc; }
+        .label {
+            width: 58mm; height: 40mm; padding: 2mm; box-sizing: border-box;
+            display: flex; flex-direction: column; background: white; border: 1px solid #ccc;
+            font-family: Arial, sans-serif; overflow: hidden; page-break-after: always;
+        }
         .lbl-block { margin-bottom: 0.5mm; }
-        .lbl-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3mm; }
-        .lbl-title { font-size: 10px; font-weight: bold; }
-        .lbl-counter { font-size: 9px; color: #555; font-weight: 600; }
-        .lbl-barcode { text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        .lbl-barcode svg { max-height: 22mm; max-width: 54mm; width: 100%; height: auto; display: block; }
-        .lbl-name { font-size: 7.5px; line-height: 1.15; max-height: 1.6em; overflow: hidden; margin-bottom: 0.3mm; color: #222; font-weight: 500; }
-        .lbl-meta { display: flex; justify-content: space-between; font-size: 7px; color: #444; margin-top: auto; padding-top: 0.3mm; border-top: 0.5px solid #eee; }
-        .lbl-warning { text-align: center; font-size: 7px; font-weight: 900; color: #000; padding: 0.5mm 0; border-bottom: 1px solid #000; letter-spacing: 0.4px; line-height: 1; text-transform: uppercase; }
-        .lbl-custom-text { font-size: 7.5px; color: #222; text-align: center; }
-        .lbl-quant { font-size: 7px; color: #444; }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .loading-overlay.visible { display: flex; }
-        .loading-spinner { background: white; padding: 2rem 3rem; border-radius: 12px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: var(--text); color: white; border-radius: 8px; font-size: 0.875rem; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 2000; }
-        .toast.visible { transform: translateY(0); opacity: 1; }
-        .toast.error { background: var(--danger); }
-        .toast.success { background: var(--success); }
-        .stats-badge { display: inline-block; background: #e0e7ff; color: #1e3a8a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        
+        /* UPDATED NAME STYLE FOR FULL VISIBILITY */
+        .lbl-name {
+            font-size: 9.5px; /* Readable size */
+            line-height: 1.25; /* Good spacing */
+            color: #000; /* Black */
+            font-weight: bold; /* Visible */
+            word-break: break-word; /* Wrap long words */
+            white-space: normal; /* Allow wrapping */
+            overflow: visible; /* DO NOT HIDE OVERFLOW */
+            max-height: none; /* REMOVE HEIGHT LIMIT */
+            margin-bottom: 1mm;
+        }
+
+        .lbl-title { font-size: 10px; font-weight: bold; color: #000; }
+        .lbl-counter { font-size: 9px; color: #444; font-weight: bold; }
+        .lbl-barcode { text-align: center; flex-grow: 0; /* Allow label to grow */ height: auto; display: flex; align-items: center; justify-content: center; }
+        .lbl-barcode svg { max-height: 16mm; max-width: 54mm; width: 100%; display: block; }
+        .lbl-warning { text-align: center; font-size: 7px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 0.5mm; margin-bottom: 0.5mm; }
+        .lbl-meta { font-size: 7.5px; color: #333; display: flex; justify-content: space-between; margin-top: auto; padding-top: 0.5mm; border-top: 1px solid #eee; }
+
+        /* TTN Styles */
+        .ttn-doc { padding: 20px; background: white; max-width: 1000px; margin: 0 auto; }
+        .ttn-header { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
+        .ttn-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .ttn-table th, .ttn-table td { border: 1px solid #000; padding: 4px; }
+
+        /* Print */
         @media print {
             body * { visibility: hidden; }
-            .print-list-mode #print-list-area, .print-list-mode #print-list-area * { visibility: visible; }
-            .print-list-mode #print-list-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .print-label-mode #print-area, .print-label-mode #print-area * { visibility: visible; }
-            .print-label-mode #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .label { page-break-after: always; border: none; margin: 0; box-shadow: none; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .label { border: none; margin: 0; page-break-after: always; overflow: visible; }
             .label:last-child { page-break-after: auto; }
             @page { size: 58mm 40mm; margin: 0; }
-        }
-        .ttn-header { text-align: center; margin-bottom: 0.8rem; padding: 0.8rem; border: 2px solid #000; }
-        .ttn-header h2 { font-size: 14pt; margin-bottom: 0.3rem; }
-        .ttn-info { margin-bottom: 0.8rem; font-size: 10pt; }
-        .ttn-info p { margin-bottom: 0.15rem; }
-        .ttn-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
-        .ttn-table th { background: #f3f4f6 !important; padding: 4pt 6pt; font-size: 7pt; font-weight: 600; border: 1px solid #000; text-align: center; }
-        .ttn-table td { padding: 4pt 6pt; border: 1px solid #000; text-align: center; }
-        .ttn-table td:nth-child(2) { text-align: left; }
-        .ttn-footer { margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #000; font-size: 9pt; color: #000; }
-        .label-editor-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-        .label-editor-panel h3 { font-size: 14px; margin-bottom: 0.75rem; color: var(--text); display: flex; align-items: center; gap: 6px; }
-        .label-elements-list { border: 1px solid var(--border); border-radius: 6px; background: white; min-height: 100px; }
-        .label-element-item { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: white; transition: background 0.1s; }
-        .label-element-item:last-child { border-bottom: none; }
-        .label-element-item:hover { background: #f8fafc; }
-        .label-element-item.disabled { opacity: 0.4; }
-        .label-element-item .elem-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
-        .label-element-item .elem-name { font-size: 12px; font-weight: 500; flex: 1; }
-        .label-element-item .elem-field { font-size: 11px; color: var(--text-light); }
-        .label-element-item .elem-actions { display: flex; gap: 2px; flex-shrink: 0; }
-        .label-element-item .elem-actions button { width: 24px; height: 24px; border: 1px solid var(--border); background: white; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-        .label-element-item .elem-actions button:hover { background: #eff6ff; border-color: var(--primary); }
-        .label-element-item .elem-actions button.delete-btn:hover { background: #fef2f2; border-color: var(--danger); color: var(--danger); }
-        .add-element-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
-        .add-element-row select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'Inter', sans-serif; flex: 1; min-width: 150px; }
-        .add-divider-btn { width: 100%; padding: 6px; border: 1px dashed var(--border); background: transparent; border-radius: 4px; cursor: pointer; font-size: 11px; color: var(--text-light); margin-top: 4px; transition: all 0.15s; }
-        .add-divider-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
-        .label-preview { background: white; border: 2px solid var(--border); border-radius: 8px; padding: 1rem; margin-top: 1rem; display: flex; justify-content: center; }
-        .label-preview .label { width: 58mm; height: 40mm; border: 1px solid #999; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .label-editor-settings { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 6px; }
-        .label-editor-settings label { font-size: 12px; font-weight: 500; color: #475569; }
-        .label-editor-settings select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: 'Inter', sans-serif; }
-        @media (max-width: 768px) {
-            .app-container { padding: 1rem; }
-            .header h1 { font-size: 1.5rem; }
-            .stats { gap: 1rem; }
-            .actions-bar { flex-direction: column; align-items: stretch; }
-            .btn-group { justify-content: stretch; }
-            .btn-group .btn { flex: 1; justify-content: center; }
-            .tabs { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-<div class="app-container">
+<div class="container">
     <div class="header">
-        <h1>📦 Система фильтрации заказов, ТТН и генерации этикеток Ozon/ВБ</h1>
-        <p>Загрузите файл ТЗ (.xlsx), выберите города, настройте этикетки, распечатайте ТТН или этикетки</p>
-    </div>
-    <div class="tabs" id="tabsBar">
-        <button class="tab-btn active" onclick="switchTab('list')">📋 ТТН / Накладная</button>
-        <button class="tab-btn" onclick="switchTab('ozon')">🏷️ Этикетки Ozon</button>
-        <button class="tab-btn wb-tab" onclick="switchTab('wb')">🏷️ Этикетки ВБ</button>
-    </div>
-    <!-- TAB 1: TTN -->
-    <div class="tab-content active" id="tab-list">
-        <div class="upload-section" id="uploadSectionList">
-            <div class="upload-zone" id="uploadZoneList" onclick="document.getElementById('fileInputList').click()">
-                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                <div class="upload-text">Загрузите файл ТЗ (.xlsx / .xls)</div>
-                <div class="upload-hint">Перетащите файл сюда или нажмите для выбора</div>
-                <input type="file" class="file-input" id="fileInputList" accept=".xlsx,.xls">
-            </div>
-            <div id="fileInfoList" style="display:none;"><div class="upload-filename"><span>📄</span><span id="fileNameList"></span><button class="remove-btn" onclick="removeFileList()" title="Удалить">×</button></div></div>
-            <div class="data-info" id="dataInfoList"><span>✅</span><span id="dataInfoTextList"></span></div>
-            <div style="margin-top:1rem;"><button class="btn btn-secondary btn-sm" onclick="loadDemoList()">📂 Загрузить демо-данные</button></div>
-        </div>
-        <div class="controls" id="controlsList">
-            <div class="filter-section">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                    <span class="filter-label">Фильтр по городам</span>
-                    <div>
-                        <button class="select-all-btn" onclick="selectAllCitiesList()">Все города</button>
-                        <button class="select-all-btn" onclick="deselectAllCitiesList()" style="margin-left:0.5rem;">Сбросить</button>
-                    </div>
-                </div>
-                <div class="city-filters" id="cityFiltersList"></div>
-            </div>
-            <div class="search-section"><input type="text" class="search-input" id="searchInputList" placeholder="🔍 Поиск по наименованию или артикулу..." oninput="applyFiltersList()"></div>
-        </div>
-        <div class="actions-bar" id="actionsBarList">
-            <div class="stats">
-                <div class="stat-item"><span class="stat-label">Выбрано городов</span><span class="stat-value primary" id="cityCountList">0</span></div>
-                <div class="stat-item"><span class="stat-label">Позиций</span><span class="stat-value" id="itemCountList">0</span></div>
-                <div class="stat-item"><span class="stat-label">Итого штук</span><span class="stat-value" id="totalQtyList">0</span></div>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-primary" id="printListBtn" onclick="printTTNByCity()" disabled>🖨️ ТТН по городам</button>
-                <button class="btn btn-success" id="printAllBtn" onclick="printTTNAll()">🖨️ ТТН - Печать всего</button>
-            </div>
-        </div>
-        <div class="table-container" id="tableContainerList">
-            <div class="table-wrapper"><table id="productsTableList"><thead><tr id="tableHeaderList"></tr></thead><tbody id="tableBodyList"></tbody></table></div>
-            <div class="empty-state" id="emptyStateList" style="display:none;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><h3>Нет данных</h3><p>Загрузите файл ТЗ</p></div>
+        <h1>📦 Система упаковки и маркировки</h1>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('list')">📋 ТТН / Сборка</div>
+            <div class="tab" onclick="switchTab('ozon')">🏷️ Этикетки Ozon</div>
+            <div class="tab wb" onclick="switchTab('wb')">🏷️ Этикетки ВБ</div>
         </div>
     </div>
-    <!-- TAB 2: OZON LABELS -->
-    <div class="tab-content" id="tab-ozon">
-        <div class="upload-section" id="uploadSectionOzon">
-            <div class="upload-zone" id="uploadZoneOzon" onclick="document.getElementById('fileInputOzon').click()">
-                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                <div class="upload-text">Загрузите файл ТЗ для этикеток Ozon (.xlsx / .xls)</div>
-                <div class="upload-hint">Перетащите файл сюда или нажмите для выбора</div>
-                <input type="file" class="file-input" id="fileInputOzon" accept=".xlsx,.xls">
-            </div>
-            <div id="fileInfoOzon" style="display:none;"><div class="upload-filename"><span>📄</span><span id="fileNameOzon"></span><button class="remove-btn" onclick="removeFileOzon()" title="Удалить">×</button></div></div>
-            <div class="data-info" id="dataInfoOzon"><span>✅</span><span id="dataInfoTextOzon"></span></div>
+
+    <!-- TAB 1: LIST / TTN -->
+    <div id="tab-list" class="tab-content card">
+        <div class="upload-zone" onclick="document.getElementById('file-list').click()">
+            📂 Загрузить файл Excel или <button class="btn btn-primary btn-sm" style="display:inline-block; margin-top:5px;" onclick="loadDemoData(event)">Загрузить демо</button>
+            <input type="file" id="file-list" hidden accept=".xlsx,.xls">
         </div>
-        <div class="controls" id="controlsOzon">
-            <div class="filter-section">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                    <span class="filter-label">Города для этикеток</span>
-                    <div>
-                        <button class="select-all-btn" onclick="selectAllCitiesOzon()">Все</button>
-                        <button class="select-all-btn" onclick="deselectAllCitiesOzon()" style="margin-left:0.5rem;">Сброс</button>
-                    </div>
-                </div>
-                <div class="city-filters" id="cityFiltersOzon"></div>
-            </div>
-            <div class="search-section"><input type="text" class="search-input" id="searchInputOzon" placeholder="🔍 Поиск..." oninput="applyFiltersOzon()"></div>
+        
+        <div class="actions" id="actions-list" style="display:none;">
+            <button class="btn btn-primary" onclick="printTTN('city')">🖨️ ТТН по городам</button>
+            <button class="btn btn-success" onclick="printTTN('all')">🖨️ Печать всего (Альбомная)</button>
         </div>
-        <div class="actions-bar" id="actionsBarOzon">
-            <div class="stats">
-                <div class="stat-item"><span class="stat-label">Выбрано городов</span><span class="stat-value primary" id="cityCountOzon">0</span></div>
-                <div class="stat-item"><span class="stat-label">Позиций</span><span class="stat-value" id="itemCountOzon">0</span></div>
-                <div class="stat-item"><span class="stat-label">Этикеток</span><span class="stat-value" id="totalLabelsOzon">0</span></div>
-            </div>
-            <div class="btn-group"><button class="btn btn-success" id="openOzonModalBtn" onclick="openOzonModal()" disabled>🏷️ Настроить и Печать</button></div>
+
+        <div id="filters-list" style="display:none; margin-bottom: 10px;">
+            <b>Города:</b> <button onclick="toggleAllCities('list', true)">Все</button> <button onclick="toggleAllCities('list', false)">Сброс</button>
+            <div class="city-filters" id="city-filters-list"></div>
+            <input type="text" placeholder="🔍 Поиск..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" oninput="renderTableList(this.value)">
         </div>
-        <div class="table-container" id="tableContainerOzon">
-            <div class="table-wrapper"><table id="productsTableOzon"><thead><tr id="tableHeaderOzon"></tr></thead><tbody id="tableBodyOzon"></tbody></table></div>
-            <div class="empty-state" id="emptyStateOzon" style="display:none;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><h3>Нет данных</h3><p>Загрузите файл ТЗ</p></div>
+
+        <div class="table-wrap">
+            <table id="table-list">
+                <thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Палета</th><th>Короба</th></tr></thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
-    <!-- TAB 3: WB LABELS -->
-    <div class="tab-content" id="tab-wb">
-        <div class="upload-section" id="uploadSectionWb">
-            <div class="upload-zone wb-zone" id="uploadZoneWb" onclick="document.getElementById('fileInputWb').click()">
-                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                <div class="upload-text">Загрузите файл ТЗ для этикеток ВБ (.xlsx / .xls)</div>
-                <div class="upload-hint">Файл с колонками: Артикул ВБ, ШК на этикетку ВБ, Город и т.д.</div>
-                <input type="file" class="file-input" id="fileInputWb" accept=".xlsx,.xls">
-            </div>
-            <div id="fileInfoWb" style="display:none;"><div class="upload-filename"><span>📄</span><span id="fileNameWb"></span><button class="remove-btn" onclick="removeFileWb()" title="Удалить">×</button></div></div>
-            <div class="data-info wb-info" id="dataInfoWb"><span>✅</span><span id="dataInfoTextWb"></span></div>
+
+    <!-- TAB 2: OZON -->
+    <div id="tab-ozon" class="tab-content card" style="display:none;">
+        <div class="upload-zone" onclick="document.getElementById('file-ozon').click()">
+            📂 Загрузить файл для Ozon
+            <input type="file" id="file-ozon" hidden accept=".xlsx,.xls">
         </div>
-        <div class="controls" id="controlsWb">
-            <div class="filter-row">
-                <div class="filter-group"><label>🔍 Поиск:</label><input type="text" id="searchWb" placeholder="Артикул, Название..." style="width:220px" oninput="applyFilterWb()"></div>
-                <div class="filter-group"><label>🏙️ Город:</label><select id="cityFilterWb" onchange="applyFilterWb()"><option value="">Все города</option></select></div>
-                <div class="filter-group"><label>📦 Мин. кол-во:</label><input type="number" id="minQtyWb" value="0" style="width:70px" oninput="applyFilterWb()"></div>
-                <button class="btn btn-wb" onclick="openWbModal()">🏷️ Настроить и Печать</button>
-            </div>
-            <div style="margin-top:8px;"><span class="stats-badge" id="statsBadgeWb">—</span></div>
+        <div class="actions" id="actions-ozon" style="display:none;">
+            <button class="btn btn-success" onclick="openLabelModal('ozon')">🏷️ Настройка и Печать</button>
         </div>
-        <div class="table-container" id="tableContainerWb">
-            <div class="table-wrapper" style="max-height:450px;overflow-y:auto;"><table id="productsTableWb"><thead><tr id="tableHeaderWb"></tr></thead><tbody id="tableBodyWb"></tbody></table></div>
+        <div id="filters-ozon" style="display:none;">
+            <b>Города:</b> <button onclick="toggleAllCities('ozon', true)">Все</button> <button onclick="toggleAllCities('ozon', false)">Сброс</button>
+            <div class="city-filters" id="city-filters-ozon"></div>
+            <input type="text" placeholder="🔍 Поиск..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" oninput="renderTableOzon(this.value)">
         </div>
+        <div class="table-wrap"><table id="table-ozon"><thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Кол-во</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <!-- TAB 3: WB -->
+    <div id="tab-wb" class="tab-content card" style="display:none;">
+        <div class="upload-zone wb" onclick="document.getElementById('file-wb').click()">
+            📂 Загрузить файл для ВБ
+            <input type="file" id="file-wb" hidden accept=".xlsx,.xls">
+        </div>
+        <div class="actions" id="actions-wb" style="display:none;">
+            <button class="btn btn-wb" onclick="openLabelModal('wb')">🏷️ Настройка и Печать</button>
+        </div>
+        <div id="filters-wb" style="display:none;">
+            <b>Города:</b>
+            <div class="city-filters" id="city-filters-wb"></div>
+            <input type="text" placeholder="🔍 Поиск..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" oninput="renderTableWb(this.value)">
+        </div>
+        <div class="table-wrap"><table id="table-wb"><thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Кол-во</th></tr></thead><tbody></tbody></table></div>
     </div>
 </div>
 
-<!-- OZON LABEL MODAL WITH EDITOR -->
-<div id="ozonModal" class="modal-overlay">
-    <div class="modal" style="max-width:1400px;">
+<!-- MODAL FOR LABELS -->
+<div id="label-modal" class="modal-overlay">
+    <div class="modal">
         <div class="modal-header">
-            <h2>⚙️ Настройка печати этикеток Ozon 58×40 мм</h2>
-            <button class="btn btn-secondary" onclick="closeOzonModal()">✕ Закрыть</button>
+            <h3 id="modal-title">Настройка этикетки</h3>
+            <button class="btn btn-danger btn-sm" onclick="closeModal()">Закрыть</button>
         </div>
-        <div class="modal-body" style="display:flex;gap:1rem;flex-wrap:wrap;">
-            <div style="flex:1;min-width:300px;max-width:400px;">
-                <div class="label-editor-panel">
-                    <h3>📝 Редактор этикетки</h3>
-                    <div class="label-elements-list" id="ozonElementsList"></div>
-                    <button class="add-divider-btn" onclick="addOzonElement('divider')">＋ Добавить разделитель</button>
-                    <div class="add-element-row">
-                        <select id="ozonAddElementSelect">
-                            <option value="">Выберите элемент...</option>
-                            <option value="warning">⚠️ Предупреждение</option>
-                            <option value="art">📋 Артикул продавца</option>
-                            <option value="sku">📋 Исходный артикул</option>
-                            <option value="barcode">📊 ШК производителя</option>
-                            <option value="name">📝 Наименование</option>
-                            <option value="expiry">📅 Годен до</option>
-                            <option value="city">🏙️ Город</option>
-                            <option value="custom">✏️ Произвольный текст</option>
-                        </select>
-                        <button class="btn btn-primary btn-sm" onclick="addSelectedOzonElement()">Добавить</button>
-                    </div>
-                    <div class="label-editor-settings">
-                        <label>Размер штрихкода (высота):</label>
-                        <select id="ozonBcHeight"><option value="40">Стандартный</option><option value="60" selected>Большой</option><option value="80">Очень большой</option></select>
-                        <label>Формат штрихкода:</label>
-                        <select id="ozonBcFormat"><option value="CODE128">CODE128</option><option value="EAN13">EAN13</option><option value="UPC">UPC</option><option value="CODE39">CODE39</option></select>
-                    </div>
-                    <button class="btn btn-primary" onclick="previewOzonLabel()" style="margin-top:0.75rem;width:100%;">👁️ Предпросмотр</button>
+        <div class="modal-body">
+            <div class="modal-sidebar">
+                <div class="editor-panel">
+                    <h4>Состав этикетки</h4>
+                    <div id="editor-list"></div>
+                    <button class="btn btn-sm btn-primary" onclick="addLabelElement()" style="margin-top:5px; width:100%;">＋ Добавить поле</button>
                 </div>
-                <div class="label-preview" id="ozonPreviewArea"></div>
-            </div>
-            <div style="flex:2;min-width:400px;">
-                <div class="modal-toolbar">
-                    <label><input type="checkbox" id="ozonSelectAllChk" onchange="ozonModalToggleSelectAll(this.checked)"> Выбрать всё</label>
-                    <span class="modal-badge" id="ozonModalSelCount">Выбрано: 0</span>
-                    <span class="modal-badge" id="ozonModalTotalCount">Всего: 0</span>
+                <div class="editor-panel">
+                    <h4>Настройки</h4>
+                    <label>Штрихкод:</label>
+                    <select id="bc-height" style="width:100%; padding: 5px; margin: 5px 0;">
+                        <option value="12">Маленький</option>
+                        <option value="16" selected>Средний</option>
+                        <option value="22">Большой</option>
+                    </select>
                 </div>
-                <div class="modal-col-filters" id="ozonColFilters"></div>
-                <table class="modal-table"><thead id="ozonModalHead"></thead><tbody id="ozonModalBodyInner"></tbody></table>
+                <div class="editor-panel">
+                    <button class="btn btn-success" style="width:100%" onclick="printLabels()">🖨️ Печать выбранных</button>
+                </div>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-danger" onclick="ozonModalDeselectAll()">✖ Снять всё</button>
-            <button class="btn btn-secondary" onclick="closeOzonModal()">Отмена</button>
-            <button class="btn btn-success" onclick="executeOzonPrint()">🖨️ Печать выбранных</button>
+            <div class="modal-content">
+                <h4>Предпросмотр</h4>
+                <div class="label-preview" id="preview-area"></div>
+                <h4 style="margin-top: 20px;">Выберите товары для печати</h4>
+                <div class="table-wrap"><table id="modal-table"><thead><tr><th>✔</th><th>Товар</th><th>Кол-во</th></tr></thead><tbody></tbody></table></div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- WB LABEL MODAL WITH EDITOR -->
-<div id="wbModal" class="modal-overlay">
-    <div class="modal" style="max-width:1400px;">
-        <div class="modal-header">
-            <h2 style="color:var(--wb-color);">⚙️ Настройка печати этикеток ВБ 58×40 мм</h2>
-            <button class="btn btn-secondary" onclick="closeWbModal()">✕ Закрыть</button>
-        </div>
-        <div class="modal-body" style="display:flex;gap:1rem;flex-wrap:wrap;">
-            <div style="flex:1;min-width:300px;max-width:400px;">
-                <div class="label-editor-panel">
-                    <h3>📝 Редактор этикетки</h3>
-                    <div class="label-elements-list" id="wbElementsList"></div>
-                    <button class="add-divider-btn" onclick="addWbElement('divider')">＋ Добавить разделитель</button>
-                    <div class="add-element-row">
-                        <select id="wbAddElementSelect">
-                            <option value="">Выберите элемент...</option>
-                            <option value="warning">⚠️ Предупреждение</option>
-                            <option value="art_wb">📋 Артикул ВБ</option>
-                            <option value="art_label">📋 Арт. на этикетку</option>
-                            <option value="sku_label">📊 ШК на этикетку</option>
-                            <option value="name">📝 Наименование</option>
-                            <option value="expiry">📅 Годен до</option>
-                            <option value="quant">📦 Квант</option>
-                            <option value="city">🏙️ Город</option>
-                            <option value="custom">✏️ Произвольный текст</option>
-                        </select>
-                        <button class="btn btn-wb btn-sm" onclick="addSelectedWbElement()">Добавить</button>
-                    </div>
-                    <div class="label-editor-settings">
-                        <label>Размер штрихкода (высота):</label>
-                        <select id="wbBcHeight"><option value="40">Стандартный</option><option value="60" selected>Большой</option><option value="80">Очень большой</option></select>
-                        <label>Формат штрихкода:</label>
-                        <select id="wbBcFormat"><option value="CODE128">CODE128</option><option value="EAN13">EAN13</option><option value="UPC">UPC</option><option value="CODE39">CODE39</option></select>
-                    </div>
-                    <button class="btn btn-wb" onclick="previewWbLabel()" style="margin-top:0.75rem;width:100%;">👁️ Предпросмотр</button>
-                </div>
-                <div class="label-preview" id="wbPreviewArea"></div>
-            </div>
-            <div style="flex:2;min-width:400px;">
-                <div class="modal-toolbar">
-                    <label><input type="checkbox" id="wbSelectAllChk" onchange="wbModalToggleSelectAll(this.checked)"> Выбрать всё</label>
-                    <span class="modal-badge wb" id="wbModalSelCount">Выбрано: 0</span>
-                    <span class="modal-badge wb" id="wbModalTotalCount">Всего: 0</span>
-                </div>
-                <div class="modal-col-filters" id="wbColFilters"></div>
-                <table class="modal-table"><thead id="wbModalHead"></thead><tbody id="wbModalBodyInner"></tbody></table>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-danger" onclick="wbModalDeselectAll()">✖ Снять всё</button>
-            <button class="btn btn-secondary" onclick="closeWbModal()">Отмена</button>
-            <button class="btn btn-wb" onclick="executeWbPrint()">🖨️ Печать выбранных</button>
-        </div>
-    </div>
-</div>
-
-<div id="print-area"><div class="label-grid" id="labelGrid"></div></div>
-<div id="print-list-area"></div>
-<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"><div class="spinner"></div><div>Обработка файла...</div></div></div>
-<div class="toast" id="toast"></div>
+<!-- PRINT AREA -->
+<div id="print-area" class="print-area"></div>
 
 <script>
-(function() {
-    'use strict';
-    var $ = function(id) { return document.getElementById(id); };
+    // --- DATA STORE ---
+    var data = { list: [], ozon: [], wb: [] };
+    var cities = { list: [], ozon: [], wb: [] };
+    var selectedCities = { list: new Set(), ozon: new Set(), wb: new Set() };
+    var filteredData = { list: [], ozon: [], wb: [] };
     
-    window.switchTab = function(tab) {
-        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-        var tabs = { list: 0, ozon: 1, wb: 2 };
-        document.querySelectorAll('.tab-btn')[tabs[tab]].classList.add('active');
-        $('tab-' + tab).classList.add('active');
+    // --- LABEL TEMPLATES ---
+    var templates = {
+        ozon: [
+            { id: 'warning', text: '⚠️ ВНИМАНИЕ', enabled: true, fixed: true },
+            { id: 'art', text: '📋 Артикул продавца', enabled: true, field: 'art' },
+            { id: 'barcode', text: '📊 Штрихкод', enabled: true, field: 'barcode' },
+            { id: 'name', text: '📝 Наименование', enabled: true, field: 'name' },
+            { id: 'expiry', text: '📅 Годен до', enabled: true, field: 'expiry' }
+        ],
+        wb: [
+            { id: 'warning', text: '⚠️ ВНИМАНИЕ', enabled: true, fixed: true },
+            { id: 'art', text: '📋 Артикул ВБ', enabled: true, field: 'art' },
+            { id: 'barcode', text: '📊 Штрихкод', enabled: true, field: 'barcode' },
+            { id: 'name', text: '📝 Наименование', enabled: true, field: 'name' },
+            { id: 'quant', text: '📦 Квант', enabled: false, field: 'quant' }
+        ]
     };
+    var currentMode = 'ozon';
 
-    function showToast(message, type) { type = type || ''; var toast = $('toast'); toast.textContent = message; toast.className = 'toast ' + type; toast.classList.add('visible'); setTimeout(function() { toast.classList.remove('visible'); }, 4000); }
-    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-    function cityId(city) { return city.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g, '_'); }
-
-    // City list for identification
-    var CITY_KEYWORDS = ['хабаровск', 'омск', 'пермь', 'екатеринбург', 'саратов', 'волгоград', 'тюмень', 'ростов', 'самара', 'уфа', 'новосиб', 'ярославль', 'краснодар', 'адыгейск', 'сп', 'казань', 'жуковский', 'кросс'];
-
-    // ==================== LABEL EDITOR ====================
-    var ozonLabelElements = [
-        { type: 'warning', text: 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ', enabled: true },
-        { type: 'art', enabled: true },
-        { type: 'barcode', enabled: true },
-        { type: 'name', enabled: true },
-        { type: 'expiry', enabled: true }
-    ];
-    var wbLabelElements = [
-        { type: 'warning', text: 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ', enabled: true },
-        { type: 'art_label', enabled: true },
-        { type: 'sku_label', enabled: true },
-        { type: 'name', enabled: true },
-        { type: 'quant', enabled: true },
-        { type: 'expiry', enabled: true }
-    ];
-    var ozonElementIcons = { warning: '⚠️', art: '📋', sku: '📋', barcode: '📊', name: '📝', expiry: '📅', city: '🏙️', custom: '✏️', divider: '➖' };
-    var ozonElementNames = { warning: 'Предупреждение', art: 'Артикул продавца', sku: 'Исходный артикул', barcode: 'ШК производителя', name: 'Наименование', expiry: 'Годен до', city: 'Город', custom: 'Произвольный текст', divider: 'Разделитель' };
-    var wbElementIcons = { warning: '⚠️', art_wb: '📋', art_label: '📋', sku_label: '📊', name: '📝', expiry: '📅', quant: '📦', city: '🏙️', custom: '✏️', divider: '➖' };
-    var wbElementNames = { warning: 'Предупреждение', art_wb: 'Артикул ВБ', art_label: 'Арт. на этикетку', sku_label: 'ШК на этикетку', name: 'Наименование', expiry: 'Годен до', quant: 'Квант', city: 'Город', custom: 'Произвольный текст', divider: 'Разделитель' };
-
-    function renderOzonElementsList() {
-        var list = $('ozonElementsList'); if (!list) return; list.innerHTML = '';
-        ozonLabelElements.forEach(function(elem, idx) {
-            var item = document.createElement('div'); item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
-            var icon = ozonElementIcons[elem.type] || '❓'; var name = ozonElementNames[elem.type] || elem.type;
-            var fieldInfo = (elem.type === 'warning' || elem.type === 'custom') ? (elem.text || '') : '';
-            item.innerHTML = '<span class="elem-icon">' + icon + '</span><span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span><span class="elem-actions"><button onclick="moveOzonElement(' + idx + ',-1)" title="Вверх">↑</button><button onclick="moveOzonElement(' + idx + ',1)" title="Вниз">↓</button><button onclick="toggleOzonElement(' + idx + ')" title="Вкл/Выкл">' + (elem.enabled ? '👁️' : '🚫') + '</button>' + (fieldInfo ? '<button onclick="editOzonElementText(' + idx + ')" title="Текст">✏️</button>' : '') + '<button class="delete-btn" onclick="removeOzonElement(' + idx + ')" title="Удалить">✕</button></span>';
-            list.appendChild(item);
-        });
+    // --- DEMO DATA LOADER ---
+    function loadDemoData(e) {
+        if(e) e.stopPropagation();
+        var raw = [
+            ["Наименование","Исходный артикул","шк производителя","шк на этикетку","Артикул продавца","кол-во в упаковку","ИТОГО К ОТГРУЗКЕ спаек","ГОДЕН ДО","Омск","Новосиб","Ростов"],
+            ["Губка гемостатическая 10х10х8 мм","8891","4605370003130","4605370003130","8891","1","626","17.03.29","50","9","40"],
+            ["Теймурова крем пудра 50г","18801","4605370037876","2048605010770","25183","1","1512","13.04.29","100","201","150"],
+            ["Пантенол пенка 150 мл","21253","4605370039689","4605370039689","22196","1","308","01.04.28","30","6","10"]
+        ];
+        parseExcelData(raw, 'list');
+        parseExcelData(raw, 'ozon');
+        parseExcelData(raw, 'wb');
+        alert('Демо-данные загружены!');
     }
 
-    function renderWbElementsList() {
-        var list = $('wbElementsList'); if (!list) return; list.innerHTML = '';
-        wbLabelElements.forEach(function(elem, idx) {
-            var item = document.createElement('div'); item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
-            var icon = wbElementIcons[elem.type] || '❓'; var name = wbElementNames[elem.type] || elem.type;
-            var fieldInfo = (elem.type === 'warning' || elem.type === 'custom') ? (elem.text || '') : '';
-            item.innerHTML = '<span class="elem-icon">' + icon + '</span><span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span><span class="elem-actions"><button onclick="moveWbElement(' + idx + ',-1)" title="Вверх">↑</button><button onclick="moveWbElement(' + idx + ',1)" title="Вниз">↓</button><button onclick="toggleWbElement(' + idx + ')" title="Вкл/Выкл">' + (elem.enabled ? '👁️' : '🚫') + '</button>' + (fieldInfo ? '<button onclick="editWbElementText(' + idx + ')" title="Текст">✏️</button>' : '') + '<button class="delete-btn" onclick="removeWbElement(' + idx + ')" title="Удалить">✕</button></span>';
-            list.appendChild(item);
-        });
-    }
-
-    window.addOzonElement = function(type) { var elem = { type: type, enabled: true }; if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ'; if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; } if (type === 'city') elem.text = 'Город'; ozonLabelElements.push(elem); renderOzonElementsList(); };
-    window.addSelectedOzonElement = function() { var sel = $('ozonAddElementSelect'); if (!sel.value) return; addOzonElement(sel.value); sel.value = ''; };
-    window.removeOzonElement = function(idx) { ozonLabelElements.splice(idx, 1); renderOzonElementsList(); };
-    window.moveOzonElement = function(idx, dir) { var newIdx = idx + dir; if (newIdx < 0 || newIdx >= ozonLabelElements.length) return; var tmp = ozonLabelElements[idx]; ozonLabelElements[idx] = ozonLabelElements[newIdx]; ozonLabelElements[newIdx] = tmp; renderOzonElementsList(); };
-    window.toggleOzonElement = function(idx) { ozonLabelElements[idx].enabled = !ozonLabelElements[idx].enabled; renderOzonElementsList(); };
-    window.editOzonElementText = function(idx) { var t = prompt('Введите текст:', ozonLabelElements[idx].text || ''); if (t !== null) { ozonLabelElements[idx].text = t; renderOzonElementsList(); } };
-
-    window.addWbElement = function(type) { var elem = { type: type, enabled: true }; if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ'; if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; } if (type === 'city') elem.text = 'Город'; wbLabelElements.push(elem); renderWbElementsList(); };
-    window.addSelectedWbElement = function() { var sel = $('wbAddElementSelect'); if (!sel.value) return; addWbElement(sel.value); sel.value = ''; };
-    window.removeWbElement = function(idx) { wbLabelElements.splice(idx, 1); renderWbElementsList(); };
-    window.moveWbElement = function(idx, dir) { var newIdx = idx + dir; if (newIdx < 0 || newIdx >= wbLabelElements.length) return; var tmp = wbLabelElements[idx]; wbLabelElements[idx] = wbLabelElements[newIdx]; wbLabelElements[newIdx] = tmp; renderWbElementsList(); };
-    window.toggleWbElement = function(idx) { wbLabelElements[idx].enabled = !wbLabelElements[idx].enabled; renderWbElementsList(); };
-    window.editWbElementText = function(idx) { var t = prompt('Введите текст:', wbLabelElements[idx].text || ''); if (t !== null) { wbLabelElements[idx].text = t; renderWbElementsList(); } };
-
-    function buildOzonLabelHtml(it, qty, counter, svgId) {
-        var html = '';
-        if (qty > 1 && counter) html += '<div class="lbl-block lbl-row"><span class="lbl-title">' + escHtml(it.art || '') + '</span><span class="lbl-counter">' + counter + '</span></div>';
-        ozonLabelElements.filter(function(e) { return e.enabled; }).forEach(function(elem) {
-            if (elem.type === 'divider') html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>';
-            else if (elem.type === 'warning') html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>';
-            else if (elem.type === 'art') html += '<div class="lbl-block lbl-title">' + escHtml(it.art || '') + '</div>';
-            else if (elem.type === 'sku') html += '<div class="lbl-block lbl-title">' + escHtml(it.sku || '') + '</div>';
-            else if (elem.type === 'barcode') html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'ozonPrevSvg') + '"></svg></div>';
-            else if (elem.type === 'name') html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>';
-            else if (elem.type === 'expiry') html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>';
-            else if (elem.type === 'city' || elem.type === 'custom') html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>';
-        });
-        return html;
-    }
-
-    function buildWbLabelHtml(it, qty, counter, svgId) {
-        var html = '';
-        if (qty > 1 && counter) html += '<div class="lbl-block lbl-row"><span class="lbl-title">' + escHtml(it.art_label || it.art_wb || '') + '</span><span class="lbl-counter">' + counter + '</span></div>';
-        wbLabelElements.filter(function(e) { return e.enabled; }).forEach(function(elem) {
-            if (elem.type === 'divider') html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>';
-            else if (elem.type === 'warning') html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>';
-            else if (elem.type === 'art_wb') html += '<div class="lbl-block lbl-title">' + escHtml(it.art_wb || '') + '</div>';
-            else if (elem.type === 'art_label') html += '<div class="lbl-block lbl-title">' + escHtml(it.art_label || '') + '</div>';
-            else if (elem.type === 'sku_label') html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'wbPrevSvg') + '"></svg></div>';
-            else if (elem.type === 'name') html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>';
-            else if (elem.type === 'expiry') html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>';
-            else if (elem.type === 'quant') html += '<div class="lbl-block lbl-quant">Квант: ' + escHtml(it.quant || '') + '</div>';
-            else if (elem.type === 'city' || elem.type === 'custom') html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>';
-        });
-        return html;
-    }
-
-    // ==================== TAB 1: TTN ====================
-    var listProducts = []; var listCities = []; var listSelectedCities = new Set(); var listFiltered = []; var listSort = { field: null, ascending: true };
-    var fileInputList = $('fileInputList'); var uploadZoneList = $('uploadZoneList');
-    uploadZoneList.addEventListener('dragover', function(e) { e.preventDefault(); uploadZoneList.classList.add('dragover'); });
-    uploadZoneList.addEventListener('dragleave', function() { uploadZoneList.classList.remove('dragover'); });
-    uploadZoneList.addEventListener('drop', function(e) { e.preventDefault(); uploadZoneList.classList.remove('dragover'); if (e.dataTransfer.files[0]) processFileList(e.dataTransfer.files[0]); });
-    fileInputList.addEventListener('change', function(e) { if (e.target.files[0]) processFileList(e.target.files[0]); });
-
-    function processFileList(file) {
-        if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; }
-        $('fileNameList').textContent = file.name; $('fileInfoList').style.display = 'block'; uploadZoneList.classList.add('has-file'); $('loadingOverlay').classList.add('visible');
+    // --- FILE PARSING ---
+    function handleFile(file, mode) {
         var reader = new FileReader();
         reader.onload = function(e) {
-            try {
-                var data = new Uint8Array(e.target.result);
-                var wb = XLSX.read(data, { type: 'array' });
-                var ws = wb.Sheets[wb.SheetNames[0]];
-                var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                parseListData(rows);
-                $('loadingOverlay').classList.remove('visible');
-                showToast('Загружено: ' + listProducts.length + ' позиций, ' + listCities.length + ' городов', 'success');
-            } catch (err) {
-                $('loadingOverlay').classList.remove('visible');
-                showToast('Ошибка: ' + err.message, 'error');
-                console.error(err);
-            }
+            var wb = XLSX.read(e.target.result, {type: 'array'});
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var json = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+            parseExcelData(json, mode);
         };
-        reader.onerror = function() { $('loadingOverlay').classList.remove('visible'); showToast('Не удалось прочитать файл', 'error'); };
         reader.readAsArrayBuffer(file);
     }
 
-    function parseListData(rows) {
-        var hi = -1;
-        // Find header row
-        for (var i = 0; i < Math.min(rows.length, 10); i++) {
-            if (!rows[i]) continue;
-            var rs = rows[i].join(' ').toLowerCase();
-            if (rs.indexOf('наименование') !== -1 || rs.indexOf('артикул продавца') !== -1) { hi = i; break; }
-        }
-        if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
+    function parseExcelData(rows, mode) {
+        if (!rows.length) return;
+        // Auto-detect headers or map fixed
+        var hRow = rows[0];
+        var h = {}; 
+        hRow.forEach(function(val, i) { h[String(val).toLowerCase().trim()] = i; });
 
-        var headers = rows[hi];
-        var colMap = {}; var cityColumns = [];
-        var knownKeys = new Set(['name', 'sku', 'barcode', 'art', 'packQty', 'totalSpikes', 'expiry', 'tz']);
-
-        // Map columns
-        headers.forEach(function(h, i) {
-            var hl = h.trim().toLowerCase();
-            if (hl.indexOf('наименование') !== -1 && !colMap.name) colMap.name = i;
-            else if (hl.indexOf('исходный артикул') !== -1 && !colMap.sku) colMap.sku = i;
-            else if ((hl.indexOf('шк производителя') !== -1 || hl.indexOf('шк на этикетку') !== -1) && !colMap.barcode) colMap.barcode = i;
-            else if (hl.indexOf('артикул продавца') !== -1 && !colMap.art) colMap.art = i;
-            else if (hl.indexOf('кол-во в упаковку') !== -1 && !colMap.packQty) colMap.packQty = i;
-            else if ((hl.indexOf('итого к отгрузке') !== -1 || hl.indexOf('спаек') !== -1) && !colMap.totalSpikes) colMap.totalSpikes = i;
-            else if (hl.indexOf('годен до') !== -1 && !colMap.expiry) colMap.expiry = i;
-            else if (hl === 'тз' && !colMap.tz) colMap.tz = i;
-        });
-
-        // Identify city columns (columns not mapped to known keys)
-        headers.forEach(function(h, i) {
-            if (h === null || h === undefined) return;
-            var hl = h.trim().toLowerCase();
-            var isMapped = Object.keys(colMap).some(function(k) { return colMap[k] === i; });
-            if (!isMapped && hl.length > 1 && hl.length < 40) {
-                // Check if it looks like a city name
-                var isCity = CITY_KEYWORDS.some(function(kw) { return hl.indexOf(kw) !== -1; });
-                if (isCity) { cityColumns.push({ name: h.trim(), index: i }); }
+        // Map indices
+        var map = {
+            name: h['наименование'], 
+            art: h['артикул продавца'] !== undefined ? h['артикул продавца'] : h['исходный артикул'],
+            barcode: h['шк на этикетку'] !== undefined ? h['шк на этикетку'] : h['шк производителя'],
+            pack: h['кол-во в упаковку'],
+            total: h['итого к отгрузке спаек'],
+            expiry: h['годен до']
+        };
+        
+        // Cities: keys not in standard map
+        var cIndices = [];
+        hRow.forEach(function(val, i) {
+            var k = String(val).toLowerCase().trim();
+            if (!map.name || map.name !== i) { // simple check to avoid duplicates if header matches exactly
+                 // Just check if it's not one of the known keys
+                 var isKnown = k.includes('наименование') || k.includes('артикул') || k.includes('шк') || k.includes('кол-во') || k.includes('итого') || k.includes('годен');
+                 if (!isKnown && val && String(val).trim().length > 1) {
+                     cIndices.push(i);
+                 }
             }
         });
-
-        listCities = cityColumns.map(function(c) { return c.name; });
-        listProducts = [];
         
-        for (var r = hi + 1; r < rows.length; r++) {
-            var row = rows[r]; if (!row || row.length < 3) continue;
-            var name = String(row[colMap.name] || '').trim();
-            if (!name || name === '---' || name === '') continue;
+        var dataArr = [];
+        var cSet = new Set();
+        
+        for (var r=1; r<rows.length; r++) {
+            var row = rows[r];
+            if (!row[map.name]) continue;
             
-            var sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : '';
-            var barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : '';
-            var art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku;
-            var packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1;
-            var totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0;
-            var expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : '';
-            var tz = colMap.tz !== undefined ? String(row[colMap.tz] || '').trim() : '';
+            var item = {
+                name: row[map.name],
+                art: row[map.art] || '',
+                barcode: row[map.barcode] || '',
+                pack: row[map.pack] || 1,
+                total: parseInt(row[map.total]) || 0,
+                expiry: row[map.expiry] || '',
+                cities: {},
+                pallet: '', boxes: ''
+            };
             
-            var cities = {};
-            cityColumns.forEach(function(cc) {
-                var num = parseInt(row[cc.index]);
-                if (!isNaN(num) && num > 0) cities[cc.name] = num;
+            var cityTotal = 0;
+            cIndices.forEach(function(idx) {
+                var val = parseInt(row[idx]);
+                if (val > 0) {
+                    var cName = hRow[idx];
+                    item.cities[cName] = val;
+                    cityTotal += val;
+                    cSet.add(cName);
+                }
             });
             
-            if (Object.keys(cities).length > 0) {
-                listProducts.push({ name: name, sku: sku, barcode: barcode, art: art, packQty: packQty, totalSpikes: totalSpikes, expiry: expiry, tz: tz, cities: cities, pallet: '', boxes: '', qtyPerBox: '' });
-            }
+            // If total is 0, use city sum if available
+            if (item.total === 0 && cityTotal > 0) item.total = cityTotal;
+            if (item.total > 0 || cityTotal > 0) dataArr.push(item);
         }
+
+        data[mode] = dataArr;
+        cities[mode] = Array.from(cSet).sort();
         
-        if (!listProducts.length) { showToast('Данные не найдены', 'error'); return; }
-        $('dataInfoTextList').textContent = 'Загружено: ' + listProducts.length + ' позиций, ' + listCities.length + ' городов';
-        $('dataInfoList').classList.add('visible');
-        listSelectedCities.clear();
-        renderCityFiltersList();
-        $('controlsList').classList.add('visible');
-        $('actionsBarList').classList.add('visible');
-        $('tableContainerList').classList.add('visible');
-        applyFiltersList();
+        // Select all cities by default
+        selectedCities[mode] = new Set(cities[mode]);
+        
+        // UI Updates
+        document.getElementById('actions-' + mode).style.display = 'flex';
+        document.getElementById('filters-' + mode).style.display = 'block';
+        renderCityChips(mode);
+        applyFilter(mode);
     }
 
-    window.removeFileList = function() { fileInputList.value = ''; $('fileInfoList').style.display = 'none'; uploadZoneList.classList.remove('has-file'); $('dataInfoList').classList.remove('visible'); $('controlsList').classList.remove('visible'); $('actionsBarList').classList.remove('visible'); $('tableContainerList').classList.remove('visible'); listProducts = []; listCities = []; listSelectedCities.clear(); showToast('Файл удалён', 'success'); };
-    function renderCityFiltersList() { var c = $('cityFiltersList'); c.innerHTML = ''; listCities.forEach(function(city) { var btn = document.createElement('button'); btn.className = 'city-btn'; btn.onclick = function() { toggleCityList(city); }; btn.id = 'lcity-' + cityId(city); var count = listProducts.filter(function(p) { return p.cities[city] && p.cities[city] > 0; }).length; btn.innerHTML = escHtml(city) + ' <span class="badge">' + count + '</span>'; c.appendChild(btn); }); }
-    window.toggleCityList = function(city) { var bid = 'lcity-' + cityId(city); if (listSelectedCities.has(city)) { listSelectedCities.delete(city); $(bid).classList.remove('active'); } else { listSelectedCities.add(city); $(bid).classList.add('active'); } $('cityCountList').textContent = listSelectedCities.size; applyFiltersList(); };
-    window.selectAllCitiesList = function() { listCities.forEach(function(c) { listSelectedCities.add(c); $('lcity-' + cityId(c)).classList.add('active'); }); $('cityCountList').textContent = listSelectedCities.size; applyFiltersList(); };
-    window.deselectAllCitiesList = function() { listSelectedCities.clear(); listCities.forEach(function(c) { $('lcity-' + cityId(c)).classList.remove('active'); }); $('cityCountList').textContent = 0; applyFiltersList(); };
-    window.applyFiltersList = function() { var s = ($('searchInputList').value || '').toLowerCase().trim(); listFiltered = listProducts.map(function(p) { if (listSelectedCities.size === 0) return Object.assign({}, p, { cityQty: 0, total: 0 }); var cq = 0, t = 0; listSelectedCities.forEach(function(c) { var q = p.cities[c] || 0; cq += q; t += q * p.packQty; }); return Object.assign({}, p, { cityQty: cq, total: t }); }); if (s) listFiltered = listFiltered.filter(function(p) { return p.name.toLowerCase().indexOf(s) !== -1 || p.sku.toLowerCase().indexOf(s) !== -1 || p.barcode.toLowerCase().indexOf(s) !== -1 || p.art.toLowerCase().indexOf(s) !== -1; }); listFiltered = listFiltered.filter(function(p) { return p.cityQty > 0; }); if (listSort.field) { listFiltered.sort(function(a, b) { var vA = a[listSort.field], vB = b[listSort.field]; if (typeof vA === 'string') vA = vA.toLowerCase(); if (typeof vB === 'string') vB = vB.toLowerCase(); if (vA < vB) return listSort.ascending ? -1 : 1; if (vA > vB) return listSort.ascending ? 1 : -1; return 0; }); } renderListTable(); updateListStats(); };
-    window.sortTableList = function(field) { if (listSort.field === field) listSort.ascending = !listSort.ascending; else { listSort.field = field; listSort.ascending = true; } applyFiltersList(); };
-    window.updListData = function(i, k, v) { if (listFiltered[i]) { listFiltered[i][k] = v.trim(); } };
-    function renderListTable() { var thead = $('tableHeaderList'); var tbody = $('tableBodyList'); var es = $('emptyStateList'); var pb = $('printListBtn'); thead.innerHTML = '<th style="width:35px;">№</th><th class="sort-btn" onclick="sortTableList(\'name\')">Наименование <span class="sort-indicator">↕</span></th><th>Артикул</th><th>ШК</th><th class="sort-btn" onclick="sortTableList(\'cityQty\')">Кол-во <span class="sort-indicator">↕</span></th><th>Упак.</th><th>Спаек</th><th>Годен</th><th class="sort-btn" onclick="sortTableList(\'total\')">Итого <span class="sort-indicator">↕</span></th><th style="min-width:70px;">№ Палета</th><th style="min-width:80px;">Кол-во коробов</th><th style="min-width:80px;">Кол-во в коробе</th>'; if (!listFiltered.length) { tbody.innerHTML = ''; es.style.display = 'block'; pb.disabled = true; return; } es.style.display = 'none'; pb.disabled = false; var h = ''; listFiltered.forEach(function(p, i) { var qc = p.cityQty > 50 ? 'high' : ''; h += '<tr><td>' + (i+1) + '</td><td class="product-name">' + escHtml(p.name) + '</td><td><span class="sku">' + escHtml(p.art) + '</span></td><td><span class="sku">' + escHtml(p.barcode) + '</span></td><td><span class="quantity-badge ' + qc + '">' + p.cityQty + '</span></td><td class="pack-info">' + p.packQty + '</td><td class="pack-info">' + p.totalSpikes + '</td><td class="expiry-date">' + escHtml(p.expiry) + '</td><td><span class="quantity-badge ' + qc + '">' + p.total + '</span></td><td class="editable-cell" contenteditable onblur="updListData(' + i + ',\'pallet\',this.innerText)">' + escHtml(p.pallet || '') + '</td><td class="editable-cell" contenteditable onblur="updListData(' + i + ',\'boxes\',this.innerText)">' + escHtml(p.boxes || '') + '</td><td class="editable-cell" contenteditable onblur="updListData(' + i + ',\'qtyPerBox\',this.innerText)">' + escHtml(p.qtyPerBox || '') + '</td></tr>'; }); tbody.innerHTML = h; }
-    function updateListStats() { var tq = 0; listFiltered.forEach(function(p) { tq += p.total; }); $('itemCountList').textContent = listFiltered.length; $('totalQtyList').textContent = tq; }
-    function getTTNHtml(items, title, city) { var now = new Date(); var ds = now.toLocaleDateString('ru-RU'); var ts = now.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}); var tq = 0; items.forEach(function(p) { tq += p.total; }); var rows = ''; items.forEach(function(p, i) { rows += '<tr><td>' + (i+1) + '</td><td style="text-align:left;">' + escHtml(p.name) + '</td><td>' + escHtml(p.art) + '</td><td>' + escHtml(p.barcode) + '</td><td style="font-weight:bold;">' + p.cityQty + '</td><td>' + p.packQty + '</td><td>' + p.totalSpikes + '</td><td>' + escHtml(p.expiry) + '</td><td style="font-weight:bold;">' + p.total + '</td><td>' + escHtml(p.pallet || '') + '</td><td>' + escHtml(p.boxes || '') + '</td><td>' + escHtml(p.qtyPerBox || '') + '</td></tr>'; }); return '<div class="ttn-header"><h2>ТРАНСПОРТНАЯ ТОВАРНАЯ НАКЛАДНАЯ</h2><div style="font-size:14pt;font-weight:700;">' + escHtml(title) + '</div><div style="font-size:9pt;color:#666;margin-top:0.3rem;">' + ds + ' ' + ts + '</div></div><div class="ttn-info"><p><strong>Дата формирования:</strong> ' + ds + ' ' + ts + '</p><p><strong>Город назначения:</strong> ' + escHtml(city) + '</p><p><strong>Количество позиций:</strong> ' + items.length + '</p><p><strong>Общее количество штук:</strong> ' + tq + '</p></div><table class="ttn-table"><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Упак.</th><th>Спаек</th><th>Годен</th><th>Итого</th><th>№ Палета</th><th>Кол-во коробов</th><th>Кол-во в коробе</th></tr></thead><tbody>' + rows + '</tbody></table><div class="ttn-footer"><p>Ответственный: _______________ / _______________ /</p><p style="margin-top:0.3rem;">Дата сборки: _______________</p></div>'; }
-    window.printTTNByCity = function() { if (!listSelectedCities.size) return; var ca = Array.from(listSelectedCities); var cd = ca.length > 3 ? ca.slice(0,3).join(', ') + ' (+' + (ca.length-3) + ')' : ca.join(', '); $('print-list-area').innerHTML = getTTNHtml(listFiltered, cd, cd); setTimeout(function() { document.body.classList.add('print-list-mode'); var style = document.createElement('style'); style.id = 'landscape-style'; style.textContent = '@page { size: A4 landscape; margin: 10mm; }'; document.head.appendChild(style); window.print(); setTimeout(function() { document.body.classList.remove('print-list-mode'); var ls = document.getElementById('landscape-style'); if (ls) ls.remove(); }, 1000); }, 300); };
-    window.printTTNAll = function() { var allItems = listProducts.map(function(p) { var tq = 0; var cq = 0; listCities.forEach(function(c) { var q = p.cities[c] || 0; cq += q; tq += q * p.packQty; }); return Object.assign({}, p, { cityQty: cq, total: tq }); }); allItems = allItems.filter(function(p) { return p.cityQty > 0; }); $('print-list-area').innerHTML = getTTNHtml(allItems, 'ВСЕ ГОРОДА', 'Все города (' + listCities.length + ')'); setTimeout(function() { document.body.classList.add('print-list-mode'); var style = document.createElement('style'); style.id = 'landscape-style'; style.textContent = '@page { size: A4 landscape; margin: 10mm; }'; document.head.appendChild(style); window.print(); setTimeout(function() { document.body.classList.remove('print-list-mode'); var ls = document.getElementById('landscape-style'); if (ls) ls.remove(); }, 1000); }, 300); };
-
-    // ==================== TAB 2: OZON LABELS ====================
-    var ozonProducts = []; var ozonCities = []; var ozonSelectedCities = new Set(); var ozonFiltered = [];
-    var fileInputOzon = $('fileInputOzon'); var uploadZoneOzon = $('uploadZoneOzon');
-    uploadZoneOzon.addEventListener('dragover', function(e) { e.preventDefault(); uploadZoneOzon.classList.add('dragover'); });
-    uploadZoneOzon.addEventListener('dragleave', function() { uploadZoneOzon.classList.remove('dragover'); });
-    uploadZoneOzon.addEventListener('drop', function(e) { e.preventDefault(); uploadZoneOzon.classList.remove('dragover'); if (e.dataTransfer.files[0]) processFileOzon(e.dataTransfer.files[0]); });
-    fileInputOzon.addEventListener('change', function(e) { if (e.target.files[0]) processFileOzon(e.target.files[0]); });
-    function processFileOzon(file) { if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; } $('fileNameOzon').textContent = file.name; $('fileInfoOzon').style.display = 'block'; uploadZoneOzon.classList.add('has-file'); $('loadingOverlay').classList.add('visible'); var reader = new FileReader(); reader.onload = function(e) { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data, { type: 'array' }); var ws = wb.Sheets[wb.SheetNames[0]]; var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }); parseOzonData(rows); $('loadingOverlay').classList.remove('visible'); showToast('Ozon: ' + ozonProducts.length + ' позиций, ' + ozonCities.length + ' городов', 'success'); } catch (err) { $('loadingOverlay').classList.remove('visible'); showToast('Ошибка: ' + err.message, 'error'); } }; reader.readAsArrayBuffer(file); }
-    function parseOzonData(rows) { 
-        var hi = -1; 
-        for (var i = 0; i < Math.min(rows.length, 10); i++) { if (!rows[i]) continue; var rs = rows[i].join(' ').toLowerCase(); if (rs.indexOf('наименование') !== -1 || rs.indexOf('артикул продавца') !== -1) { hi = i; break; } } 
-        if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
-        var headers = rows[hi]; var colMap = {}; var cityCols = [];
-        headers.forEach(function(h, i) { var hl = h.trim().toLowerCase(); if (hl.indexOf('наименование') !== -1 && !colMap.name) colMap.name = i; else if (hl.indexOf('исходный артикул') !== -1 && !colMap.sku) colMap.sku = i; else if ((hl.indexOf('шк производителя') !== -1 || hl.indexOf('шк на этикетку') !== -1) && !colMap.barcode) colMap.barcode = i; else if (hl.indexOf('артикул продавца') !== -1 && !colMap.art) colMap.art = i; else if (hl.indexOf('кол-во в упаковку') !== -1 && !colMap.packQty) colMap.packQty = i; else if ((hl.indexOf('итого к отгрузке') !== -1 || hl.indexOf('спаек') !== -1) && !colMap.totalSpikes) colMap.totalSpikes = i; else if (hl.indexOf('годен до') !== -1 && !colMap.expiry) colMap.expiry = i; });
-        headers.forEach(function(h, i) { if (Object.keys(colMap).some(function(k) { return colMap[k] === i; })) return; var hl = h.trim().toLowerCase(); if (hl.length > 1 && hl.length < 40 && CITY_KEYWORDS.some(function(kw) { return hl.indexOf(kw) !== -1; })) { cityCols.push({ name: h.trim(), index: i }); } });
-        ozonCities = cityCols.map(function(c) { return c.name; }); ozonProducts = [];
-        for (var r = hi + 1; r < rows.length; r++) { var row = rows[r]; if (!row || row.length < 3) continue; var name = String(row[colMap.name] || '').trim(); if (!name || name === '---') continue; var sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : ''; var barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : ''; var art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku; var packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1; var totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0; var expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : ''; var cities = {}; cityCols.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) cities[cc.name] = num; }); if (Object.keys(cities).length > 0) { ozonProducts.push({ name: name, sku: sku, barcode: barcode, art: art, packQty: packQty, totalSpikes: totalSpikes, expiry: expiry, cities: cities }); } }
-        if (!ozonProducts.length) { showToast('Данные не найдены', 'error'); return; }
-        $('dataInfoTextOzon').textContent = 'Ozon: ' + ozonProducts.length + ' позиций, ' + ozonCities.length + ' городов'; $('dataInfoOzon').classList.add('visible'); ozonSelectedCities.clear(); renderCityFiltersOzon(); $('controlsOzon').classList.add('visible'); $('actionsBarOzon').classList.add('visible'); $('tableContainerOzon').classList.add('visible'); applyFiltersOzon();
+    // --- UI RENDERING ---
+    function switchTab(mode) {
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        
+        // Find the specific tab button
+        var tabs = document.querySelectorAll('.tab');
+        if (mode === 'list') tabs[0].classList.add('active');
+        else if (mode === 'ozon') tabs[1].classList.add('active');
+        else { tabs[2].classList.add('active'); }
+        
+        document.getElementById('tab-' + mode).style.display = 'block';
     }
-    window.removeFileOzon = function() { fileInputOzon.value = ''; $('fileInfoOzon').style.display = 'none'; uploadZoneOzon.classList.remove('has-file'); $('dataInfoOzon').classList.remove('visible'); $('controlsOzon').classList.remove('visible'); $('actionsBarOzon').classList.remove('visible'); $('tableContainerOzon').classList.remove('visible'); ozonProducts = []; ozonCities = []; ozonSelectedCities.clear(); showToast('Файл удалён', 'success'); };
-    function renderCityFiltersOzon() { var c = $('cityFiltersOzon'); c.innerHTML = ''; ozonCities.forEach(function(city) { var btn = document.createElement('button'); btn.className = 'city-btn'; btn.onclick = function() { toggleCityOzon(city); }; btn.id = 'ocity-' + cityId(city); var count = ozonProducts.filter(function(p) { return p.cities[city] && p.cities[city] > 0; }).length; btn.innerHTML = escHtml(city) + ' <span class="badge">' + count + '</span>'; c.appendChild(btn); }); }
-    window.toggleCityOzon = function(city) { var bid = 'ocity-' + cityId(city); if (ozonSelectedCities.has(city)) { ozonSelectedCities.delete(city); $(bid).classList.remove('active'); } else { ozonSelectedCities.add(city); $(bid).classList.add('active'); } $('cityCountOzon').textContent = ozonSelectedCities.size; applyFiltersOzon(); };
-    window.selectAllCitiesOzon = function() { ozonCities.forEach(function(c) { ozonSelectedCities.add(c); $('ocity-' + cityId(c)).classList.add('active'); }); $('cityCountOzon').textContent = ozonSelectedCities.size; applyFiltersOzon(); };
-    window.deselectAllCitiesOzon = function() { ozonSelectedCities.clear(); ozonCities.forEach(function(c) { $('ocity-' + cityId(c)).classList.remove('active'); }); $('cityCountOzon').textContent = 0; applyFiltersOzon(); };
-    window.applyFiltersOzon = function() { var s = ($('searchInputOzon').value || '').toLowerCase().trim(); ozonFiltered = ozonProducts.map(function(p) { if (ozonSelectedCities.size === 0) return Object.assign({}, p, { cityQty: 0 }); var cq = 0; ozonSelectedCities.forEach(function(c) { cq += (p.cities[c] || 0); }); return Object.assign({}, p, { cityQty: cq }); }); if (s) ozonFiltered = ozonFiltered.filter(function(p) { return p.name.toLowerCase().indexOf(s) !== -1 || p.sku.toLowerCase().indexOf(s) !== -1 || p.barcode.toLowerCase().indexOf(s) !== -1 || p.art.toLowerCase().indexOf(s) !== -1; }); ozonFiltered = ozonFiltered.filter(function(p) { return p.cityQty > 0; }); renderOzonTable(); updateOzonStats(); };
-    function renderOzonTable() { var thead = $('tableHeaderOzon'); var tbody = $('tableBodyOzon'); var es = $('emptyStateOzon'); var mb = $('openOzonModalBtn'); thead.innerHTML = '<th style="width:40px;">№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Этикеток</th><th>Упак.</th><th>Годен</th>'; if (!ozonFiltered.length) { tbody.innerHTML = ''; es.style.display = 'block'; mb.disabled = true; return; } es.style.display = 'none'; mb.disabled = false; var h = ''; ozonFiltered.forEach(function(p, i) { h += '<tr><td>' + (i+1) + '</td><td class="product-name">' + escHtml(p.name) + '</td><td><span class="sku">' + escHtml(p.art) + '</span></td><td><span class="sku">' + escHtml(p.barcode) + '</span></td><td><span class="quantity-badge ' + (p.cityQty>50?'high':'') + '">' + p.cityQty + '</span></td><td class="pack-info">' + p.packQty + '</td><td class="expiry-date">' + escHtml(p.expiry) + '</td></tr>'; }); tbody.innerHTML = h; }
-    function updateOzonStats() { var tl = 0; ozonFiltered.forEach(function(p) { tl += p.cityQty; }); $('itemCountOzon').textContent = ozonFiltered.length; $('totalLabelsOzon').textContent = tl; }
-    window.openOzonModal = function() { buildOzonModal(); $('ozonModal').classList.add('open'); setTimeout(previewOzonLabel, 300); };
-    window.closeOzonModal = function() { $('ozonModal').classList.remove('open'); };
-    function buildOzonModal() { var cf = $('ozonColFilters'); var ca = Array.from(ozonSelectedCities); var cd = ca.length > 3 ? ca.slice(0,3).join(', ') + ' (+' + (ca.length-3) + ')' : ca.join(', '); cf.innerHTML = '<input class="modal-col-filter" data-col="name" placeholder="Фильтр: Наименование" oninput="applyOzonModalFilters()"><input class="modal-col-filter" data-col="sku" placeholder="Фильтр: ШК" oninput="applyOzonModalFilters()"><input class="modal-col-filter" data-col="art" placeholder="Фильтр: Артикул" oninput="applyOzonModalFilters()"><input class="modal-col-filter" data-col="city" value="' + escHtml(cd) + '" readonly style="background:#e2e8f0;font-weight:bold;"><input class="modal-col-filter" data-col="qty" placeholder="Мин. кол-во" type="number" oninput="applyOzonModalFilters()">'; $('ozonModalHead').innerHTML = '<tr><th class="col-check">✔</th><th>Наименование</th><th>ШК</th><th>Артикул</th><th>Кол-во</th><th>Годен</th></tr>'; var h = ''; ozonFiltered.forEach(function(it, i) { var q = it.cityQty || 0; if (q <= 0) return; h += '<tr data-idx="' + i + '" data-qty="' + q + '"><td class="col-check"><input type="checkbox" class="ozon-mchk" data-idx="' + i + '" onchange="updOzonModalSelCount()"></td><td>' + escHtml(String(it.name)) + '</td><td>' + escHtml(it.barcode) + '</td><td>' + escHtml(it.art) + '</td><td style="font-weight:bold;">' + q + '</td><td>' + escHtml(it.expiry) + '</td></tr>'; }); $('ozonModalBodyInner').innerHTML = h || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#666;">Нет строк с количеством &gt; 0</td></tr>'; $('ozonModalTotalCount').textContent = 'Всего: ' + ozonFiltered.length; updOzonModalSelCount(); renderOzonElementsList(); }
-    window.applyOzonModalFilters = function() { var filters = {}; document.querySelectorAll('#ozonColFilters .modal-col-filter').forEach(function(inp) { filters[inp.dataset.col] = (inp.value || '').toLowerCase(); }); document.querySelectorAll('#ozonModalBodyInner tr').forEach(function(tr) { if (!tr.dataset.qty) return; var q = parseInt(tr.dataset.qty); var cells = tr.querySelectorAll('td'); var match = (!filters.name || cells[1].textContent.toLowerCase().indexOf(filters.name) !== -1) && (!filters.sku || cells[2].textContent.toLowerCase().indexOf(filters.sku) !== -1) && (!filters.art || cells[3].textContent.toLowerCase().indexOf(filters.art) !== -1) && (q >= (parseFloat(filters.qty) || 0)); tr.classList.toggle('row-hidden', !match); }); document.querySelectorAll('#ozonModalBodyInner tr.row-hidden .ozon-mchk').forEach(function(cb) { cb.checked = false; }); updOzonModalSelCount(); };
-    window.ozonModalToggleSelectAll = function(checked) { document.querySelectorAll('#ozonModalBodyInner tr:not(.row-hidden) .ozon-mchk').forEach(function(cb) { cb.checked = checked; }); updOzonModalSelCount(); };
-    window.ozonModalDeselectAll = function() { document.querySelectorAll('#ozonModalBodyInner .ozon-mchk').forEach(function(cb) { cb.checked = false; }); $('ozonSelectAllChk').checked = false; updOzonModalSelCount(); };
-    window.updOzonModalSelCount = function() { $('ozonModalSelCount').textContent = 'Выбрано: ' + document.querySelectorAll('#ozonModalBodyInner .ozon-mchk:checked').length; };
-    window.previewOzonLabel = function() { var previewArea = $('ozonPreviewArea'); if (!previewArea) return; var it = ozonFiltered && ozonFiltered.length ? ozonFiltered[0] : { name: 'Название товара', art: '12345', sku: '67890', barcode: '4605370003130', expiry: '31.12.28' }; var bcHeight = parseInt($('ozonBcHeight').value) || 60; var html = buildOzonLabelHtml(it, 0, null, 'ozonPrevSvg'); var d = document.createElement('div'); d.className = 'label'; d.innerHTML = html; previewArea.innerHTML = ''; previewArea.appendChild(d); var skuVal = it.barcode || ''; if (skuVal) { try { JsBarcode('#ozonPrevSvg', String(skuVal), { format: $('ozonBcFormat').value, width: 2, height: bcHeight, displayValue: true, fontSize: 10, margin: 1 }); } catch(e) { var svgEl = d.querySelector('#ozonPrevSvg'); if (svgEl) svgEl.parentElement.innerHTML = '<span style="font-size:8px;color:red">ШК: ' + escHtml(skuVal) + '</span>'; } } };
-    window.executeOzonPrint = function() { var grid = $('labelGrid'); grid.innerHTML = ''; var bcFmt = $('ozonBcFormat').value; var bcHeight = parseInt($('ozonBcHeight').value) || 60; var sel = Array.from(document.querySelectorAll('#ozonModalBodyInner .ozon-mchk:checked')).map(function(cb) { return parseInt(cb.dataset.idx); }); if (!sel.length) { showToast('Выберите хотя бы одну строку', 'error'); return; } var lblN = 0; sel.forEach(function(idx) { var it = ozonFiltered[idx]; var qty = it.cityQty || 0; if (qty <= 0) return; for (var i = 0; i < qty; i++) { lblN++; var svgId = 'ozlb' + lblN; var sku = it.barcode || ''; var counter = qty > 1 ? (i+1) + '/' + qty : null; var html = buildOzonLabelHtml(it, qty, counter, svgId); var d = document.createElement('div'); d.className = 'label'; d.innerHTML = html; grid.appendChild(d); if (sku) { try { JsBarcode('#' + svgId, String(sku), { format: bcFmt, width: 2, height: bcHeight, displayValue: true, fontSize: 10, margin: 1 }); } catch(e) { var svgEl = d.querySelector('#' + svgId); if (svgEl) svgEl.parentElement.innerHTML = '<span style="font-size:8px;color:red">ШК: ' + escHtml(sku) + '</span>'; } } } }); if (!lblN) { showToast('Нет этикеток для печати', 'error'); return; } closeOzonModal(); showToast('Сгенерировано ' + lblN + ' этикеток Ozon', 'success'); setTimeout(function() { document.body.classList.add('print-label-mode'); window.print(); setTimeout(function() { document.body.classList.remove('print-label-mode'); }, 1000); }, 400); };
 
-    // ==================== TAB 3: WB LABELS ====================
-    var wbData = []; var wbFilteredData = [];
-    var fileInputWb = $('fileInputWb'); var uploadZoneWb = $('uploadZoneWb');
-    uploadZoneWb.addEventListener('dragover', function(e) { e.preventDefault(); uploadZoneWb.classList.add('dragover'); });
-    uploadZoneWb.addEventListener('dragleave', function() { uploadZoneWb.classList.remove('dragover'); });
-    uploadZoneWb.addEventListener('drop', function(e) { e.preventDefault(); uploadZoneWb.classList.remove('dragover'); if (e.dataTransfer.files[0]) processFileWb(e.dataTransfer.files[0]); });
-    fileInputWb.addEventListener('change', function(e) { if (e.target.files[0]) processFileWb(e.target.files[0]); });
-    function processFileWb(file) { if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; } $('fileNameWb').textContent = file.name; $('fileInfoWb').style.display = 'block'; uploadZoneWb.classList.add('has-file'); $('loadingOverlay').classList.add('visible'); var reader = new FileReader(); reader.onload = function(e) { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data, { type: 'array' }); var ws = wb.Sheets[wb.SheetNames[0]]; var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }); parseWbData(rows); $('loadingOverlay').classList.remove('visible'); showToast('ВБ: ' + wbData.length + ' позиций', 'success'); } catch (err) { $('loadingOverlay').classList.remove('visible'); showToast('Ошибка: ' + err.message, 'error'); } }; reader.readAsArrayBuffer(file); }
-    function parseWbData(rows) {
-        var hi = -1; for (var i = 0; i < rows.length; i++) { if (!rows[i]) continue; var rs = (rows[i] || []).join(' ').toLowerCase(); if (rs.indexOf('артикул вб') !== -1 || rs.indexOf('артикул wb') !== -1) { hi = i; break; } }
-        if (hi === -1) { showToast('Заголовок "Артикул ВБ" не найден', 'error'); return; }
-        var headers = rows[hi]; var colMap = {}; var wbCityCols = [];
-        var wbFieldMap = { art_wb: ['артикул вб', 'артикул wb'], name: ['наименование составляющего в наборе', 'наименование', 'название'], sku_label: ['шк на этикетку вб', 'шк на этикетку', 'шк этикетки вб'], art_label: ['артикул на этикетку вб', 'артикул на этикетку'], quant: ['квант спайки', 'квант', 'кол-во в упаковку'], qty_ship: ['итого к отгрузке спаек', 'итого к отгрузке', 'к отгрузке'], expiry: ['годен до', 'годен'], tz: ['тз'], city: ['город', 'город назначения', 'назначение', 'склад', 'city'] };
-        var mappedCols = new Set();
-        Object.keys(wbFieldMap).forEach(function(key) { var variants = wbFieldMap[key]; for (var vi = 0; vi < variants.length; vi++) { var idx = headers.findIndex(function(h) { return h.trim().toLowerCase() === variants[vi].toLowerCase(); }); if (idx !== -1) { colMap[key] = idx; mappedCols.add(idx); break; } } if (colMap[key] === undefined) { for (var vi2 = 0; vi2 < variants.length; vi2++) { var idx2 = headers.findIndex(function(h) { return h.trim().toLowerCase().indexOf(variants[vi2].toLowerCase()) !== -1; }); if (idx2 !== -1) { colMap[key] = idx2; mappedCols.add(idx2); break; } } } });
-        headers.forEach(function(h, i) { if (mappedCols.has(i) || !h || h.trim() === '') return; var hl = h.trim().toLowerCase(); if (hl.length > 1 && hl.length < 40 && isNaN(hl)) { wbCityCols.push({ name: h.trim(), index: i }); } });
-        wbData = []; var cities = new Set(); for (var r = hi + 1; r < rows.length; r++) { var row = rows[r] || []; if (String(row[0] || '').toUpperCase().indexOf('ИТОГО') !== -1 && String(row[0]).length < 30) break; var item = {}; Object.keys(colMap).forEach(function(k) { var v = (colMap[k] >= 0 && colMap[k] < row.length) ? row[colMap[k]] : ''; if (typeof v === 'string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim(); if (k === 'qty_ship' || k === 'quant') v = String(v).replace(/\s/g, '').replace(/,/g, ''); item[k] = v; }); wbCityCols.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) { item.city = cc.name; cities.add(cc.name); } }); if (item.art_wb || item.sku_label || item.name) wbData.push(item); }
-        if (!wbData.length) { showToast('Данные ВБ не найдены', 'error'); return; }
-        var citySel = $('cityFilterWb'); citySel.innerHTML = '<option value="">Все города</option>' + Array.from(cities).sort().map(function(c) { return '<option value="' + escHtml(c) + '">' + escHtml(c) + '</option>'; }).join('');
-        $('dataInfoTextWb').textContent = 'ВБ: ' + wbData.length + ' позиций, ' + cities.size + ' городов'; $('dataInfoWb').classList.add('visible'); wbFilteredData = wbData.slice(); renderWbTable(); $('controlsWb').classList.add('visible'); $('tableContainerWb').classList.add('visible');
+    function renderCityChips(mode) {
+        var cont = document.getElementById('city-filters-' + mode);
+        cont.innerHTML = '';
+        cities[mode].forEach(function(c) {
+            var el = document.createElement('div');
+            el.className = 'city-chip' + (mode === 'wb' ? ' wb' : '') + (selectedCities[mode].has(c) ? ' active' : '');
+            el.textContent = c;
+            el.onclick = function() {
+                if (selectedCities[mode].has(c)) selectedCities[mode].delete(c);
+                else selectedCities[mode].add(c);
+                renderCityChips(mode);
+                applyFilter(mode);
+            };
+            cont.appendChild(el);
+        });
     }
-    window.removeFileWb = function() { fileInputWb.value = ''; $('fileInfoWb').style.display = 'none'; uploadZoneWb.classList.remove('has-file'); $('dataInfoWb').classList.remove('visible'); $('controlsWb').classList.remove('visible'); $('tableContainerWb').classList.remove('visible'); wbData = []; wbFilteredData = []; showToast('Файл удалён', 'success'); };
-    window.applyFilterWb = function() { var s = ($('searchWb').value || '').toLowerCase(); var c = $('cityFilterWb').value; var mq = parseFloat($('minQtyWb').value) || 0; wbFilteredData = wbData.filter(function(it) { var q = parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0; var matchSearch = !s || Object.values(it).some(function(v) { return String(v).toLowerCase().indexOf(s) !== -1; }); var matchCity = !c || String(it.city || '').toLowerCase() === c.toLowerCase(); return matchSearch && matchCity && q >= mq; }); renderWbTable(); };
-    function renderWbTable() { var thead = $('tableHeaderWb'); var tbody = $('tableBodyWb'); var keys = ['art_wb', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry', 'city', 'tz']; var labels = { art_wb: 'Арт.ВБ', name: 'Наименование', sku_label: 'ШК этикетки', art_label: 'Арт. этикетки', quant: 'Квант', qty_ship: 'К отгрузке', expiry: 'Годен до', city: 'Город', tz: 'ТЗ' }; thead.innerHTML = '<tr>' + keys.map(function(k) { return '<th>' + labels[k] + '</th>'; }).join('') + '</tr>'; var h = ''; wbFilteredData.forEach(function(it, i) { h += '<tr>' + keys.map(function(k) { return '<td contenteditable onblur="updWbData(' + i + ',\'' + k + '\',this.innerText)">' + escHtml(String(it[k] || '')) + '</td>'; }).join('') + '</tr>'; }); tbody.innerHTML = h; $('statsBadgeWb').textContent = 'Загружено: ' + wbData.length + ' | Отображено: ' + wbFilteredData.length; }
-    window.updWbData = function(i, k, v) { if (wbData[i]) { wbData[i][k] = v.trim(); applyFilterWb(); } };
-    window.openWbModal = function() { buildWbModal(); $('wbModal').classList.add('open'); setTimeout(previewWbLabel, 300); };
-    window.closeWbModal = function() { $('wbModal').classList.remove('open'); };
-    function buildWbModal() { var cf = $('wbColFilters'); var modalCols = ['art_wb', 'city', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry']; var modalLabels = { art_wb: 'Артикул', city: 'Город', name: 'Наименование', sku_label: 'ШК', art_label: 'Арт.этикетки', quant: 'Квант', qty_ship: 'Кол-во', expiry: 'Годен до' }; cf.innerHTML = modalCols.map(function(k) { return '<input class="modal-col-filter" data-col="' + k + '" placeholder="Фильтр: ' + modalLabels[k] + '" oninput="applyWbModalFilters()">'; }).join(''); $('wbModalHead').innerHTML = '<tr><th class="col-check">✔</th>' + modalCols.map(function(k) { return '<th>' + modalLabels[k] + '</th>'; }).join('') + '</tr>'; var items = (wbFilteredData.length ? wbFilteredData : wbData).map(function(it, i) { return Object.assign({}, it, { _idx: i }); }); var h = ''; items.forEach(function(it, i) { var q = Math.ceil(parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0); if (q <= 0) return; var cols = modalCols.map(function(k) { return '<td>' + escHtml(String(it[k] || '')) + '</td>'; }).join(''); h += '<tr data-idx="' + i + '" data-qty="' + q + '"><td class="col-check"><input type="checkbox" class="wb-mchk" data-idx="' + i + '" onchange="updWbModalSelCount()"></td>' + cols + '</tr>'; }); $('wbModalBodyInner').innerHTML = h || '<tr><td colspan="9" style="text-align:center;color:#888;padding:20px;">Нет строк с количеством &gt; 0</td></tr>'; $('wbModalTotalCount').textContent = 'Всего: ' + items.length; updWbModalSelCount(); renderWbElementsList(); }
-    window.applyWbModalFilters = function() { var filters = {}; document.querySelectorAll('#wbColFilters .modal-col-filter').forEach(function(inp) { filters[inp.dataset.col] = (inp.value || '').toLowerCase(); }); var modalCols = ['art_wb', 'city', 'name', 'sku_label', 'art_label', 'quant', 'qty_ship', 'expiry']; document.querySelectorAll('#wbModalBodyInner tr').forEach(function(tr) { if (tr.dataset.idx === undefined && tr.dataset.idx !== '0') return; var idx = parseInt(tr.dataset.idx); var items = (wbFilteredData.length ? wbFilteredData : wbData).map(function(it, i) { return Object.assign({}, it, { _idx: i }); }); var item = items.find(function(it) { return it._idx === idx; }); if (!item) return; var visible = true; modalCols.forEach(function(k) { if (filters[k] && String(item[k] || '').toLowerCase().indexOf(filters[k]) === -1) visible = false; }); tr.classList.toggle('row-hidden', !visible); }); document.querySelectorAll('#wbModalBodyInner tr.row-hidden .wb-mchk').forEach(function(cb) { cb.checked = false; }); updWbModalSelCount(); };
-    window.wbModalToggleSelectAll = function(checked) { document.querySelectorAll('#wbModalBodyInner tr:not(.row-hidden) .wb-mchk').forEach(function(cb) { cb.checked = checked; }); updWbModalSelCount(); };
-    window.wbModalDeselectAll = function() { document.querySelectorAll('#wbModalBodyInner .wb-mchk').forEach(function(cb) { cb.checked = false; }); $('wbSelectAllChk').checked = false; updWbModalSelCount(); };
-    window.updWbModalSelCount = function() { $('wbModalSelCount').textContent = 'Выбрано: ' + document.querySelectorAll('#wbModalBodyInner .wb-mchk:checked').length; };
-    window.previewWbLabel = function() { var previewArea = $('wbPreviewArea'); if (!previewArea) return; var items = wbFilteredData.length ? wbFilteredData : wbData; var it = items && items.length ? items[0] : { name: 'Название товара', art_wb: '12345', art_label: '67890', sku_label: '4605370003130', expiry: '31.12.28', quant: '1' }; var bcHeight = parseInt($('wbBcHeight').value) || 60; var html = buildWbLabelHtml(it, 0, null, 'wbPrevSvg'); var d = document.createElement('div'); d.className = 'label'; d.innerHTML = html; previewArea.innerHTML = ''; previewArea.appendChild(d); var skuVal = it.sku_label || ''; if (skuVal) { try { JsBarcode('#wbPrevSvg', String(skuVal), { format: $('wbBcFormat').value, width: 2, height: bcHeight, displayValue: true, fontSize: 10, margin: 1 }); } catch(e) { var svgEl = d.querySelector('#wbPrevSvg'); if (svgEl) svgEl.parentElement.innerHTML = '<span style="font-size:8px;color:red">ШК: ' + escHtml(skuVal) + '</span>'; } } };
-    window.executeWbPrint = function() { var grid = $('labelGrid'); grid.innerHTML = ''; var bcFmt = $('wbBcFormat').value; var bcHeight = parseInt($('wbBcHeight').value) || 60; var sel = Array.from(document.querySelectorAll('#wbModalBodyInner .wb-mchk:checked')).map(function(cb) { return parseInt(cb.dataset.idx); }); if (!sel.length) { showToast('Выберите хотя бы одну строку', 'error'); return; } var items = wbFilteredData.length ? wbFilteredData : wbData; var lblN = 0; sel.forEach(function(idx) { var it = items[idx]; var qty = Math.ceil(parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0); if (qty <= 0) return; for (var i = 0; i < qty; i++) { lblN++; var svgId = 'wblb' + lblN; var sku = it.sku_label || ''; var counter = qty > 1 ? (i+1) + ' / ' + qty : null; var html = buildWbLabelHtml(it, qty, counter, svgId); var d = document.createElement('div'); d.className = 'label'; d.innerHTML = html; grid.appendChild(d); if (sku) { try { JsBarcode('#' + svgId, String(sku), { format: bcFmt, width: 2, height: bcHeight, displayValue: true, fontSize: 10, margin: 1 }); } catch(e) { var svgEl = d.querySelector('#' + svgId); if (svgEl) svgEl.parentElement.innerHTML = '<span style="font-size:8px;color:red">ШК: ' + escHtml(sku) + '</span>'; } } } }); if (!lblN) { showToast('Нет этикеток (количество 0)', 'error'); return; } closeWbModal(); showToast('Сгенерировано ' + lblN + ' этикеток ВБ', 'success'); setTimeout(function() { document.body.classList.add('print-label-mode'); window.print(); setTimeout(function() { document.body.classList.remove('print-label-mode'); }, 1000); }, 400); };
-})();
+    
+    function toggleAllCities(mode, state) {
+        selectedCities[mode] = state ? new Set(cities[mode]) : new Set();
+        renderCityChips(mode);
+        applyFilter(mode);
+    }
+
+    function applyFilter(mode) {
+        var s = document.querySelector('#tab-' + mode + ' input[type="text"]');
+        var search = s ? s.value.toLowerCase() : '';
+        
+        filteredData[mode] = data[mode].filter(function(item) {
+            var hasCity = false;
+            for (var c in item.cities) {
+                if (selectedCities[mode].has(c)) { hasCity = true; break; }
+            }
+            var hasSearch = item.name.toLowerCase().includes(search) || String(item.art).includes(search);
+            return hasCity && hasSearch;
+        });
+
+        if (mode === 'list') renderTableList(search);
+        else if (mode === 'ozon') renderTableOzon(search);
+        else renderTableWb(search);
+    }
+
+    function renderTableList(search) {
+        var tbody = document.querySelector('#table-list tbody');
+        tbody.innerHTML = '';
+        filteredData.list.forEach(function(it, i) {
+            // Calculate qty for selected cities
+            var qty = 0;
+            for(var c in it.cities) if(selectedCities.list.has(c)) qty += it.cities[c];
+            if(qty === 0) return;
+            
+            tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + esc(it.name) + '</td><td>' + it.art + '</td><td style="font-weight:bold; color:var(--success)">' + qty + '</td><td contenteditable onblur="it.pallet=this.innerText" style="background:#fffbeb">' + (it.pallet||'') + '</td><td contenteditable onblur="it.boxes=this.innerText" style="background:#fffbeb">' + (it.boxes||'') + '</td></tr>';
+        });
+    }
+
+    function renderTableOzon(search) {
+        var tbody = document.querySelector('#table-ozon tbody');
+        tbody.innerHTML = '';
+        filteredData.ozon.forEach(function(it, i) {
+            var qty = 0; for(var c in it.cities) if(selectedCities.ozon.has(c)) qty += it.cities[c];
+            if(qty === 0) return;
+            tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + esc(it.name) + '</td><td>' + it.art + '</td><td>' + it.barcode + '</td><td>' + qty + '</td></tr>';
+        });
+    }
+    
+    function renderTableWb(search) {
+        var tbody = document.querySelector('#table-wb tbody');
+        tbody.innerHTML = '';
+        filteredData.wb.forEach(function(it, i) {
+            var qty = 0; for(var c in it.cities) if(selectedCities.wb.has(c)) qty += it.cities[c];
+            if(qty === 0) return;
+            tbody.innerHTML += '<tr><td>' + (i+1) + '</td><td>' + esc(it.name) + '</td><td>' + it.art + '</td><td>' + it.barcode + '</td><td>' + qty + '</td></tr>';
+        });
+    }
+
+    // --- PRINT TTN ---
+    function printTTN(type) {
+        var printDiv = document.getElementById('print-area');
+        printDiv.innerHTML = '';
+        
+        var itemsToPrint = type === 'all' ? data.list : filteredData.list;
+        var title = type === 'all' ? 'ВСЕ ГОРОДА' : 'ФИЛЬТР ПО ГОРОДАМ';
+
+        // Group by city if filtered
+        if (type === 'city') {
+            var cityGroups = {};
+            itemsToPrint.forEach(function(it) {
+                selectedCities.list.forEach(function(c) {
+                    if (it.cities[c] > 0) {
+                        if (!cityGroups[c]) cityGroups[c] = [];
+                        cityGroups[c].push({ name: it.name, art: it.art, barcode: it.barcode, qty: it.cities[c], expiry: it.expiry, pallet: it.pallet, boxes: it.boxes });
+                    }
+                });
+            });
+
+            for (var c in cityGroups) {
+                printDiv.innerHTML += buildTTNTable(cityGroups[c], 'Город: ' + c);
+            }
+        } else {
+            // Print All - Sum all cities
+            var flat = itemsToPrint.map(function(it) {
+                var q = 0; for(var k in it.cities) q += it.cities[k];
+                return { name: it.name, art: it.art, barcode: it.barcode, qty: q, expiry: it.expiry, pallet: it.pallet, boxes: it.boxes };
+            });
+            printDiv.innerHTML += buildTTNTable(flat, 'ОБЩАЯ НАКЛАДНАЯ');
+        }
+
+        document.body.classList.add('print-mode');
+        window.print();
+        setTimeout(function() { document.body.classList.remove('print-mode'); }, 1000);
+    }
+
+    function buildTTNTable(items, title) {
+        var rows = items.map(function(it, i) {
+            return '<tr><td>' + (i+1) + '</td><td style="text-align:left">' + esc(it.name) + '</td><td>' + it.art + '</td><td>' + it.qty + '</td><td>' + (it.pallet||'') + '</td><td>' + (it.boxes||'') + '</td></tr>';
+        }).join('');
+        return '<div class="ttn-doc"><div class="ttn-header"><h2>НАКЛАДНАЯ НА СБОРКУ</h2><h3>' + title + '</h3><p>Дата: ' + new Date().toLocaleDateString() + '</p></div><table class="ttn-table"><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>Кол-во</th><th>Палета</th><th>Короба</th></tr></thead><tbody>' + rows + '</tbody></table><br><br><p>Ответственный: _______________</p></div>';
+    }
+
+    // --- LABEL MODAL & LOGIC ---
+    function openLabelModal(mode) {
+        currentMode = mode;
+        document.getElementById('modal-title').textContent = 'Настройка этикеток (' + (mode === 'ozon' ? 'Ozon' : 'WB') + ')';
+        document.getElementById('label-modal').classList.add('open');
+        renderEditorList(mode);
+        renderModalTable(mode);
+        previewLabel(mode);
+    }
+
+    function closeModal() { document.getElementById('label-modal').classList.remove('open'); }
+
+    function renderEditorList(mode) {
+        var list = templates[mode];
+        var div = document.getElementById('editor-list');
+        div.innerHTML = '';
+        list.forEach(function(item, idx) {
+            var d = document.createElement('div');
+            d.className = 'label-item';
+            d.innerHTML = '<span><input type="checkbox" ' + (item.enabled ? 'checked' : '') + ' onclick="toggleTplItem(\'' + mode + '\',' + idx + ')"> ' + item.text + '</span>';
+            if (!item.fixed) {
+                d.innerHTML += '<button class="btn-danger btn-sm" onclick="removeTplItem(\'' + mode + '\',' + idx + ')">✕</button>';
+            }
+            div.appendChild(d);
+        });
+    }
+
+    function toggleTplItem(mode, idx) { templates[mode][idx].enabled = !templates[mode][idx].enabled; previewLabel(mode); }
+    function removeTplItem(mode, idx) { templates[mode].splice(idx, 1); renderEditorList(mode); previewLabel(mode); }
+    
+    function addLabelElement() {
+        var type = prompt("Введите название поля (например: Город, Вес):");
+        if (type) {
+            templates[currentMode].push({ id: 'custom', text: '✏️ ' + type, enabled: true, field: 'custom', customName: type });
+            renderEditorList(currentMode);
+            previewLabel(currentMode);
+        }
+    }
+
+    function renderModalTable(mode) {
+        var d = mode === 'ozon' ? filteredData.ozon : filteredData.wb;
+        var tbody = document.querySelector('#modal-table tbody');
+        tbody.innerHTML = '';
+        d.forEach(function(it, i) {
+            var qty = 0; var s = selectedCities[mode]; for(var c in it.cities) if(s.has(c)) qty += it.cities[c];
+            if(qty > 0) tbody.innerHTML += '<tr><td><input type="checkbox" checked class="lbl-check" data-idx="' + i + '"></td><td>' + esc(it.name) + '</td><td>' + qty + '</td></tr>';
+        });
+    }
+
+    // --- LABEL GENERATION & PRINT ---
+    function previewLabel(mode) {
+        var d = mode === 'ozon' ? filteredData.ozon : filteredData.wb;
+        var it = d.length ? d[0] : { name: "Демонстрация длинного наименования товара для проверки читаемости шрифта", art: "12345", barcode: "4605370003130", expiry: "01.01.30" };
+        var container = document.getElementById('preview-area');
+        container.innerHTML = '';
+        container.appendChild(createLabelElement(it, mode));
+    }
+
+    function createLabelElement(it, mode) {
+        var div = document.createElement('div');
+        div.className = 'label';
+        var html = '';
+        var tpl = templates[mode];
+        var s = selectedCities[mode];
+        var qty = 0; for(var c in it.cities) if(s.has(c)) qty += it.cities[c];
+        
+        tpl.forEach(function(el) {
+            if (!el.enabled) return;
+            if (el.id === 'warning') html += '<div class="lbl-block lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>';
+            else if (el.id === 'art') html += '<div class="lbl-block lbl-title">' + esc(it.art) + '</div>';
+            else if (el.id === 'barcode') html += '<div class="lbl-block lbl-barcode"><svg class="bc-svg"></svg></div>';
+            else if (el.id === 'name') html += '<div class="lbl-block lbl-name">' + esc(it.name) + '</div>';
+            else if (el.id === 'expiry') html += '<div class="lbl-block lbl-meta"><span>Годен: ' + esc(it.expiry) + '</span><span>Кол-во: ' + qty + '</span></div>';
+            else if (el.id === 'quant') html += '<div class="lbl-block lbl-meta"><span>Квант: 1</span></div>';
+        });
+
+        div.innerHTML = html;
+        
+        // Render Barcode after insert
+        setTimeout(function() {
+            var svg = div.querySelector('.bc-svg');
+            if (svg && it.barcode) {
+                try { JsBarcode(svg, String(it.barcode), { format: "CODE128", height: parseInt(document.getElementById('bc-height').value), displayValue: true, margin: 0, fontSize: 10 }); } 
+                catch(e) { svg.parentElement.innerHTML = '<span style="font-size:8px">ШК: ' + it.barcode + '</span>'; }
+            }
+        }, 0);
+        
+        return div;
+    }
+
+    function printLabels() {
+        var d = currentMode === 'ozon' ? filteredData.ozon : filteredData.wb;
+        var checks = document.querySelectorAll('.lbl-check:checked');
+        var grid = document.getElementById('print-area');
+        grid.innerHTML = '';
+        
+        checks.forEach(function(chk) {
+            var idx = parseInt(chk.getAttribute('data-idx'));
+            var it = d[idx];
+            var s = selectedCities[currentMode];
+            var qty = 0; for(var c in it.cities) if(s.has(c)) qty += it.cities[c];
+            
+            for(var k=0; k<qty; k++) {
+                grid.appendChild(createLabelElement(it, currentMode));
+            }
+        });
+        
+        window.print();
+    }
+
+    // --- UTILS ---
+    function esc(s) { var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+    
+    // --- EVENT LISTENERS ---
+    document.getElementById('file-list').onchange = function() { handleFile(this.files[0], 'list'); };
+    document.getElementById('file-ozon').onchange = function() { handleFile(this.files[0], 'ozon'); };
+    document.getElementById('file-wb').onchange = function() { handleFile(this.files[0], 'wb'); };
+    
+    // Reload preview on height change
+    document.getElementById('bc-height').onchange = function() { previewLabel(currentMode); };
+
 </script>
 </body>
 </html>
