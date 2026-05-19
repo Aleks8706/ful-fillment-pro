@@ -222,6 +222,7 @@
             </div>
             <div id="fileInfoList" style="display:none;"><div class="upload-filename"><span>📄</span><span id="fileNameList"></span><button class="remove-btn" onclick="removeFileList()" title="Удалить">×</button></div></div>
             <div class="data-info" id="dataInfoList"><span>✅</span><span id="dataInfoTextList"></span></div>
+            <div style="margin-top:1rem;"><button class="btn btn-secondary btn-sm" onclick="loadDemoList()">📂 Загрузить демо-данные</button></div>
         </div>
         <div class="controls" id="controlsList">
             <div class="filter-section">
@@ -437,6 +438,7 @@
 (function() {
     'use strict';
     var $ = function(id) { return document.getElementById(id); };
+    
     window.switchTab = function(tab) {
         document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
@@ -444,28 +446,13 @@
         document.querySelectorAll('.tab-btn')[tabs[tab]].classList.add('active');
         $('tab-' + tab).classList.add('active');
     };
+
     function showToast(message, type) { type = type || ''; var toast = $('toast'); toast.textContent = message; toast.className = 'toast ' + type; toast.classList.add('visible'); setTimeout(function() { toast.classList.remove('visible'); }, 4000); }
     function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function cityId(city) { return city.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g, '_'); }
 
-    // Exact column mapping from the provided Excel file
-    var EXACT_COLUMNS = {
-        'наименование': 'name',
-        'исходный артикул': 'sku',
-        'шк производителя': 'barcode',
-        'шк на этикетку': 'barcode_label',
-        'артикул продавца': 'art',
-        'кол-во в упаковку': 'packQty',
-        'итого к отгрузке спаек': 'totalSpikes',
-        'годен до': 'expiry',
-        'тз': 'tz',
-        // Cities (exact match)
-        'хабаровск': 'city', 'омск': 'city', 'пермь': 'city', 'екатеринбург': 'city', 
-        'екатеринбург2': 'city', 'саратов': 'city', 'волгоград': 'city', 'тюмень': 'city', 
-        'ростов': 'city', 'самара': 'city', 'уфа': 'city', 'новосиб': 'city', 
-        'ярославль': 'city', 'краснодар-адыгейск': 'city', 'сп': 'city', 'казань': 'city', 
-        'жуковский-кросс док': 'city'
-    };
+    // City list for identification
+    var CITY_KEYWORDS = ['хабаровск', 'омск', 'пермь', 'екатеринбург', 'саратов', 'волгоград', 'тюмень', 'ростов', 'самара', 'уфа', 'новосиб', 'ярославль', 'краснодар', 'адыгейск', 'сп', 'казань', 'жуковский', 'кросс'];
 
     // ==================== LABEL EDITOR ====================
     var ozonLabelElements = [
@@ -489,75 +476,35 @@
     var wbElementNames = { warning: 'Предупреждение', art_wb: 'Артикул ВБ', art_label: 'Арт. на этикетку', sku_label: 'ШК на этикетку', name: 'Наименование', expiry: 'Годен до', quant: 'Квант', city: 'Город', custom: 'Произвольный текст', divider: 'Разделитель' };
 
     function renderOzonElementsList() {
-        var list = $('ozonElementsList');
-        if (!list) return;
-        list.innerHTML = '';
+        var list = $('ozonElementsList'); if (!list) return; list.innerHTML = '';
         ozonLabelElements.forEach(function(elem, idx) {
-            var item = document.createElement('div');
-            item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
-            var icon = ozonElementIcons[elem.type] || '❓';
-            var name = ozonElementNames[elem.type] || elem.type;
-            var fieldInfo = '';
-            if (elem.type === 'warning' || elem.type === 'custom') fieldInfo = elem.text || '';
-            item.innerHTML = '<span class="elem-icon">' + icon + '</span>' +
-                '<span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span>' +
-                '<span class="elem-actions">' +
-                    '<button onclick="moveOzonElement(' + idx + ',-1)" title="Вверх">↑</button>' +
-                    '<button onclick="moveOzonElement(' + idx + ',1)" title="Вниз">↓</button>' +
-                    '<button onclick="toggleOzonElement(' + idx + ')" title="' + (elem.enabled ? 'Отключить' : 'Включить') + '">' + (elem.enabled ? '👁️' : '🚫') + '</button>' +
-                    (elem.type === 'warning' || elem.type === 'custom' ? '<button onclick="editOzonElementText(' + idx + ')" title="Редактировать текст">✏️</button>' : '') +
-                    '<button class="delete-btn" onclick="removeOzonElement(' + idx + ')" title="Удалить">✕</button>' +
-                '</span>';
+            var item = document.createElement('div'); item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
+            var icon = ozonElementIcons[elem.type] || '❓'; var name = ozonElementNames[elem.type] || elem.type;
+            var fieldInfo = (elem.type === 'warning' || elem.type === 'custom') ? (elem.text || '') : '';
+            item.innerHTML = '<span class="elem-icon">' + icon + '</span><span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span><span class="elem-actions"><button onclick="moveOzonElement(' + idx + ',-1)" title="Вверх">↑</button><button onclick="moveOzonElement(' + idx + ',1)" title="Вниз">↓</button><button onclick="toggleOzonElement(' + idx + ')" title="Вкл/Выкл">' + (elem.enabled ? '👁️' : '🚫') + '</button>' + (fieldInfo ? '<button onclick="editOzonElementText(' + idx + ')" title="Текст">✏️</button>' : '') + '<button class="delete-btn" onclick="removeOzonElement(' + idx + ')" title="Удалить">✕</button></span>';
             list.appendChild(item);
         });
     }
 
     function renderWbElementsList() {
-        var list = $('wbElementsList');
-        if (!list) return;
-        list.innerHTML = '';
+        var list = $('wbElementsList'); if (!list) return; list.innerHTML = '';
         wbLabelElements.forEach(function(elem, idx) {
-            var item = document.createElement('div');
-            item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
-            var icon = wbElementIcons[elem.type] || '❓';
-            var name = wbElementNames[elem.type] || elem.type;
-            var fieldInfo = '';
-            if (elem.type === 'warning' || elem.type === 'custom') fieldInfo = elem.text || '';
-            item.innerHTML = '<span class="elem-icon">' + icon + '</span>' +
-                '<span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span>' +
-                '<span class="elem-actions">' +
-                    '<button onclick="moveWbElement(' + idx + ',-1)" title="Вверх">↑</button>' +
-                    '<button onclick="moveWbElement(' + idx + ',1)" title="Вниз">↓</button>' +
-                    '<button onclick="toggleWbElement(' + idx + ')" title="' + (elem.enabled ? 'Отключить' : 'Включить') + '">' + (elem.enabled ? '👁️' : '🚫') + '</button>' +
-                    (elem.type === 'warning' || elem.type === 'custom' ? '<button onclick="editWbElementText(' + idx + ')" title="Редактировать текст">✏️</button>' : '') +
-                    '<button class="delete-btn" onclick="removeWbElement(' + idx + ')" title="Удалить">✕</button>' +
-                '</span>';
+            var item = document.createElement('div'); item.className = 'label-element-item' + (elem.enabled ? '' : ' disabled');
+            var icon = wbElementIcons[elem.type] || '❓'; var name = wbElementNames[elem.type] || elem.type;
+            var fieldInfo = (elem.type === 'warning' || elem.type === 'custom') ? (elem.text || '') : '';
+            item.innerHTML = '<span class="elem-icon">' + icon + '</span><span class="elem-name">' + name + (fieldInfo ? ' <span class="elem-field">"' + escHtml(fieldInfo) + '"</span>' : '') + '</span><span class="elem-actions"><button onclick="moveWbElement(' + idx + ',-1)" title="Вверх">↑</button><button onclick="moveWbElement(' + idx + ',1)" title="Вниз">↓</button><button onclick="toggleWbElement(' + idx + ')" title="Вкл/Выкл">' + (elem.enabled ? '👁️' : '🚫') + '</button>' + (fieldInfo ? '<button onclick="editWbElementText(' + idx + ')" title="Текст">✏️</button>' : '') + '<button class="delete-btn" onclick="removeWbElement(' + idx + ')" title="Удалить">✕</button></span>';
             list.appendChild(item);
         });
     }
 
-    window.addOzonElement = function(type) {
-        var elem = { type: type, enabled: true };
-        if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ';
-        if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; }
-        if (type === 'city') elem.text = 'Город';
-        ozonLabelElements.push(elem);
-        renderOzonElementsList();
-    };
+    window.addOzonElement = function(type) { var elem = { type: type, enabled: true }; if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ'; if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; } if (type === 'city') elem.text = 'Город'; ozonLabelElements.push(elem); renderOzonElementsList(); };
     window.addSelectedOzonElement = function() { var sel = $('ozonAddElementSelect'); if (!sel.value) return; addOzonElement(sel.value); sel.value = ''; };
     window.removeOzonElement = function(idx) { ozonLabelElements.splice(idx, 1); renderOzonElementsList(); };
     window.moveOzonElement = function(idx, dir) { var newIdx = idx + dir; if (newIdx < 0 || newIdx >= ozonLabelElements.length) return; var tmp = ozonLabelElements[idx]; ozonLabelElements[idx] = ozonLabelElements[newIdx]; ozonLabelElements[newIdx] = tmp; renderOzonElementsList(); };
     window.toggleOzonElement = function(idx) { ozonLabelElements[idx].enabled = !ozonLabelElements[idx].enabled; renderOzonElementsList(); };
     window.editOzonElementText = function(idx) { var t = prompt('Введите текст:', ozonLabelElements[idx].text || ''); if (t !== null) { ozonLabelElements[idx].text = t; renderOzonElementsList(); } };
 
-    window.addWbElement = function(type) {
-        var elem = { type: type, enabled: true };
-        if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ';
-        if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; }
-        if (type === 'city') elem.text = 'Город';
-        wbLabelElements.push(elem);
-        renderWbElementsList();
-    };
+    window.addWbElement = function(type) { var elem = { type: type, enabled: true }; if (type === 'warning') elem.text = 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ'; if (type === 'custom') { var t = prompt('Введите произвольный текст:'); elem.text = t || 'Текст'; } if (type === 'city') elem.text = 'Город'; wbLabelElements.push(elem); renderWbElementsList(); };
     window.addSelectedWbElement = function() { var sel = $('wbAddElementSelect'); if (!sel.value) return; addWbElement(sel.value); sel.value = ''; };
     window.removeWbElement = function(idx) { wbLabelElements.splice(idx, 1); renderWbElementsList(); };
     window.moveWbElement = function(idx, dir) { var newIdx = idx + dir; if (newIdx < 0 || newIdx >= wbLabelElements.length) return; var tmp = wbLabelElements[idx]; wbLabelElements[idx] = wbLabelElements[newIdx]; wbLabelElements[newIdx] = tmp; renderWbElementsList(); };
@@ -567,39 +514,33 @@
     function buildOzonLabelHtml(it, qty, counter, svgId) {
         var html = '';
         if (qty > 1 && counter) html += '<div class="lbl-block lbl-row"><span class="lbl-title">' + escHtml(it.art || '') + '</span><span class="lbl-counter">' + counter + '</span></div>';
-        var enabledElems = ozonLabelElements.filter(function(e) { return e.enabled; });
-        for (var i = 0; i < enabledElems.length; i++) {
-            var elem = enabledElems[i];
-            if (elem.type === 'divider') { html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>'; continue; }
-            if (elem.type === 'warning') { html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>'; continue; }
-            if (elem.type === 'art') { html += '<div class="lbl-block lbl-title">' + escHtml(it.art || '') + '</div>'; continue; }
-            if (elem.type === 'sku') { html += '<div class="lbl-block lbl-title">' + escHtml(it.sku || '') + '</div>'; continue; }
-            if (elem.type === 'barcode') { html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'ozonPrevSvg') + '"></svg></div>'; continue; }
-            if (elem.type === 'name') { html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>'; continue; }
-            if (elem.type === 'expiry') { html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>'; continue; }
-            if (elem.type === 'city') { html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>'; continue; }
-            if (elem.type === 'custom') { html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>'; continue; }
-        }
+        ozonLabelElements.filter(function(e) { return e.enabled; }).forEach(function(elem) {
+            if (elem.type === 'divider') html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>';
+            else if (elem.type === 'warning') html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>';
+            else if (elem.type === 'art') html += '<div class="lbl-block lbl-title">' + escHtml(it.art || '') + '</div>';
+            else if (elem.type === 'sku') html += '<div class="lbl-block lbl-title">' + escHtml(it.sku || '') + '</div>';
+            else if (elem.type === 'barcode') html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'ozonPrevSvg') + '"></svg></div>';
+            else if (elem.type === 'name') html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>';
+            else if (elem.type === 'expiry') html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>';
+            else if (elem.type === 'city' || elem.type === 'custom') html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>';
+        });
         return html;
     }
 
     function buildWbLabelHtml(it, qty, counter, svgId) {
         var html = '';
         if (qty > 1 && counter) html += '<div class="lbl-block lbl-row"><span class="lbl-title">' + escHtml(it.art_label || it.art_wb || '') + '</span><span class="lbl-counter">' + counter + '</span></div>';
-        var enabledElems = wbLabelElements.filter(function(e) { return e.enabled; });
-        for (var i = 0; i < enabledElems.length; i++) {
-            var elem = enabledElems[i];
-            if (elem.type === 'divider') { html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>'; continue; }
-            if (elem.type === 'warning') { html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>'; continue; }
-            if (elem.type === 'art_wb') { html += '<div class="lbl-block lbl-title">' + escHtml(it.art_wb || '') + '</div>'; continue; }
-            if (elem.type === 'art_label') { html += '<div class="lbl-block lbl-title">' + escHtml(it.art_label || '') + '</div>'; continue; }
-            if (elem.type === 'sku_label') { html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'wbPrevSvg') + '"></svg></div>'; continue; }
-            if (elem.type === 'name') { html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>'; continue; }
-            if (elem.type === 'expiry') { html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>'; continue; }
-            if (elem.type === 'quant') { html += '<div class="lbl-block lbl-quant">Квант: ' + escHtml(it.quant || '') + '</div>'; continue; }
-            if (elem.type === 'city') { html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>'; continue; }
-            if (elem.type === 'custom') { html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>'; continue; }
-        }
+        wbLabelElements.filter(function(e) { return e.enabled; }).forEach(function(elem) {
+            if (elem.type === 'divider') html += '<div class="lbl-block" style="border-top:1px solid #ddd;margin:1px 0;"></div>';
+            else if (elem.type === 'warning') html += '<div class="lbl-block lbl-warning">' + escHtml(elem.text || '') + '</div>';
+            else if (elem.type === 'art_wb') html += '<div class="lbl-block lbl-title">' + escHtml(it.art_wb || '') + '</div>';
+            else if (elem.type === 'art_label') html += '<div class="lbl-block lbl-title">' + escHtml(it.art_label || '') + '</div>';
+            else if (elem.type === 'sku_label') html += '<div class="lbl-block lbl-barcode"><svg id="' + (svgId || 'wbPrevSvg') + '"></svg></div>';
+            else if (elem.type === 'name') html += '<div class="lbl-block lbl-name">' + escHtml(it.name || '') + '</div>';
+            else if (elem.type === 'expiry') html += '<div class="lbl-block lbl-meta"><span>Годен: ' + escHtml(it.expiry || '') + '</span></div>';
+            else if (elem.type === 'quant') html += '<div class="lbl-block lbl-quant">Квант: ' + escHtml(it.quant || '') + '</div>';
+            else if (elem.type === 'city' || elem.type === 'custom') html += '<div class="lbl-block lbl-custom-text">' + escHtml(elem.text || '') + '</div>';
+        });
         return html;
     }
 
@@ -613,10 +554,7 @@
 
     function processFileList(file) {
         if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; }
-        $('fileNameList').textContent = file.name;
-        $('fileInfoList').style.display = 'block';
-        uploadZoneList.classList.add('has-file');
-        $('loadingOverlay').classList.add('visible');
+        $('fileNameList').textContent = file.name; $('fileInfoList').style.display = 'block'; uploadZoneList.classList.add('has-file'); $('loadingOverlay').classList.add('visible');
         var reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -630,40 +568,57 @@
             } catch (err) {
                 $('loadingOverlay').classList.remove('visible');
                 showToast('Ошибка: ' + err.message, 'error');
+                console.error(err);
             }
         };
+        reader.onerror = function() { $('loadingOverlay').classList.remove('visible'); showToast('Не удалось прочитать файл', 'error'); };
         reader.readAsArrayBuffer(file);
     }
 
     function parseListData(rows) {
         var hi = -1;
+        // Find header row
         for (var i = 0; i < Math.min(rows.length, 10); i++) {
             if (!rows[i]) continue;
-            var rowStr = rows[i].join(' ').toLowerCase();
-            if (rowStr.indexOf('наименование') !== -1 || rowStr.indexOf('артикул продавца') !== -1) { hi = i; break; }
+            var rs = rows[i].join(' ').toLowerCase();
+            if (rs.indexOf('наименование') !== -1 || rs.indexOf('артикул продавца') !== -1) { hi = i; break; }
         }
         if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
-        
+
         var headers = rows[hi];
-        var colMap = {};
-        var cityColumns = [];
-        
-        // Map columns using exact lowercase match
+        var colMap = {}; var cityColumns = [];
+        var knownKeys = new Set(['name', 'sku', 'barcode', 'art', 'packQty', 'totalSpikes', 'expiry', 'tz']);
+
+        // Map columns
         headers.forEach(function(h, i) {
             var hl = h.trim().toLowerCase();
-            if (EXACT_COLUMNS[hl]) {
-                colMap[EXACT_COLUMNS[hl]] = i;
-            } else if (hl.length > 1 && hl.length < 40 && isNaN(hl)) {
-                cityColumns.push({ name: h.trim(), index: i });
+            if (hl.indexOf('наименование') !== -1 && !colMap.name) colMap.name = i;
+            else if (hl.indexOf('исходный артикул') !== -1 && !colMap.sku) colMap.sku = i;
+            else if ((hl.indexOf('шк производителя') !== -1 || hl.indexOf('шк на этикетку') !== -1) && !colMap.barcode) colMap.barcode = i;
+            else if (hl.indexOf('артикул продавца') !== -1 && !colMap.art) colMap.art = i;
+            else if (hl.indexOf('кол-во в упаковку') !== -1 && !colMap.packQty) colMap.packQty = i;
+            else if ((hl.indexOf('итого к отгрузке') !== -1 || hl.indexOf('спаек') !== -1) && !colMap.totalSpikes) colMap.totalSpikes = i;
+            else if (hl.indexOf('годен до') !== -1 && !colMap.expiry) colMap.expiry = i;
+            else if (hl === 'тз' && !colMap.tz) colMap.tz = i;
+        });
+
+        // Identify city columns (columns not mapped to known keys)
+        headers.forEach(function(h, i) {
+            if (h === null || h === undefined) return;
+            var hl = h.trim().toLowerCase();
+            var isMapped = Object.keys(colMap).some(function(k) { return colMap[k] === i; });
+            if (!isMapped && hl.length > 1 && hl.length < 40) {
+                // Check if it looks like a city name
+                var isCity = CITY_KEYWORDS.some(function(kw) { return hl.indexOf(kw) !== -1; });
+                if (isCity) { cityColumns.push({ name: h.trim(), index: i }); }
             }
         });
-        
+
         listCities = cityColumns.map(function(c) { return c.name; });
         listProducts = [];
         
         for (var r = hi + 1; r < rows.length; r++) {
-            var row = rows[r];
-            if (!row || row.length < 3) continue;
+            var row = rows[r]; if (!row || row.length < 3) continue;
             var name = String(row[colMap.name] || '').trim();
             if (!name || name === '---' || name === '') continue;
             
@@ -721,35 +676,15 @@
     function processFileOzon(file) { if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; } $('fileNameOzon').textContent = file.name; $('fileInfoOzon').style.display = 'block'; uploadZoneOzon.classList.add('has-file'); $('loadingOverlay').classList.add('visible'); var reader = new FileReader(); reader.onload = function(e) { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data, { type: 'array' }); var ws = wb.Sheets[wb.SheetNames[0]]; var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }); parseOzonData(rows); $('loadingOverlay').classList.remove('visible'); showToast('Ozon: ' + ozonProducts.length + ' позиций, ' + ozonCities.length + ' городов', 'success'); } catch (err) { $('loadingOverlay').classList.remove('visible'); showToast('Ошибка: ' + err.message, 'error'); } }; reader.readAsArrayBuffer(file); }
     function parseOzonData(rows) { 
         var hi = -1; 
-        for (var i = 0; i < Math.min(rows.length, 10); i++) { 
-            if (!rows[i]) continue; 
-            var rs = rows[i].join(' ').toLowerCase(); 
-            if (rs.indexOf('наименование') !== -1 || rs.indexOf('артикул продавца') !== -1) { hi = i; break; } 
-        } 
+        for (var i = 0; i < Math.min(rows.length, 10); i++) { if (!rows[i]) continue; var rs = rows[i].join(' ').toLowerCase(); if (rs.indexOf('наименование') !== -1 || rs.indexOf('артикул продавца') !== -1) { hi = i; break; } } 
         if (hi === -1) { showToast('Заголовок не найден', 'error'); return; }
-        var headers = rows[hi];
-        var colMap = {}; var cityColumns = [];
-        headers.forEach(function(h, i) {
-            var hl = h.trim().toLowerCase();
-            if (EXACT_COLUMNS[hl]) { colMap[EXACT_COLUMNS[hl]] = i; }
-            else if (hl.length > 1 && hl.length < 40 && isNaN(hl)) { cityColumns.push({ name: h.trim(), index: i }); }
-        });
-        ozonCities = cityColumns.map(function(c) { return c.name; }); ozonProducts = [];
-        for (var r = hi + 1; r < rows.length; r++) {
-            var row = rows[r]; if (!row || row.length < 3) continue;
-            var name = String(row[colMap.name] || '').trim(); if (!name || name === '---') continue;
-            var sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : '';
-            var barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : '';
-            var art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku;
-            var packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1;
-            var totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0;
-            var expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : '';
-            var cities = {}; cityColumns.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) cities[cc.name] = num; });
-            if (Object.keys(cities).length > 0) { ozonProducts.push({ name: name, sku: sku, barcode: barcode, art: art, packQty: packQty, totalSpikes: totalSpikes, expiry: expiry, cities: cities }); }
-        }
+        var headers = rows[hi]; var colMap = {}; var cityCols = [];
+        headers.forEach(function(h, i) { var hl = h.trim().toLowerCase(); if (hl.indexOf('наименование') !== -1 && !colMap.name) colMap.name = i; else if (hl.indexOf('исходный артикул') !== -1 && !colMap.sku) colMap.sku = i; else if ((hl.indexOf('шк производителя') !== -1 || hl.indexOf('шк на этикетку') !== -1) && !colMap.barcode) colMap.barcode = i; else if (hl.indexOf('артикул продавца') !== -1 && !colMap.art) colMap.art = i; else if (hl.indexOf('кол-во в упаковку') !== -1 && !colMap.packQty) colMap.packQty = i; else if ((hl.indexOf('итого к отгрузке') !== -1 || hl.indexOf('спаек') !== -1) && !colMap.totalSpikes) colMap.totalSpikes = i; else if (hl.indexOf('годен до') !== -1 && !colMap.expiry) colMap.expiry = i; });
+        headers.forEach(function(h, i) { if (Object.keys(colMap).some(function(k) { return colMap[k] === i; })) return; var hl = h.trim().toLowerCase(); if (hl.length > 1 && hl.length < 40 && CITY_KEYWORDS.some(function(kw) { return hl.indexOf(kw) !== -1; })) { cityCols.push({ name: h.trim(), index: i }); } });
+        ozonCities = cityCols.map(function(c) { return c.name; }); ozonProducts = [];
+        for (var r = hi + 1; r < rows.length; r++) { var row = rows[r]; if (!row || row.length < 3) continue; var name = String(row[colMap.name] || '').trim(); if (!name || name === '---') continue; var sku = colMap.sku !== undefined ? String(row[colMap.sku] || '').trim() : ''; var barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : ''; var art = colMap.art !== undefined ? String(row[colMap.art] || '').trim() : sku; var packQty = colMap.packQty !== undefined ? (parseInt(row[colMap.packQty]) || 1) : 1; var totalSpikes = colMap.totalSpikes !== undefined ? (parseInt(row[colMap.totalSpikes]) || 0) : 0; var expiry = colMap.expiry !== undefined ? String(row[colMap.expiry] || '').trim() : ''; var cities = {}; cityCols.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) cities[cc.name] = num; }); if (Object.keys(cities).length > 0) { ozonProducts.push({ name: name, sku: sku, barcode: barcode, art: art, packQty: packQty, totalSpikes: totalSpikes, expiry: expiry, cities: cities }); } }
         if (!ozonProducts.length) { showToast('Данные не найдены', 'error'); return; }
-        $('dataInfoTextOzon').textContent = 'Ozon: ' + ozonProducts.length + ' позиций, ' + ozonCities.length + ' городов';
-        $('dataInfoOzon').classList.add('visible'); ozonSelectedCities.clear(); renderCityFiltersOzon(); $('controlsOzon').classList.add('visible'); $('actionsBarOzon').classList.add('visible'); $('tableContainerOzon').classList.add('visible'); applyFiltersOzon();
+        $('dataInfoTextOzon').textContent = 'Ozon: ' + ozonProducts.length + ' позиций, ' + ozonCities.length + ' городов'; $('dataInfoOzon').classList.add('visible'); ozonSelectedCities.clear(); renderCityFiltersOzon(); $('controlsOzon').classList.add('visible'); $('actionsBarOzon').classList.add('visible'); $('tableContainerOzon').classList.add('visible'); applyFiltersOzon();
     }
     window.removeFileOzon = function() { fileInputOzon.value = ''; $('fileInfoOzon').style.display = 'none'; uploadZoneOzon.classList.remove('has-file'); $('dataInfoOzon').classList.remove('visible'); $('controlsOzon').classList.remove('visible'); $('actionsBarOzon').classList.remove('visible'); $('tableContainerOzon').classList.remove('visible'); ozonProducts = []; ozonCities = []; ozonSelectedCities.clear(); showToast('Файл удалён', 'success'); };
     function renderCityFiltersOzon() { var c = $('cityFiltersOzon'); c.innerHTML = ''; ozonCities.forEach(function(city) { var btn = document.createElement('button'); btn.className = 'city-btn'; btn.onclick = function() { toggleCityOzon(city); }; btn.id = 'ocity-' + cityId(city); var count = ozonProducts.filter(function(p) { return p.cities[city] && p.cities[city] > 0; }).length; btn.innerHTML = escHtml(city) + ' <span class="badge">' + count + '</span>'; c.appendChild(btn); }); }
@@ -770,7 +705,7 @@
     window.executeOzonPrint = function() { var grid = $('labelGrid'); grid.innerHTML = ''; var bcFmt = $('ozonBcFormat').value; var bcHeight = parseInt($('ozonBcHeight').value) || 60; var sel = Array.from(document.querySelectorAll('#ozonModalBodyInner .ozon-mchk:checked')).map(function(cb) { return parseInt(cb.dataset.idx); }); if (!sel.length) { showToast('Выберите хотя бы одну строку', 'error'); return; } var lblN = 0; sel.forEach(function(idx) { var it = ozonFiltered[idx]; var qty = it.cityQty || 0; if (qty <= 0) return; for (var i = 0; i < qty; i++) { lblN++; var svgId = 'ozlb' + lblN; var sku = it.barcode || ''; var counter = qty > 1 ? (i+1) + '/' + qty : null; var html = buildOzonLabelHtml(it, qty, counter, svgId); var d = document.createElement('div'); d.className = 'label'; d.innerHTML = html; grid.appendChild(d); if (sku) { try { JsBarcode('#' + svgId, String(sku), { format: bcFmt, width: 2, height: bcHeight, displayValue: true, fontSize: 10, margin: 1 }); } catch(e) { var svgEl = d.querySelector('#' + svgId); if (svgEl) svgEl.parentElement.innerHTML = '<span style="font-size:8px;color:red">ШК: ' + escHtml(sku) + '</span>'; } } } }); if (!lblN) { showToast('Нет этикеток для печати', 'error'); return; } closeOzonModal(); showToast('Сгенерировано ' + lblN + ' этикеток Ozon', 'success'); setTimeout(function() { document.body.classList.add('print-label-mode'); window.print(); setTimeout(function() { document.body.classList.remove('print-label-mode'); }, 1000); }, 400); };
 
     // ==================== TAB 3: WB LABELS ====================
-    var wbData = []; var wbFilteredData = []; var wbCities = [];
+    var wbData = []; var wbFilteredData = [];
     var fileInputWb = $('fileInputWb'); var uploadZoneWb = $('uploadZoneWb');
     uploadZoneWb.addEventListener('dragover', function(e) { e.preventDefault(); uploadZoneWb.classList.add('dragover'); });
     uploadZoneWb.addEventListener('dragleave', function() { uploadZoneWb.classList.remove('dragover'); });
@@ -778,61 +713,17 @@
     fileInputWb.addEventListener('change', function(e) { if (e.target.files[0]) processFileWb(e.target.files[0]); });
     function processFileWb(file) { if (!file.name.match(/\.xlsx?$/i)) { showToast('Выберите файл .xlsx или .xls', 'error'); return; } $('fileNameWb').textContent = file.name; $('fileInfoWb').style.display = 'block'; uploadZoneWb.classList.add('has-file'); $('loadingOverlay').classList.add('visible'); var reader = new FileReader(); reader.onload = function(e) { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data, { type: 'array' }); var ws = wb.Sheets[wb.SheetNames[0]]; var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }); parseWbData(rows); $('loadingOverlay').classList.remove('visible'); showToast('ВБ: ' + wbData.length + ' позиций', 'success'); } catch (err) { $('loadingOverlay').classList.remove('visible'); showToast('Ошибка: ' + err.message, 'error'); } }; reader.readAsArrayBuffer(file); }
     function parseWbData(rows) {
-        var hi = -1;
-        for (var i = 0; i < rows.length; i++) {
-            if (!rows[i]) continue;
-            var rs = (rows[i] || []).join(' ').toLowerCase();
-            if (rs.indexOf('артикул вб') !== -1 || rs.indexOf('артикул wb') !== -1) { hi = i; break; }
-        }
+        var hi = -1; for (var i = 0; i < rows.length; i++) { if (!rows[i]) continue; var rs = (rows[i] || []).join(' ').toLowerCase(); if (rs.indexOf('артикул вб') !== -1 || rs.indexOf('артикул wb') !== -1) { hi = i; break; } }
         if (hi === -1) { showToast('Заголовок "Артикул ВБ" не найден', 'error'); return; }
-        var headers = rows[hi];
-        var colMap = {};
-        var wbCityCols = [];
-        var wbFieldMap = {
-            art_wb: ['артикул вб', 'артикул wb'],
-            name: ['наименование составляющего в наборе', 'наименование', 'название'],
-            sku_label: ['шк на этикетку вб', 'шк на этикетку', 'шк этикетки вб'],
-            art_label: ['артикул на этикетку вб', 'артикул на этикетку'],
-            quant: ['квант спайки', 'квант', 'кол-во в упаковку'],
-            qty_ship: ['итого к отгрузке спаек', 'итого к отгрузке', 'к отгрузке'],
-            expiry: ['годен до', 'годен'],
-            tz: ['тз'],
-            city: ['город', 'город назначения', 'назначение', 'склад', 'city']
-        };
+        var headers = rows[hi]; var colMap = {}; var wbCityCols = [];
+        var wbFieldMap = { art_wb: ['артикул вб', 'артикул wb'], name: ['наименование составляющего в наборе', 'наименование', 'название'], sku_label: ['шк на этикетку вб', 'шк на этикетку', 'шк этикетки вб'], art_label: ['артикул на этикетку вб', 'артикул на этикетку'], quant: ['квант спайки', 'квант', 'кол-во в упаковку'], qty_ship: ['итого к отгрузке спаек', 'итого к отгрузке', 'к отгрузке'], expiry: ['годен до', 'годен'], tz: ['тз'], city: ['город', 'город назначения', 'назначение', 'склад', 'city'] };
         var mappedCols = new Set();
-        Object.keys(wbFieldMap).forEach(function(key) {
-            var variants = wbFieldMap[key];
-            for (var vi = 0; vi < variants.length; vi++) {
-                var idx = headers.findIndex(function(h) { return h.trim().toLowerCase() === variants[vi].toLowerCase(); });
-                if (idx !== -1) { colMap[key] = idx; mappedCols.add(idx); break; }
-            }
-            if (colMap[key] === undefined) {
-                for (var vi2 = 0; vi2 < variants.length; vi2++) {
-                    var idx2 = headers.findIndex(function(h) { return h.trim().toLowerCase().indexOf(variants[vi2].toLowerCase()) !== -1; });
-                    if (idx2 !== -1) { colMap[key] = idx2; mappedCols.add(idx2); break; }
-                }
-            }
-        });
-        headers.forEach(function(h, i) {
-            if (mappedCols.has(i) || !h || h.trim() === '') return;
-            var hl = h.trim().toLowerCase();
-            if (hl.length > 1 && hl.length < 40 && isNaN(hl)) { wbCityCols.push({ name: h.trim(), index: i }); }
-        });
-        wbCities = wbCityCols.map(function(c) { return c.name; });
-        wbData = []; var cities = new Set();
-        for (var r = hi + 1; r < rows.length; r++) {
-            var row = rows[r] || [];
-            if (String(row[0] || '').toUpperCase().indexOf('ИТОГО') !== -1 && String(row[0]).length < 30) break;
-            var item = {};
-            Object.keys(colMap).forEach(function(k) { var v = (colMap[k] >= 0 && colMap[k] < row.length) ? row[colMap[k]] : ''; if (typeof v === 'string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim(); if (k === 'qty_ship' || k === 'quant') v = String(v).replace(/\s/g, '').replace(/,/g, ''); item[k] = v; });
-            wbCityCols.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) { item.city = cc.name; cities.add(cc.name); } });
-            if (item.art_wb || item.sku_label || item.name) wbData.push(item);
-        }
+        Object.keys(wbFieldMap).forEach(function(key) { var variants = wbFieldMap[key]; for (var vi = 0; vi < variants.length; vi++) { var idx = headers.findIndex(function(h) { return h.trim().toLowerCase() === variants[vi].toLowerCase(); }); if (idx !== -1) { colMap[key] = idx; mappedCols.add(idx); break; } } if (colMap[key] === undefined) { for (var vi2 = 0; vi2 < variants.length; vi2++) { var idx2 = headers.findIndex(function(h) { return h.trim().toLowerCase().indexOf(variants[vi2].toLowerCase()) !== -1; }); if (idx2 !== -1) { colMap[key] = idx2; mappedCols.add(idx2); break; } } } });
+        headers.forEach(function(h, i) { if (mappedCols.has(i) || !h || h.trim() === '') return; var hl = h.trim().toLowerCase(); if (hl.length > 1 && hl.length < 40 && isNaN(hl)) { wbCityCols.push({ name: h.trim(), index: i }); } });
+        wbData = []; var cities = new Set(); for (var r = hi + 1; r < rows.length; r++) { var row = rows[r] || []; if (String(row[0] || '').toUpperCase().indexOf('ИТОГО') !== -1 && String(row[0]).length < 30) break; var item = {}; Object.keys(colMap).forEach(function(k) { var v = (colMap[k] >= 0 && colMap[k] < row.length) ? row[colMap[k]] : ''; if (typeof v === 'string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi, '').trim(); if (k === 'qty_ship' || k === 'quant') v = String(v).replace(/\s/g, '').replace(/,/g, ''); item[k] = v; }); wbCityCols.forEach(function(cc) { var num = parseInt(row[cc.index]); if (!isNaN(num) && num > 0) { item.city = cc.name; cities.add(cc.name); } }); if (item.art_wb || item.sku_label || item.name) wbData.push(item); }
         if (!wbData.length) { showToast('Данные ВБ не найдены', 'error'); return; }
-        var citySel = $('cityFilterWb');
-        citySel.innerHTML = '<option value="">Все города</option>' + Array.from(cities).sort().map(function(c) { return '<option value="' + escHtml(c) + '">' + escHtml(c) + '</option>'; }).join('');
-        $('dataInfoTextWb').textContent = 'ВБ: ' + wbData.length + ' позиций, ' + cities.size + ' городов';
-        $('dataInfoWb').classList.add('visible'); wbFilteredData = wbData.slice(); renderWbTable(); $('controlsWb').classList.add('visible'); $('tableContainerWb').classList.add('visible');
+        var citySel = $('cityFilterWb'); citySel.innerHTML = '<option value="">Все города</option>' + Array.from(cities).sort().map(function(c) { return '<option value="' + escHtml(c) + '">' + escHtml(c) + '</option>'; }).join('');
+        $('dataInfoTextWb').textContent = 'ВБ: ' + wbData.length + ' позиций, ' + cities.size + ' городов'; $('dataInfoWb').classList.add('visible'); wbFilteredData = wbData.slice(); renderWbTable(); $('controlsWb').classList.add('visible'); $('tableContainerWb').classList.add('visible');
     }
     window.removeFileWb = function() { fileInputWb.value = ''; $('fileInfoWb').style.display = 'none'; uploadZoneWb.classList.remove('has-file'); $('dataInfoWb').classList.remove('visible'); $('controlsWb').classList.remove('visible'); $('tableContainerWb').classList.remove('visible'); wbData = []; wbFilteredData = []; showToast('Файл удалён', 'success'); };
     window.applyFilterWb = function() { var s = ($('searchWb').value || '').toLowerCase(); var c = $('cityFilterWb').value; var mq = parseFloat($('minQtyWb').value) || 0; wbFilteredData = wbData.filter(function(it) { var q = parseFloat(String(it.qty_ship || '').replace(/,/g, '.')) || 0; var matchSearch = !s || Object.values(it).some(function(v) { return String(v).toLowerCase().indexOf(s) !== -1; }); var matchCity = !c || String(it.city || '').toLowerCase() === c.toLowerCase(); return matchSearch && matchCity && q >= mq; }); renderWbTable(); };
