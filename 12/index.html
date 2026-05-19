@@ -2,393 +2,1034 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Этикетки ТЗ 58x40</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS Pro — Система управления складом</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f0f2f5; color: #1e293b; margin: 0; }
-        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 24px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h1 { margin: 0 0 18px; font-size: 22px; }
-        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.15s; color: white; }
-        .btn-primary { background: #2563eb; } .btn-primary:hover { background: #1d4ed8; }
-        .btn-success { background: #16a34a; } .btn-success:hover { background: #15803d; }
-        .btn-secondary { background: #64748b; } .btn-secondary:hover { background: #475569; }
-        .btn-danger { background: #dc2626; } .btn-danger:hover { background: #b91c1c; }
-        .upload-area { border: 2px dashed #cbd5e1; padding: 50px; text-align: center; margin-bottom: 20px; cursor: pointer; border-radius: 10px; transition: 0.2s; background: #f8fafc; }
-        .upload-area:hover, .upload-area.dragover { border-color: #2563eb; background: #eff6ff; }
-        .upload-area p { margin: 0 0 10px; color: #64748b; }
-        input, select { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; outline: none; background: white; }
-        input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
-        .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-        .controls input[type="text"] { min-width: 220px; }
-        .controls select { min-width: 150px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { border: 1px solid #e2e8f0; padding: 7px 8px; text-align: left; vertical-align: top; }
-        th { background: #f1f5f9; font-weight: 600; position: sticky; top: 0; z-index: 2; }
-        td[contenteditable] { background: #fffbeb; } td[contenteditable]:focus { background: #fef3c7; }
-        .table-wrap { overflow-x: auto; max-height: 450px; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .badge { display: inline-block; background: #e0e7ff; color: #1e3a8a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .hidden { display: none !important; }
-        .filter-group { display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .filter-group label { font-size: 12px; font-weight: 500; color: #475569; white-space: nowrap; }
-
-        /* MODAL */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 900; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal { background: white; width: 96%; max-width: 1200px; max-height: 92vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
-        .modal-header h2 { margin: 0; font-size: 16px; }
-        .modal-body { flex: 1; overflow: auto; padding: 12px; }
-        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; flex-wrap: wrap; }
-        
-        .modal-col-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; margin-bottom: 8px; }
-        .modal-col-filter { padding: 5px 6px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 4px; width: 100%; background: #f8fafc; }
-        .modal-col-filter::placeholder { color: #94a3b8; }
-        .modal-table { border-collapse: collapse; width: 100%; }
-        .modal-table th, .modal-table td { font-size: 11px; padding: 5px 6px; white-space: nowrap; }
-        .modal-table thead th { background: #e2e8f0; position: sticky; top: 0; z-index: 3; }
-        .modal-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
-        .modal-table tbody tr:hover { background: #f0f7ff; }
-        .modal-table tbody tr.row-hidden { display: none; }
-        .modal-table .col-check { width: 30px; text-align: center; }
-        
-        .modal-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
-        .modal-toolbar label { font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-
-        /* PRINT */
-        #print-area { position: absolute; left: -9999px; top: 0; width: 100%; }
-        .label-grid { display: flex; flex-direction: column; }
-        .label {
-            width: 58mm; height: 40mm; padding: 2mm; box-sizing: border-box;
-            display: flex; flex-direction: column;
-            font-family: Arial, Helvetica, sans-serif; overflow: hidden; background: white;
-            border: 0.5px solid #ccc;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #e0e7ff;
+            --success: #10b981; --success-light: #d1fae5;
+            --warning: #f59e0b; --warning-light: #fef3c7;
+            --danger: #ef4444; --danger-light: #fee2e2;
+            --info: #3b82f6; --info-light: #dbeafe;
+            --sidebar: #1e1b4b; --sidebar-hover: #312e81;
+            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --text-secondary: #64748b;
+            --border: #e2e8f0; --shadow: 0 1px 3px rgba(0,0,0,0.1); --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --radius: 12px; --radius-sm: 8px; --sidebar-width: 260px;
         }
-        .lbl-warning {
-            text-align: center; font-size: 7px; font-weight: 900; color: #000;
-            margin-bottom: 1mm; padding: 0.5mm 0; border-bottom: 1px solid #000;
-            letter-spacing: 0.4px; line-height: 1; background: #fff;
+        body.dark {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --text-secondary: #94a3b8;
+            --border: #334155; --shadow: 0 1px 3px rgba(0,0,0,0.3); --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+            --primary-light: #312e81; --success-light: #064e3b; --warning-light: #78350f;
+            --danger-light: #7f1d1d; --info-light: #1e3a5f;
         }
-        .lbl-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5mm; }
-        .lbl-title { font-size: 9px; font-weight: bold; }
-        .lbl-counter { font-size: 8px; color: #555; }
-        .lbl-barcode { text-align: center; margin: 1mm 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        .lbl-barcode svg { max-height: 11mm; max-width: 100%; display: block; }
-        .lbl-name { font-size: 8px; line-height: 1.15; max-height: 1.8em; overflow: hidden; margin-bottom: 0.5mm; color: #222; }
-        .lbl-meta { display: flex; justify-content: space-between; font-size: 7.5px; color: #444; margin-top: auto; }
-        .lbl-tz { font-size: 7px; color: #666; line-height: 1.1; max-height: 1em; overflow: hidden; margin-top: 0.3mm; }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; height: 100vh; }
+        
+        /* AUTH SCREEN */
+        .auth-screen { display: flex; height: 100vh; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); }
+        .auth-left { flex: 1; display: flex; align-items: center; justify-content: center; color: white; }
+        .auth-brand { text-align: center; }
+        .auth-brand h1 { font-size: 48px; margin-bottom: 15px; }
+        .auth-brand p { font-size: 18px; opacity: 0.8; }
+        .auth-right { width: 450px; background: var(--card); display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 20px 0 0 20px; }
+        .auth-form { width: 100%; max-width: 350px; }
+        .auth-form h2 { font-size: 24px; margin-bottom: 8px; }
+        .auth-form p { color: var(--text-secondary); margin-bottom: 25px; font-size: 14px; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-secondary); font-size: 13px; }
+        .form-control { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; transition: 0.2s; background: var(--bg); color: var(--text); }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .btn { padding: 10px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; } .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; } .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: white; } .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); } .btn-outline:hover { background: var(--bg); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .auth-link { text-align: center; margin-top: 15px; font-size: 13px; color: var(--text-secondary); }
+        .auth-link a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 500; }
+        .auth-link a:hover { text-decoration: underline; }
+        
+        /* MAIN APP */
+        .app-layout { display: none; height: 100vh; }
+        .app-layout.active { display: flex; }
+        
+        /* Sidebar */
+        .sidebar { width: var(--sidebar-width); background: var(--sidebar); color: white; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h2 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .sidebar-header span { font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; flex: 1; }
+        .menu-group { padding: 5px 15px; font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
+        .menu-item { display: flex; align-items: center; gap: 12px; padding: 11px 20px; cursor: pointer; transition: 0.2s; color: rgba(255,255,255,0.7); border-left: 3px solid transparent; font-size: 13px; }
+        .menu-item:hover { background: var(--sidebar-hover); color: white; }
+        .menu-item.active { background: var(--sidebar-hover); color: white; border-left-color: var(--primary); }
+        .menu-item .icon { width: 20px; text-align: center; font-size: 15px; }
+        .menu-item .badge { margin-left: auto; background: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 11px; color: white; }
+        .sidebar-footer { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .sidebar-footer .user-info { flex: 1; }
+        .sidebar-footer .user-name { font-size: 13px; font-weight: 500; }
+        .sidebar-footer .user-role { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .sidebar-footer .logout-btn { background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 18px; }
+        .sidebar-footer .logout-btn:hover { color: var(--danger); }
+        
+        /* Main */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .app-header { background: var(--card); padding: 12px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+        .app-header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header-btn { padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
+        .header-btn:hover { background: var(--bg); }
+        .voice-btn { background: var(--primary); color: white; border-color: var(--primary); }
+        .voice-btn:hover { background: var(--primary-dark); }
+        .voice-btn.listening { background: var(--danger); border-color: var(--danger); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
+        
+        .content-area { flex: 1; overflow-y: auto; padding: 25px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 25px; }
+        .stat-card { background: var(--card); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; border: 1px solid var(--border); }
+        .stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .stat-info h3 { font-size: 24px; font-weight: 700; margin-bottom: 3px; }
+        .stat-info p { color: var(--text-secondary); font-size: 12px; }
+        
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
+        .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .card-body { padding: 18px; }
+        
+        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 450px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: var(--bg); position: sticky; top: 0; z-index: 10; padding: 10px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
+        td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: rgba(99,102,241,0.04); }
+        
+        .status-badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; display: inline-block; }
+        .status-pending { background: var(--warning-light); color: #92400e; }
+        .status-done { background: var(--success-light); color: #065f46; }
+        .status-active { background: var(--info-light); color: #1e40af; }
+        .status-cancel { background: var(--danger-light); color: #991b1b; }
+        .status-new { background: var(--primary-light); color: #3730a3; }
+        
+        .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 15px; }
+        .tab-btn { padding: 8px 16px; border: none; background: none; cursor: pointer; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 13px; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--card); width: 90%; max-width: 700px; max-height: 90vh; border-radius: var(--radius); overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.25); display: flex; flex-direction: column; }
+        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: var(--bg); }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+        .cell-input { width: 70px; padding: 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: 13px; }
+        
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: var(--card); padding: 12px 18px; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: 0.3s; border-left: 4px solid var(--primary); color: var(--text); }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+        
+        .voice-indicator { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card); padding: 12px 24px; border-radius: 30px; box-shadow: var(--shadow-lg); z-index: 2000; align-items: center; gap: 10px; border: 2px solid var(--primary); }
+        .voice-indicator.active { display: flex; }
+        .voice-indicator .mic-icon { font-size: 20px; animation: pulse 1.5s infinite; }
+        
         @media print {
             body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .label { page-break-after: always; border: none; }
-            .label:last-child { page-break-after: auto; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .print-label-mode .label-canvas { page-break-after: always; border: none; margin: 0; }
             @page { size: 58mm 40mm; margin: 0; }
+            .print-ttn-mode .ttn-doc { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
+            @page { size: A4 landscape; margin: 10mm; }
         }
+        .label-canvas { width: 58mm; height: 40mm; background: white; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, sans-serif; overflow: hidden; }
+        .lbl-warning { text-align: center; font-weight: 900; font-size: 7px; color: #000; border-bottom: 0.5px solid #000; padding-bottom: 0.5mm; margin-bottom: 0.5mm; }
+        .lbl-title { font-weight: bold; font-size: 10px; color: #000; margin-bottom: 0.3mm; }
+        .lbl-barcode { text-align: center; margin: 0.5mm 0; }
+        .lbl-barcode svg { max-width: 54mm; max-height: 16mm; width: 100%; display: block; }
+        .lbl-name { font-size: 9px; line-height: 1.15; color: #000; font-weight: bold; word-break: break-word; margin-bottom: 0.5mm; flex-grow: 1; }
+        .lbl-meta { display: flex; justify-content: space-between; font-size: 7px; color: #333; border-top: 0.5px solid #ccc; padding-top: 0.3mm; margin-top: auto; }
+        
+        .ttn-doc { padding: 20px; font-size: 12px; background: white; }
+        .ttn-head { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
+        .ttn-table { width: 100%; border-collapse: collapse; }
+        .ttn-table th, .ttn-table td { border: 1px solid #000; padding: 4px; text-align: center; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<div class="container no-print">
-    <h1>🏷️ Генератор этикеток 58×40 мм</h1>
-    <div class="upload-area" id="dropZone">
-        <p>Нажмите сюда или перетащите файл Excel (.xlsx, .xls)</p>
-        <button class="btn btn-primary" id="uploadBtn" type="button">📂 Загрузить ТЗ</button>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
-    </div>
-
-    <div id="editor" class="hidden">
-        <div class="controls">
-            <div class="filter-group">
-                <label>🔍 Поиск:</label>
-                <input type="text" id="search" placeholder="Артикул, Название...">
-            </div>
-            <div class="filter-group">
-                <label>🏙️ Город:</label>
-                <select id="cityFilter"><option value="">Все города</option></select>
-            </div>
-            <div class="filter-group">
-                <label>📦 Мин. кол-во:</label>
-                <input type="number" id="minQty" value="0" style="width:70px">
-            </div>
-            <button class="btn btn-primary" onclick="applyFilter()">Применить</button>
-            <button class="btn btn-success" onclick="openPrintDialog()">🖨️ Настроить и Печать</button>
-        </div>
-        <div style="margin-bottom:8px"><span class="badge" id="statsBadge">—</span></div>
-        <div class="table-wrap">
-            <table id="mainTable"><thead></thead><tbody></tbody></table>
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+    <div class="auth-left">
+        <div class="auth-brand">
+            <h1>🏭 WMS Pro</h1>
+            <p>Система управления складом и фулфилментом</p>
+            <p style="margin-top:30px; font-size:14px; opacity:0.6;">Приемка • Хранение • Комплектация • Отгрузка • Этикетки • ТТН</p>
         </div>
     </div>
-</div>
-
-<!-- PRINT MODAL -->
-<div id="modal" class="modal-overlay">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>⚙️ Настройка печати этикеток</h2>
-            <button class="btn btn-secondary" onclick="closeModal()">✕ Закрыть</button>
+    <div class="auth-right">
+        <div class="auth-form" id="login-form">
+            <h2>👋 Добро пожаловать</h2>
+            <p>Войдите в систему для продолжения работы</p>
+            <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="login-user" placeholder="Введите логин"></div>
+            <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="login-pass" placeholder="Введите пароль"></div>
+            <button class="btn btn-primary btn-lg" onclick="doLogin()">Войти в систему</button>
+            <div class="auth-link">Нет аккаунта? <a onclick="showRegister()">Зарегистрироваться</a></div>
         </div>
-        <div class="modal-body" id="modalBody">
-            <div class="modal-toolbar">
-                <label><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)"> Выбрать всё</label>
-                <select id="bcFormat" style="padding:6px 8px;">
-                    <option value="CODE128">CODE128</option>
-                    <option value="EAN13">EAN13</option>
-                    <option value="UPC">UPC</option>
-                    <option value="CODE39">CODE39</option>
-                    <option value="ITF14">ITF14</option>
-                </select>
-                <span class="badge" id="selCount">Выбрано: 0</span>
-                <span class="badge" id="totalCount">Всего: 0</span>
-            </div>
-            <div class="modal-col-filters" id="colFilters"></div>
-            <table class="modal-table" id="modalTable">
-                <thead id="modalHead"></thead>
-                <tbody id="modalBodyInner"></tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-danger" onclick="deselectAll()">✖ Снять всё</button>
-            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-            <button class="btn btn-success" id="doPrintBtn" onclick="executePrint()">🖨️ Печать выбранных</button>
+        <div class="auth-form hidden" id="register-form">
+            <h2>📝 Регистрация</h2>
+            <p>Создайте аккаунт для работы с системой</p>
+            <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="reg-name" placeholder="Ваше имя"></div>
+            <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="reg-user" placeholder="Придумайте логин"></div>
+            <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="reg-pass" placeholder="Минимум 4 символа"></div>
+            <div class="form-group"><label>Должность</label><select class="form-control" id="reg-role"><option>Оператор склада</option><option>Менеджер</option><option>Администратор</option></select></div>
+            <button class="btn btn-primary btn-lg" onclick="doRegister()">Зарегистрироваться</button>
+            <div class="auth-link">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></div>
         </div>
     </div>
 </div>
 
-<div id="print-area"><div class="label-grid" id="labelGrid"></div></div>
+<!-- MAIN APP -->
+<div class="app-layout" id="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header"><h2>🏭 WMS Pro</h2><span id="app-version">v2.0 • Склад</span></div>
+        <nav class="sidebar-menu">
+            <div class="menu-group">Главное</div>
+            <div class="menu-item active" onclick="switchSection('dashboard')"><span class="icon">📊</span> Дашборд</div>
+            <div class="menu-group">Склад</div>
+            <div class="menu-item" onclick="switchSection('warehouses')"><span class="icon">🏢</span> Склады</div>
+            <div class="menu-item" onclick="switchSection('zones')"><span class="icon">📍</span> Зоны и ячейки</div>
+            <div class="menu-item" onclick="switchSection('inventory')"><span class="icon">📦</span> Остатки</div>
+            <div class="menu-group">Товары</div>
+            <div class="menu-item" onclick="switchSection('products')"><span class="icon">🛍️</span> Каталог <span class="badge" id="badge-products">0</span></div>
+            <div class="menu-group">Операции</div>
+            <div class="menu-item" onclick="switchSection('receiving')"><span class="icon">📥</span> Приемка <span class="badge" id="badge-receiving">0</span></div>
+            <div class="menu-item" onclick="switchSection('shipping')"><span class="icon">📤</span> Отгрузка</div>
+            <div class="menu-item" onclick="switchSection('orders')"><span class="icon">📋</span> Заказы <span class="badge" id="badge-orders">0</span></div>
+            <div class="menu-item" onclick="switchSection('movement')"><span class="icon">🔄</span> Перемещения</div>
+            <div class="menu-group">Управление</div>
+            <div class="menu-item" onclick="switchSection('employees')"><span class="icon">👥</span> Сотрудники</div>
+            <div class="menu-item" onclick="switchSection('labels')"><span class="icon">🏷️</span> Этикетки + ТТН</div>
+            <div class="menu-item" onclick="switchSection('reports')"><span class="icon">📈</span> Отчеты</div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-name" id="sidebar-user">Пользователь</div><div class="user-role" id="sidebar-role">Оператор</div></div>
+            <button class="logout-btn" onclick="doLogout()" title="Выйти">🚪</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="app-header">
+            <h1 id="page-title">📊 Дашборд</h1>
+            <div class="header-actions">
+                <button class="header-btn" onclick="toggleVoice()" id="voice-btn" title="Голосовой помощник">🎙️ <span style="font-size:12px;">Ассистент</span></button>
+                <button class="header-btn" onclick="toggleTheme()">🌓</button>
+                <button class="header-btn" onclick="importTZ()">📥 Импорт ТЗ</button>
+                <input type="file" id="import-tz" hidden accept=".xlsx,.xls" onchange="handleTZImport(this)">
+            </div>
+        </header>
+
+        <div class="content-area">
+            <!-- DASHBOARD -->
+            <section id="section-dashboard" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon" style="background:var(--primary-light);">📦</div><div class="stat-info"><h3 id="d-products">0</h3><p>Товаров</p></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:var(--success-light);">📋</div><div class="stat-info"><h3 id="d-orders">0</h3><p>Заказов</p></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:var(--warning-light);">📥</div><div class="stat-info"><h3 id="d-receiving">0</h3><p>На приемке</p></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:var(--info-light);">🏷️</div><div class="stat-info"><h3 id="d-city">0</h3><p>Городов</p></div></div>
+                </div>
+                <div class="card"><div class="card-header"><h3>📈 Динамика операций</h3></div><div class="card-body"><div style="height:280px;"><canvas id="chart-main"></canvas></div></div></div>
+                <div class="card"><div class="card-header"><h3>📊 Распределение по городам</h3></div><div class="card-body"><div style="height:280px;"><canvas id="chart-cities"></canvas></div></div></div>
+            </section>
+
+            <!-- WAREHOUSES -->
+            <section id="section-warehouses" class="content-section">
+                <div class="card"><div class="card-header"><h3>🏢 Склады</h3><button class="btn btn-primary btn-sm" onclick="showToast('Склады созданы по умолчанию','success')">ℹ️ Инфо</button></div>
+                    <div class="card-body"><div id="warehouses-list"></div></div></div>
+            </section>
+
+            <!-- ZONES -->
+            <section id="section-zones" class="content-section">
+                <div class="card"><div class="card-header"><h3>📍 Зоны хранения</h3></div>
+                    <div class="card-body"><div id="zones-list"></div></div></div>
+            </section>
+
+            <!-- INVENTORY -->
+            <section id="section-inventory" class="content-section">
+                <div class="card"><div class="card-header"><h3>📦 Остатки на складах</h3><button class="btn btn-outline btn-sm" onclick="exportInventory()">📤 Экспорт</button></div>
+                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск товара..." oninput="renderInventory(this.value)"></div>
+                        <div class="table-wrap"><table><thead><tr><th>Товар</th><th>Артикул</th><th>ШК</th><th>Категория</th><th>В упак.</th><th>Итого штук</th><th>Годен до</th></tr></thead><tbody id="inventory-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- PRODUCTS -->
+            <section id="section-products" class="content-section">
+                <div class="card"><div class="card-header"><h3>🛍️ Каталог товаров</h3></div>
+                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск по названию, артикулу, ШК..." oninput="renderProducts(this.value)"></div>
+                        <div class="table-wrap"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК этикетки</th><th>Упак.</th><th>Спаек</th><th>Годен</th></tr></thead><tbody id="products-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- RECEIVING -->
+            <section id="section-receiving" class="content-section">
+                <div class="card"><div class="card-header"><h3>📥 Приемка</h3><button class="btn btn-primary btn-sm" onclick="openModal('receiving-modal')">＋ Новая приемка</button></div>
+                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Накладная</th><th>Товаров</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="receiving-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- SHIPPING -->
+            <section id="section-shipping" class="content-section">
+                <div class="card"><div class="card-header"><h3>📤 Отгрузка</h3><button class="btn btn-primary btn-sm" onclick="openModal('shipping-modal')">＋ Новая отгрузка</button></div>
+                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Направление</th><th>Маркетплейс</th><th>Товаров</th><th>Статус</th></tr></thead><tbody id="shipping-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- ORDERS -->
+            <section id="section-orders" class="content-section">
+                <div class="card"><div class="card-header"><h3>📋 Заказы</h3><button class="btn btn-primary btn-sm" onclick="openModal('order-modal')">＋ Новый заказ</button></div>
+                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск заказа..." oninput="renderOrders(this.value)"></div>
+                        <div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Клиент/МП</th><th>Товаров</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="orders-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- MOVEMENT -->
+            <section id="section-movement" class="content-section">
+                <div class="card"><div class="card-header"><h3>🔄 Перемещения</h3></div>
+                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Товар</th><th>Откуда</th><th>Куда</th><th>Кол-во</th></tr></thead><tbody id="movement-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- EMPLOYEES -->
+            <section id="section-employees" class="content-section">
+                <div class="card"><div class="card-header"><h3>👥 Сотрудники</h3><button class="btn btn-primary btn-sm" onclick="openModal('employee-modal')">＋ Добавить</button></div>
+                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>Имя</th><th>Должность</th><th>Телефон</th><th>Зона</th><th>На смене</th><th>Задач</th></tr></thead><tbody id="employees-tbody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- LABELS + TTN -->
+            <section id="section-labels" class="content-section">
+                <div class="card"><div class="card-header"><h3>🏷️ Этикетки Ozon/ВБ</h3></div>
+                    <div class="card-body">
+                        <div class="tabs"><button class="tab-btn active" onclick="switchLabelTab('cities')">🏙️ По городам</button><button class="tab-btn" onclick="switchLabelTab('print')">🖨️ Печать этикеток</button><button class="tab-btn" onclick="switchLabelTab('ttn')">📄 ТТН</button></div>
+                        
+                        <div id="label-tab-cities">
+                            <div class="filter-group" style="margin-bottom:10px;"><label>🏙️ Город:</label><select class="form-control" id="label-city-select" onchange="renderLabelPreview()" style="max-width:300px;"><option value="">Все города</option></select></div>
+                            <div id="label-cities-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px;"></div>
+                            <div class="table-wrap"><table><thead><tr><th>✓</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th></tr></thead><tbody id="labels-table"></tbody></table></div>
+                            <div style="margin-top:15px;display:flex;gap:10px;">
+                                <button class="btn btn-primary" onclick="printAllLabels()">🖨️ Печать выбранных этикеток</button>
+                            </div>
+                        </div>
+                        
+                        <div id="label-tab-print" style="display:none;">
+                            <div class="form-row" style="margin-bottom:15px;">
+                                <div class="form-group"><label>Штрихкод высота</label><select class="form-control" id="bc-height"><option value="10">10mm</option><option value="14">14mm</option><option value="18" selected>18mm</option><option value="24">24mm</option></select></div>
+                                <div class="form-group"><label>Формат ШК</label><select class="form-control" id="bc-format"><option value="CODE128">CODE128</option><option value="EAN13">EAN13</option></select></div>
+                                <div class="form-group"><label>Элементы</label><div style="display:flex;gap:8px;flex-wrap:wrap;" id="label-elements"></div></div>
+                            </div>
+                            <div style="display:flex;gap:20px;align-items:flex-start;">
+                                <div id="label-preview-box" style="background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                                <div style="flex:1;"><h4>Конструктор</h4><p style="color:var(--text-secondary);font-size:12px;">Выберите город выше и нажмите "Печать"</p></div>
+                            </div>
+                        </div>
+                        
+                        <div id="label-tab-ttn" style="display:none;">
+                            <div style="display:flex;gap:10px;margin-bottom:15px;">
+                                <button class="btn btn-primary" onclick="printTTN('filter')">🖨️ ТТН по фильтру</button>
+                                <button class="btn btn-success" onclick="printTTN('all')">🖨️ ТТН всего (Альбомная)</button>
+                            </div>
+                            <div class="table-wrap"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody id="ttn-table"></tbody></table></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REPORTS -->
+            <section id="section-reports" class="content-section">
+                <div class="card"><div class="card-header"><h3>📈 Отчеты</h3></div>
+                    <div class="card-body"><div class="stats-grid">
+                        <div class="stat-card" style="cursor:pointer" onclick="showToast('Отчет по продажам сгенерирован')"><div class="stat-icon" style="background:var(--primary-light);">💰</div><div class="stat-info"><h3>Продажи</h3><p>За период</p></div></div>
+                        <div class="stat-card" style="cursor:pointer" onclick="showToast('Сверка остатков выполнена')"><div class="stat-icon" style="background:var(--success-light);">📦</div><div class="stat-info"><h3>Остатки</h3><p>Сверка</p></div></div>
+                        <div class="stat-card" style="cursor:pointer" onclick="showToast('KPI сотрудников обновлен')"><div class="stat-icon" style="background:var(--warning-light);">👥</div><div class="stat-info"><h3>KPI</h3><p>Эффективность</p></div></div>
+                    </div></div></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- MODALS -->
+<div id="receiving-modal" class="modal-overlay"><div class="modal">
+    <div class="modal-header"><h3>📥 Приемка товара</h3><button class="btn btn-outline btn-sm" onclick="closeModal('receiving-modal')">✕</button></div>
+    <div class="modal-body">
+        <div class="form-row"><div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="rec-supplier"></div><div class="form-group"><label>Накладная №</label><input type="text" class="form-control" id="rec-invoice"></div></div>
+        <div class="form-group"><label>Товары (количество)</label><div id="rec-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('receiving-modal')">Отмена</button><button class="btn btn-success" onclick="saveReceiving()">✅ Принять</button></div>
+</div></div>
+
+<div id="shipping-modal" class="modal-overlay"><div class="modal">
+    <div class="modal-header"><h3>📤 Отгрузка</h3><button class="btn btn-outline btn-sm" onclick="closeModal('shipping-modal')">✕</button></div>
+    <div class="modal-body">
+        <div class="form-row"><div class="form-group"><label>Направление</label><input type="text" class="form-control" id="ship-dest"></div><div class="form-group"><label>МП</label><select class="form-control" id="ship-mp"><option>Ozon</option><option>Wildberries</option><option>Другое</option></select></div></div>
+        <div class="form-group"><label>Товары</label><div id="ship-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('shipping-modal')">Отмена</button><button class="btn btn-warning" onclick="saveShipping()">📤 Отгрузить</button></div>
+</div></div>
+
+<div id="order-modal" class="modal-overlay"><div class="modal">
+    <div class="modal-header"><h3>📋 Новый заказ</h3><button class="btn btn-outline btn-sm" onclick="closeModal('order-modal')">✕</button></div>
+    <div class="modal-body">
+        <div class="form-row"><div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="order-client"></div><div class="form-group"><label>Источник</label><select class="form-control" id="order-source"><option>Ozon</option><option>Wildberries</option><option>Сайт</option></select></div></div>
+        <div class="form-group"><label>Товары</label><div id="order-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('order-modal')">Отмена</button><button class="btn btn-primary" onclick="saveOrder()">💾 Создать</button></div>
+</div></div>
+
+<div id="employee-modal" class="modal-overlay"><div class="modal">
+    <div class="modal-header"><h3>👤 Сотрудник</h3><button class="btn btn-outline btn-sm" onclick="closeModal('employee-modal')">✕</button></div>
+    <div class="modal-body">
+        <div class="form-row"><div class="form-group"><label>ФИО</label><input type="text" class="form-control" id="emp-name"></div><div class="form-group"><label>Должность</label><select class="form-control" id="emp-role"><option>Кладовщик</option><option>Комплектовщик</option><option>Менеджер</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label>Телефон</label><input type="text" class="form-control" id="emp-phone"></div><div class="form-group"><label>Зона</label><select class="form-control" id="emp-zone"><option>Приемка</option><option>Хранение</option><option>Отгрузка</option></select></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('employee-modal')">Отмена</button><button class="btn btn-primary" onclick="saveEmployee()">💾 Сохранить</button></div>
+</div></div>
+
+<!-- PRINT AREA -->
+<div id="print-output" class="print-area"></div>
+
+<!-- VOICE INDICATOR -->
+<div class="voice-indicator" id="voice-indicator"><span class="mic-icon">🎙️</span><span id="voice-text">Слушаю...</span></div>
+<div class="toast-container" id="toast-container"></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof XLSX === 'undefined') {
-        alert('Ошибка: Не удалось загрузить библиотеку обработки Excel. Проверьте подключение к интернету.');
+// ==================== DATABASE ====================
+const DB = {
+    get(k){ try{ return JSON.parse(localStorage.getItem('wms_'+k))||[]; }catch(e){ return []; } },
+    set(k,v){ localStorage.setItem('wms_'+k, JSON.stringify(v)); },
+    getObj(k){ try{ return JSON.parse(localStorage.getItem('wms_'+k))||{}; }catch(e){ return {}; } },
+    setObj(k,v){ localStorage.setItem('wms_'+k, JSON.stringify(v)); }
+};
+
+let currentUser = null;
+let charts = {};
+let labelElements = ['warning','art','barcode','name','expiry'];
+let selectedLabelItems = new Set();
+let labelCityFilter = '';
+let recognition = null;
+
+// ==================== AUTH ====================
+function showRegister(){ document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
+function showLogin(){ document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
+function doRegister(){
+    const u = { name: $('reg-name').value, user: $('reg-user').value, pass: $('reg-pass').value, role: $('reg-role').value };
+    if(!u.user || !u.pass || u.pass.length < 4){ showToast('Заполните все поля (пароль мин. 4 символа)','error'); return; }
+    let users = DB.get('users');
+    if(users.find(x=>x.user===u.user)){ showToast('Логин занят','error'); return; }
+    users.push(u);
+    DB.set('users', users);
+    showToast('Регистрация успешна! Войдите.');
+    showLogin();
+}
+
+function doLogin(){
+    const user = $('login-user').value, pass = $('login-pass').value;
+    let users = DB.get('users');
+    let found = users.find(x=>x.user===user && x.pass===pass);
+    if(!found){ showToast('Неверный логин или пароль','error'); return; }
+    currentUser = found;
+    DB.setObj('session', found);
+    enterApp();
+}
+
+function doLogout(){
+    localStorage.removeItem('wms_session');
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-layout').classList.remove('active');
+}
+
+function checkSession(){
+    let s = DB.getObj('session');
+    if(s.user){ currentUser = s; enterApp(); }
+}
+
+function enterApp(){
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-layout').classList.add('active');
+    $('sidebar-user').textContent = currentUser.name;
+    $('sidebar-role').textContent = currentUser.role;
+    initApp();
+}
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function openModal(id){ $(id).classList.add('open'); populateModalItems(); }
+function closeModal(id){ $(id).classList.remove('open'); }
+function toggleTheme(){ document.body.classList.toggle('dark'); }
+
+// ==================== TOAST ====================
+function showToast(msg, type='success'){
+    const c = $('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = '<span>'+(type==='success'?'✅':type==='error'?'❌':'⚠️')+'</span> '+msg;
+    c.appendChild(t);
+    setTimeout(()=>t.classList.add('show'),10);
+    setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ==================== INIT APP ====================
+function initApp(){
+    if(!localStorage.getItem('wms_init')){
+        // Init with TZ data from Knowledge Base
+        initTZData();
+        localStorage.setItem('wms_init','true');
+    }
+    renderDashboard();
+    updateBadges();
+    populateCitySelects();
+}
+
+function initTZData(){
+    // Products from KB
+    const tzProducts = [
+        {name:'Губка гемостатическая коллагеновая 10х10х8 мм 1уп',sku:'8891',barcode:'4605370003130',labelBC:'4605370003130',art:'8891',pack:1,spikes:626,expiry:'17.03.29',cities:{'хабаровск':2,'Омск':50,'Пермь':50,'Екатеринбург':50,'Саратов':10,'Волгоград':3,'Ростов':40,'Самара':50,'Уфа':25,'Новосиб':20,'Ярославль':9,'Краснодар-Адыгейск':124,'СП':55,'Казань':89,'Жуковский-кросс док':49}},
+        {name:'Губка гемостатическая коллагеновая 10х10 мм 3 уп',sku:'8891',barcode:'4605370003130',labelBC:'4605370038644',art:'18635',pack:3,spikes:20,expiry:'17.03.29',cities:{'Омск':0,'Пермь':5,'Екатеринбург':5,'Саратов':0,'Ростов':2,'Уфа':4,'Ярославль':2,'Новосиб':2,'Жуковский-кросс док':0}},
+        {name:'Губка гемостатическая коллагеновая 50х50х8 мм 1шт',sku:'8892',barcode:'4605370003536',labelBC:'4605370003536',art:'8892',pack:1,spikes:200,expiry:'12.02.29',cities:{'Омск':10,'Пермь':20,'Екатеринбург':40,'Ростов':10,'Самара':10,'Уфа':2,'Новосиб':10,'Ярославль':10,'Краснодар-Адыгейск':5,'СП':10,'СП':49,'Жуковский-кросс док':34}},
+        {name:'Теймурова крем пудра от запаха и пота 50г',sku:'18801',barcode:'4605370037876',labelBC:'2048605010770',art:'25183',pack:1,spikes:1512,expiry:'13.04.29',cities:{'Омск':50,'Пермь':100,'Екатеринбург':43,'Саратов':48,'Волгоград':150,'Ростов':100,'Самара':52,'Уфа':99,'Новосиб':50,'Ярославль':71,'Краснодар-Адыгейск':201,'СП':359,'Казань':99,'Жуковский-кросс док':90}},
+        {name:'Пантенол пенка спрей для лица и тела 150 мл',sku:'21253',barcode:'4605370039689',labelBC:'4605370039689',art:'22196',pack:1,spikes:308,expiry:'01.04.28',cities:{'Омск':30,'Пермь':30,'Саратов':5,'Ростов':10,'Самара':30,'Уфа':10,'Ярославль':10,'Новосиб':1,'Краснодар-Адыгейск':14,'СП':6,'Жуковский-кросс док':162}},
+        {name:'Дезодорант для ног спрей Теймурова 150мл',sku:'96593',barcode:'4605370009125',labelBC:'4605370009125',art:'96593',pack:1,spikes:2010,expiry:'29.01.29',cities:{'Омск':30,'Пермь':100,'Саратов':8,'Волгоград':10,'Ростов':100,'Самара':33,'Уфа':13,'Ярославль':35,'Краснодар-Адыгейск':81,'СП':24,'Казань':47,'Жуковский-кросс док':1539}}
+    ];
+    DB.set('products', tzProducts);
+    DB.set('warehouses', [{id:1,name:'Основной склад (Щербинка)',address:'Московская обл, Щербинка',area:1200},{id:2,name:'Склад Юг',address:'Краснодар',area:800}]);
+    DB.set('orders', [{id:1001,date:'2025-01-20',client:'Ozon',source:'Ozon',items:3,total:1297,status:'processing'},{id:1002,date:'2025-01-21',client:'Wildberries',source:'Wildberries',items:5,total:2145,status:'new'}]);
+    DB.set('receiving', [{id:1,date:'2025-01-20',supplier:'ООО МедТорг',invoice:'МТ-001',items:3,status:'done'},{id:2,date:'2025-01-22',supplier:'ИП Косметика',invoice:'КМ-015',items:2,status:'pending'}]);
+    DB.set('shipping', [{id:1,date:'2025-01-21',dest:'Ozon-Хабаровск',mp:'Ozon',items:15,status:'done'}]);
+    DB.set('employees', [{name:'Петров А.С.',role:'Кладовщик',phone:'+79991112233',zone:'Приемка',onShift:true,tasks:24},{name:'Сидоров В.М.',role:'Комплектовщик',phone:'+79992223344',zone:'Хранение',onShift:true,tasks:18}]);
+    DB.set('movement', [{id:1,date:'2025-01-20',product:'Губка гемостатическая',from:'Приемка',to:'Хранение B-02',qty:100}]);
+}
+
+// ==================== IMPORT TZ ====================
+function importTZ(){ $('import-tz').click(); }
+function handleTZImport(input){
+    const file = input.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        try {
+            const wb = XLSX.read(e.target.result, {type:'array'});
+            const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+            let hi = 0;
+            for(let i=0;i<Math.min(raw.length,10);i++){ if((raw[i]||[]).join(' ').toLowerCase().includes('наименование')){hi=i;break;} }
+            const headers = raw[hi];
+            const products = [];
+            const cityCols = [];
+            const colMap = {};
+            
+            headers.forEach(function(h,i){
+                if(!h) return;
+                const hl = String(h).trim().toLowerCase();
+                if(hl.includes('наименование')) colMap.name = i;
+                else if(hl.includes('шк на этикетку')) colMap.labelBC = i;
+                else if(hl.includes('шк производителя') && !colMap.labelBC) colMap.labelBC = i;
+                else if(hl.includes('артикул продавца')) colMap.art = i;
+                else if(hl.includes('исходный артикул')) colMap.sku = i;
+                else if(hl.includes('кол-во в упаковку')) colMap.pack = i;
+                else if(hl.includes('итого к отгрузке')) colMap.spikes = i;
+                else if(hl.includes('годен до')) colMap.expiry = i;
+            });
+            
+            const cityKW = ['хабаровск','омск','пермь','екатеринбург','екатеринбург2','саратов','волгоград','тюмень','ростов','самара','уфа','новосиб','ярославль','краснодар','адыгейск','сп','казань','жуковский','кросс'];
+            headers.forEach(function(h,i){
+                if(colMap.name===i||colMap.labelBC===i||colMap.art===i||colMap.sku===i||colMap.pack===i||colMap.spikes===i||colMap.expiry===i) return;
+                if(!h) return;
+                const hl = String(h).trim().toLowerCase();
+                if(cityKW.some(kw=>hl.includes(kw)) || (hl.length>1 && hl.length<30 && isNaN(hl[0]))) cityCols.push({name:String(h).trim(), idx:i});
+            });
+            
+            for(let r=hi+1;r<raw.length;r++){
+                const row = raw[r]; if(!row || !row[colMap.name]) continue;
+                const name = String(row[colMap.name]||'').trim();
+                if(name.length<3 || name==='---') continue;
+                const item = {name, sku:String(row[colMap.sku]||'').trim(), barcode:String(row[colMap.labelBC]||'').trim(), labelBC:String(row[colMap.labelBC]||'').trim(), art:String(row[colMap.art]||'').trim(), pack:parseInt(row[colMap.pack])||1, spikes:parseInt(row[colMap.spikes])||0, expiry:String(row[colMap.expiry]||'').trim(), cities:{}};
+                cityCols.forEach(function(cc){ const v=parseInt(row[cc.idx]); if(!isNaN(v)&&v>0) item.cities[cc.name]=v; });
+                products.push(item);
+            }
+            if(products.length){
+                DB.set('products', products);
+                showToast('Загружено '+products.length+' товаров','success');
+                renderDashboard(); updateBadges(); populateCitySelects();
+            } else showToast('Товары не найдены','error');
+        } catch(err){ showToast('Ошибка: '+err.message,'error'); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ==================== NAVIGATION ====================
+function switchSection(sec){
+    document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+    document.querySelectorAll('.content-section').forEach(s=>s.classList.remove('active'));
+    const titles = {dashboard:'📊 Дашборд',warehouses:'🏢 Склады',zones:'📍 Зоны',inventory:'📦 Остатки',products:'🛍️ Каталог',receiving:'📥 Приемка',shipping:'📤 Отгрузка',orders:'📋 Заказы',movement:'🔄 Перемещения',employees:'👥 Сотрудники',labels:'🏷️ Этикетки + ТТН',reports:'📈 Отчеты'};
+    $('page-title').innerHTML = titles[sec]||sec;
+    $('section-'+sec).classList.add('active');
+    // Find and activate menu item
+    document.querySelectorAll('.menu-item').forEach(m=>{ if(m.textContent.trim().includes(titles[sec]?.replace(/^[^\s]+\s/,'')||'')) m.classList.add('active'); });
+    setTimeout(()=>refreshSection(sec),50);
+}
+
+function refreshSection(sec){
+    switch(sec){
+        case 'dashboard': renderDashboard(); break;
+        case 'warehouses': renderWarehouses(); break;
+        case 'zones': renderZones(); break;
+        case 'inventory': renderInventory(); break;
+        case 'products': renderProducts(); break;
+        case 'receiving': renderReceiving(); break;
+        case 'shipping': renderShipping(); break;
+        case 'orders': renderOrders(); break;
+        case 'movement': renderMovement(); break;
+        case 'employees': renderEmployees(); break;
+        case 'labels': renderLabelsTab(); break;
+    }
+    updateBadges();
+}
+
+function updateBadges(){
+    const p = DB.get('products'); const o = DB.get('orders').filter(x=>x.status!=='done'); const r = DB.get('receiving').filter(x=>x.status==='pending');
+    const bp = $('badge-products'); const bo = $('badge-orders'); const br = $('badge-receiving');
+    if(bp) bp.textContent = p.length; if(bo) bo.textContent = o.length; if(br) br.textContent = r.length;
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard(){
+    const p = DB.get('products'); const o = DB.get('orders'); const r = DB.get('receiving');
+    const cities = new Set();
+    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
+    $('d-products').textContent = p.length;
+    $('d-orders').textContent = o.length;
+    $('d-receiving').textContent = r.filter(x=>x.status==='pending').length;
+    $('d-city').textContent = cities.size;
+    
+    if(charts.main) charts.main.destroy();
+    if(charts.cities) charts.cities.destroy();
+    
+    charts.main = new Chart($('chart-main').getContext('2d'),{type:'line',data:{labels:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],datasets:[{label:'Операции',data:[12,19,15,25,22,30,28],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false}});
+    
+    const cityArr = Array.from(cities).slice(0,8);
+    const cityData = cityArr.map(c=>p.reduce((s,pr)=>s+((pr.cities||{})[c]||0),0));
+    charts.cities = new Chart($('chart-cities').getContext('2d'),{type:'bar',data:{labels:cityArr,datasets:[{label:'Штук',data:cityData,backgroundColor:'#6366f1'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
+}
+
+// ==================== WAREHOUSES ====================
+function renderWarehouses(){
+    const wh = DB.get('warehouses');
+    $('warehouses-list').innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px;">'+wh.map(w=>'<div style="background:var(--bg);padding:15px;border-radius:8px;border:1px solid var(--border);"><h4 style="margin-bottom:5px;">🏢 '+esc(w.name)+'</h4><p style="font-size:12px;color:var(--text-secondary);">'+esc(w.address)+'</p><p style="font-size:12px;margin-top:5px;">Площадь: '+w.area+' м²</p></div>').join('')+'</div>';
+}
+
+// ==================== ZONES ====================
+function renderZones(){
+    $('zones-list').innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">'+['Приемка','Хранение','Отгрузка','Брак','Комплектация'].map(z=>'<div style="background:var(--bg);padding:15px;border-radius:8px;border:1px solid var(--border);text-align:center;"><div style="font-size:24px;margin-bottom:5px;">📍</div><b>'+z+'</b><p style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Зона склада</p></div>').join('')+'</div>';
+}
+
+// ==================== INVENTORY ====================
+function renderInventory(search){
+    const p = DB.get('products');
+    const tbody = $('inventory-tbody'); if(!tbody) return;
+    let items = p;
+    if(search) items = p.filter(x=>x.name.toLowerCase().includes(search.toLowerCase())||x.art.toLowerCase().includes(search.toLowerCase()));
+    tbody.innerHTML = items.map((it,i)=>{
+        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td style="text-align:center">'+it.pack+'</td><td><b>'+total+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+    }).join('');
+}
+
+// ==================== PRODUCTS ====================
+function renderProducts(search){
+    const p = DB.get('products');
+    const tbody = $('products-tbody'); if(!tbody) return;
+    let items = p;
+    if(search) items = p.filter(x=>x.name.toLowerCase().includes(search.toLowerCase())||x.sku.toLowerCase().includes(search.toLowerCase()));
+    tbody.innerHTML = items.map((it,i)=>{
+        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.sku)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td style="text-align:center">'+it.pack+'</td><td><b>'+it.spikes+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+    }).join('');
+}
+
+// ==================== RECEIVING ====================
+function renderReceiving(){
+    const r = DB.get('receiving');
+    $('receiving-tbody').innerHTML = r.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.supplier)+'</td><td>'+esc(x.invoice)+'</td><td>'+x.items+'</td><td><span class="status-badge '+ (x.status==='done'?'status-done':'status-pending')+'">'+(x.status==='done'?'✅ Принято':'⏳ В процессе')+'</span></td><td>'+ (x.status==='pending'?'<button class="btn btn-sm btn-success" onclick="completeReceiving('+x.id+')">✅</button>':'') +'</td></tr>').join('');
+}
+
+function saveReceiving(){
+    const r = DB.get('receiving');
+    const items = document.querySelectorAll('#rec-items input'); let total=0;
+    items.forEach(inp=>total+=parseInt(inp.value)||0);
+    if(total===0){showToast('Укажите количество','error');return;}
+    r.push({id:Date.now(),date:new Date().toISOString().slice(0,10),supplier:$('rec-supplier').value,invoice:$('rec-invoice').value,items:total,status:'pending'});
+    DB.set('receiving',r); closeModal('receiving-modal'); renderReceiving(); showToast('Приемка создана');
+}
+
+function completeReceiving(id){
+    const r = DB.get('receiving'); const rec = r.find(x=>x.id===id);
+    if(rec){rec.status='done';DB.set('receiving',r);renderReceiving();showToast('Принято #'+id);}
+}
+
+// ==================== SHIPPING ====================
+function renderShipping(){
+    const s = DB.get('shipping');
+    $('shipping-tbody').innerHTML = s.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.dest)+'</td><td><span class="status-badge status-active">'+esc(x.mp)+'</span></td><td>'+x.items+'</td><td><span class="status-badge '+ (x.status==='done'?'status-done':'status-pending')+'">'+(x.status==='done'?'✅ Отгружено':'⏳ Ожидает')+'</span></td></tr>').join('');
+}
+
+function saveShipping(){
+    const s = DB.get('shipping');
+    const items = document.querySelectorAll('#ship-items input'); let total=0;
+    items.forEach(inp=>total+=parseInt(inp.value)||0);
+    if(total===0){showToast('Укажите количество','error');return;}
+    s.push({id:Date.now(),date:new Date().toISOString().slice(0,10),dest:$('ship-dest').value,mp:$('ship-mp').value,items:total,status:'pending'});
+    DB.set('shipping',s); closeModal('shipping-modal'); renderShipping(); showToast('Отгрузка создана');
+}
+
+// ==================== ORDERS ====================
+function renderOrders(search){
+    let o = DB.get('orders');
+    if(search) o = o.filter(x=>x.client.toLowerCase().includes(search.toLowerCase())||String(x.id).includes(search));
+    $('orders-tbody').innerHTML = o.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.client)+'</td><td>'+x.items+'</td><td>'+x.total+' ₽</td><td><span class="status-badge status-'+(x.status==='new'?'new':x.status==='processing'?'pending':x.status==='done'?'done':'cancel')+'">'+(x.status==='new'?'🆕 Новый':x.status==='processing'?'⚙️ В работе':x.status==='done'?'✅ Выполнен':'❌ Отменен')+'</span></td><td>'+ (x.status==='new'?'<button class="btn btn-sm btn-primary" onclick="processOrder('+x.id+')">⚙️</button>':'') + (x.status==='processing'?'<button class="btn btn-sm btn-success" onclick="completeOrder('+x.id+')">✅</button>':'') +'</td></tr>').join('');
+}
+
+function saveOrder(){
+    const o = DB.get('orders');
+    const items = document.querySelectorAll('#order-items input'); let total=0,sum=0;
+    items.forEach(inp=>{const q=parseInt(inp.value)||0; if(q>0){total+=q;sum+=q*parseFloat(inp.dataset.price||0);}});
+    if(total===0){showToast('Добавьте товары','error');return;}
+    o.push({id:Date.now(),date:new Date().toISOString().slice(0,10),client:$('order-client').value,source:$('order-source').value,items:total,total:Math.round(sum),status:'new'});
+    DB.set('orders',o); closeModal('order-modal'); renderOrders(); showToast('Заказ создан');
+}
+
+function processOrder(id){const o=DB.get('orders');const x=o.find(x=>x.id===id);if(x){x.status='processing';DB.set('orders',o);renderOrders();}}
+function completeOrder(id){const o=DB.get('orders');const x=o.find(x=>x.id===id);if(x){x.status='done';DB.set('orders',o);renderOrders();showToast('Выполнен #'+id);}}
+
+// ==================== MOVEMENT ====================
+function renderMovement(){
+    const m = DB.get('movement');
+    $('movement-tbody').innerHTML = m.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.product)+'</td><td>'+esc(x.from)+'</td><td>'+esc(x.to)+'</td><td>'+x.qty+'</td></tr>').join('');
+}
+
+// ==================== EMPLOYEES ====================
+function renderEmployees(){
+    const e = DB.get('employees');
+    $('employees-tbody').innerHTML = e.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.zone)+'</td><td><span class="status-badge '+(x.onShift?'status-done':'status-cancel')+'">'+(x.onShift?'✅':'❌')+'</span></td><td><b>'+x.tasks+'</b></td></tr>').join('');
+}
+
+function saveEmployee(){
+    const e = DB.get('employees');
+    e.push({name:$('emp-name').value,role:$('emp-role').value,phone:$('emp-phone').value,zone:$('emp-zone').value,onShift:true,tasks:0});
+    DB.set('employees',e); closeModal('employee-modal'); renderEmployees(); showToast('Сотрудник добавлен');
+}
+
+// ==================== LABELS + TTN ====================
+function switchLabelTab(tab){
+    document.querySelectorAll('#section-labels .tab-btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    $('label-tab-cities').style.display = tab==='cities'?'block':'none';
+    $('label-tab-print').style.display = tab==='print'?'block':'none';
+    $('label-tab-ttn').style.display = tab==='ttn'?'block':'none';
+    if(tab==='cities') renderLabelsTab();
+    if(tab==='ttn') renderTTNTable();
+}
+
+function renderLabelsTab(){
+    const p = DB.get('products');
+    const cities = new Set();
+    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
+    
+    // City chips
+    $('label-cities-chips').innerHTML = '<button class="btn btn-sm btn-outline" onclick="labelCityFilter=\'\';renderLabelsTab()">Все</button> '+Array.from(cities).map(c=>'<button class="btn btn-sm '+(labelCityFilter===c?'btn-primary':'btn-outline')+'" onclick="labelCityFilter=\''+c+'\';renderLabelsTab()">'+c+'</button>').join('');
+    
+    // Select
+    const sel = $('label-city-select');
+    if(sel) sel.innerHTML = '<option value="">Все города</option>'+Array.from(cities).map(c=>'<option value="'+c+'" '+(labelCityFilter===c?'selected':'')+'>'+c+'</option>').join('');
+    
+    // Table
+    const tbody = $('labels-table');
+    if(!tbody) return;
+    let filtered = p;
+    if(labelCityFilter) filtered = p.filter(x=>(x.cities||{})[labelCityFilter]>0);
+    
+    tbody.innerHTML = filtered.map((it,i)=>{
+        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        if(qty===0) return '';
+        const checked = selectedLabelItems.has(i)?'checked':'';
+        return '<tr><td><input type="checkbox" '+checked+' onchange="toggleLabelItem('+i+',this.checked)"></td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td>'+it.pack+'</td><td><b>'+qty+'</b></td></tr>';
+    }).join('');
+    
+    // Label elements checkboxes
+    const allElems = [{id:'warning',name:'⚠️'},{id:'art',name:'📋'},{id:'barcode',name:'📊'},{id:'name',name:'📝'},{id:'expiry',name:'📅'}];
+    $('label-elements').innerHTML = allElems.map(e=>'<label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" '+(labelElements.includes(e.id)?'checked':'')+' onchange="toggleLabelElem(\''+e.id+'\')"> '+e.name+'</label>').join('');
+    
+    renderLabelPreview();
+}
+
+function toggleLabelItem(idx, checked){
+    if(checked) selectedLabelItems.add(idx); else selectedLabelItems.delete(idx);
+}
+
+function toggleLabelElem(id){
+    if(labelElements.includes(id)) labelElements = labelElements.filter(x=>x!==id); else labelElements.push(id);
+    renderLabelPreview();
+}
+
+function renderLabelPreview(){
+    const p = DB.get('products');
+    const it = p[0] || {name:'Тестовый товар',art:'12345',labelBC:'4600000000000',expiry:'01.01.30'};
+    const box = $('label-preview-box'); if(!box) return;
+    box.innerHTML = '';
+    
+    let html = '';
+    labelElements.forEach(el=>{
+        if(el==='warning') html += '<div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>';
+        else if(el==='art') html += '<div class="lbl-title">'+esc(it.art)+'</div>';
+        else if(el==='barcode') html += '<div class="lbl-barcode"><svg id="preview-bc"></svg></div>';
+        else if(el==='name') html += '<div class="lbl-name">'+esc(it.name)+'</div>';
+        else if(el==='expiry') html += '<div class="lbl-meta"><span>Годен: '+esc(it.expiry)+'</span></div>';
+    });
+    
+    const div = document.createElement('div');
+    div.className = 'label-canvas';
+    div.innerHTML = html;
+    box.appendChild(div);
+    
+    setTimeout(()=>{
+        const svg = $('preview-bc');
+        if(svg && it.labelBC){
+            try{ JsBarcode(svg, String(it.labelBC), {format:$('bc-format').value, height:parseInt($('bc-height').value), displayValue:true, margin:0, fontSize:10}); }
+            catch(e){ svg.parentElement.innerHTML='<span style="font-size:8px;">ШК: '+it.labelBC+'</span>'; }
+        }
+    },100);
+}
+
+function printAllLabels(){
+    const p = DB.get('products');
+    const out = $('print-output');
+    out.innerHTML = '';
+    document.body.classList.add('print-label-mode');
+    
+    let count = 0;
+    const items = Array.from(selectedLabelItems);
+    const products = items.length ? items.map(i=>p[i]) : p.filter(x=>{
+        if(!labelCityFilter) return true;
+        return (x.cities||{})[labelCityFilter]>0;
+    });
+    
+    products.forEach(it=>{
+        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        if(qty===0) return;
+        for(let k=0;k<qty;k++){
+            let html = '';
+            labelElements.forEach(el=>{
+                if(el==='warning') html += '<div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>';
+                else if(el==='art') html += '<div class="lbl-title">'+esc(it.art)+'</div>';
+                else if(el==='barcode') html += '<div class="lbl-barcode"><svg id="lb-'+count+'"></svg></div>';
+                else if(el==='name') html += '<div class="lbl-name">'+esc(it.name)+'</div>';
+                else if(el==='expiry') html += '<div class="lbl-meta"><span>Годен: '+esc(it.expiry)+'</span></div>';
+            });
+            const div = document.createElement('div');
+            div.className = 'label-canvas';
+            div.innerHTML = html;
+            out.appendChild(div);
+            count++;
+        }
+    });
+    
+    if(count===0){showToast('Нет товаров для печати','error');document.body.classList.remove('print-label-mode');return;}
+    
+    setTimeout(()=>{
+        for(let i=0;i<count;i++){
+            const svg = $('lb-'+i);
+            if(svg){
+                const it = products[Math.floor(i/products.length)] || products[0];
+                try{ JsBarcode(svg, String(it?.labelBC||'12345'), {format:$('bc-format').value, height:parseInt($('bc-height').value), displayValue:true, margin:0, fontSize:10}); }catch(e){}
+            }
+        }
+        window.print();
+        setTimeout(()=>{document.body.classList.remove('print-label-mode');out.innerHTML='';},1000);
+    },300);
+}
+
+function printTTN(mode){
+    const p = DB.get('products');
+    const out = $('print-output');
+    out.innerHTML = '';
+    document.body.classList.add('print-ttn-mode');
+    
+    let filtered = p;
+    if(labelCityFilter) filtered = p.filter(x=>(x.cities||{})[labelCityFilter]>0);
+    
+    const title = (mode==='all') ? 'ОБЩАЯ НАКЛАДНАЯ (ВСЕ ГОРОДА)' : 'НАКЛАДНАЯ НА СБОРКУ'+(labelCityFilter?' — '+labelCityFilter:'');
+    let html = '<div class="ttn-doc"><div class="ttn-head"><h1>'+title+'</h1><p>Дата: '+new Date().toLocaleDateString()+'</p></div><table class="ttn-table"><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody>';
+    
+    filtered.forEach((it,i)=>{
+        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        if(qty===0) return;
+        html += '<tr><td>'+(i+1)+'</td><td style="text-align:left">'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.labelBC)+'</td><td>'+it.pack+'</td><td><b>'+qty+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+    });
+    
+    html += '</tbody></table><br><p>Ответственный: ____________________</p></div>';
+    out.innerHTML = html;
+    setTimeout(()=>{window.print();setTimeout(()=>{document.body.classList.remove('print-ttn-mode');},1000);},200);
+}
+
+function renderTTNTable(){
+    const p = DB.get('products');
+    const tbody = $('ttn-table'); if(!tbody) return;
+    tbody.innerHTML = p.map((it,i)=>{
+        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
+        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td>'+it.pack+'</td><td><b>'+total+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+    }).join('');
+}
+
+// ==================== POPULATE ====================
+function populateCitySelects(){
+    const p = DB.get('products');
+    const cities = new Set();
+    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
+    const sel = $('label-city-select');
+    if(sel) sel.innerHTML = '<option value="">Все города</option>'+Array.from(cities).sort().map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+}
+
+function populateModalItems(){
+    const p = DB.get('products');
+    ['rec-items','ship-items','order-items'].forEach(id=>{
+        const el = $(id);
+        if(el && !el.dataset.populated){
+            el.innerHTML = p.map(it=>'<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;"><span style="flex:1;font-size:12px;">'+esc(it.name)+'</span><input type="number" value="0" min="0" style="width:60px;padding:4px;border:1px solid var(--border);border-radius:4px;" data-prod="'+it.sku+'"'+ (id==='order-items'?' data-price="'+(it.price||0)+'"':'') +'></div>').join('');
+            el.dataset.populated = '1';
+        }
+    });
+}
+
+function exportInventory(){
+    const p = DB.get('products');
+    const data = p.map(it=>({'Наименование':it.name,'Артикул':it.art,'ШК':it.labelBC,'Упаковка':it.pack,'Итого':Object.values(it.cities||{}).reduce((s,v)=>s+v,0),'Годен':it.expiry}));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Остатки');
+    XLSX.writeFile(wb,'inventory_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    showToast('Экспорт завершен');
+}
+
+// ==================== VOICE ASSISTANT ====================
+function toggleVoice(){
+    if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
+        showToast('Голосовое распознавание не поддерживается браузером','error'); return;
+    }
+    const btn = $('voice-btn');
+    if(btn.classList.contains('listening')){
+        stopVoice(); return;
+    }
+    startVoice();
+}
+
+function startVoice(){
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onstart = function(){
+        $('voice-btn').classList.add('listening');
+        $('voice-indicator').classList.add('active');
+        $('voice-text').textContent = 'Слушаю...';
+    };
+    
+    recognition.onresult = function(e){
+        const text = e.results[0][0].transcript.toLowerCase();
+        $('voice-text').textContent = 'Вы сказали: "'+text+'"';
+        processVoiceCommand(text);
+        setTimeout(stopVoice, 2000);
+    };
+    
+    recognition.onerror = function(){
+        $('voice-text').textContent = 'Не распознано, попробуйте снова';
+        setTimeout(stopVoice, 2000);
+    };
+    
+    recognition.start();
+}
+
+function stopVoice(){
+    if(recognition) recognition.stop();
+    $('voice-btn').classList.remove('listening');
+    $('voice-indicator').classList.remove('active');
+}
+
+function processVoiceCommand(text){
+    const commands = {
+        'дашборд':'dashboard','главная':'dashboard','домой':'dashboard',
+        'товары':'products','каталог':'products',
+        'остатки':'inventory','склад':'warehouses',
+        'приемка':'receiving','отгрузка':'shipping',
+        'заказы':'orders','сотрудники':'employees',
+        'этикетки':'labels','печать':'labels','ттн':'labels',
+        'отчеты':'reports','настройки':'settings'
+    };
+    
+    for(const[key, section] of Object.entries(commands)){
+        if(text.includes(key)){
+            switchSection(section);
+            speak('Открываю раздел '+section);
+            return;
+        }
+    }
+    
+    if(text.includes('найди') || text.includes('поиск') || text.includes('найти')){
+        const query = text.replace(/найди|поиск|найти/g,'').trim();
+        if(query){
+            switchSection('inventory');
+            const inp = document.querySelector('#section-inventory input');
+            if(inp){inp.value=query;renderInventory(query);}
+            speak('Ищу товар: '+query);
+            return;
+        }
+    }
+    
+    if(text.includes('импорт') || text.includes('загрузи')){
+        importTZ();
+        speak('Выберите файл для импорта');
         return;
     }
-
-    let allData = [], filteredData = [];
-    let cityColKey = 'city';
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
-    const uploadBtn = document.getElementById('uploadBtn');
-
-    uploadBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => { if(fileInput.files[0]) loadFile(fileInput.files[0]); });
-
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if(e.dataTransfer.files[0]){ loadFile(e.dataTransfer.files[0]); fileInput.files = e.dataTransfer.files; } });
-
-    function loadFile(file) {
-        console.log('Начало загрузки:', file.name);
-        const reader = new FileReader();
-        reader.onload = ev => {
-            try {
-                const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-                if(!wb.SheetNames.length) { alert('Файл не содержит листов.'); return; }
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                parseData(XLSX.utils.sheet_to_json(ws, {header:1, defval:''}));
-            } catch(err) { alert('Ошибка чтения файла: ' + err.message); console.error(err); }
-        };
-        reader.onerror = () => alert('Не удалось прочитать файл');
-        reader.readAsArrayBuffer(file);
+    
+    if(text.includes('печать этикет') || text.includes('напечатай этикет')){
+        switchSection('labels');
+        switchLabelTab('cities');
+        speak('Открываю печать этикеток');
+        return;
     }
+    
+    speak('Команда не распознана. Попробуйте: дашборд, товары, остатки, приемка, заказы, этикетки');
+}
 
-    function parseData(rows) {
-        let hi = -1;
-        for(let i=0;i<rows.length;i++) if((rows[i]||[]).join(' ').includes('Артикул ВБ')){hi=i;break;}
-        if(hi===-1){alert('Заголовок "Артикул ВБ" не найден. Проверьте структуру файла.');return;}
-
-        const headers = rows[hi];
-        const colMap = {
-            art_wb: 'Артикул ВБ', name: 'наименование составляющего в наборе', 
-            sku_label: 'ШК на этикетку ВБ', art_label: 'Артикул на этикетку ВБ', 
-            quant: 'квант спайки', qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек', 
-            expiry: 'ГОДЕН ДО', tz: 'ТЗ', city: null
-        };
-
-        // Ищем колонку города
-        const cityVariants = ['Город', 'город', 'Город назначения', 'Назначение', 'Склад', 'City'];
-        cityVariants.forEach(v => {
-            const idx = headers.findIndex(h => String(h).trim() === v);
-            if(idx !== -1) colMap.city = v;
-        });
-        if(!colMap.city) colMap.city = 'Город'; // fallback key
-
-        const idx = {};
-        Object.keys(colMap).forEach(k => { idx[k] = colMap[k] ? headers.findIndex(h => String(h).trim() === colMap[k]) : -1; });
-
-        allData = [];
-        const cities = new Set();
-        for(let i=hi+1;i<rows.length;i++){
-            const row = rows[i]||[];
-            if(String(row[0]||'').toUpperCase().includes('ИТОГО') && String(row[0]).length<30) break;
-            const item = {};
-            Object.keys(colMap).forEach(k => {
-                let v = (idx[k]>=0 && idx[k]<row.length) ? row[idx[k]] : '';
-                if(typeof v==='string') v = v.replace(/ERROR:#N\/A|ERROR:#REF!/gi,'').trim();
-                if(['qty_ship','quant'].includes(k)) v = String(v).replace(/\s/g,'').replace(/,/g,'');
-                item[k] = v;
-            });
-            if(item.city) cities.add(item.city);
-            if(item.art_wb || item.sku_label) allData.push(item);
-        }
-        
-        if(!allData.length){alert('Данные не найдены');return;}
-        
-        // Заполняем фильтр городов
-        const citySel = document.getElementById('cityFilter');
-        citySel.innerHTML = '<option value="">Все города</option>' + 
-            Array.from(cities).sort().map(c => `<option value="${c}">${c}</option>`).join('');
-
-        filteredData = [...allData];
-        renderMainTable(filteredData);
-        document.getElementById('editor').classList.remove('hidden');
-        dropZone.style.display = 'none';
+function speak(text){
+    if('speechSynthesis' in window){
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ru-RU'; u.rate = 1;
+        speechSynthesis.speak(u);
     }
+}
 
-    function renderMainTable(data){
-        const keys = ['art_wb','name','sku_label','quant','qty_ship','expiry'];
-        const labels = {art_wb:'Арт.ВБ', name:'Наименование', sku_label:'ШК этикетки', quant:'Квант', qty_ship:'К отгрузке', expiry:'Годен до'};
-        document.querySelector('#mainTable thead').innerHTML = '<tr>'+keys.map(k=>`<th>${labels[k]}</th>`).join('')+'</tr>';
-        let h='';
-        data.forEach((it,i)=>{
-            h += '<tr>'+keys.map(k=>`<td contenteditable onblur="updData(${i},'${k}',this.innerText)">${esc(it[k]||'')}</td>`).join('')+'</tr>';
-        });
-        document.querySelector('#mainTable tbody').innerHTML = h;
-        document.getElementById('statsBadge').textContent = `Загружено: ${allData.length} | Отображено: ${data.length}`;
-    }
-
-    window.updData = function(i,k,v){ if(allData[i]){allData[i][k]=v.trim(); applyFilter();} };
-
-    window.applyFilter = function(){
-        const s = document.getElementById('search').value.toLowerCase();
-        const c = document.getElementById('cityFilter').value;
-        const mq = parseFloat(document.getElementById('minQty').value)||0;
-        filteredData = allData.filter(it => {
-            const q = parseFloat(String(it.qty_ship).replace(/,/g,'.'))||0;
-            const matchSearch = !s || Object.values(it).some(v=>String(v).toLowerCase().includes(s));
-            const matchCity = !c || String(it.city||'').toLowerCase() === c.toLowerCase();
-            return matchSearch && matchCity && q>=mq;
-        });
-        renderMainTable(filteredData);
-    };
-
-    document.getElementById('search').addEventListener('input', applyFilter);
-    document.getElementById('cityFilter').addEventListener('change', applyFilter);
-    document.getElementById('minQty').addEventListener('input', applyFilter);
-
-    // ==================== MODAL ====================
-    const modalCols = ['art_wb','city','name','sku_label','art_label','quant','qty_ship','expiry','tz'];
-    const modalLabels = {art_wb:'Артикул', city:'Город', name:'Наименование', sku_label:'ШК', art_label:'Арт.этикетки', quant:'Квант', qty_ship:'Кол-во', expiry:'Годен до', tz:'ТЗ'};
-
-    window.openPrintDialog = function(){
-        const items = (filteredData.length?filteredData:allData).map((it,i)=>({...it,_idx:i}));
-        buildModal(items);
-        document.getElementById('modal').classList.add('open');
-    };
-
-    window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
-
-    function buildModal(items){
-        const cf = document.getElementById('colFilters');
-        cf.innerHTML = modalCols.map(k=>`<input class="modal-col-filter" data-col="${k}" placeholder="Фильтр: ${modalLabels[k]}" oninput="applyModalFilters()">`).join('');
-
-        document.getElementById('modalHead').innerHTML = '<tr><th class="col-check">✔</th>'+modalCols.map(k=>`<th>${modalLabels[k]}</th>`).join('')+'</tr>';
-
-        let h = '';
-        items.forEach((it,i)=>{
-            const q = Math.ceil(parseFloat(String(it.qty_ship).replace(/,/g,'.'))||0);
-            if(q<=0) return;
-            const cols = modalCols.map(k=>`<td>${esc(String(it[k]||''))}</td>`).join('');
-            h += `<tr data-idx="${i}" data-qty="${q}">
-                <td class="col-check"><input type="checkbox" class="mchk" data-idx="${i}" onchange="updSelCount()"></td>
-                ${cols}
-            </tr>`;
-        });
-        document.getElementById('modalBodyInner').innerHTML = h || '<tr><td colspan="10" style="text-align:center;color:#888;padding:20px;">Нет строк с количеством > 0</td></tr>';
-        document.getElementById('totalCount').textContent = `Всего: ${items.length}`;
-        updSelCount();
-        applyModalFilters();
-    }
-
-    window.applyModalFilters = function(){
-        const filters = {};
-        document.querySelectorAll('.modal-col-filter').forEach(inp => { filters[inp.dataset.col] = inp.value.toLowerCase(); });
-        document.querySelectorAll('#modalBodyInner tr').forEach(tr => {
-            if(!tr.dataset.idx && tr.dataset.idx !== '0') return;
-            const idx = parseInt(tr.dataset.idx);
-            const items = (filteredData.length?filteredData:allData).map((it,i)=>({...it,_idx:i}));
-            const item = items.find(it=>it._idx===idx);
-            if(!item) return;
-            let visible = true;
-            modalCols.forEach(k => { if(filters[k] && !String(item[k]||'').toLowerCase().includes(filters[k])) visible = false; });
-            tr.classList.toggle('row-hidden', !visible);
-        });
-        document.querySelectorAll('#modalBodyInner tr.row-hidden .mchk').forEach(cb => cb.checked = false);
-        updSelCount();
-    }
-
-    window.toggleSelectAll = function(checked){
-        document.querySelectorAll('#modalBodyInner tr:not(.row-hidden) .mchk').forEach(cb => cb.checked = checked);
-        updSelCount();
-    };
-    window.deselectAll = function(){
-        document.querySelectorAll('#modalBodyInner .mchk').forEach(cb => cb.checked = false);
-        document.getElementById('selectAllChk').checked = false;
-        updSelCount();
-    };
-    window.updSelCount = function(){ document.getElementById('selCount').textContent = `Выбрано: ${document.querySelectorAll('#modalBodyInner .mchk:checked').length}`; };
-
-    window.executePrint = function(){
-        const grid = document.getElementById('labelGrid');
-        grid.innerHTML = '';
-        const bcFmt = document.getElementById('bcFormat').value;
-        const sel = Array.from(document.querySelectorAll('#modalBodyInner .mchk:checked')).map(cb=>parseInt(cb.dataset.idx));
-        
-        if(!sel.length){alert('Выберите хотя бы одну строку');return;}
-
-        const items = allData;
-        let lblN = 0;
-        sel.forEach(idx => {
-            const it = items[idx];
-            const qty = Math.ceil(parseFloat(String(it.qty_ship).replace(/,/g,'.'))||0);
-            if(qty<=0) return;
-
-            for(let i=0;i<qty;i++){
-                lblN++;
-                const svgId = 'lb'+lblN;
-                const sku = it.sku_label || it.art_wb || '';
-                const art = it.art_label || it.art_wb || '';
-                let tz = it.tz||''; if(tz.length>40) tz=tz.substring(0,37)+'…';
-
-                const d = document.createElement('div');
-                d.className = 'label';
-                d.innerHTML = `
-                    <div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
-                    <div class="lbl-row"><span class="lbl-title">${esc(art)}</span>${qty>1?`<span class="lbl-counter">${i+1} / ${qty}</span>`:''}</div>
-                    <div class="lbl-barcode"><svg id="${svgId}"></svg></div>
-                    <div class="lbl-name">${esc(it.name)}</div>
-                    <div class="lbl-meta"><span>Годен: ${esc(it.expiry)}</span><span>Квант: ${esc(it.quant)}</span></div>
-                    ${tz?`<div class="lbl-tz">${esc(tz)}</div>`:''}
-                `;
-                grid.appendChild(d);
-
-                if(sku){
-                    try { JsBarcode('#'+svgId, String(sku), {format:bcFmt, width:1.5, height:40, displayValue:true, fontSize:20, margin:0}); } 
-                    catch(e){ d.querySelector('.lbl-barcode').innerHTML = `<span style="font-size:8px;color:red">ШК: ${esc(sku)}</span>`; }
-                }
-            }
-        });
-
-        if(!lblN){alert('Нет этикеток (количество 0)');return;}
-        window.closeModal();
-        setTimeout(()=>window.print(), 400);
-    };
-
-    function esc(s){ const d=document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
-});
+// ==================== INIT ====================
+window.onload = function(){
+    checkSession();
+};
 </script>
 </body>
 </html>
