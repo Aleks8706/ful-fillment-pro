@@ -5,1031 +5,750 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Pro — Система управления складом</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         :root {
-            --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #e0e7ff;
-            --success: #10b981; --success-light: #d1fae5;
-            --warning: #f59e0b; --warning-light: #fef3c7;
-            --danger: #ef4444; --danger-light: #fee2e2;
-            --info: #3b82f6; --info-light: #dbeafe;
-            --sidebar: #1e1b4b; --sidebar-hover: #312e81;
-            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --text-secondary: #64748b;
-            --border: #e2e8f0; --shadow: 0 1px 3px rgba(0,0,0,0.1); --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
-            --radius: 12px; --radius-sm: 8px; --sidebar-width: 260px;
+            --p: #6366f1; --ps: #4f46e5; --pl: #e0e7ff;
+            --ok: #10b981; --okl: #d1fae5;
+            --warn: #f59e0b; --warnl: #fef3c7;
+            --err: #ef4444; --errl: #fee2e2;
+            --info: #3b82f6; --infol: #dbeafe;
+            --side: #1e1b4b; --sideh: #312e81;
+            --bg: #f8fafc; --card: #fff; --txt: #0f172a; --txts: #64748b;
+            --brd: #e2e8f0; --sw: 240px;
         }
         body.dark {
-            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --text-secondary: #94a3b8;
-            --border: #334155; --shadow: 0 1px 3px rgba(0,0,0,0.3); --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
-            --primary-light: #312e81; --success-light: #064e3b; --warning-light: #78350f;
-            --danger-light: #7f1d1d; --info-light: #1e3a5f;
+            --bg: #0f172a; --card: #1e293b; --txt: #f1f5f9; --txts: #94a3b8;
+            --brd: #334155; --pl: #312e81; --okl: #064e3b; --warnl: #78350f;
+            --errl: #7f1d1d; --infol: #1e3a5f;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; height: 100vh; }
-        
-        /* AUTH SCREEN */
-        .auth-screen { display: flex; height: 100vh; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); }
-        .auth-left { flex: 1; display: flex; align-items: center; justify-content: center; color: white; }
-        .auth-brand { text-align: center; }
-        .auth-brand h1 { font-size: 48px; margin-bottom: 15px; }
-        .auth-brand p { font-size: 18px; opacity: 0.8; }
-        .auth-right { width: 450px; background: var(--card); display: flex; align-items: center; justify-content: center; padding: 40px; border-radius: 20px 0 0 20px; }
-        .auth-form { width: 100%; max-width: 350px; }
-        .auth-form h2 { font-size: 24px; margin-bottom: 8px; }
-        .auth-form p { color: var(--text-secondary); margin-bottom: 25px; font-size: 14px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-secondary); font-size: 13px; }
-        .form-control { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; transition: 0.2s; background: var(--bg); color: var(--text); }
-        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-        .btn { padding: 10px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; } .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
-        .btn-success { background: var(--success); color: white; } .btn-success:hover { background: #059669; }
-        .btn-warning { background: var(--warning); color: white; } .btn-danger { background: var(--danger); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); } .btn-outline:hover { background: var(--bg); }
-        .btn-sm { padding: 5px 10px; font-size: 12px; }
-        .auth-link { text-align: center; margin-top: 15px; font-size: 13px; color: var(--text-secondary); }
-        .auth-link a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 500; }
-        .auth-link a:hover { text-decoration: underline; }
-        
-        /* MAIN APP */
-        .app-layout { display: none; height: 100vh; }
-        .app-layout.active { display: flex; }
-        
-        /* Sidebar */
-        .sidebar { width: var(--sidebar-width); background: var(--sidebar); color: white; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
-        .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-header h2 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .sidebar-header span { font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; flex: 1; }
-        .menu-group { padding: 5px 15px; font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
-        .menu-item { display: flex; align-items: center; gap: 12px; padding: 11px 20px; cursor: pointer; transition: 0.2s; color: rgba(255,255,255,0.7); border-left: 3px solid transparent; font-size: 13px; }
-        .menu-item:hover { background: var(--sidebar-hover); color: white; }
-        .menu-item.active { background: var(--sidebar-hover); color: white; border-left-color: var(--primary); }
-        .menu-item .icon { width: 20px; text-align: center; font-size: 15px; }
-        .menu-item .badge { margin-left: auto; background: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 11px; color: white; }
-        .sidebar-footer { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
-        .sidebar-footer .user-info { flex: 1; }
-        .sidebar-footer .user-name { font-size: 13px; font-weight: 500; }
-        .sidebar-footer .user-role { font-size: 11px; color: rgba(255,255,255,0.5); }
-        .sidebar-footer .logout-btn { background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 18px; }
-        .sidebar-footer .logout-btn:hover { color: var(--danger); }
-        
-        /* Main */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .app-header { background: var(--card); padding: 12px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
-        .app-header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .header-actions { display: flex; gap: 8px; align-items: center; }
-        .header-btn { padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
-        .header-btn:hover { background: var(--bg); }
-        .voice-btn { background: var(--primary); color: white; border-color: var(--primary); }
-        .voice-btn:hover { background: var(--primary-dark); }
-        .voice-btn.listening { background: var(--danger); border-color: var(--danger); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
-        
-        .content-area { flex: 1; overflow-y: auto; padding: 25px; }
-        .content-section { display: none; }
-        .content-section.active { display: block; }
-        
-        /* Stats */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 25px; }
-        .stat-card { background: var(--card); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; border: 1px solid var(--border); }
-        .stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .stat-info h3 { font-size: 24px; font-weight: 700; margin-bottom: 3px; }
-        .stat-info p { color: var(--text-secondary); font-size: 12px; }
-        
-        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
-        .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .card-header h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .card-body { padding: 18px; }
-        
-        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 450px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: var(--bg); position: sticky; top: 0; z-index: 10; padding: 10px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
-        td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt); font-size: 14px; height: 100vh; overflow: hidden; }
+
+        /* AUTH */
+        .auth { display: flex; height: 100vh; background: linear-gradient(135deg, #1e1b4b, #312e81); }
+        .auth-left { flex: 1; display: flex; align-items: center; justify-content: center; color: white; text-align: center; }
+        .auth-left h1 { font-size: 42px; margin-bottom: 10px; }
+        .auth-left p { opacity: 0.7; font-size: 16px; }
+        .auth-right { width: 420px; background: var(--card); display: flex; align-items: center; justify-content: center; padding: 30px; border-radius: 20px 0 0 20px; }
+        .auth-box { width: 100%; max-width: 320px; }
+        .auth-box h2 { font-size: 22px; margin-bottom: 6px; }
+        .auth-box p { color: var(--txts); margin-bottom: 20px; font-size: 13px; }
+        .fg { margin-bottom: 14px; }
+        .fg label { display: block; margin-bottom: 4px; font-weight: 500; color: var(--txts); font-size: 12px; }
+        .fc { width: 100%; padding: 10px 12px; border: 1px solid var(--brd); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--txt); }
+        .fc:focus { outline: none; border-color: var(--p); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; color: white; }
+        .bp { background: var(--p); width: 100%; } .bp:hover { background: var(--ps); }
+        .bo { background: transparent; border: 1px solid var(--brd); color: var(--txt); } .bo:hover { background: var(--bg); }
+        .bs { background: var(--ok); } .bw { background: var(--warn); } .be { background: var(--err); }
+        .bl { padding: 12px 24px; font-size: 15px; }
+        .bsm { padding: 5px 10px; font-size: 12px; }
+        .al { text-align: center; margin-top: 12px; font-size: 13px; color: var(--txts); }
+        .al a { color: var(--p); cursor: pointer; }
+
+        /* APP */
+        .app { display: none; height: 100vh; }
+        .app.on { display: flex; }
+        .sidebar { width: var(--sw); background: var(--side); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sh { padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sh h2 { font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .sh span { font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-top: 3px; }
+        .sm { flex: 1; padding: 8px 0; overflow-y: auto; }
+        .mg { padding: 4px 14px; font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+        .mi { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; color: rgba(255,255,255,0.6); border-left: 3px solid transparent; font-size: 13px; }
+        .mi:hover { background: var(--sideh); color: white; }
+        .mi.on { background: var(--sideh); color: white; border-left-color: var(--p); }
+        .mi .ic { width: 18px; text-align: center; }
+        .mi .bg { margin-left: auto; background: var(--p); padding: 1px 7px; border-radius: 8px; font-size: 10px; }
+        .sf { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+        .sf .un { font-size: 12px; font-weight: 500; }
+        .sf .ur { font-size: 10px; color: rgba(255,255,255,0.4); }
+        .sf .lb { margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 16px; }
+        .sf .lb:hover { color: var(--err); }
+
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .hdr { background: var(--card); padding: 12px 20px; border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .hdr h1 { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .ha { display: flex; gap: 6px; align-items: center; }
+        .hb { padding: 7px 10px; border-radius: 6px; border: 1px solid var(--brd); background: var(--card); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--txt); }
+        .hb:hover { background: var(--bg); }
+        .vb { background: var(--p); color: white; border-color: var(--p); }
+        .vb.on { background: var(--err); border-color: var(--err); animation: pl 1.5s infinite; }
+        @keyframes pl { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
+
+        .ca { flex: 1; overflow-y: auto; padding: 20px; }
+        .cs { display: none; }
+        .cs.on { display: block; }
+
+        .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .sc { background: var(--card); padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; border: 1px solid var(--brd); }
+        .si { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .sk { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+        .sl { font-size: 11px; color: var(--txts); }
+
+        .cd { background: var(--card); border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; border: 1px solid var(--brd); }
+        .ch { padding: 12px 16px; border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; align-items: center; }
+        .ch h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .cb { padding: 14px 16px; }
+
+        .tw { overflow-x: auto; border: 1px solid var(--brd); border-radius: 8px; max-height: 400px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: var(--bg); position: sticky; top: 0; z-index: 5; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--brd); color: var(--txts); white-space: nowrap; }
+        td { padding: 7px 10px; border-bottom: 1px solid var(--brd); }
         tr:hover td { background: rgba(99,102,241,0.04); }
-        
-        .status-badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; display: inline-block; }
-        .status-pending { background: var(--warning-light); color: #92400e; }
-        .status-done { background: var(--success-light); color: #065f46; }
-        .status-active { background: var(--info-light); color: #1e40af; }
-        .status-cancel { background: var(--danger-light); color: #991b1b; }
-        .status-new { background: var(--primary-light); color: #3730a3; }
-        
-        .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 15px; }
-        .tab-btn { padding: 8px 16px; border: none; background: none; cursor: pointer; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 13px; }
-        .tab-btn:hover { color: var(--text); }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
-        
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-overlay.open { display: flex; }
-        .modal { background: var(--card); width: 90%; max-width: 700px; max-height: 90vh; border-radius: var(--radius); overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.25); display: flex; flex-direction: column; }
-        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { font-size: 16px; font-weight: 600; }
-        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
-        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: var(--bg); }
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-        .cell-input { width: 70px; padding: 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: 13px; }
-        
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: var(--card); padding: 12px 18px; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: 0.3s; border-left: 4px solid var(--primary); color: var(--text); }
-        .toast.show { transform: translateX(0); }
-        .toast.success { border-left-color: var(--success); }
-        .toast.error { border-left-color: var(--danger); }
-        .toast.warning { border-left-color: var(--warning); }
-        
-        .voice-indicator { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card); padding: 12px 24px; border-radius: 30px; box-shadow: var(--shadow-lg); z-index: 2000; align-items: center; gap: 10px; border: 2px solid var(--primary); }
-        .voice-indicator.active { display: flex; }
-        .voice-indicator .mic-icon { font-size: 20px; animation: pulse 1.5s infinite; }
-        
+
+        .sb { padding: 3px 7px; border-radius: 12px; font-size: 10px; font-weight: 600; display: inline-block; }
+        .sp { background: var(--warnl); color: #92400e; }
+        .sd { background: var(--okl); color: #065f46; }
+        .sa { background: var(--infol); color: #1e40af; }
+        .se { background: var(--errl); color: #991b1b; }
+        .sn { background: var(--pl); color: #3730a3; }
+
+        .mo { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .mo.open { display: flex; }
+        .md { background: var(--card); width: 90%; max-width: 600px; max-height: 85vh; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.25); display: flex; flex-direction: column; }
+        .mh { padding: 14px 18px; border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; align-items: center; }
+        .mh h3 { font-size: 15px; font-weight: 600; }
+        .mb { flex: 1; overflow-y: auto; padding: 16px; }
+        .mf { padding: 12px 16px; border-top: 1px solid var(--brd); display: flex; justify-content: flex-end; gap: 8px; background: var(--bg); }
+        .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .vi { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--card); padding: 10px 20px; border-radius: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); z-index: 2000; align-items: center; gap: 8px; border: 2px solid var(--p); color: var(--txt); }
+        .vi.on { display: flex; }
+
+        .tc { position: fixed; top: 15px; right: 15px; z-index: 3000; display: flex; flex-direction: column; gap: 6px; }
+        .tt { background: var(--card); padding: 10px 16px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: translateX(120%); transition: 0.3s; border-left: 4px solid var(--p); color: var(--txt); display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .tt.show { transform: translateX(0); }
+        .tt.ok { border-left-color: var(--ok); }
+        .tt.er { border-left-color: var(--err); }
+
+        .cf { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
+        .cc { padding: 4px 10px; background: var(--card); border: 1px solid var(--brd); border-radius: 12px; font-size: 11px; cursor: pointer; }
+        .cc:hover { border-color: var(--p); }
+        .cc.on { background: var(--p); color: white; border-color: var(--p); }
+
+        .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--brd); margin-bottom: 12px; }
+        .tb { padding: 7px 14px; border: none; background: none; cursor: pointer; font-weight: 500; color: var(--txts); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 12px; }
+        .tb:hover { color: var(--txt); }
+        .tb.on { color: var(--p); border-bottom-color: var(--p); }
+
+        .lc { width: 58mm; height: 40mm; background: white; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, sans-serif; overflow: hidden; border: 1px solid #ddd; }
+        .lw { text-align: center; font-weight: 900; font-size: 7px; color: #000; border-bottom: 0.5px solid #000; padding-bottom: 0.5mm; margin-bottom: 0.5mm; }
+        .lt { font-weight: bold; font-size: 10px; color: #000; margin-bottom: 0.3mm; }
+        .lb { text-align: center; margin: 0.5mm 0; flex: 1; display: flex; align-items: center; justify-content: center; }
+        .lb svg { max-width: 54mm; max-height: 16mm; width: 100%; display: block; }
+        .ln { font-size: 9px; line-height: 1.15; color: #000; font-weight: bold; word-break: break-word; margin-bottom: 0.5mm; }
+        .lm { display: flex; justify-content: space-between; font-size: 7px; color: #333; border-top: 0.5px solid #ccc; padding-top: 0.3mm; margin-top: auto; }
+
         @media print {
             body * { visibility: hidden; }
-            .print-area, .print-area * { visibility: visible; }
-            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .print-label-mode .label-canvas { page-break-after: always; border: none; margin: 0; }
+            #po, #po * { visibility: visible; }
+            #po { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            .pl .lc { page-break-after: always; border: none; margin: 0; }
             @page { size: 58mm 40mm; margin: 0; }
-            .print-ttn-mode .ttn-doc { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
-            @page { size: A4 landscape; margin: 10mm; }
         }
-        .label-canvas { width: 58mm; height: 40mm; background: white; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, sans-serif; overflow: hidden; }
-        .lbl-warning { text-align: center; font-weight: 900; font-size: 7px; color: #000; border-bottom: 0.5px solid #000; padding-bottom: 0.5mm; margin-bottom: 0.5mm; }
-        .lbl-title { font-weight: bold; font-size: 10px; color: #000; margin-bottom: 0.3mm; }
-        .lbl-barcode { text-align: center; margin: 0.5mm 0; }
-        .lbl-barcode svg { max-width: 54mm; max-height: 16mm; width: 100%; display: block; }
-        .lbl-name { font-size: 9px; line-height: 1.15; color: #000; font-weight: bold; word-break: break-word; margin-bottom: 0.5mm; flex-grow: 1; }
-        .lbl-meta { display: flex; justify-content: space-between; font-size: 7px; color: #333; border-top: 0.5px solid #ccc; padding-top: 0.3mm; margin-top: auto; }
-        
-        .ttn-doc { padding: 20px; font-size: 12px; background: white; }
-        .ttn-head { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
-        .ttn-table { width: 100%; border-collapse: collapse; }
-        .ttn-table th, .ttn-table td { border: 1px solid #000; padding: 4px; text-align: center; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+        #po { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; z-index: -1; }
+        .td { padding: 20px; font-size: 12px; background: white; }
+        .th { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
+        .tt2 { width: 100%; border-collapse: collapse; }
+        .tt2 th, .tt2 td { border: 1px solid #000; padding: 4px; text-align: center; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen">
+<!-- AUTH -->
+<div class="auth" id="auth">
     <div class="auth-left">
-        <div class="auth-brand">
+        <div>
             <h1>🏭 WMS Pro</h1>
             <p>Система управления складом и фулфилментом</p>
-            <p style="margin-top:30px; font-size:14px; opacity:0.6;">Приемка • Хранение • Комплектация • Отгрузка • Этикетки • ТТН</p>
+            <p style="margin-top:20px;font-size:13px;opacity:0.5;">Приемка • Хранение • Комплектация • Отгрузка • Этикетки • ТТН</p>
+            <p style="margin-top:8px;font-size:12px;opacity:0.4;">Демо: admin / admin</p>
         </div>
     </div>
     <div class="auth-right">
-        <div class="auth-form" id="login-form">
-            <h2>👋 Добро пожаловать</h2>
-            <p>Войдите в систему для продолжения работы</p>
-            <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="login-user" placeholder="Введите логин"></div>
-            <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="login-pass" placeholder="Введите пароль"></div>
-            <button class="btn btn-primary btn-lg" onclick="doLogin()">Войти в систему</button>
-            <div class="auth-link">Нет аккаунта? <a onclick="showRegister()">Зарегистрироваться</a></div>
+        <div class="auth-box" id="loginForm">
+            <h2>👋 Вход</h2>
+            <p>Войдите для работы с системой</p>
+            <div class="fg"><label>Логин</label><input class="fc" id="logU" placeholder="Логин"></div>
+            <div class="fg"><label>Пароль</label><input type="password" class="fc" id="logP" placeholder="Пароль"></div>
+            <button class="btn bp bl" onclick="doLogin()">Войти</button>
+            <div class="al">Нет аккаунта? <a onclick="showReg()">Регистрация</a></div>
         </div>
-        <div class="auth-form hidden" id="register-form">
+        <div class="auth-box hidden" id="regForm" style="display:none">
             <h2>📝 Регистрация</h2>
-            <p>Создайте аккаунт для работы с системой</p>
-            <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="reg-name" placeholder="Ваше имя"></div>
-            <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="reg-user" placeholder="Придумайте логин"></div>
-            <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="reg-pass" placeholder="Минимум 4 символа"></div>
-            <div class="form-group"><label>Должность</label><select class="form-control" id="reg-role"><option>Оператор склада</option><option>Менеджер</option><option>Администратор</option></select></div>
-            <button class="btn btn-primary btn-lg" onclick="doRegister()">Зарегистрироваться</button>
-            <div class="auth-link">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></div>
+            <p>Создайте аккаунт</p>
+            <div class="fg"><label>Имя</label><input class="fc" id="regN" placeholder="Имя"></div>
+            <div class="fg"><label>Логин</label><input class="fc" id="regU" placeholder="Логин"></div>
+            <div class="fg"><label>Пароль</label><input type="password" class="fc" id="regP" placeholder="Мин. 4 символа"></div>
+            <button class="btn bp bl" onclick="doReg()">Зарегистрироваться</button>
+            <div class="al">Есть аккаунт? <a onclick="showLog()">Войти</a></div>
         </div>
     </div>
 </div>
 
-<!-- MAIN APP -->
-<div class="app-layout" id="app-layout">
+<!-- APP -->
+<div class="app" id="app">
     <aside class="sidebar">
-        <div class="sidebar-header"><h2>🏭 WMS Pro</h2><span id="app-version">v2.0 • Склад</span></div>
-        <nav class="sidebar-menu">
-            <div class="menu-group">Главное</div>
-            <div class="menu-item active" onclick="switchSection('dashboard')"><span class="icon">📊</span> Дашборд</div>
-            <div class="menu-group">Склад</div>
-            <div class="menu-item" onclick="switchSection('warehouses')"><span class="icon">🏢</span> Склады</div>
-            <div class="menu-item" onclick="switchSection('zones')"><span class="icon">📍</span> Зоны и ячейки</div>
-            <div class="menu-item" onclick="switchSection('inventory')"><span class="icon">📦</span> Остатки</div>
-            <div class="menu-group">Товары</div>
-            <div class="menu-item" onclick="switchSection('products')"><span class="icon">🛍️</span> Каталог <span class="badge" id="badge-products">0</span></div>
-            <div class="menu-group">Операции</div>
-            <div class="menu-item" onclick="switchSection('receiving')"><span class="icon">📥</span> Приемка <span class="badge" id="badge-receiving">0</span></div>
-            <div class="menu-item" onclick="switchSection('shipping')"><span class="icon">📤</span> Отгрузка</div>
-            <div class="menu-item" onclick="switchSection('orders')"><span class="icon">📋</span> Заказы <span class="badge" id="badge-orders">0</span></div>
-            <div class="menu-item" onclick="switchSection('movement')"><span class="icon">🔄</span> Перемещения</div>
-            <div class="menu-group">Управление</div>
-            <div class="menu-item" onclick="switchSection('employees')"><span class="icon">👥</span> Сотрудники</div>
-            <div class="menu-item" onclick="switchSection('labels')"><span class="icon">🏷️</span> Этикетки + ТТН</div>
-            <div class="menu-item" onclick="switchSection('reports')"><span class="icon">📈</span> Отчеты</div>
+        <div class="sh"><h2>🏭 WMS Pro</h2><span>Система управления складом</span></div>
+        <nav class="sm">
+            <div class="mg">Главное</div>
+            <div class="mi on" onclick="go('dash')"><span class="ic">📊</span> Дашборд</div>
+            <div class="mg">Склад</div>
+            <div class="mi" onclick="go('inv')"><span class="ic">📦</span> Остатки</div>
+            <div class="mi" onclick="go('prod')"><span class="ic">🛍️</span> Каталог</div>
+            <div class="mg">Операции</div>
+            <div class="mi" onclick="go('rec')"><span class="ic">📥</span> Приемка <span class="bg" id="bRec">0</span></div>
+            <div class="mi" onclick="go('ship')"><span class="ic">📤</span> Отгрузка</div>
+            <div class="mi" onclick="go('ord')"><span class="ic">📋</span> Заказы <span class="bg" id="bOrd">0</span></div>
+            <div class="mg">Печать</div>
+            <div class="mi" onclick="go('lbl')"><span class="ic">🏷️</span> Этикетки + ТТН</div>
+            <div class="mg">Управление</div>
+            <div class="mi" onclick="go('emp')"><span class="ic">👥</span> Сотрудники</div>
+            <div class="mi" onclick="go('rep')"><span class="ic">📈</span> Отчеты</div>
         </nav>
-        <div class="sidebar-footer">
-            <div class="user-info"><div class="user-name" id="sidebar-user">Пользователь</div><div class="user-role" id="sidebar-role">Оператор</div></div>
-            <button class="logout-btn" onclick="doLogout()" title="Выйти">🚪</button>
+        <div class="sf">
+            <div><div class="un" id="sName">Админ</div><div class="ur" id="sRole">Администратор</div></div>
+            <button class="lb" onclick="doLogout()" title="Выйти">🚪</button>
         </div>
     </aside>
 
-    <div class="main-content">
-        <header class="app-header">
-            <h1 id="page-title">📊 Дашборд</h1>
-            <div class="header-actions">
-                <button class="header-btn" onclick="toggleVoice()" id="voice-btn" title="Голосовой помощник">🎙️ <span style="font-size:12px;">Ассистент</span></button>
-                <button class="header-btn" onclick="toggleTheme()">🌓</button>
-                <button class="header-btn" onclick="importTZ()">📥 Импорт ТЗ</button>
-                <input type="file" id="import-tz" hidden accept=".xlsx,.xls" onchange="handleTZImport(this)">
+    <div class="main">
+        <header class="hdr">
+            <h1 id="pTitle">📊 Дашборд</h1>
+            <div class="ha">
+                <button class="hb vb" id="vBtn" onclick="toggleVoice()" title="Голосовой помощник">🎙️ Ассистент</button>
+                <button class="hb" onclick="toggleDark()">🌓</button>
+                <button class="hb" onclick="document.getElementById('impF').click()">📥 Импорт ТЗ</button>
+                <input type="file" id="impF" hidden accept=".xlsx,.xls" onchange="importTZ(this)">
             </div>
         </header>
 
-        <div class="content-area">
+        <div class="ca">
             <!-- DASHBOARD -->
-            <section id="section-dashboard" class="content-section active">
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-icon" style="background:var(--primary-light);">📦</div><div class="stat-info"><h3 id="d-products">0</h3><p>Товаров</p></div></div>
-                    <div class="stat-card"><div class="stat-icon" style="background:var(--success-light);">📋</div><div class="stat-info"><h3 id="d-orders">0</h3><p>Заказов</p></div></div>
-                    <div class="stat-card"><div class="stat-icon" style="background:var(--warning-light);">📥</div><div class="stat-info"><h3 id="d-receiving">0</h3><p>На приемке</p></div></div>
-                    <div class="stat-card"><div class="stat-icon" style="background:var(--info-light);">🏷️</div><div class="stat-info"><h3 id="d-city">0</h3><p>Городов</p></div></div>
+            <div class="cs on" id="sec-dash">
+                <div class="sg">
+                    <div class="sc"><div class="si" style="background:var(--pl)">📦</div><div><div class="sk" id="dProd">0</div><div class="sl">Товаров</div></div></div>
+                    <div class="sc"><div class="si" style="background:var(--okl)">📋</div><div><div class="sk" id="dOrd">0</div><div class="sl">Заказов</div></div></div>
+                    <div class="sc"><div class="si" style="background:var(--warnl)">📥</div><div><div class="sk" id="dRec">0</div><div class="sl">На приемке</div></div></div>
+                    <div class="sc"><div class="si" style="background:var(--infol)">🏙️</div><div><div class="sk" id="dCity">0</div><div class="sl">Городов</div></div></div>
                 </div>
-                <div class="card"><div class="card-header"><h3>📈 Динамика операций</h3></div><div class="card-body"><div style="height:280px;"><canvas id="chart-main"></canvas></div></div></div>
-                <div class="card"><div class="card-header"><h3>📊 Распределение по городам</h3></div><div class="card-body"><div style="height:280px;"><canvas id="chart-cities"></canvas></div></div></div>
-            </section>
-
-            <!-- WAREHOUSES -->
-            <section id="section-warehouses" class="content-section">
-                <div class="card"><div class="card-header"><h3>🏢 Склады</h3><button class="btn btn-primary btn-sm" onclick="showToast('Склады созданы по умолчанию','success')">ℹ️ Инфо</button></div>
-                    <div class="card-body"><div id="warehouses-list"></div></div></div>
-            </section>
-
-            <!-- ZONES -->
-            <section id="section-zones" class="content-section">
-                <div class="card"><div class="card-header"><h3>📍 Зоны хранения</h3></div>
-                    <div class="card-body"><div id="zones-list"></div></div></div>
-            </section>
+                <div class="cd"><div class="ch"><h3>📈 Динамика</h3></div><div class="cb"><canvas id="cMain" height="80"></canvas></div></div>
+            </div>
 
             <!-- INVENTORY -->
-            <section id="section-inventory" class="content-section">
-                <div class="card"><div class="card-header"><h3>📦 Остатки на складах</h3><button class="btn btn-outline btn-sm" onclick="exportInventory()">📤 Экспорт</button></div>
-                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск товара..." oninput="renderInventory(this.value)"></div>
-                        <div class="table-wrap"><table><thead><tr><th>Товар</th><th>Артикул</th><th>ШК</th><th>Категория</th><th>В упак.</th><th>Итого штук</th><th>Годен до</th></tr></thead><tbody id="inventory-tbody"></tbody></table></div></div></div>
-            </section>
+            <div class="cs" id="sec-inv">
+                <div class="cd"><div class="ch"><h3>📦 Остатки на складах</h3></div><div class="cb">
+                    <input class="fc" placeholder="🔍 Поиск..." oninput="renderInv(this.value)" style="margin-bottom:10px">
+                    <div class="tw"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Итого</th><th>Годен</th></tr></thead><tbody id="tInv"></tbody></table></div>
+                </div></div>
+            </div>
 
             <!-- PRODUCTS -->
-            <section id="section-products" class="content-section">
-                <div class="card"><div class="card-header"><h3>🛍️ Каталог товаров</h3></div>
-                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск по названию, артикулу, ШК..." oninput="renderProducts(this.value)"></div>
-                        <div class="table-wrap"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК этикетки</th><th>Упак.</th><th>Спаек</th><th>Годен</th></tr></thead><tbody id="products-tbody"></tbody></table></div></div></div>
-            </section>
+            <div class="cs" id="sec-prod">
+                <div class="cd"><div class="ch"><h3>🛍️ Каталог</h3></div><div class="cb">
+                    <input class="fc" placeholder="🔍 Поиск..." oninput="renderProd(this.value)" style="margin-bottom:10px">
+                    <div class="tw"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Спаек</th><th>Годен</th></tr></thead><tbody id="tProd"></tbody></table></div>
+                </div></div>
+            </div>
 
             <!-- RECEIVING -->
-            <section id="section-receiving" class="content-section">
-                <div class="card"><div class="card-header"><h3>📥 Приемка</h3><button class="btn btn-primary btn-sm" onclick="openModal('receiving-modal')">＋ Новая приемка</button></div>
-                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Накладная</th><th>Товаров</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="receiving-tbody"></tbody></table></div></div></div>
-            </section>
+            <div class="cs" id="sec-rec">
+                <div class="cd"><div class="ch"><h3>📥 Приемка</h3><button class="btn bp bsm" onclick="openMo('mRec')">＋ Новая</button></div><div class="cb">
+                    <div class="tw"><table><thead><tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Накладная</th><th>Товаров</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="tRec"></tbody></table></div>
+                </div></div>
+            </div>
 
             <!-- SHIPPING -->
-            <section id="section-shipping" class="content-section">
-                <div class="card"><div class="card-header"><h3>📤 Отгрузка</h3><button class="btn btn-primary btn-sm" onclick="openModal('shipping-modal')">＋ Новая отгрузка</button></div>
-                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Направление</th><th>Маркетплейс</th><th>Товаров</th><th>Статус</th></tr></thead><tbody id="shipping-tbody"></tbody></table></div></div></div>
-            </section>
+            <div class="cs" id="sec-ship">
+                <div class="cd"><div class="ch"><h3>📤 Отгрузка</h3><button class="btn bp bsm" onclick="openMo('mShip')">＋ Новая</button></div><div class="cb">
+                    <div class="tw"><table><thead><tr><th>№</th><th>Дата</th><th>Направление</th><th>МП</th><th>Товаров</th><th>Статус</th></tr></thead><tbody id="tShip"></tbody></table></div>
+                </div></div>
+            </div>
 
             <!-- ORDERS -->
-            <section id="section-orders" class="content-section">
-                <div class="card"><div class="card-header"><h3>📋 Заказы</h3><button class="btn btn-primary btn-sm" onclick="openModal('order-modal')">＋ Новый заказ</button></div>
-                    <div class="card-body"><div class="form-group"><input type="text" class="form-control" placeholder="🔍 Поиск заказа..." oninput="renderOrders(this.value)"></div>
-                        <div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Клиент/МП</th><th>Товаров</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="orders-tbody"></tbody></table></div></div></div>
-            </section>
+            <div class="cs" id="sec-ord">
+                <div class="cd"><div class="ch"><h3>📋 Заказы</h3><button class="btn bp bsm" onclick="openMo('mOrd')">＋ Новый</button></div><div class="cb">
+                    <input class="fc" placeholder="🔍 Поиск..." oninput="renderOrd(this.value)" style="margin-bottom:10px">
+                    <div class="tw"><table><thead><tr><th>№</th><th>Дата</th><th>Клиент</th><th>Товаров</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="tOrd"></tbody></table></div>
+                </div></div>
+            </div>
 
-            <!-- MOVEMENT -->
-            <section id="section-movement" class="content-section">
-                <div class="card"><div class="card-header"><h3>🔄 Перемещения</h3></div>
-                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Товар</th><th>Откуда</th><th>Куда</th><th>Кол-во</th></tr></thead><tbody id="movement-tbody"></tbody></table></div></div></div>
-            </section>
+            <!-- LABELS -->
+            <div class="cs" id="sec-lbl">
+                <div class="cd"><div class="ch"><h3>🏷️ Этикетки и ТТН</h3></div><div class="cb">
+                    <div class="tabs">
+                        <button class="tb on" onclick="lblTab('city',this)">🏙️ По городам</button>
+                        <button class="tb" onclick="lblTab('print',this)">🖨️ Печать</button>
+                        <button class="tb" onclick="lblTab('ttn',this)">📄 ТТН</button>
+                    </div>
+                    <div id="lblCity">
+                        <div class="cf" id="cityChips"></div>
+                        <input class="fc" placeholder="🔍 Поиск..." oninput="renderLbl(this.value)" style="margin-bottom:10px">
+                        <div class="tw"><table><thead><tr><th>✓</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Кол-во</th></tr></thead><tbody id="tLbl"></tbody></table></div>
+                        <div style="margin-top:10px"><button class="btn bp" onclick="printLabels()">🖨️ Печать этикеток</button></div>
+                    </div>
+                    <div id="lblPrint" style="display:none">
+                        <div class="fr" style="margin-bottom:10px">
+                            <div class="fg"><label>Высота ШК</label><select class="fc" id="bcH"><option value="10">10mm</option><option value="16" selected>16mm</option><option value="22">22mm</option></select></div>
+                            <div class="fg"><label>Формат</label><select class="fc" id="bcF"><option>CODE128</option><option>EAN13</option></select></div>
+                        </div>
+                        <div id="lblPreview" style="background:white;padding:20px;border-radius:8px;display:inline-block"></div>
+                    </div>
+                    <div id="lblTTN" style="display:none">
+                        <div style="display:flex;gap:8px;margin-bottom:10px">
+                            <button class="btn bp" onclick="printTTN('f')">🖨️ ТТН по фильтру</button>
+                            <button class="btn bs" onclick="printTTN('a')">🖨️ ТТН всего</button>
+                        </div>
+                        <div class="tw"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody id="tTTN"></tbody></table></div>
+                    </div>
+                </div></div>
+            </div>
 
             <!-- EMPLOYEES -->
-            <section id="section-employees" class="content-section">
-                <div class="card"><div class="card-header"><h3>👥 Сотрудники</h3><button class="btn btn-primary btn-sm" onclick="openModal('employee-modal')">＋ Добавить</button></div>
-                    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>Имя</th><th>Должность</th><th>Телефон</th><th>Зона</th><th>На смене</th><th>Задач</th></tr></thead><tbody id="employees-tbody"></tbody></table></div></div></div>
-            </section>
-
-            <!-- LABELS + TTN -->
-            <section id="section-labels" class="content-section">
-                <div class="card"><div class="card-header"><h3>🏷️ Этикетки Ozon/ВБ</h3></div>
-                    <div class="card-body">
-                        <div class="tabs"><button class="tab-btn active" onclick="switchLabelTab('cities')">🏙️ По городам</button><button class="tab-btn" onclick="switchLabelTab('print')">🖨️ Печать этикеток</button><button class="tab-btn" onclick="switchLabelTab('ttn')">📄 ТТН</button></div>
-                        
-                        <div id="label-tab-cities">
-                            <div class="filter-group" style="margin-bottom:10px;"><label>🏙️ Город:</label><select class="form-control" id="label-city-select" onchange="renderLabelPreview()" style="max-width:300px;"><option value="">Все города</option></select></div>
-                            <div id="label-cities-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px;"></div>
-                            <div class="table-wrap"><table><thead><tr><th>✓</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th></tr></thead><tbody id="labels-table"></tbody></table></div>
-                            <div style="margin-top:15px;display:flex;gap:10px;">
-                                <button class="btn btn-primary" onclick="printAllLabels()">🖨️ Печать выбранных этикеток</button>
-                            </div>
-                        </div>
-                        
-                        <div id="label-tab-print" style="display:none;">
-                            <div class="form-row" style="margin-bottom:15px;">
-                                <div class="form-group"><label>Штрихкод высота</label><select class="form-control" id="bc-height"><option value="10">10mm</option><option value="14">14mm</option><option value="18" selected>18mm</option><option value="24">24mm</option></select></div>
-                                <div class="form-group"><label>Формат ШК</label><select class="form-control" id="bc-format"><option value="CODE128">CODE128</option><option value="EAN13">EAN13</option></select></div>
-                                <div class="form-group"><label>Элементы</label><div style="display:flex;gap:8px;flex-wrap:wrap;" id="label-elements"></div></div>
-                            </div>
-                            <div style="display:flex;gap:20px;align-items:flex-start;">
-                                <div id="label-preview-box" style="background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
-                                <div style="flex:1;"><h4>Конструктор</h4><p style="color:var(--text-secondary);font-size:12px;">Выберите город выше и нажмите "Печать"</p></div>
-                            </div>
-                        </div>
-                        
-                        <div id="label-tab-ttn" style="display:none;">
-                            <div style="display:flex;gap:10px;margin-bottom:15px;">
-                                <button class="btn btn-primary" onclick="printTTN('filter')">🖨️ ТТН по фильтру</button>
-                                <button class="btn btn-success" onclick="printTTN('all')">🖨️ ТТН всего (Альбомная)</button>
-                            </div>
-                            <div class="table-wrap"><table><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody id="ttn-table"></tbody></table></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <div class="cs" id="sec-emp">
+                <div class="cd"><div class="ch"><h3>👥 Сотрудники</h3><button class="btn bp bsm" onclick="openMo('mEmp')">＋ Добавить</button></div><div class="cb">
+                    <div class="tw"><table><thead><tr><th>Имя</th><th>Должность</th><th>Телефон</th><th>Зона</th><th>На смене</th><th>Задач</th></tr></thead><tbody id="tEmp"></tbody></table></div>
+                </div></div>
+            </div>
 
             <!-- REPORTS -->
-            <section id="section-reports" class="content-section">
-                <div class="card"><div class="card-header"><h3>📈 Отчеты</h3></div>
-                    <div class="card-body"><div class="stats-grid">
-                        <div class="stat-card" style="cursor:pointer" onclick="showToast('Отчет по продажам сгенерирован')"><div class="stat-icon" style="background:var(--primary-light);">💰</div><div class="stat-info"><h3>Продажи</h3><p>За период</p></div></div>
-                        <div class="stat-card" style="cursor:pointer" onclick="showToast('Сверка остатков выполнена')"><div class="stat-icon" style="background:var(--success-light);">📦</div><div class="stat-info"><h3>Остатки</h3><p>Сверка</p></div></div>
-                        <div class="stat-card" style="cursor:pointer" onclick="showToast('KPI сотрудников обновлен')"><div class="stat-icon" style="background:var(--warning-light);">👥</div><div class="stat-info"><h3>KPI</h3><p>Эффективность</p></div></div>
-                    </div></div></div>
-            </section>
+            <div class="cs" id="sec-rep">
+                <div class="cd"><div class="ch"><h3>📈 Отчеты</h3></div><div class="cb">
+                    <div class="sg">
+                        <div class="sc" style="cursor:pointer" onclick="toast('Отчет по продажам')"><div class="si" style="background:var(--pl)">💰</div><div><div class="sl">Продажи</div></div></div>
+                        <div class="sc" style="cursor:pointer" onclick="toast('Сверка остатков')"><div class="si" style="background:var(--okl)">📦</div><div><div class="sl">Остатки</div></div></div>
+                        <div class="sc" style="cursor:pointer" onclick="toast('KPI обновлен')"><div class="si" style="background:var(--warnl)">👥</div><div><div class="sl">KPI</div></div></div>
+                    </div>
+                </div></div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- MODALS -->
-<div id="receiving-modal" class="modal-overlay"><div class="modal">
-    <div class="modal-header"><h3>📥 Приемка товара</h3><button class="btn btn-outline btn-sm" onclick="closeModal('receiving-modal')">✕</button></div>
-    <div class="modal-body">
-        <div class="form-row"><div class="form-group"><label>Поставщик</label><input type="text" class="form-control" id="rec-supplier"></div><div class="form-group"><label>Накладная №</label><input type="text" class="form-control" id="rec-invoice"></div></div>
-        <div class="form-group"><label>Товары (количество)</label><div id="rec-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+<div class="mo" id="mRec"><div class="md">
+    <div class="mh"><h3>📥 Приемка</h3><button class="btn bo bsm" onclick="closeMo('mRec')">✕</button></div>
+    <div class="mb">
+        <div class="fr"><div class="fg"><label>Поставщик</label><input class="fc" id="rSup"></div><div class="fg"><label>Накладная №</label><input class="fc" id="rInv"></div></div>
+        <div id="rItems" style="max-height:180px;overflow-y:auto;border:1px solid var(--brd);border-radius:6px;padding:8px;margin-top:10px"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('receiving-modal')">Отмена</button><button class="btn btn-success" onclick="saveReceiving()">✅ Принять</button></div>
+    <div class="mf"><button class="btn bo" onclick="closeMo('mRec')">Отмена</button><button class="btn bs" onclick="saveRec()">✅ Принять</button></div>
 </div></div>
 
-<div id="shipping-modal" class="modal-overlay"><div class="modal">
-    <div class="modal-header"><h3>📤 Отгрузка</h3><button class="btn btn-outline btn-sm" onclick="closeModal('shipping-modal')">✕</button></div>
-    <div class="modal-body">
-        <div class="form-row"><div class="form-group"><label>Направление</label><input type="text" class="form-control" id="ship-dest"></div><div class="form-group"><label>МП</label><select class="form-control" id="ship-mp"><option>Ozon</option><option>Wildberries</option><option>Другое</option></select></div></div>
-        <div class="form-group"><label>Товары</label><div id="ship-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+<div class="mo" id="mShip"><div class="md">
+    <div class="mh"><h3>📤 Отгрузка</h3><button class="btn bo bsm" onclick="closeMo('mShip')">✕</button></div>
+    <div class="mb">
+        <div class="fr"><div class="fg"><label>Направление</label><input class="fc" id="sDest"></div><div class="fg"><label>МП</label><select class="fc" id="sMP"><option>Ozon</option><option>Wildberries</option><option>Другое</option></select></div></div>
+        <div id="sItems" style="max-height:180px;overflow-y:auto;border:1px solid var(--brd);border-radius:6px;padding:8px;margin-top:10px"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('shipping-modal')">Отмена</button><button class="btn btn-warning" onclick="saveShipping()">📤 Отгрузить</button></div>
+    <div class="mf"><button class="btn bo" onclick="closeMo('mShip')">Отмена</button><button class="btn bw" onclick="saveShip()">📤 Отгрузить</button></div>
 </div></div>
 
-<div id="order-modal" class="modal-overlay"><div class="modal">
-    <div class="modal-header"><h3>📋 Новый заказ</h3><button class="btn btn-outline btn-sm" onclick="closeModal('order-modal')">✕</button></div>
-    <div class="modal-body">
-        <div class="form-row"><div class="form-group"><label>Клиент</label><input type="text" class="form-control" id="order-client"></div><div class="form-group"><label>Источник</label><select class="form-control" id="order-source"><option>Ozon</option><option>Wildberries</option><option>Сайт</option></select></div></div>
-        <div class="form-group"><label>Товары</label><div id="order-items" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;"></div></div>
+<div class="mo" id="mOrd"><div class="md">
+    <div class="mh"><h3>📋 Заказ</h3><button class="btn bo bsm" onclick="closeMo('mOrd')">✕</button></div>
+    <div class="mb">
+        <div class="fr"><div class="fg"><label>Клиент</label><input class="fc" id="oCli"></div><div class="fg"><label>Источник</label><select class="fc" id="oSrc"><option>Ozon</option><option>Wildberries</option><option>Сайт</option></select></div></div>
+        <div id="oItems" style="max-height:180px;overflow-y:auto;border:1px solid var(--brd);border-radius:6px;padding:8px;margin-top:10px"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('order-modal')">Отмена</button><button class="btn btn-primary" onclick="saveOrder()">💾 Создать</button></div>
+    <div class="mf"><button class="btn bo" onclick="closeMo('mOrd')">Отмена</button><button class="btn bp" onclick="saveOrd()">💾 Создать</button></div>
 </div></div>
 
-<div id="employee-modal" class="modal-overlay"><div class="modal">
-    <div class="modal-header"><h3>👤 Сотрудник</h3><button class="btn btn-outline btn-sm" onclick="closeModal('employee-modal')">✕</button></div>
-    <div class="modal-body">
-        <div class="form-row"><div class="form-group"><label>ФИО</label><input type="text" class="form-control" id="emp-name"></div><div class="form-group"><label>Должность</label><select class="form-control" id="emp-role"><option>Кладовщик</option><option>Комплектовщик</option><option>Менеджер</option></select></div></div>
-        <div class="form-row"><div class="form-group"><label>Телефон</label><input type="text" class="form-control" id="emp-phone"></div><div class="form-group"><label>Зона</label><select class="form-control" id="emp-zone"><option>Приемка</option><option>Хранение</option><option>Отгрузка</option></select></div></div>
+<div class="mo" id="mEmp"><div class="md">
+    <div class="mh"><h3>👤 Сотрудник</h3><button class="btn bo bsm" onclick="closeMo('mEmp')">✕</button></div>
+    <div class="mb">
+        <div class="fr"><div class="fg"><label>ФИО</label><input class="fc" id="eName"></div><div class="fg"><label>Должность</label><select class="fc" id="eRole"><option>Кладовщик</option><option>Комплектовщик</option><option>Менеджер</option></select></div></div>
+        <div class="fr"><div class="fg"><label>Телефон</label><input class="fc" id="ePhone"></div><div class="fg"><label>Зона</label><select class="fc" id="eZone"><option>Приемка</option><option>Хранение</option><option>Отгрузка</option></select></div></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('employee-modal')">Отмена</button><button class="btn btn-primary" onclick="saveEmployee()">💾 Сохранить</button></div>
+    <div class="mf"><button class="btn bo" onclick="closeMo('mEmp')">Отмена</button><button class="btn bp" onclick="saveEmp()">💾 Сохранить</button></div>
 </div></div>
 
-<!-- PRINT AREA -->
-<div id="print-output" class="print-area"></div>
-
-<!-- VOICE INDICATOR -->
-<div class="voice-indicator" id="voice-indicator"><span class="mic-icon">🎙️</span><span id="voice-text">Слушаю...</span></div>
-<div class="toast-container" id="toast-container"></div>
+<div id="po"></div>
+<div class="vi" id="vInd"><span>🎙️</span><span id="vTxt">Слушаю...</span></div>
+<div class="tc" id="tCont"></div>
 
 <script>
-// ==================== DATABASE ====================
-const DB = {
-    get(k){ try{ return JSON.parse(localStorage.getItem('wms_'+k))||[]; }catch(e){ return []; } },
-    set(k,v){ localStorage.setItem('wms_'+k, JSON.stringify(v)); },
-    getObj(k){ try{ return JSON.parse(localStorage.getItem('wms_'+k))||{}; }catch(e){ return {}; } },
-    setObj(k,v){ localStorage.setItem('wms_'+k, JSON.stringify(v)); }
+// === DB ===
+const G={
+    g(k){try{return JSON.parse(localStorage.getItem('w_'+k))||[]}catch(e){return[]}},
+    s(k,v){localStorage.setItem('w_'+k,JSON.stringify(v))},
+    go(k){try{return JSON.parse(localStorage.getItem('w_'+k))||{}}catch(e){return{}}},
+    so(k,v){localStorage.setItem('w_'+k,JSON.stringify(v))}
 };
 
-let currentUser = null;
-let charts = {};
-let labelElements = ['warning','art','barcode','name','expiry'];
-let selectedLabelItems = new Set();
-let labelCityFilter = '';
-let recognition = null;
+let user=null, curCity='', selItems=new Set(), recognition=null;
 
-// ==================== AUTH ====================
-function showRegister(){ document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-function showLogin(){ document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-
-function doRegister(){
-    const u = { name: $('reg-name').value, user: $('reg-user').value, pass: $('reg-pass').value, role: $('reg-role').value };
-    if(!u.user || !u.pass || u.pass.length < 4){ showToast('Заполните все поля (пароль мин. 4 символа)','error'); return; }
-    let users = DB.get('users');
-    if(users.find(x=>x.user===u.user)){ showToast('Логин занят','error'); return; }
-    users.push(u);
-    DB.set('users', users);
-    showToast('Регистрация успешна! Войдите.');
-    showLogin();
-}
+// === AUTH ===
+function showReg(){document.getElementById('loginForm').style.display='none';document.getElementById('regForm').style.display='block';}
+function showLog(){document.getElementById('regForm').style.display='none';document.getElementById('loginForm').style.display='block';}
 
 function doLogin(){
-    const user = $('login-user').value, pass = $('login-pass').value;
-    let users = DB.get('users');
-    let found = users.find(x=>x.user===user && x.pass===pass);
-    if(!found){ showToast('Неверный логин или пароль','error'); return; }
-    currentUser = found;
-    DB.setObj('session', found);
-    enterApp();
+    const u=document.getElementById('logU').value, p=document.getElementById('logP').value;
+    if(u==='admin'&&p==='admin'){user={name:'Администратор',role:'Администратор'};G.so('ses',user);enter();return;}
+    const us=G.g('users').find(x=>x.u===u&&x.p===p);
+    if(!us){toast('Неверный логин/пароль','er');return;}
+    user={name:us.n,role:us.r};G.so('ses',user);enter();
 }
 
-function doLogout(){
-    localStorage.removeItem('wms_session');
-    currentUser = null;
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app-layout').classList.remove('active');
+function doReg(){
+    const n=document.getElementById('regN').value, u=document.getElementById('regU').value, p=document.getElementById('regP').value;
+    if(!n||!u||p.length<4){toast('Заполните все поля (пароль мин. 4)','er');return;}
+    let us=G.g('users');
+    if(us.find(x=>x.u===u)){toast('Логин занят','er');return;}
+    us.push({n,u,p,r:'Оператор'});G.s('users',us);
+    toast('Регистрация успешна!');showLog();
 }
 
-function checkSession(){
-    let s = DB.getObj('session');
-    if(s.user){ currentUser = s; enterApp(); }
+function doLogout(){localStorage.removeItem('w_ses');user=null;document.getElementById('auth').style.display='flex';document.getElementById('app').classList.remove('on');}
+
+function checkSes(){
+    let s=G.go('ses');
+    if(s.name){user=s;enter();}
 }
 
-function enterApp(){
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-layout').classList.add('active');
-    $('sidebar-user').textContent = currentUser.name;
-    $('sidebar-role').textContent = currentUser.role;
-    initApp();
+function enter(){
+    document.getElementById('auth').style.display='none';
+    document.getElementById('app').classList.add('on');
+    document.getElementById('sName').textContent=user.name;
+    document.getElementById('sRole').textContent=user.role;
+    if(!localStorage.getItem('w_init')){initData();localStorage.setItem('w_init','1');}
+    refresh('dash');updBadges();
 }
 
-function $(id){ return document.getElementById(id); }
-function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
-function openModal(id){ $(id).classList.add('open'); populateModalItems(); }
-function closeModal(id){ $(id).classList.remove('open'); }
-function toggleTheme(){ document.body.classList.toggle('dark'); }
-
-// ==================== TOAST ====================
-function showToast(msg, type='success'){
-    const c = $('toast-container');
-    const t = document.createElement('div');
-    t.className = 'toast ' + type;
-    t.innerHTML = '<span>'+(type==='success'?'✅':type==='error'?'❌':'⚠️')+'</span> '+msg;
-    c.appendChild(t);
-    setTimeout(()=>t.classList.add('show'),10);
-    setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3000);
-}
-
-// ==================== INIT APP ====================
-function initApp(){
-    if(!localStorage.getItem('wms_init')){
-        // Init with TZ data from Knowledge Base
-        initTZData();
-        localStorage.setItem('wms_init','true');
-    }
-    renderDashboard();
-    updateBadges();
-    populateCitySelects();
-}
-
-function initTZData(){
-    // Products from KB
-    const tzProducts = [
-        {name:'Губка гемостатическая коллагеновая 10х10х8 мм 1уп',sku:'8891',barcode:'4605370003130',labelBC:'4605370003130',art:'8891',pack:1,spikes:626,expiry:'17.03.29',cities:{'хабаровск':2,'Омск':50,'Пермь':50,'Екатеринбург':50,'Саратов':10,'Волгоград':3,'Ростов':40,'Самара':50,'Уфа':25,'Новосиб':20,'Ярославль':9,'Краснодар-Адыгейск':124,'СП':55,'Казань':89,'Жуковский-кросс док':49}},
-        {name:'Губка гемостатическая коллагеновая 10х10 мм 3 уп',sku:'8891',barcode:'4605370003130',labelBC:'4605370038644',art:'18635',pack:3,spikes:20,expiry:'17.03.29',cities:{'Омск':0,'Пермь':5,'Екатеринбург':5,'Саратов':0,'Ростов':2,'Уфа':4,'Ярославль':2,'Новосиб':2,'Жуковский-кросс док':0}},
-        {name:'Губка гемостатическая коллагеновая 50х50х8 мм 1шт',sku:'8892',barcode:'4605370003536',labelBC:'4605370003536',art:'8892',pack:1,spikes:200,expiry:'12.02.29',cities:{'Омск':10,'Пермь':20,'Екатеринбург':40,'Ростов':10,'Самара':10,'Уфа':2,'Новосиб':10,'Ярославль':10,'Краснодар-Адыгейск':5,'СП':10,'СП':49,'Жуковский-кросс док':34}},
-        {name:'Теймурова крем пудра от запаха и пота 50г',sku:'18801',barcode:'4605370037876',labelBC:'2048605010770',art:'25183',pack:1,spikes:1512,expiry:'13.04.29',cities:{'Омск':50,'Пермь':100,'Екатеринбург':43,'Саратов':48,'Волгоград':150,'Ростов':100,'Самара':52,'Уфа':99,'Новосиб':50,'Ярославль':71,'Краснодар-Адыгейск':201,'СП':359,'Казань':99,'Жуковский-кросс док':90}},
-        {name:'Пантенол пенка спрей для лица и тела 150 мл',sku:'21253',barcode:'4605370039689',labelBC:'4605370039689',art:'22196',pack:1,spikes:308,expiry:'01.04.28',cities:{'Омск':30,'Пермь':30,'Саратов':5,'Ростов':10,'Самара':30,'Уфа':10,'Ярославль':10,'Новосиб':1,'Краснодар-Адыгейск':14,'СП':6,'Жуковский-кросс док':162}},
-        {name:'Дезодорант для ног спрей Теймурова 150мл',sku:'96593',barcode:'4605370009125',labelBC:'4605370009125',art:'96593',pack:1,spikes:2010,expiry:'29.01.29',cities:{'Омск':30,'Пермь':100,'Саратов':8,'Волгоград':10,'Ростов':100,'Самара':33,'Уфа':13,'Ярославль':35,'Краснодар-Адыгейск':81,'СП':24,'Казань':47,'Жуковский-кросс док':1539}}
+// === INIT DATA FROM KB ===
+function initData(){
+    const data=[
+        ["Наименование","Исходный артикул","шк производителя","шк на этикетку","Артикул продавца","кол-во в упаковку","ИТОГО К ОТГРУЗКЕ спаек","ГОДЕН ДО","хабаровск","Омск","Пермь","Екатеринбург","Саратов","Волгоград","Тюмень","Ростов","Самара","Уфа","Новосиб","Ярославль","Краснодар-Адыгейск","СП","Казань","Жуковский-кросс док"],
+        ["Губка гемостатическая коллагеновая 10х10х8 мм 1уп","8891","4605370003130","4605370003130","8891","1","626","17.03.29","2","50","50","50","10","3","","40","","50","25","20","","9","124","55","89","49"],
+        ["Губка гемостатическая коллагеновая 50х50х8 мм 1шт","8892","4605370003536","4605370003536","8892","1","200","12.02.29","","10","20","40","","","10","","2","","10","","10","5","10","49","34"],
+        ["Теймурова крем пудра от запаха и пота 50г","18801","4605370037876","2048605010770","25183","1","1512","13.04.29","","50","100","43","","48","150","100","52","","99","50","71","201","359","99","90"],
+        ["Пантенол пенка спрей для лица и тела 150 мл","21253","4605370039689","4605370039689","22196","1","308","01.04.28","","30","30","","","5","10","30","","","10","10","1","14","6","","162"],
+        ["Дезодорант для ног от запаха и пота спрей Теймурова 150мл","96593","4605370009125","4605370009125","96593","1","2010","29.01.29","","30","100","","","8","100","33","","","13","","35","81","24","47","1539"],
+        ["Гель для лица увлажняющий ГИАЛУРОЛ ZD 50 мл 2 шт.","14210","4605370010046","2040991562970","19866","2","154","02.11.28","","10","10","","4","","10","6","","","10","3","10","21","10","19","41"],
+        ["Теймурова крем пудра от запаха и пота 50г, 2шт","18801","4605370037876","2042953296626","21430","2","300","13.04.29","","30","30","","","2","1","10","6","5","","2","2","3","13","5","20","171"]
     ];
-    DB.set('products', tzProducts);
-    DB.set('warehouses', [{id:1,name:'Основной склад (Щербинка)',address:'Московская обл, Щербинка',area:1200},{id:2,name:'Склад Юг',address:'Краснодар',area:800}]);
-    DB.set('orders', [{id:1001,date:'2025-01-20',client:'Ozon',source:'Ozon',items:3,total:1297,status:'processing'},{id:1002,date:'2025-01-21',client:'Wildberries',source:'Wildberries',items:5,total:2145,status:'new'}]);
-    DB.set('receiving', [{id:1,date:'2025-01-20',supplier:'ООО МедТорг',invoice:'МТ-001',items:3,status:'done'},{id:2,date:'2025-01-22',supplier:'ИП Косметика',invoice:'КМ-015',items:2,status:'pending'}]);
-    DB.set('shipping', [{id:1,date:'2025-01-21',dest:'Ozon-Хабаровск',mp:'Ozon',items:15,status:'done'}]);
-    DB.set('employees', [{name:'Петров А.С.',role:'Кладовщик',phone:'+79991112233',zone:'Приемка',onShift:true,tasks:24},{name:'Сидоров В.М.',role:'Комплектовщик',phone:'+79992223344',zone:'Хранение',onShift:true,tasks:18}]);
-    DB.set('movement', [{id:1,date:'2025-01-20',product:'Губка гемостатическая',from:'Приемка',to:'Хранение B-02',qty:100}]);
-}
-
-// ==================== IMPORT TZ ====================
-function importTZ(){ $('import-tz').click(); }
-function handleTZImport(input){
-    const file = input.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-        try {
-            const wb = XLSX.read(e.target.result, {type:'array'});
-            const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
-            let hi = 0;
-            for(let i=0;i<Math.min(raw.length,10);i++){ if((raw[i]||[]).join(' ').toLowerCase().includes('наименование')){hi=i;break;} }
-            const headers = raw[hi];
-            const products = [];
-            const cityCols = [];
-            const colMap = {};
-            
-            headers.forEach(function(h,i){
-                if(!h) return;
-                const hl = String(h).trim().toLowerCase();
-                if(hl.includes('наименование')) colMap.name = i;
-                else if(hl.includes('шк на этикетку')) colMap.labelBC = i;
-                else if(hl.includes('шк производителя') && !colMap.labelBC) colMap.labelBC = i;
-                else if(hl.includes('артикул продавца')) colMap.art = i;
-                else if(hl.includes('исходный артикул')) colMap.sku = i;
-                else if(hl.includes('кол-во в упаковку')) colMap.pack = i;
-                else if(hl.includes('итого к отгрузке')) colMap.spikes = i;
-                else if(hl.includes('годен до')) colMap.expiry = i;
-            });
-            
-            const cityKW = ['хабаровск','омск','пермь','екатеринбург','екатеринбург2','саратов','волгоград','тюмень','ростов','самара','уфа','новосиб','ярославль','краснодар','адыгейск','сп','казань','жуковский','кросс'];
-            headers.forEach(function(h,i){
-                if(colMap.name===i||colMap.labelBC===i||colMap.art===i||colMap.sku===i||colMap.pack===i||colMap.spikes===i||colMap.expiry===i) return;
-                if(!h) return;
-                const hl = String(h).trim().toLowerCase();
-                if(cityKW.some(kw=>hl.includes(kw)) || (hl.length>1 && hl.length<30 && isNaN(hl[0]))) cityCols.push({name:String(h).trim(), idx:i});
-            });
-            
-            for(let r=hi+1;r<raw.length;r++){
-                const row = raw[r]; if(!row || !row[colMap.name]) continue;
-                const name = String(row[colMap.name]||'').trim();
-                if(name.length<3 || name==='---') continue;
-                const item = {name, sku:String(row[colMap.sku]||'').trim(), barcode:String(row[colMap.labelBC]||'').trim(), labelBC:String(row[colMap.labelBC]||'').trim(), art:String(row[colMap.art]||'').trim(), pack:parseInt(row[colMap.pack])||1, spikes:parseInt(row[colMap.spikes])||0, expiry:String(row[colMap.expiry]||'').trim(), cities:{}};
-                cityCols.forEach(function(cc){ const v=parseInt(row[cc.idx]); if(!isNaN(v)&&v>0) item.cities[cc.name]=v; });
-                products.push(item);
-            }
-            if(products.length){
-                DB.set('products', products);
-                showToast('Загружено '+products.length+' товаров','success');
-                renderDashboard(); updateBadges(); populateCitySelects();
-            } else showToast('Товары не найдены','error');
-        } catch(err){ showToast('Ошибка: '+err.message,'error'); }
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-// ==================== NAVIGATION ====================
-function switchSection(sec){
-    document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(s=>s.classList.remove('active'));
-    const titles = {dashboard:'📊 Дашборд',warehouses:'🏢 Склады',zones:'📍 Зоны',inventory:'📦 Остатки',products:'🛍️ Каталог',receiving:'📥 Приемка',shipping:'📤 Отгрузка',orders:'📋 Заказы',movement:'🔄 Перемещения',employees:'👥 Сотрудники',labels:'🏷️ Этикетки + ТТН',reports:'📈 Отчеты'};
-    $('page-title').innerHTML = titles[sec]||sec;
-    $('section-'+sec).classList.add('active');
-    // Find and activate menu item
-    document.querySelectorAll('.menu-item').forEach(m=>{ if(m.textContent.trim().includes(titles[sec]?.replace(/^[^\s]+\s/,'')||'')) m.classList.add('active'); });
-    setTimeout(()=>refreshSection(sec),50);
-}
-
-function refreshSection(sec){
-    switch(sec){
-        case 'dashboard': renderDashboard(); break;
-        case 'warehouses': renderWarehouses(); break;
-        case 'zones': renderZones(); break;
-        case 'inventory': renderInventory(); break;
-        case 'products': renderProducts(); break;
-        case 'receiving': renderReceiving(); break;
-        case 'shipping': renderShipping(); break;
-        case 'orders': renderOrders(); break;
-        case 'movement': renderMovement(); break;
-        case 'employees': renderEmployees(); break;
-        case 'labels': renderLabelsTab(); break;
+    const products=[], cities=new Set();
+    const citiesIdx=[];
+    // Find city columns (indices 8+)
+    for(let i=8;i<data[0].length;i++) if(data[0][i]&&String(data[0][i]).trim()) citiesIdx.push(i);
+    
+    for(let r=1;r<data.length;r++){
+        const row=data[r]; if(!row[0]) continue;
+        const item={name:row[0],sku:String(row[1]||''),barcode:String(row[3]||row[2]||''),art:String(row[4]||''),pack:parseInt(row[5])||1,spikes:parseInt(row[6])||0,expiry:String(row[7]||''),cities:{}};
+        citiesIdx.forEach(i=>{
+            const v=parseInt(row[i]);
+            if(!isNaN(v)&&v>0){item.cities[data[0][i].trim()]=v;cities.add(data[0][i].trim());}
+        });
+        if(Object.keys(item.cities).length) products.push(item);
     }
-    updateBadges();
+    G.s('products',products);
+    G.s('orders',[{id:1001,date:'2025-01-20',client:'Ozon',src:'Ozon',items:3,total:1297,st:'processing'},{id:1002,date:'2025-01-21',client:'Wildberries',src:'Wildberries',items:5,total:2145,st:'new'}]);
+    G.s('receiving',[{id:1,date:'2025-01-20',sup:'ООО МедТорг',inv:'МТ-001',items:3,st:'done'},{id:2,date:'2025-01-22',sup:'ИП Косметика',inv:'КМ-015',items:2,st:'pending'}]);
+    G.s('shipping',[{id:1,date:'2025-01-21',dest:'Ozon-Хабаровск',mp:'Ozon',items:15,st:'done'}]);
+    G.s('emp',[{name:'Петров А.С.',role:'Кладовщик',phone:'+79991112233',zone:'Приемка',on:true,tasks:24},{name:'Сидоров В.М.',role:'Комплектовщик',phone:'+79992223344',zone:'Хранение',on:true,tasks:18}]);
 }
 
-function updateBadges(){
-    const p = DB.get('products'); const o = DB.get('orders').filter(x=>x.status!=='done'); const r = DB.get('receiving').filter(x=>x.status==='pending');
-    const bp = $('badge-products'); const bo = $('badge-orders'); const br = $('badge-receiving');
-    if(bp) bp.textContent = p.length; if(bo) bo.textContent = o.length; if(br) br.textContent = r.length;
+// === NAV ===
+function go(s){
+    document.querySelectorAll('.mi').forEach(m=>m.classList.remove('on'));
+    document.querySelectorAll('.cs').forEach(c=>c.classList.remove('on'));
+    const t={dash:'📊 Дашборд',inv:'📦 Остатки',prod:'🛍️ Каталог',rec:'📥 Приемка',ship:'📤 Отгрузка',ord:'📋 Заказы',lbl:'🏷️ Этикетки + ТТН',emp:'👥 Сотрудники',rep:'📈 Отчеты'};
+    document.getElementById('pTitle').innerHTML=t[s]||s;
+    document.getElementById('sec-'+s).classList.add('on');
+    document.querySelectorAll('.mi').forEach(m=>{if(m.textContent.trim().includes(t[s]?.replace(/^[^\s]+\s/,'')||''))m.classList.add('on');});
+    setTimeout(()=>refresh(s),50);
 }
 
-// ==================== DASHBOARD ====================
-function renderDashboard(){
-    const p = DB.get('products'); const o = DB.get('orders'); const r = DB.get('receiving');
-    const cities = new Set();
-    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
-    $('d-products').textContent = p.length;
-    $('d-orders').textContent = o.length;
-    $('d-receiving').textContent = r.filter(x=>x.status==='pending').length;
-    $('d-city').textContent = cities.size;
-    
-    if(charts.main) charts.main.destroy();
-    if(charts.cities) charts.cities.destroy();
-    
-    charts.main = new Chart($('chart-main').getContext('2d'),{type:'line',data:{labels:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],datasets:[{label:'Операции',data:[12,19,15,25,22,30,28],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false}});
-    
-    const cityArr = Array.from(cities).slice(0,8);
-    const cityData = cityArr.map(c=>p.reduce((s,pr)=>s+((pr.cities||{})[c]||0),0));
-    charts.cities = new Chart($('chart-cities').getContext('2d'),{type:'bar',data:{labels:cityArr,datasets:[{label:'Штук',data:cityData,backgroundColor:'#6366f1'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
+function refresh(s){
+    switch(s){
+        case 'dash':rDash();break;case 'inv':rInv();break;case 'prod':rProd();break;
+        case 'rec':rRec();break;case 'ship':rShip();break;case 'ord':rOrd();break;
+        case 'lbl':rLbl();break;case 'emp':rEmp();break;
+    }
+    updBadges();
 }
 
-// ==================== WAREHOUSES ====================
-function renderWarehouses(){
-    const wh = DB.get('warehouses');
-    $('warehouses-list').innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px;">'+wh.map(w=>'<div style="background:var(--bg);padding:15px;border-radius:8px;border:1px solid var(--border);"><h4 style="margin-bottom:5px;">🏢 '+esc(w.name)+'</h4><p style="font-size:12px;color:var(--text-secondary);">'+esc(w.address)+'</p><p style="font-size:12px;margin-top:5px;">Площадь: '+w.area+' м²</p></div>').join('')+'</div>';
+function updBadges(){
+    const o=G.g('orders').filter(x=>x.st!=='done'),r=G.g('receiving').filter(x=>x.st==='pending');
+    const b1=document.getElementById('bOrd'),b2=document.getElementById('bRec');
+    if(b1)b1.textContent=o.length;if(b2)b2.textContent=r.length;
 }
 
-// ==================== ZONES ====================
-function renderZones(){
-    $('zones-list').innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">'+['Приемка','Хранение','Отгрузка','Брак','Комплектация'].map(z=>'<div style="background:var(--bg);padding:15px;border-radius:8px;border:1px solid var(--border);text-align:center;"><div style="font-size:24px;margin-bottom:5px;">📍</div><b>'+z+'</b><p style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Зона склада</p></div>').join('')+'</div>';
+// === TOAST ===
+function toast(m,t='ok'){
+    const c=document.getElementById('tCont'),d=document.createElement('div');
+    d.className='tt '+t;d.innerHTML='<span>'+(t==='ok'?'✅':t==='er'?'❌':'⚠️')+'</span> '+m;
+    c.appendChild(d);setTimeout(()=>d.classList.add('show'),10);
+    setTimeout(()=>{d.classList.remove('show');setTimeout(()=>d.remove(),300);},3000);
 }
 
-// ==================== INVENTORY ====================
-function renderInventory(search){
-    const p = DB.get('products');
-    const tbody = $('inventory-tbody'); if(!tbody) return;
-    let items = p;
-    if(search) items = p.filter(x=>x.name.toLowerCase().includes(search.toLowerCase())||x.art.toLowerCase().includes(search.toLowerCase()));
-    tbody.innerHTML = items.map((it,i)=>{
-        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td style="text-align:center">'+it.pack+'</td><td><b>'+total+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
-    }).join('');
-}
+// === MODAL ===
+function openMo(id){$(id).classList.add('open');popMoItems();}
+function closeMo(id){$(id).classList.remove('open');}
+function $(id){return document.getElementById(id);}
 
-// ==================== PRODUCTS ====================
-function renderProducts(search){
-    const p = DB.get('products');
-    const tbody = $('products-tbody'); if(!tbody) return;
-    let items = p;
-    if(search) items = p.filter(x=>x.name.toLowerCase().includes(search.toLowerCase())||x.sku.toLowerCase().includes(search.toLowerCase()));
-    tbody.innerHTML = items.map((it,i)=>{
-        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.sku)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td style="text-align:center">'+it.pack+'</td><td><b>'+it.spikes+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
-    }).join('');
-}
-
-// ==================== RECEIVING ====================
-function renderReceiving(){
-    const r = DB.get('receiving');
-    $('receiving-tbody').innerHTML = r.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.supplier)+'</td><td>'+esc(x.invoice)+'</td><td>'+x.items+'</td><td><span class="status-badge '+ (x.status==='done'?'status-done':'status-pending')+'">'+(x.status==='done'?'✅ Принято':'⏳ В процессе')+'</span></td><td>'+ (x.status==='pending'?'<button class="btn btn-sm btn-success" onclick="completeReceiving('+x.id+')">✅</button>':'') +'</td></tr>').join('');
-}
-
-function saveReceiving(){
-    const r = DB.get('receiving');
-    const items = document.querySelectorAll('#rec-items input'); let total=0;
-    items.forEach(inp=>total+=parseInt(inp.value)||0);
-    if(total===0){showToast('Укажите количество','error');return;}
-    r.push({id:Date.now(),date:new Date().toISOString().slice(0,10),supplier:$('rec-supplier').value,invoice:$('rec-invoice').value,items:total,status:'pending'});
-    DB.set('receiving',r); closeModal('receiving-modal'); renderReceiving(); showToast('Приемка создана');
-}
-
-function completeReceiving(id){
-    const r = DB.get('receiving'); const rec = r.find(x=>x.id===id);
-    if(rec){rec.status='done';DB.set('receiving',r);renderReceiving();showToast('Принято #'+id);}
-}
-
-// ==================== SHIPPING ====================
-function renderShipping(){
-    const s = DB.get('shipping');
-    $('shipping-tbody').innerHTML = s.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.dest)+'</td><td><span class="status-badge status-active">'+esc(x.mp)+'</span></td><td>'+x.items+'</td><td><span class="status-badge '+ (x.status==='done'?'status-done':'status-pending')+'">'+(x.status==='done'?'✅ Отгружено':'⏳ Ожидает')+'</span></td></tr>').join('');
-}
-
-function saveShipping(){
-    const s = DB.get('shipping');
-    const items = document.querySelectorAll('#ship-items input'); let total=0;
-    items.forEach(inp=>total+=parseInt(inp.value)||0);
-    if(total===0){showToast('Укажите количество','error');return;}
-    s.push({id:Date.now(),date:new Date().toISOString().slice(0,10),dest:$('ship-dest').value,mp:$('ship-mp').value,items:total,status:'pending'});
-    DB.set('shipping',s); closeModal('shipping-modal'); renderShipping(); showToast('Отгрузка создана');
-}
-
-// ==================== ORDERS ====================
-function renderOrders(search){
-    let o = DB.get('orders');
-    if(search) o = o.filter(x=>x.client.toLowerCase().includes(search.toLowerCase())||String(x.id).includes(search));
-    $('orders-tbody').innerHTML = o.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.client)+'</td><td>'+x.items+'</td><td>'+x.total+' ₽</td><td><span class="status-badge status-'+(x.status==='new'?'new':x.status==='processing'?'pending':x.status==='done'?'done':'cancel')+'">'+(x.status==='new'?'🆕 Новый':x.status==='processing'?'⚙️ В работе':x.status==='done'?'✅ Выполнен':'❌ Отменен')+'</span></td><td>'+ (x.status==='new'?'<button class="btn btn-sm btn-primary" onclick="processOrder('+x.id+')">⚙️</button>':'') + (x.status==='processing'?'<button class="btn btn-sm btn-success" onclick="completeOrder('+x.id+')">✅</button>':'') +'</td></tr>').join('');
-}
-
-function saveOrder(){
-    const o = DB.get('orders');
-    const items = document.querySelectorAll('#order-items input'); let total=0,sum=0;
-    items.forEach(inp=>{const q=parseInt(inp.value)||0; if(q>0){total+=q;sum+=q*parseFloat(inp.dataset.price||0);}});
-    if(total===0){showToast('Добавьте товары','error');return;}
-    o.push({id:Date.now(),date:new Date().toISOString().slice(0,10),client:$('order-client').value,source:$('order-source').value,items:total,total:Math.round(sum),status:'new'});
-    DB.set('orders',o); closeModal('order-modal'); renderOrders(); showToast('Заказ создан');
-}
-
-function processOrder(id){const o=DB.get('orders');const x=o.find(x=>x.id===id);if(x){x.status='processing';DB.set('orders',o);renderOrders();}}
-function completeOrder(id){const o=DB.get('orders');const x=o.find(x=>x.id===id);if(x){x.status='done';DB.set('orders',o);renderOrders();showToast('Выполнен #'+id);}}
-
-// ==================== MOVEMENT ====================
-function renderMovement(){
-    const m = DB.get('movement');
-    $('movement-tbody').innerHTML = m.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.product)+'</td><td>'+esc(x.from)+'</td><td>'+esc(x.to)+'</td><td>'+x.qty+'</td></tr>').join('');
-}
-
-// ==================== EMPLOYEES ====================
-function renderEmployees(){
-    const e = DB.get('employees');
-    $('employees-tbody').innerHTML = e.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.zone)+'</td><td><span class="status-badge '+(x.onShift?'status-done':'status-cancel')+'">'+(x.onShift?'✅':'❌')+'</span></td><td><b>'+x.tasks+'</b></td></tr>').join('');
-}
-
-function saveEmployee(){
-    const e = DB.get('employees');
-    e.push({name:$('emp-name').value,role:$('emp-role').value,phone:$('emp-phone').value,zone:$('emp-zone').value,onShift:true,tasks:0});
-    DB.set('employees',e); closeModal('employee-modal'); renderEmployees(); showToast('Сотрудник добавлен');
-}
-
-// ==================== LABELS + TTN ====================
-function switchLabelTab(tab){
-    document.querySelectorAll('#section-labels .tab-btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
-    $('label-tab-cities').style.display = tab==='cities'?'block':'none';
-    $('label-tab-print').style.display = tab==='print'?'block':'none';
-    $('label-tab-ttn').style.display = tab==='ttn'?'block':'none';
-    if(tab==='cities') renderLabelsTab();
-    if(tab==='ttn') renderTTNTable();
-}
-
-function renderLabelsTab(){
-    const p = DB.get('products');
-    const cities = new Set();
-    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
-    
-    // City chips
-    $('label-cities-chips').innerHTML = '<button class="btn btn-sm btn-outline" onclick="labelCityFilter=\'\';renderLabelsTab()">Все</button> '+Array.from(cities).map(c=>'<button class="btn btn-sm '+(labelCityFilter===c?'btn-primary':'btn-outline')+'" onclick="labelCityFilter=\''+c+'\';renderLabelsTab()">'+c+'</button>').join('');
-    
-    // Select
-    const sel = $('label-city-select');
-    if(sel) sel.innerHTML = '<option value="">Все города</option>'+Array.from(cities).map(c=>'<option value="'+c+'" '+(labelCityFilter===c?'selected':'')+'>'+c+'</option>').join('');
-    
-    // Table
-    const tbody = $('labels-table');
-    if(!tbody) return;
-    let filtered = p;
-    if(labelCityFilter) filtered = p.filter(x=>(x.cities||{})[labelCityFilter]>0);
-    
-    tbody.innerHTML = filtered.map((it,i)=>{
-        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        if(qty===0) return '';
-        const checked = selectedLabelItems.has(i)?'checked':'';
-        return '<tr><td><input type="checkbox" '+checked+' onchange="toggleLabelItem('+i+',this.checked)"></td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td>'+it.pack+'</td><td><b>'+qty+'</b></td></tr>';
-    }).join('');
-    
-    // Label elements checkboxes
-    const allElems = [{id:'warning',name:'⚠️'},{id:'art',name:'📋'},{id:'barcode',name:'📊'},{id:'name',name:'📝'},{id:'expiry',name:'📅'}];
-    $('label-elements').innerHTML = allElems.map(e=>'<label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" '+(labelElements.includes(e.id)?'checked':'')+' onchange="toggleLabelElem(\''+e.id+'\')"> '+e.name+'</label>').join('');
-    
-    renderLabelPreview();
-}
-
-function toggleLabelItem(idx, checked){
-    if(checked) selectedLabelItems.add(idx); else selectedLabelItems.delete(idx);
-}
-
-function toggleLabelElem(id){
-    if(labelElements.includes(id)) labelElements = labelElements.filter(x=>x!==id); else labelElements.push(id);
-    renderLabelPreview();
-}
-
-function renderLabelPreview(){
-    const p = DB.get('products');
-    const it = p[0] || {name:'Тестовый товар',art:'12345',labelBC:'4600000000000',expiry:'01.01.30'};
-    const box = $('label-preview-box'); if(!box) return;
-    box.innerHTML = '';
-    
-    let html = '';
-    labelElements.forEach(el=>{
-        if(el==='warning') html += '<div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>';
-        else if(el==='art') html += '<div class="lbl-title">'+esc(it.art)+'</div>';
-        else if(el==='barcode') html += '<div class="lbl-barcode"><svg id="preview-bc"></svg></div>';
-        else if(el==='name') html += '<div class="lbl-name">'+esc(it.name)+'</div>';
-        else if(el==='expiry') html += '<div class="lbl-meta"><span>Годен: '+esc(it.expiry)+'</span></div>';
-    });
-    
-    const div = document.createElement('div');
-    div.className = 'label-canvas';
-    div.innerHTML = html;
-    box.appendChild(div);
-    
-    setTimeout(()=>{
-        const svg = $('preview-bc');
-        if(svg && it.labelBC){
-            try{ JsBarcode(svg, String(it.labelBC), {format:$('bc-format').value, height:parseInt($('bc-height').value), displayValue:true, margin:0, fontSize:10}); }
-            catch(e){ svg.parentElement.innerHTML='<span style="font-size:8px;">ШК: '+it.labelBC+'</span>'; }
+function popMoItems(){
+    const p=G.g('products');
+    ['rItems','sItems','oItems'].forEach(id=>{
+        const el=$(id);if(el&&!el.dataset.p){
+            el.innerHTML=p.map(it=>'<div style="display:flex;gap:6px;margin-bottom:5px;align-items:center;"><span style="flex:1;font-size:11px;">'+esc(it.name)+'</span><input type="number" value="0" min="0" style="width:55px;padding:3px;border:1px solid var(--brd);border-radius:4px;" data-p="'+it.sku+'"'+(id==='oItems'?' data-pr="'+(it.price||0)+'"':'')+'></div>').join('');
+            el.dataset.p='1';
         }
+    });
+}
+
+// === DASHBOARD ===
+function rDash(){
+    const p=G.g('products'),o=G.g('orders'),r=G.g('receiving');
+    const cs=new Set();p.forEach(x=>Object.keys(x.cities||{}).forEach(c=>cs.add(c)));
+    $('dProd').textContent=p.length;$('dOrd').textContent=o.length;
+    $('dRec').textContent=r.filter(x=>x.st==='pending').length;$('dCity').textContent=cs.size;
+    const ctx=$('cMain');if(!ctx)return;
+    if(ctx._c)ctx._c.destroy();
+    ctx._c=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],datasets:[{label:'Операции',data:[12,19,15,25,22,30,28],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+
+// === PRODUCTS/INVENTORY ===
+function rProd(s){
+    const p=G.g('products'),tb=$('tProd');if(!tb)return;
+    let items=s?p.filter(x=>x.name.toLowerCase().includes(s.toLowerCase())||x.sku.includes(s)):p;
+    tb.innerHTML=items.map((it,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.sku)+'</code></td><td><code>'+esc(it.barcode)+'</code></td><td>'+it.pack+'</td><td><b>'+it.spikes+'</b></td><td>'+esc(it.expiry)+'</td></tr>').join('');
+}
+
+function rInv(s){
+    const p=G.g('products'),tb=$('tInv');if(!tb)return;
+    let items=s?p.filter(x=>x.name.toLowerCase().includes(s.toLowerCase())||x.sku.includes(s)):p;
+    tb.innerHTML=items.map((it,i)=>{
+        const t=Object.values(it.cities||{}).reduce((a,v)=>a+v,0);
+        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.barcode)+'</code></td><td>'+it.pack+'</td><td><b>'+t+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+    }).join('');
+}
+
+// === RECEIVING ===
+function rRec(){
+    const r=G.g('receiving');$('tRec').innerHTML=r.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.sup)+'</td><td>'+esc(x.inv)+'</td><td>'+x.items+'</td><td><span class="sb '+ (x.st==='done'?'sd':'sp')+'">'+(x.st==='done'?'✅ Принято':'⏳ Ожидает')+'</span></td><td>'+(x.st==='pending'?'<button class="btn bs bsm" onclick="compRec('+x.id+')">✅</button>':'')+'</td></tr>').join('');
+}
+
+function saveRec(){
+    const r=G.g('receiving'),inp=document.querySelectorAll('#rItems input');let tot=0;
+    inp.forEach(x=>tot+=parseInt(x.value)||0);
+    if(!tot){toast('Укажите количество','er');return;}
+    r.push({id:Date.now(),date:new Date().toISOString().slice(0,10),sup:$('rSup').value,inv:$('rInv').value,items:tot,st:'pending'});
+    G.s('receiving',r);closeMo('mRec');rRec();toast('Приемка создана');
+}
+
+function compRec(id){
+    const r=G.g('receiving'),x=r.find(x=>x.id===id);
+    if(x){x.st='done';G.s('receiving',r);rRec();toast('Принято #'+id);}
+}
+
+// === SHIPPING ===
+function rShip(){
+    const s=G.g('shipping');$('tShip').innerHTML=s.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.dest)+'</td><td><span class="sb sa">'+esc(x.mp)+'</span></td><td>'+x.items+'</td><td><span class="sb '+ (x.st==='done'?'sd':'sp')+'">'+(x.st==='done'?'✅ Отгружено':'⏳ Ожидает')+'</span></td></tr>').join('');
+}
+
+function saveShip(){
+    const s=G.g('shipping'),inp=document.querySelectorAll('#sItems input');let tot=0;
+    inp.forEach(x=>tot+=parseInt(x.value)||0);
+    if(!tot){toast('Укажите количество','er');return;}
+    s.push({id:Date.now(),date:new Date().toISOString().slice(0,10),dest:$('sDest').value,mp:$('sMP').value,items:tot,st:'pending'});
+    G.s('shipping',s);closeMo('mShip');rShip();toast('Отгрузка создана');
+}
+
+// === ORDERS ===
+function rOrd(s){
+    let o=G.g('orders');if(s)o=o.filter(x=>x.client.toLowerCase().includes(s.toLowerCase())||String(x.id).includes(s));
+    $('tOrd').innerHTML=o.map(x=>'<tr><td><b>#'+x.id+'</b></td><td>'+x.date+'</td><td>'+esc(x.client)+'</td><td>'+x.items+'</td><td>'+x.total+'₽</td><td><span class="sb '+ (x.st==='new'?'sn':x.st==='processing'?'sp':x.st==='done'?'sd':'se')+'">'+(x.st==='new'?'🆕 Новый':x.st==='processing'?'⚙️ Работа':x.st==='done'?'✅ Выполнен':'❌ Отмена')+'</span></td><td>'+(x.st==='new'?'<button class="btn bp bsm" onclick="procOrd('+x.id+')">⚙️</button>':'')+(x.st==='processing'?'<button class="btn bs bsm" onclick="doneOrd('+x.id+')">✅</button>':'')+'</td></tr>').join('');
+}
+
+function saveOrd(){
+    const o=G.g('orders'),inp=document.querySelectorAll('#oItems input');let tot=0,sum=0;
+    inp.forEach(x=>{const q=parseInt(x.value)||0;if(q>0){tot+=q;sum+=q*parseFloat(x.dataset.pr||0);}});
+    if(!tot){toast('Добавьте товары','er');return;}
+    o.push({id:Date.now(),date:new Date().toISOString().slice(0,10),cli:$('oCli').value,src:$('oSrc').value,items:tot,total:Math.round(sum),st:'new'});
+    G.s('orders',o);closeMo('mOrd');rOrd();toast('Заказ создан');
+}
+
+function procOrd(id){const o=G.g('orders'),x=o.find(x=>x.id===id);if(x){x.st='processing';G.s('orders',o);rOrd();}}
+function doneOrd(id){const o=G.g('orders'),x=o.find(x=>x.id===id);if(x){x.st='done';G.s('orders',o);rOrd();toast('Выполнен #'+id);}}
+
+// === EMPLOYEES ===
+function rEmp(){
+    const e=G.g('emp');$('tEmp').innerHTML=e.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.zone)+'</td><td><span class="sb '+(x.on?'sd':'se')+'">'+(x.on?'✅':'❌')+'</span></td><td><b>'+x.tasks+'</b></td></tr>').join('');
+}
+
+function saveEmp(){
+    const e=G.g('emp');e.push({name:$('eName').value,role:$('eRole').value,phone:$('ePhone').value,zone:$('eZone').value,on:true,tasks:0});
+    G.s('emp',e);closeMo('mEmp');rEmp();toast('Сотрудник добавлен');
+}
+
+// === LABELS + TTN ===
+function lblTab(t,btn){
+    document.querySelectorAll('#sec-lbl .tb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+    $('lblCity').style.display=t==='city'?'block':'none';
+    $('lblPrint').style.display=t==='print'?'block':'none';
+    $('lblTTN').style.display=t==='ttn'?'block':'none';
+    if(t==='city')rLbl();if(t==='ttn')rTTN();
+}
+
+function rLbl(s){
+    const p=G.g('products'),cs=new Set();p.forEach(x=>Object.keys(x.cities||{}).forEach(c=>cs.add(c)));
+    $('cityChips').innerHTML='<button class="cc '+(curCity?'':'on')+'" onclick="curCity=\'\';rLbl()">Все</button> '+Array.from(cs).map(c=>'<button class="cc '+(curCity===c?'on':'')+'" onclick="curCity=\''+c+'\';rLbl()">'+c+'</button>').join('');
+    
+    const tb=$('tLbl');if(!tb)return;
+    let items=s?p.filter(x=>x.name.toLowerCase().includes(s.toLowerCase())):p;
+    if(curCity)items=items.filter(x=>(x.cities||{})[curCity]>0);
+    
+    tb.innerHTML=items.map((it,i)=>{
+        const q=curCity?((it.cities||{})[curCity]||0):Object.values(it.cities||{}).reduce((a,v)=>a+v,0);
+        if(!q)return'';
+        const ck=selItems.has(it.sku)?'checked':'';
+        return '<tr><td><input type="checkbox" '+ck+' onchange="selItem(\''+it.sku+'\',this.checked)"></td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.barcode)+'</code></td><td><b>'+q+'</b></td></tr>';
+    }).join('');
+    rLblPreview();
+}
+
+function selItem(sku,v){if(v)selItems.add(sku);else selItems.delete(sku);}
+
+function rLblPreview(){
+    const p=G.g('products'),it=p[0]||{name:'Тестовый товар',art:'12345',barcode:'4600000000000',expiry:'01.01.30'};
+    const box=$('lblPreview');if(!box)return;
+    const hBC=parseInt($('bcH').value)||16,fBC=$('bcF').value||'CODE128';
+    box.innerHTML='<div class="lc"><div class="lw">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div><div class="lt">'+esc(it.art)+'</div><div class="lb"><svg id="pvBC"></svg></div><div class="ln">'+esc(it.name)+'</div><div class="lm"><span>Годен: '+esc(it.expiry)+'</span></div></div>';
+    setTimeout(()=>{
+        const svg=$('pvBC');
+        if(svg&&it.barcode)try{JsBarcode(svg,it.barcode,{format:fBC,height:hBC,displayValue:true,margin:0,fontSize:10});}catch(e){}
     },100);
 }
 
-function printAllLabels(){
-    const p = DB.get('products');
-    const out = $('print-output');
-    out.innerHTML = '';
-    document.body.classList.add('print-label-mode');
-    
-    let count = 0;
-    const items = Array.from(selectedLabelItems);
-    const products = items.length ? items.map(i=>p[i]) : p.filter(x=>{
-        if(!labelCityFilter) return true;
-        return (x.cities||{})[labelCityFilter]>0;
-    });
-    
-    products.forEach(it=>{
-        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        if(qty===0) return;
-        for(let k=0;k<qty;k++){
-            let html = '';
-            labelElements.forEach(el=>{
-                if(el==='warning') html += '<div class="lbl-warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>';
-                else if(el==='art') html += '<div class="lbl-title">'+esc(it.art)+'</div>';
-                else if(el==='barcode') html += '<div class="lbl-barcode"><svg id="lb-'+count+'"></svg></div>';
-                else if(el==='name') html += '<div class="lbl-name">'+esc(it.name)+'</div>';
-                else if(el==='expiry') html += '<div class="lbl-meta"><span>Годен: '+esc(it.expiry)+'</span></div>';
-            });
-            const div = document.createElement('div');
-            div.className = 'label-canvas';
-            div.innerHTML = html;
-            out.appendChild(div);
-            count++;
+function printLabels(){
+    const p=G.g('products'),out=$('po');out.innerHTML='';document.body.classList.add('pl');
+    let items=selItems.size?p.filter(x=>selItems.has(x.sku)):p;
+    if(curCity)items=items.filter(x=>(x.cities||{})[curCity]>0);
+    let cnt=0;
+    items.forEach(it=>{
+        const q=curCity?((it.cities||{})[curCity]||0):Object.values(it.cities||{}).reduce((a,v)=>a+v,0);
+        if(!q)return;
+        for(let k=0;k<q;k++){
+            const hBC=parseInt($('bcH').value)||16,fBC=$('bcF').value||'CODE128';
+            const div=document.createElement('div');div.className='lc';
+            div.innerHTML='<div class="lw">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div><div class="lt">'+esc(it.art)+'</div><div class="lb"><svg id="lb'+cnt+'"></svg></div><div class="ln">'+esc(it.name)+'</div><div class="lm"><span>Годен: '+esc(it.expiry)+'</span></div>';
+            out.appendChild(div);cnt++;
         }
     });
-    
-    if(count===0){showToast('Нет товаров для печати','error');document.body.classList.remove('print-label-mode');return;}
-    
+    if(!cnt){toast('Нет товаров','er');document.body.classList.remove('pl');return;}
     setTimeout(()=>{
-        for(let i=0;i<count;i++){
-            const svg = $('lb-'+i);
-            if(svg){
-                const it = products[Math.floor(i/products.length)] || products[0];
-                try{ JsBarcode(svg, String(it?.labelBC||'12345'), {format:$('bc-format').value, height:parseInt($('bc-height').value), displayValue:true, margin:0, fontSize:10}); }catch(e){}
-            }
+        for(let i=0;i<cnt;i++){
+            const svg=$('lb'+i);if(svg)try{JsBarcode(svg,p[Math.floor(i/p.length)]?.barcode||'12345',{format:fBC,height:hBC,displayValue:true,margin:0,fontSize:10});}catch(e){}
         }
-        window.print();
-        setTimeout(()=>{document.body.classList.remove('print-label-mode');out.innerHTML='';},1000);
+        window.print();setTimeout(()=>{document.body.classList.remove('pl');out.innerHTML='';},1000);
     },300);
 }
 
-function printTTN(mode){
-    const p = DB.get('products');
-    const out = $('print-output');
-    out.innerHTML = '';
-    document.body.classList.add('print-ttn-mode');
-    
-    let filtered = p;
-    if(labelCityFilter) filtered = p.filter(x=>(x.cities||{})[labelCityFilter]>0);
-    
-    const title = (mode==='all') ? 'ОБЩАЯ НАКЛАДНАЯ (ВСЕ ГОРОДА)' : 'НАКЛАДНАЯ НА СБОРКУ'+(labelCityFilter?' — '+labelCityFilter:'');
-    let html = '<div class="ttn-doc"><div class="ttn-head"><h1>'+title+'</h1><p>Дата: '+new Date().toLocaleDateString()+'</p></div><table class="ttn-table"><thead><tr><th>№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody>';
-    
-    filtered.forEach((it,i)=>{
-        const qty = labelCityFilter ? ((it.cities||{})[labelCityFilter]||0) : Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        if(qty===0) return;
-        html += '<tr><td>'+(i+1)+'</td><td style="text-align:left">'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.labelBC)+'</td><td>'+it.pack+'</td><td><b>'+qty+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
-    });
-    
-    html += '</tbody></table><br><p>Ответственный: ____________________</p></div>';
-    out.innerHTML = html;
-    setTimeout(()=>{window.print();setTimeout(()=>{document.body.classList.remove('print-ttn-mode');},1000);},200);
-}
-
-function renderTTNTable(){
-    const p = DB.get('products');
-    const tbody = $('ttn-table'); if(!tbody) return;
-    tbody.innerHTML = p.map((it,i)=>{
-        const total = Object.values(it.cities||{}).reduce((s,v)=>s+v,0);
-        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.labelBC)+'</code></td><td>'+it.pack+'</td><td><b>'+total+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
+function rTTN(){
+    const p=G.g('products'),tb=$('tTTN');if(!tb)return;
+    tb.innerHTML=p.map((it,i)=>{
+        const t=Object.values(it.cities||{}).reduce((a,v)=>a+v,0);
+        return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td><code>'+esc(it.art)+'</code></td><td><code>'+esc(it.barcode)+'</code></td><td>'+it.pack+'</td><td><b>'+t+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
     }).join('');
 }
 
-// ==================== POPULATE ====================
-function populateCitySelects(){
-    const p = DB.get('products');
-    const cities = new Set();
-    p.forEach(pr=>Object.keys(pr.cities||{}).forEach(c=>cities.add(c)));
-    const sel = $('label-city-select');
-    if(sel) sel.innerHTML = '<option value="">Все города</option>'+Array.from(cities).sort().map(c=>'<option value="'+c+'">'+c+'</option>').join('');
-}
-
-function populateModalItems(){
-    const p = DB.get('products');
-    ['rec-items','ship-items','order-items'].forEach(id=>{
-        const el = $(id);
-        if(el && !el.dataset.populated){
-            el.innerHTML = p.map(it=>'<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;"><span style="flex:1;font-size:12px;">'+esc(it.name)+'</span><input type="number" value="0" min="0" style="width:60px;padding:4px;border:1px solid var(--border);border-radius:4px;" data-prod="'+it.sku+'"'+ (id==='order-items'?' data-price="'+(it.price||0)+'"':'') +'></div>').join('');
-            el.dataset.populated = '1';
-        }
+function printTTN(m){
+    const p=G.g('products'),out=$('po');out.innerHTML='';
+    let items=curCity?p.filter(x=>(x.cities||{})[curCity]>0):p;
+    const title=(m==='a'&&!curCity)?'ОБЩАЯ НАКЛАДНАЯ':'НАКЛАДНАЯ НА СБОРКУ'+(curCity?' — '+curCity:'');
+    let h='<div class="td"><div class="th"><h1>'+title+'</h1><p>Дата: '+new Date().toLocaleDateString()+'</p></div><table class="tt2"><thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th><th>Годен</th></tr></thead><tbody>';
+    items.forEach((it,i)=>{
+        const q=curCity?((it.cities||{})[curCity]||0):Object.values(it.cities||{}).reduce((a,v)=>a+v,0);
+        if(!q)return;
+        h+='<tr><td>'+(i+1)+'</td><td style="text-align:left">'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.barcode)+'</td><td>'+it.pack+'</td><td><b>'+q+'</b></td><td>'+esc(it.expiry)+'</td></tr>';
     });
+    h+='</tbody></table><br><p>Ответственный: ____________________</p></div>';
+    out.innerHTML=h;
+    document.body.classList.add('pl');
+    setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove('pl'),1000);},200);
 }
 
-function exportInventory(){
-    const p = DB.get('products');
-    const data = p.map(it=>({'Наименование':it.name,'Артикул':it.art,'ШК':it.labelBC,'Упаковка':it.pack,'Итого':Object.values(it.cities||{}).reduce((s,v)=>s+v,0),'Годен':it.expiry}));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Остатки');
-    XLSX.writeFile(wb,'inventory_'+new Date().toISOString().slice(0,10)+'.xlsx');
-    showToast('Экспорт завершен');
+// === IMPORT TZ ===
+function importTZ(inp){
+    const f=inp.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=function(e){
+        try{
+            const wb=XLSX.read(e.target.result,{type:'array'}),raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+            let hi=0;for(let i=0;i<Math.min(raw.length,5);i++){if((raw[i]||[]).join(' ').toLowerCase().includes('наименование')){hi=i;break;}}
+            const hdr=raw[hi],cm={},ci=[];
+            hdr.forEach((h,i)=>{if(!h)return;const hl=String(h).trim().toLowerCase();
+                if(hl.includes('наименование'))cm.n=i;else if(hl.includes('шк на этикетку'))cm.bc=i;else if(hl.includes('шк производителя')&&!cm.bc)cm.bc=i;
+                else if(hl.includes('артикул продавца'))cm.a=i;else if(hl.includes('исходный артикул')&&!cm.a)cm.a=i;
+                else if(hl.includes('кол-во в упаковку'))cm.p=i;else if(hl.includes('итого к отгрузке'))cm.sp=i;else if(hl.includes('годен до'))cm.ex=i;
+            });
+            const ck=['хабаровск','омск','пермь','екатеринбург','саратов','волгоград','тюмень','ростов','самара','уфа','новосиб','ярославль','краснодар','адыгейск','сп','казань','жуковский','кросс'];
+            hdr.forEach((h,i)=>{if(Object.values(cm).includes(i)||!h)return;if(ck.some(k=>String(h).toLowerCase().includes(k)))ci.push(i);});
+            
+            const prods=[];
+            for(let r=hi+1;r<raw.length;r++){
+                const row=raw[r];if(!row||!row[cm.n])continue;
+                const name=String(row[cm.n]||'').trim();if(name.length<3||name==='---')continue;
+                const it={name,sku:String(row[cm.a]||''),barcode:String(row[cm.bc]||''),art:String(row[cm.a]||''),pack:parseInt(row[cm.p])||1,spikes:parseInt(row[cm.sp])||0,expiry:String(row[cm.ex]||''),cities:{}};
+                ci.forEach(i=>{const v=parseInt(row[i]);if(!isNaN(v)&&v>0)it.cities[hdr[i].trim()]=v;});
+                prods.push(it);
+            }
+            if(prods.length){G.s('products',prods);toast('Загружено '+prods.length+' товаров');refresh('dash');}
+            else toast('Товары не найдены','er');
+        }catch(err){toast('Ошибка: '+err.message,'er');}
+    };
+    r.readAsArrayBuffer(f);
 }
 
-// ==================== VOICE ASSISTANT ====================
+// === VOICE ===
 function toggleVoice(){
-    if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
-        showToast('Голосовое распознавание не поддерживается браузером','error'); return;
-    }
-    const btn = $('voice-btn');
-    if(btn.classList.contains('listening')){
-        stopVoice(); return;
-    }
-    startVoice();
+    if(!('webkitSpeechRecognition' in window)){toast('Не поддерживается','er');return;}
+    const b=$('vBtn');
+    if(b.classList.contains('on')){stopV();return;}
+    startV();
 }
 
-function startVoice(){
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.lang = 'ru-RU';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    
-    recognition.onstart = function(){
-        $('voice-btn').classList.add('listening');
-        $('voice-indicator').classList.add('active');
-        $('voice-text').textContent = 'Слушаю...';
+function startV(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    recognition=new SR();recognition.lang='ru-RU';recognition.continuous=false;
+    recognition.onstart=function(){$('vBtn').classList.add('on');$('vInd').classList.add('on');$('vTxt').textContent='Слушаю...';};
+    recognition.onresult=function(e){
+        const t=e.results[0][0].transcript.toLowerCase();$('vTxt').textContent=t;speakCmd(t);
+        setTimeout(stopV,1500);
     };
-    
-    recognition.onresult = function(e){
-        const text = e.results[0][0].transcript.toLowerCase();
-        $('voice-text').textContent = 'Вы сказали: "'+text+'"';
-        processVoiceCommand(text);
-        setTimeout(stopVoice, 2000);
-    };
-    
-    recognition.onerror = function(){
-        $('voice-text').textContent = 'Не распознано, попробуйте снова';
-        setTimeout(stopVoice, 2000);
-    };
-    
+    recognition.onerror=function(){$('vTxt').textContent='Не распознано';setTimeout(stopV,1500);};
     recognition.start();
 }
 
-function stopVoice(){
-    if(recognition) recognition.stop();
-    $('voice-btn').classList.remove('listening');
-    $('voice-indicator').classList.remove('active');
+function stopV(){if(recognition)recognition.stop();$('vBtn').classList.remove('on');$('vInd').classList.remove('on');}
+
+function speakCmd(t){
+    const m={дашборд:'dash',главная:'dash',товары:'prod',остатки:'inv',приемка:'rec',отгрузка:'ship',заказы:'ord',этикетки:'lbl',сотрудники:'emp',отчеты:'rep'};
+    for(const[k,s]of Object.entries(m)){if(t.includes(k)){go(s);speak('Открываю '+s);return;}}
+    if(t.includes('найди')||t.includes('поиск')){
+        const q=t.replace(/найди|поиск/g,'').trim();
+        if(q){go('inv');const inp=document.querySelector('#sec-inv input');if(inp){inp.value=q;rInv(q);}speak('Ищу: '+q);return;}
+    }
+    if(t.includes('импорт')){document.getElementById('impF').click();speak('Выберите файл');return;}
+    speak('Команда не распознана');
 }
 
-function processVoiceCommand(text){
-    const commands = {
-        'дашборд':'dashboard','главная':'dashboard','домой':'dashboard',
-        'товары':'products','каталог':'products',
-        'остатки':'inventory','склад':'warehouses',
-        'приемка':'receiving','отгрузка':'shipping',
-        'заказы':'orders','сотрудники':'employees',
-        'этикетки':'labels','печать':'labels','ттн':'labels',
-        'отчеты':'reports','настройки':'settings'
-    };
-    
-    for(const[key, section] of Object.entries(commands)){
-        if(text.includes(key)){
-            switchSection(section);
-            speak('Открываю раздел '+section);
-            return;
-        }
-    }
-    
-    if(text.includes('найди') || text.includes('поиск') || text.includes('найти')){
-        const query = text.replace(/найди|поиск|найти/g,'').trim();
-        if(query){
-            switchSection('inventory');
-            const inp = document.querySelector('#section-inventory input');
-            if(inp){inp.value=query;renderInventory(query);}
-            speak('Ищу товар: '+query);
-            return;
-        }
-    }
-    
-    if(text.includes('импорт') || text.includes('загрузи')){
-        importTZ();
-        speak('Выберите файл для импорта');
-        return;
-    }
-    
-    if(text.includes('печать этикет') || text.includes('напечатай этикет')){
-        switchSection('labels');
-        switchLabelTab('cities');
-        speak('Открываю печать этикеток');
-        return;
-    }
-    
-    speak('Команда не распознана. Попробуйте: дашборд, товары, остатки, приемка, заказы, этикетки');
-}
+function speak(t){if('speechSynthesis' in window){const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';speechSynthesis.speak(u);}}
 
-function speak(text){
-    if('speechSynthesis' in window){
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ru-RU'; u.rate = 1;
-        speechSynthesis.speak(u);
-    }
-}
+// === UTILS ===
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+function toggleDark(){document.body.classList.toggle('dark');}
 
-// ==================== INIT ====================
-window.onload = function(){
-    checkSession();
-};
+// === INIT ===
+window.onload=checkSes;
 </script>
 </body>
 </html>
