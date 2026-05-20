@@ -51,7 +51,11 @@
     .label-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; position: relative; }
     .label-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
     .label-card.printed { border-color: var(--success); background: #f0fdf4; }
-    .label-card.printed::after { content: '✓'; position: absolute; top: 5px; right: 8px; color: var(--success); font-weight: bold; font-size: 1.2rem; }
+    .label-card .copies-input {
+      margin-top: 10px; display: flex; gap: 10px; align-items: center;
+    }
+    .label-card .copies-input label { margin: 0; font-size: 0.85rem; }
+    .label-card .copies-input input { width: 60px; text-align: center; }
 
     .print-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
     .print-toolbar .stat { font-size: 0.9rem; color: #64748b; }
@@ -89,14 +93,14 @@
       letter-spacing: 0.5px;
       border-bottom: 1.5px solid #000;
       padding-bottom: 1.5px;
-      margin-bottom: 1.5px;
+      margin-bottom: 2px;
       line-height: 1.1;
     }
     .label-sheet .lbl-header-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      font-size: 8pt;
+      font-size: 9pt;
       font-weight: 700;
       margin-bottom: 2px;
     }
@@ -104,37 +108,42 @@
     .label-sheet .lbl-counter { font-weight: 600; font-size: 8pt; }
     .label-sheet .lbl-barcode-area {
       text-align: center;
-      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 0;
     }
-    .label-sheet .lbl-barcode-area svg { width: 48mm; height: 12mm; }
+    .label-sheet .lbl-barcode-area svg { width: 48mm; height: 11mm; }
     .label-sheet .lbl-barcode-num {
-      font-size: 11pt; font-weight: 700; text-align: center;
-      letter-spacing: 1px; margin-bottom: 2px; font-family: monospace;
+      font-size: 12pt;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 1.5px;
+      margin-bottom: 3px;
+      font-family: monospace;
     }
     .label-sheet .lbl-desc {
-      font-size: 7.5pt; line-height: 1.2; margin-bottom: 2px;
-      min-height: 18px; overflow: hidden;
+      font-size: 7.5pt;
+      line-height: 1.25;
+      margin-bottom: 2px;
+      flex: 1;
     }
     .label-sheet .lbl-bottom-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      font-size: 7pt;
     }
-    .label-sheet .lbl-expiry { font-size: 7.5pt; font-weight: 600; }
-    .label-sheet .lbl-quantity { font-size: 7.5pt; font-weight: 600; }
+    .label-sheet .lbl-expiry { font-size: 8pt; font-weight: 600; }
+    .label-sheet .lbl-quantity { font-size: 8pt; font-weight: 600; }
     .label-sheet .lbl-instruction {
-      font-size: 6.5pt; line-height: 1.15; margin-top: 1px;
-      color: #333; overflow: hidden; max-height: 14px;
+      font-size: 7pt;
+      line-height: 1.2;
+      margin-top: 1px;
+      overflow: hidden;
     }
 
     .label-card .label-sheet {
-      width: 100%; height: auto; min-height: 140px; border-radius: 4px;
+      width: 100%; height: auto; min-height: 160px; border-radius: 4px;
     }
     .label-card .label-sheet .lbl-barcode-area svg { width: 100%; height: 35px; }
 
@@ -148,7 +157,6 @@
       #bulkPrintArea .label-sheet { page-break-after: always; page-break-inside: avoid; }
     }
 
-    /* Mapping debug */
     .mapping-preview { margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 6px; }
     .mapping-preview h4 { margin-bottom: 8px; }
     .mapping-preview table { font-size: 0.85rem; }
@@ -156,12 +164,17 @@
     .mapping-preview .preview-val { color: var(--primary); font-weight: 500; }
 
     .mapping-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+    .raw-headers { margin-top: 10px; padding: 8px; background: #fffbe6; border-radius: 6px; font-size: 0.85rem; }
+    .raw-headers summary { cursor: pointer; font-weight: 500; }
+    .raw-headers .header-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .raw-headers .header-tag { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1> Система контроля отгрузки</h1>
+      <h1>📦 Система контроля отгрузки</h1>
       <div class="voice-toggle">
         <input type="checkbox" id="voiceToggle" checked>
         <label for="voiceToggle">🔊 Голосовое сопровождение</label>
@@ -175,46 +188,55 @@
       <button class="tab-btn" onclick="switchTab('scanner')">📦 Сканер & Короба</button>
     </div>
 
+    <!-- 1. Загрузка -->
     <section id="tab-upload" class="panel">
       <h2>1. Загрузка ТЗ (Excel)</h2>
       <p>Выберите файл заказа. Система автоматически распознает структуру.</p>
       <div class="grid" style="grid-template-columns: 1fr;">
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
       </div>
-      <button onclick="parseFile()" class="success">📊 Загрузить и подготовить</button>
+      <button onclick="parseFile()" class="success"> Загрузить и подготовить</button>
       <div id="uploadStatus" style="margin-top:10px; font-weight:500;"></div>
     </section>
 
+    <!-- 2. Маппинг -->
     <section id="tab-mapping" class="panel hidden">
       <h2>2. Соответствие полей</h2>
-      <p>Проверьте, какие колонки из файла соответствуют системным полям. <strong>Обязательно заполните "Наименование" и "Квант спайки"</strong></p>
+      <p>Проверьте, какие колонки из файла соответствуют системным полям.</p>
+
+      <details class="raw-headers">
+        <summary> Список колонок из файла (клик для раскрытия)</summary>
+        <div class="header-list" id="headerList"></div>
+      </details>
+
       <table id="mappingTable">
         <thead><tr><th>Системное поле</th><th>Колонка из Excel</th><th>Пример значения</th></tr></thead>
         <tbody id="mappingBody"></tbody>
       </table>
       <div class="mapping-actions">
         <button onclick="saveMapping()" class="success" style="width:auto;">✅ Сохранить и перейти к этикеткам</button>
-        <button onclick="previewMapping()" class="secondary" style="width:auto;">👁️ Предпросмотр данных</button>
+        <button onclick="previewMapping()" class="secondary" style="width:auto;">️ Предпросмотр данных</button>
       </div>
       <div id="mappingPreview" class="mapping-preview hidden"></div>
     </section>
 
+    <!-- 3. Этикетки -->
     <section id="tab-labels" class="panel hidden">
       <h2>3. Этикетки для сборки ТЗ</h2>
-      <p>Все позиции из ТЗ. Отметьте напечатанные и используйте при сборке.</p>
+      <p>Все позиции из ТЗ. Укажите количество копий для печати.</p>
 
       <div class="stats-row" id="labelStats">
-        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Всего позиций</div></div>
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Позиций</div></div>
         <div class="stat-card"><div class="num" id="statPrinted">0</div><div class="lbl">Напечатано</div></div>
         <div class="stat-card"><div class="num" id="statRemaining">0</div><div class="lbl">Осталось</div></div>
       </div>
 
       <div class="print-toolbar">
-        <button onclick="printAllLabels()" class="purple" style="width:auto;">🖨️ Печать ВСЕХ</button>
+        <button onclick="printAllLabels()" class="purple" style="width:auto;">️ Печать ВСЕХ</button>
         <button onclick="printRemainingLabels()" class="orange" style="width:auto;">🖨️ Печать ОСТАВШИХСЯ</button>
-        <button onclick="printSingleFromGrid()" class="secondary" style="width:auto;" id="printSingleBtn">🖨️ Печать выбранных</button>
+        <button onclick="printSingleFromGrid()" class="secondary" style="width:auto;" id="printSingleBtn">️ Печать выбранных</button>
         <button onclick="markAllPrinted()" class="success" style="width:auto;">✅ Отметить все</button>
-        <button onclick="resetPrintStatus()" class="secondary" style="width:auto;">🔄 Сбросить статус</button>
+        <button onclick="resetPrintStatus()" class="secondary" style="width:auto;"> Сбросить статус</button>
         <span class="stat" id="printStat"></span>
       </div>
 
@@ -231,6 +253,7 @@
       <div class="label-grid" id="labelGrid"></div>
     </section>
 
+    <!-- 4. Сканер -->
     <section id="tab-scanner" class="panel hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
         <div>
@@ -259,20 +282,22 @@
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
 
-      <h3 style="margin-top:20px;"> Отсканированные позиции</h3>
+      <h3 style="margin-top:20px;">📋 Отсканированные позиции</h3>
       <div style="max-height: 300px; overflow-y: auto;">
         <table id="scannedTable">
           <thead><tr><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Статус</th><th>Действие</th></tr></thead>
           <tbody id="scannedBody"></tbody>
         </table>
       </div>
-      <button class="danger" style="margin-top:15px;" onclick="resetSession()">🗑️ Сбросить сессию</button>
+      <button class="danger" style="margin-top:15px;" onclick="resetSession()">️ Сбросить сессию</button>
     </section>
   </div>
 
+  <!-- Область для печати -->
   <div id="bulkPrintArea" class="hidden"></div>
 
   <script>
+    // --- State ---
     let excelData = [];
     let mapping = {};
     let boxes = { 1: [] };
@@ -285,18 +310,21 @@
     let selectedIndices = new Set();
     let labelCounterMap = {};
     let allHeaders = [];
+    let printCopies = {}; // Store user-defined copies per item index
 
+    // --- Tab switching ---
     function switchTab(tab) {
       document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById('tab-' + tab).classList.remove('hidden');
       const tabNames = ['upload','mapping','labels','scanner'];
       document.querySelectorAll('.tab-btn')[tabNames.indexOf(tab)].classList.add('active');
       if(tab === 'scanner') document.getElementById('scannerInput').focus();
       if(tab === 'labels') { calculateCounters(); renderLabelGrid(); }
-      if(tab === 'mapping') previewMapping();
+      if(tab === 'mapping') { showRawHeaders(); previewMapping(); }
     }
 
+    // --- Voice ---
     function speak(text) {
       if (!voiceEnabled || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
@@ -307,6 +335,7 @@
 
     document.getElementById('voiceToggle').addEventListener('change', e => voiceEnabled = e.target.checked);
 
+    // --- 1. Parse File ---
     function parseFile() {
       const file = document.getElementById('fileInput').files[0];
       if (!file) return alert('Выберите файл!');
@@ -318,7 +347,8 @@
           excelData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
           if (excelData.length === 0) throw new Error('Файл пуст или неверный формат');
           allHeaders = Object.keys(excelData[0]);
-          document.getElementById('uploadStatus').innerHTML = `<span class="badge success">✅ Загружено: ${excelData.length} строк, ${allHeaders.length} колонок</span>`;
+          document.getElementById('uploadStatus').innerHTML =
+            '<span class="badge success">✅ Загружено: ' + excelData.length + ' строк, ' + allHeaders.length + ' колонок</span>';
           buildMappingUI();
           switchTab('mapping');
           speak('Файл загружен. Проверьте соответствие полей.');
@@ -329,25 +359,31 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Расширенная система маппинга с авто-определением
+    // --- 2. Mapping System ---
     const SYSTEM_FIELDS = [
-      { key: 'wb_article', label: 'Артикул', hints: ['артикул', 'article', 'код', 'sku', 'wb'], required: true },
-      { key: 'label_barcode', label: 'ШК на этикетку', hints: ['шк', 'barcode', 'штрихкод', 'ean', 'код'], required: true },
-      { key: 'origin_barcode', label: 'ШК исходный', hints: ['шк', 'barcode', 'штрихкод', 'ean', 'код'], required: false },
-      { key: 'product_description', label: 'Наименование товара', hints: ['наименование', 'название', 'описание', 'товар', 'продукт', 'product', 'desc', 'name'], required: true },
-      { key: 'expiry', label: 'Годен до / Срок годности', hints: ['годен', 'срок', 'expiry', 'сг', 'годность'], required: false },
-      { key: 'packing_instructions', label: 'Инструкция / ТЗ', hints: ['тз', 'инструкция', 'instruction', 'примечание', 'упаковка'], required: false },
-      { key: 'sets_per_box', label: 'Спаек в коробе', hints: ['спайк', 'короб', 'box', 'комплект', 'sets'], required: false },
-      { key: 'quantity', label: 'Квант спайки / Кол-во', hints: ['квант', 'кол', 'количество', 'qty', 'шт', 'quantity', 'count', 'amount'], required: true },
-      { key: 'dimensions', label: 'Размеры', hints: ['размер', 'габарит', 'dimensions', 'size'], required: false }
+      { key: 'wb_article',        label: 'Артикул',                     hints: ['артикул','article','код','sku','wb','art','код товара'],          required: true  },
+      { key: 'label_barcode',     label: 'ШК на этикетку',              hints: ['шк','barcode','штрихкод','ean','код','код товара','шк товара'],         required: true  },
+      { key: 'origin_barcode',    label: 'ШК исходный',                 hints: ['шк','barcode','штрихкод','ean','исход','исходный'],       required: false },
+      { key: 'product_name',      label: 'Наименование товара',         hints: ['наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods','наименование товара'], required: true },
+      { key: 'expiry',            label: 'Годен до / Срок годности',    hints: ['годен','срок','expiry','сг','годность','срок годности','годен до'],       required: false },
+      { key: 'packing_instructions', label: 'Инструкция / ТЗ',          hints: ['тз','инструкция','instruction','примечание','упаковка','паковать','комментарий'], required: false },
+      { key: 'sets_per_box',      label: 'Спаек в коробе',              hints: ['спайк','короб','box','комплект','sets','спаек в коробе'],       required: false },
+      { key: 'quantity',          label: 'Квант спайки / Кол-во',       hints: ['квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'], required: true },
+      { key: 'total_quantity',    label: 'Итого к отгрузке (шт)',       hints: ['итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке','итого к отгрузке спаек'], required: false }
     ];
 
     function findBestMatch(headers, hints) {
+      // Exact match first
+      for(const hint of hints) {
+        const exact = headers.find(h => h.toLowerCase().replace(/\s+/g,'') === hint.toLowerCase().replace(/\s+/g,''));
+        if(exact) return exact;
+      }
+      // Contains match
       for(const hint of hints) {
         const match = headers.find(h => h.toLowerCase().includes(hint.toLowerCase()));
         if(match) return match;
       }
-      // Более мягкий поиск — проверяем каждое слово
+      // Word-by-word soft match
       for(const hint of hints) {
         const words = hint.toLowerCase().split(/[\s\/]+/);
         for(const word of words) {
@@ -359,6 +395,12 @@
       return '';
     }
 
+    function showRawHeaders() {
+      const list = document.getElementById('headerList');
+      if(!list || allHeaders.length === 0) return;
+      list.innerHTML = allHeaders.map(h => '<span class="header-tag">' + h + '</span>').join('');
+    }
+
     function buildMappingUI() {
       const headers = Object.keys(excelData[0]);
       allHeaders = headers;
@@ -368,41 +410,36 @@
       SYSTEM_FIELDS.forEach((field) => {
         const bestMatch = findBestMatch(headers, field.hints);
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>
-            <strong>${field.label}</strong>
-            ${field.required ? '<span style="color:var(--danger);">*</span>' : ''}
-            <br><span style="color:#64748b; font-size:0.75em;">Ключ: ${field.key}</span>
-          </td>
-          <td>
-            <select id="map_${field.key}">
-              <option value="">-- Не выбрано --</option>
-              ${headers.map(h => `<option value="${h}" ${h === bestMatch ? 'selected' : ''}>${h}</option>`).join('')}
-            </select>
-          </td>
-          <td class="preview-val" id="preview_${field.key}">—</td>`;
+        tr.innerHTML =
+          '<td>' +
+            '<strong>' + field.label + '</strong>' +
+            (field.required ? '<span style="color:var(--danger);">*</span>' : '') +
+            '<br><span style="color:#64748b; font-size:0.75em;">Ключ: ' + field.key + '</span>' +
+          '</td>' +
+          '<td>' +
+            '<select id="map_' + field.key + '">' +
+              '<option value="">-- Не выбрано --</option>' +
+              headers.map(h => '<option value="' + h + '"' + (h === bestMatch ? ' selected' : '') + '>' + h + '</option>').join('') +
+            '</select>' +
+          '</td>' +
+          '<td class="preview-val" id="preview_' + field.key + '">—</td>';
         tbody.appendChild(tr);
 
-        // Add change listener for live preview
         setTimeout(() => {
-          const sel = document.getElementById(`map_${field.key}`);
-          sel.addEventListener('change', () => {
-            updateFieldPreview(field.key);
-          });
-          // Initial preview
+          const sel = document.getElementById('map_' + field.key);
+          sel.addEventListener('change', () => updateFieldPreview(field.key));
           updateFieldPreview(field.key);
         }, 0);
       });
     }
 
     function updateFieldPreview(key) {
-      const sel = document.getElementById(`map_${key}`);
+      const sel = document.getElementById('map_' + key);
       const colName = sel.value;
-      const previewEl = document.getElementById(`preview_${key}`);
-      
+      const previewEl = document.getElementById('preview_' + key);
       if(colName && excelData.length > 0) {
         const val = excelData[0][colName];
-        previewEl.textContent = val !== undefined && val !== '' ? String(val).substring(0, 50) : '(пусто)';
+        previewEl.textContent = (val !== undefined && val !== '') ? String(val).substring(0, 50) : '(пусто)';
       } else {
         previewEl.textContent = '—';
       }
@@ -410,39 +447,30 @@
 
     function previewMapping() {
       const previewDiv = document.getElementById('mappingPreview');
-      
-      if(excelData.length === 0) {
-        previewDiv.classList.add('hidden');
-        return;
-      }
-
+      if(excelData.length === 0) { previewDiv.classList.add('hidden'); return; }
       previewDiv.classList.remove('hidden');
-      
-      let html = '<h4> Предпросмотр данных (первые 5 строк)</h4>';
-      html += '<table><thead><tr>';
-      
+
+      let html = '<h4>📋 Предпросмотр данных (первые 5 строк)</h4>';
+      html += '<table style="width:100%;"><thead><tr>';
+      let activeFields = [];
       SYSTEM_FIELDS.forEach(f => {
-        const sel = document.getElementById(`map_${f.key}`);
+        const sel = document.getElementById('map_' + f.key);
         if(sel && sel.value) {
-          html += `<th>${f.label}<br><small style="font-weight:normal;color:#64748b;">${sel.value}</small></th>`;
+          activeFields.push({key: f.key, label: f.label, col: sel.value});
+          html += '<th>' + f.label + '<br><small style="font-weight:normal;color:#64748b;">' + sel.value + '</small></th>';
         }
       });
-      
       html += '</tr></thead><tbody>';
-      
+
       for(let i = 0; i < Math.min(5, excelData.length); i++) {
         html += '<tr>';
-        SYSTEM_FIELDS.forEach(f => {
-          const sel = document.getElementById(`map_${f.key}`);
-          if(sel && sel.value) {
-            const val = excelData[i][sel.value];
-            const display = val !== undefined && val !== '' ? String(val).substring(0, 40) : '—';
-            html += `<td>${display}</td>`;
-          }
+        activeFields.forEach(f => {
+          const val = excelData[i][f.col];
+          const display = (val !== undefined && val !== '' && val !== null) ? String(val).substring(0, 40) : '—';
+          html += '<td>' + display + '</td>';
         });
         html += '</tr>';
       }
-      
       html += '</tbody></table>';
       previewDiv.innerHTML = html;
     }
@@ -451,27 +479,44 @@
       mapping = {};
       let filled = 0;
       let missing = [];
-      
+
       SYSTEM_FIELDS.forEach(f => {
-        const sel = document.getElementById(`map_${f.key}`);
+        const sel = document.getElementById('map_' + f.key);
         const val = sel ? sel.value : '';
-        if(val) { 
-          mapping[f.key] = val; 
-          filled++; 
+        if(val) {
+          mapping[f.key] = val;
+          filled++;
         } else if(f.required) {
           missing.push(f.label);
         }
       });
-      
+
       if(missing.length > 0) {
-        return alert(`Обязательные поля не заполнены:\n${missing.join('\n')}\n\nВыберите соответствующие колонки из Excel.`);
+        return alert('Обязательные поля не заполнены:\n' + missing.join('\n') + '\n\nВыберите соответствующие колонки из Excel.');
       }
-      
       if(filled < 3) return alert('Сопоставьте минимум 3 поля!');
 
       printedSet.clear();
       selectedIndices.clear();
       labelCounterMap = {};
+      printCopies = {};
+
+      // Initialize print copies with total_quantity if available
+      excelData.forEach((item, idx) => {
+        if(mapping.total_quantity) {
+          let val = item[mapping.total_quantity];
+          // Handle "2,025" format
+          if(typeof val === 'string') val = val.replace(/,/g, '').replace(/\s/g, '');
+          val = parseInt(val);
+          if(!isNaN(val) && val > 0) {
+            printCopies[idx] = val;
+          } else {
+            printCopies[idx] = 1;
+          }
+        } else {
+          printCopies[idx] = 1;
+        }
+      });
 
       updateBoxSelect();
       changeBox(1);
@@ -479,6 +524,7 @@
       speak('Маппинг сохранен. Формируем этикетки.');
     }
 
+    // --- Data getters using mapping ---
     function getItemField(idx, key) {
       if(!mapping[key]) return '';
       const colName = mapping[key];
@@ -489,103 +535,135 @@
 
     function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
     function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
-    function getItemDescription(idx) { return getItemField(idx, 'product_description'); }
+    function getItemDescription(idx) { return getItemField(idx, 'product_name'); }
     function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
 
+    // --- Counters ---
     function calculateCounters() {
       labelCounterMap = {};
-      const articleCounts = {};
-      excelData.forEach((item, idx) => {
-        const art = getItemArticle(idx);
-        const key = art || `__empty_${idx}`;
-        if(!articleCounts[key]) articleCounts[key] = 0;
-        articleCounts[key]++;
-        const current = articleCounts[key];
-        labelCounterMap[idx] = { current, total: articleCounts[key] };
-      });
+      // If total_quantity is mapped, use it. Otherwise count rows.
+      if(mapping.total_quantity) {
+         excelData.forEach((item, idx) => {
+           let val = item[mapping.total_quantity];
+           if(typeof val === 'string') val = val.replace(/,/g, '').replace(/\s/g, '');
+           val = parseInt(val);
+           labelCounterMap[idx] = { current: 1, total: isNaN(val) ? 1 : val };
+         });
+      } else {
+         // Fallback: assume 1 per row or count duplicates
+         const articleCounts = {};
+         excelData.forEach((item, idx) => {
+           const art = getItemArticle(idx);
+           const key = art || '__empty_' + idx;
+           if(!articleCounts[key]) articleCounts[key] = 0;
+           articleCounts[key]++;
+           labelCounterMap[idx] = { current: articleCounts[key], total: articleCounts[key] };
+         });
+      }
     }
 
-    function createLabelHTML(idx, forPrint = false) {
-      const art = getItemArticle(idx) || '---';
-      const bc = getItemBarcode(idx) || '---';
-      const desc = getItemDescription(idx) || '';
-      const expiry = getItemExpiry(idx) || '---';
-      const instruction = getItemInstruction(idx) || '';
-      const quantity = getItemQuantity(idx) || '1';
-      const counter = labelCounterMap[idx] || { current: 1, total: 1 };
+    // --- Create label HTML ---
+    function createLabelHTML(idx, forPrint) {
+      var art = getItemArticle(idx) || '---';
+      var bc = getItemBarcode(idx) || '---';
+      var desc = getItemDescription(idx) || '';
+      var expiry = getItemExpiry(idx) || '---';
+      var instruction = getItemInstruction(idx) || '';
+      var quantity = getItemQuantity(idx) || '';
+      var counter = labelCounterMap[idx] || { current: 1, total: 1 };
 
-      const svgId = forPrint ? `bp_svg_${idx}` : `grid_svg_${idx}`;
+      var svgId = forPrint ? 'bp_svg_' + idx : 'grid_svg_' + idx;
 
-      let instructionHtml = '';
-      if(instruction) {
-        instructionHtml = `<div class="lbl-instruction">${instruction}</div>`;
+      // Build bottom row
+      var bottomRowHtml = '<span class="lbl-expiry">Годен: ' + expiry + '</span>';
+      if(quantity && quantity !== '' && quantity !== '0') {
+        bottomRowHtml += '<span class="lbl-quantity">Квант: ' + quantity + '</span>';
       }
 
-      return `
-        <div class="label-sheet" data-idx="${idx}">
-          <div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
-          <div class="lbl-header-row">
-            <span class="lbl-article">${art}</span>
-            <span class="lbl-counter">${counter.current} / ${counter.total}</span>
-          </div>
-          <div class="lbl-barcode-area">
-            <svg id="${svgId}"></svg>
-          </div>
-          <div class="lbl-barcode-num">${bc}</div>
-          <div class="lbl-desc">${desc}</div>
-          <div class="lbl-bottom-row">
-            <span class="lbl-expiry">Годен: ${expiry}</span>
-            <span class="lbl-quantity">Квант: ${quantity}</span>
-          </div>
-          ${instructionHtml}
-        </div>
-      `;
+      var instructionHtml = '';
+      if(instruction) {
+        instructionHtml = '<div class="lbl-instruction">' + instruction + '</div>';
+      }
+
+      return '<div class="label-sheet" data-idx="' + idx + '">' +
+        '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
+        '<div class="lbl-header-row">' +
+          '<span class="lbl-article">' + art + '</span>' +
+          '<span class="lbl-counter">' + counter.current + ' / ' + counter.total + '</span>' +
+        '</div>' +
+        '<div class="lbl-barcode-area">' +
+          '<svg id="' + svgId + '"></svg>' +
+        '</div>' +
+        '<div class="lbl-barcode-num">' + bc + '</div>' +
+        '<div class="lbl-desc">' + desc + '</div>' +
+        '<div class="lbl-bottom-row">' + bottomRowHtml + '</div>' +
+        instructionHtml +
+      '</div>';
     }
 
+    // --- Render label grid ---
     function renderLabelGrid() {
-      const grid = document.getElementById('labelGrid');
+      var grid = document.getElementById('labelGrid');
       grid.innerHTML = '';
 
-      const searchTerm = (document.getElementById('labelSearch')?.value || '').toLowerCase();
+      var searchTerm = (document.getElementById('labelSearch') ? document.getElementById('labelSearch').value : '').toLowerCase();
 
-      excelData.forEach((item, idx) => {
-        const art = getItemArticle(idx);
-        const bc = getItemBarcode(idx);
-        const desc = getItemDescription(idx);
+      excelData.forEach(function(item, idx) {
+        var art = getItemArticle(idx);
+        var bc = getItemBarcode(idx);
+        var desc = getItemDescription(idx);
 
         if(currentFilter === 'printed' && !printedSet.has(idx)) return;
         if(currentFilter === 'pending' && printedSet.has(idx)) return;
 
-        if(searchTerm && !art.toLowerCase().includes(searchTerm) && !bc.toLowerCase().includes(searchTerm) && !desc.toLowerCase().includes(searchTerm)) return;
+        if(searchTerm) {
+          var artMatch = art.toLowerCase().includes(searchTerm);
+          var bcMatch = bc.toLowerCase().includes(searchTerm);
+          var descMatch = desc.toLowerCase().includes(searchTerm);
+          if(!artMatch && !bcMatch && !descMatch) return;
+        }
 
-        const card = document.createElement('div');
-        card.className = `label-card${printedSet.has(idx) ? ' printed' : ''}`;
-        card.onclick = (e) => {
+        var card = document.createElement('div');
+        card.className = 'label-card' + (printedSet.has(idx) ? ' printed' : '');
+        
+        // Click handler for single print
+        card.onclick = function(e) {
           if(e.ctrlKey || e.metaKey) {
             if(selectedIndices.has(idx)) selectedIndices.delete(idx);
             else selectedIndices.add(idx);
             updateSelectionUI();
           } else {
-            printSingleLabel(idx);
+            // Prevent triggering if clicking input
+            if(e.target.tagName !== 'INPUT') printSingleLabel(idx);
           }
         };
 
-        const svgId = `grid_svg_${idx}`;
-        card.innerHTML = createLabelHTML(idx, false);
+        var svgId = 'grid_svg_' + idx;
+        var copies = printCopies[idx] || 1;
+
+        var cardContent = createLabelHTML(idx, false);
+        cardContent += 
+          '<div class="copies-input">' +
+            '<label>Копий:</label>' +
+            '<input type="number" value="' + copies + '" min="1" onchange="updateCopies(' + idx + ', this.value)" onclick="event.stopPropagation()">' +
+            '<span style="font-size:0.8rem; color:#64748b;">(Всего: ' + (labelCounterMap[idx] ? labelCounterMap[idx].total : '?') + ')</span>' +
+          '</div>';
+        
+        card.innerHTML = cardContent;
         grid.appendChild(card);
 
-        setTimeout(() => {
+        setTimeout(function() {
           try {
-            JsBarcode(`#${svgId}`, bc, {
-              format: "CODE128",
+            JsBarcode('#' + svgId, bc, {
+              format: 'CODE128',
               width: 1.8,
               height: 30,
               displayValue: false,
               margin: 0
             });
-          } catch(e) { /* skip */ }
+          } catch(err) { /* skip */ }
         }, 0);
       });
 
@@ -593,10 +671,14 @@
       updateSelectionUI();
     }
 
+    function updateCopies(idx, val) {
+      printCopies[idx] = parseInt(val) || 1;
+    }
+
     function updateSelectionUI() {
-      document.querySelectorAll('.label-card').forEach(card => {
-        const idxAttr = card.querySelector('.label-sheet')?.dataset?.idx;
-        const idx = parseInt(idxAttr);
+      document.querySelectorAll('.label-card').forEach(function(card) {
+        var idxAttr = card.querySelector('.label-sheet') ? card.querySelector('.label-sheet').dataset.idx : null;
+        var idx = parseInt(idxAttr);
         if(selectedIndices.has(idx)) {
           card.style.outline = '3px solid var(--primary)';
           card.style.outlineOffset = '-3px';
@@ -605,9 +687,9 @@
         }
       });
 
-      const btn = document.getElementById('printSingleBtn');
+      var btn = document.getElementById('printSingleBtn');
       if(selectedIndices.size > 0) {
-        btn.textContent = `🖨️ Печать выбранных (${selectedIndices.size})`;
+        btn.textContent = '🖨️ Печать выбранных (' + selectedIndices.size + ')';
         btn.classList.add('purple');
       } else {
         btn.textContent = '🖨️ Печать выбранных';
@@ -616,17 +698,17 @@
     }
 
     function updateLabelStats() {
-      const total = excelData.length;
-      const printed = printedSet.size;
+      var total = excelData.length;
+      var printed = printedSet.size;
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statPrinted').textContent = printed;
       document.getElementById('statRemaining').textContent = total - printed;
-      document.getElementById('printStat').textContent = `${printed} / ${total} напечатано`;
+      document.getElementById('printStat').textContent = printed + ' / ' + total + ' напечатано';
     }
 
     function filterLabels(filter, el) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.filter-chips .chip').forEach(function(c) { c.classList.remove('active'); });
       if(el) el.classList.add('active');
       renderLabelGrid();
     }
@@ -635,36 +717,123 @@
       renderLabelGrid();
     }
 
+    // --- Printing ---
     function printSingleLabel(idx) {
-      const printArea = document.getElementById('bulkPrintArea');
+      var printArea = document.getElementById('bulkPrintArea');
       printArea.innerHTML = createLabelHTML(idx, true);
       printArea.classList.remove('hidden');
 
-      setTimeout(() => {
-        const bc = getItemBarcode(idx);
+      setTimeout(function() {
+        var bc = getItemBarcode(idx);
         try {
-          JsBarcode(`#bp_svg_${idx}`, bc, {
-            format: "CODE128",
+          JsBarcode('#bp_svg_' + idx, bc, {
+            format: 'CODE128',
             width: 1.8,
             height: 30,
             displayValue: false,
             margin: 0
           });
-        } catch(e) { /* skip */ }
+        } catch(err) { /* skip */ }
         window.print();
       }, 100);
 
-      setTimeout(() => {
+      setTimeout(function() {
         printArea.classList.add('hidden');
         printedSet.add(idx);
         renderLabelGrid();
-        speak(`Этикетка ${getItemArticle(idx)} напечатана`);
+        speak('Этикетка ' + getItemArticle(idx) + ' напечатана');
       }, 2000);
+    }
+
+    function renderBulkPrint(indices) {
+      var printArea = document.getElementById('bulkPrintArea');
+      printArea.innerHTML = '';
+
+      indices.forEach(function(idx) {
+        var copies = printCopies[idx] || 1;
+        // Generate 'copies' number of labels for this item
+        for(var c = 0; c < copies; c++) {
+           // We need unique SVG IDs for each copy
+           var uniqueIdx = idx + '_copy_' + c;
+           printArea.insertAdjacentHTML('beforeend', createLabelHTMLForCopy(idx, uniqueIdx));
+        }
+      });
+
+      printArea.classList.remove('hidden');
+
+      setTimeout(function() {
+        indices.forEach(function(idx) {
+          var copies = printCopies[idx] || 1;
+          for(var c = 0; c < copies; c++) {
+             var uniqueIdx = idx + '_copy_' + c;
+             var bc = getItemBarcode(idx);
+             try {
+               JsBarcode('#bp_svg_' + uniqueIdx, bc, {
+                 format: 'CODE128',
+                 width: 1.8,
+                 height: 30,
+                 displayValue: false,
+                 margin: 0
+               });
+             } catch(err) { /* skip */ }
+          }
+        });
+        window.print();
+      }, 500); // Increased delay for bulk generation
+
+      setTimeout(function() {
+        printArea.classList.add('hidden');
+        indices.forEach(function(idx) { printedSet.add(idx); });
+        selectedIndices.clear();
+        renderLabelGrid();
+        speak('Печать завершена');
+      }, 3000);
+    }
+
+    function createLabelHTMLForCopy(idx, uniqueId) {
+      var art = getItemArticle(idx) || '---';
+      var bc = getItemBarcode(idx) || '---';
+      var desc = getItemDescription(idx) || '';
+      var expiry = getItemExpiry(idx) || '---';
+      var instruction = getItemInstruction(idx) || '';
+      var quantity = getItemQuantity(idx) || '';
+      var counter = labelCounterMap[idx] || { current: 1, total: 1 };
+
+      // For bulk print, we might want to adjust counter or keep it. 
+      // Usually counter is 1/Total for the batch, but for printing copies, it's just labels.
+      // Let's keep the counter as is.
+
+      var svgId = 'bp_svg_' + uniqueId;
+
+      var bottomRowHtml = '<span class="lbl-expiry">Годен: ' + expiry + '</span>';
+      if(quantity && quantity !== '' && quantity !== '0') {
+        bottomRowHtml += '<span class="lbl-quantity">Квант: ' + quantity + '</span>';
+      }
+
+      var instructionHtml = '';
+      if(instruction) {
+        instructionHtml = '<div class="lbl-instruction">' + instruction + '</div>';
+      }
+
+      return '<div class="label-sheet">' +
+        '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
+        '<div class="lbl-header-row">' +
+          '<span class="lbl-article">' + art + '</span>' +
+          '<span class="lbl-counter">' + counter.current + ' / ' + counter.total + '</span>' +
+        '</div>' +
+        '<div class="lbl-barcode-area">' +
+          '<svg id="' + svgId + '"></svg>' +
+        '</div>' +
+        '<div class="lbl-barcode-num">' + bc + '</div>' +
+        '<div class="lbl-desc">' + desc + '</div>' +
+        '<div class="lbl-bottom-row">' + bottomRowHtml + '</div>' +
+        instructionHtml +
+      '</div>';
     }
 
     function printSelectedLabels() {
       if(selectedIndices.size === 0) return speak('Выберите этикетки для печати.');
-      renderBulkPrint(Array.from(selectedIndices).sort((a, b) => a - b));
+      renderBulkPrint(Array.from(selectedIndices).sort(function(a, b) { return a - b; }));
     }
 
     function printSingleFromGrid() {
@@ -677,57 +846,24 @@
 
     function printAllLabels() {
       if(excelData.length === 0) return speak('Нет данных для печати.');
-      const indices = [...Array(excelData.length).keys()];
+      var indices = [];
+      for(var i = 0; i < excelData.length; i++) indices.push(i);
       renderBulkPrint(indices);
     }
 
     function printRemainingLabels() {
-      const remaining = [];
-      excelData.forEach((item, idx) => {
+      var remaining = [];
+      excelData.forEach(function(item, idx) {
         if(!printedSet.has(idx)) remaining.push(idx);
       });
       if(remaining.length === 0) return speak('Все этикетки уже напечатаны.');
       renderBulkPrint(remaining);
     }
 
-    function renderBulkPrint(indices) {
-      const printArea = document.getElementById('bulkPrintArea');
-      printArea.innerHTML = '';
-
-      indices.forEach(idx => {
-        printArea.insertAdjacentHTML('beforeend', createLabelHTML(idx, true));
-      });
-
-      printArea.classList.remove('hidden');
-
-      setTimeout(() => {
-        indices.forEach(idx => {
-          const bc = getItemBarcode(idx);
-          try {
-            JsBarcode(`#bp_svg_${idx}`, bc, {
-              format: "CODE128",
-              width: 1.8,
-              height: 30,
-              displayValue: false,
-              margin: 0
-            });
-          } catch(e) { /* skip */ }
-        });
-        window.print();
-      }, 300);
-
-      setTimeout(() => {
-        printArea.classList.add('hidden');
-        indices.forEach(idx => printedSet.add(idx));
-        selectedIndices.clear();
-        renderLabelGrid();
-        speak(`Напечатано ${indices.length} этикеток`);
-      }, 2000);
-    }
-
     function markAllPrinted() {
       if(!confirm('Отметить все этикетки как напечатанные?')) return;
-      printedSet = new Set([...Array(excelData.length).keys()]);
+      printedSet = new Set();
+      for(var i = 0; i < excelData.length; i++) printedSet.add(i);
       renderLabelGrid();
       speak('Все этикетки отмечены');
     }
@@ -740,23 +876,24 @@
       speak('Статус печати сброшен');
     }
 
-    // --- Scanner ---
+    // --- Scanner & Box Logic ---
     function updateBoxSelect() {
-      const sel = document.getElementById('boxSelect');
+      var sel = document.getElementById('boxSelect');
       sel.innerHTML = '';
-      Object.keys(boxes).forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b; opt.textContent = `Короб ${b}`;
+      Object.keys(boxes).forEach(function(b) {
+        var opt = document.createElement('option');
+        opt.value = b; opt.textContent = 'Короб ' + b;
         if(b == currentBox) opt.selected = true;
         sel.appendChild(opt);
       });
     }
 
     function newBox() {
-      const next = Math.max(...Object.keys(boxes).map(Number)) + 1;
+      var keys = Object.keys(boxes).map(Number);
+      var next = Math.max.apply(null, keys) + 1;
       boxes[next] = [];
       changeBox(next);
-      speak(`Создан короб номер ${next}`);
+      speak('Создан короб номер ' + next);
     }
 
     function changeBox(id) {
@@ -766,25 +903,24 @@
     }
 
     function updateUI() {
-      const list = boxes[currentBox];
-      const limit = getBoxLimit();
-      const progress = limit > 0 ? Math.min((list.length / limit) * 100, 100) : 0;
-      document.getElementById('progressText').textContent = `${list.length} / ${limit}`;
-      document.getElementById('progressFill').style.width = `${progress}%`;
+      var list = boxes[currentBox];
+      var limit = getBoxLimit();
+      var progress = limit > 0 ? Math.min((list.length / limit) * 100, 100) : 0;
+      document.getElementById('progressText').textContent = list.length + ' / ' + limit;
+      document.getElementById('progressFill').style.width = progress + '%';
 
-      const tbody = document.getElementById('scannedBody');
+      var tbody = document.getElementById('scannedBody');
       tbody.innerHTML = '';
-      list.forEach((item, i) => {
-        const tr = document.createElement('tr');
-        const artVal = item[mapping.wb_article] || '-';
-        const bcVal = item[mapping.label_barcode] || '-';
-        tr.innerHTML = `
-          <td>${artVal}</td>
-          <td>${bcVal}</td>
-          <td>1</td>
-          <td><span class="badge success">Принято</span></td>
-          <td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeItem(${i})">✖</button></td>
-        `;
+      list.forEach(function(item, i) {
+        var tr = document.createElement('tr');
+        var artVal = item[mapping.wb_article] || '-';
+        var bcVal = item[mapping.label_barcode] || '-';
+        tr.innerHTML =
+          '<td>' + artVal + '</td>' +
+          '<td>' + bcVal + '</td>' +
+          '<td>1</td>' +
+          '<td><span class="badge success">Принято</span></td>' +
+          '<td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeItem(' + i + ')">✖</button></td>';
         tbody.appendChild(tr);
       });
     }
@@ -797,26 +933,28 @@
     }
 
     function removeItem(idx) {
-      const item = boxes[currentBox][idx];
-      const bc = item[mapping.label_barcode];
+      var item = boxes[currentBox][idx];
+      var bc = item[mapping.label_barcode];
       boxes[currentBox].splice(idx, 1);
       scannedSet.delete(String(bc).trim());
       updateUI();
       speak('Позиция удалена');
     }
 
-    const scannerInput = document.getElementById('scannerInput');
-    let scanTimeout = null;
+    // --- Scanner Input ---
+    var scannerInput = document.getElementById('scannerInput');
+    var scanTimeout = null;
 
-    scannerInput.addEventListener('input', (e) => {
+    scannerInput.addEventListener('input', function(e) {
       clearTimeout(scanTimeout);
-      scanTimeout = setTimeout(() => {
-        if(e.target.value.trim()) processScan(e.target.value.trim());
-        e.target.value = '';
+      var self = this;
+      scanTimeout = setTimeout(function() {
+        if(self.value.trim()) processScan(self.value.trim());
+        self.value = '';
       }, 300);
     });
 
-    scannerInput.addEventListener('keydown', (e) => {
+    scannerInput.addEventListener('keydown', function(e) {
       if(e.key === 'Enter') {
         e.preventDefault();
         processScan(scannerInput.value.trim());
@@ -831,28 +969,28 @@
         return;
       }
 
-      const item = excelData.find(row => {
-        const lb = String(row[mapping.label_barcode] || '').trim();
-        const ob = String(row[mapping.origin_barcode] || '').trim();
+      var foundItem = excelData.find(function(row) {
+        var lb = String(row[mapping.label_barcode] || '').trim();
+        var ob = String(row[mapping.origin_barcode] || '').trim();
         return lb === barcode || ob === barcode;
       });
 
-      if(!item) {
+      if(!foundItem) {
         speak('Ошибка. Штрихкод не найден в ТЗ.');
         return;
       }
 
-      const limit = getBoxLimit();
+      var limit = getBoxLimit();
       if(boxes[currentBox].length >= limit) {
-        speak(`Короб ${currentBox} заполнен. Смените короб.`);
+        speak('Короб ' + currentBox + ' заполнен. Смените короб.');
         return;
       }
 
-      boxes[currentBox].push(item);
+      boxes[currentBox].push(foundItem);
       scannedSet.add(barcode);
-      currentItemForLabel = item;
+      currentItemForLabel = foundItem;
       updateUI();
-      speak(`Принято. В коробе ${currentBox}: ${boxes[currentBox].length} из ${limit}`);
+      speak('Принято. В коробе ' + currentBox + ': ' + boxes[currentBox].length + ' из ' + limit);
     }
 
     function resetSession() {
@@ -862,7 +1000,8 @@
       speak('Сессия сброшена.');
     }
 
-    window.onload = () => {
+    // --- Init ---
+    window.onload = function() {
       document.getElementById('scannerInput').focus();
       speak('Система готова. Загрузите ТЗ.');
     };
