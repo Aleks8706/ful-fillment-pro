@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📦 Контроль отгрузки Озон/WB</title>
+  <title>📦 Контроль отгрузки Озон/WB — Этикетки</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     :root {
       --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f8fafc;
       --panel: #ffffff; --border: #e2e8f0; --text: #0f172a;
+      --purple: #7c3aed; --orange: #ea580c;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; }
+    .container { max-width: 1400px; margin: 0 auto; }
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.5rem; }
     .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; border-radius: 6px; font-weight: 500; }
+    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; border-radius: 6px; font-weight: 500; transition: 0.2s; }
     .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
     .panel { background: var(--panel); padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0; }
@@ -28,10 +29,12 @@
     button.secondary { background: #64748b; }
     button.success { background: var(--success); }
     button.danger { background: var(--danger); }
+    button.purple { background: var(--purple); }
+    button.orange { background: var(--orange); }
     .hidden { display: none !important; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
     th, td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; }
-    th { background: #f1f5f9; }
+    th { background: #f1f5f9; position: sticky; top: 0; }
     .scanner-box { text-align: center; padding: 30px; background: #f8fafc; border: 2px dashed var(--border); border-radius: 8px; }
     .scanner-box input { font-size: 1.5rem; text-align: center; border: 2px solid var(--primary); }
     .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin: 10px 0; }
@@ -40,36 +43,125 @@
     .badge.success { background: #dcfce7; color: #166534; }
     .badge.warn { background: #fef3c7; color: #92400e; }
     .badge.error { background: #fee2e2; color: #991b1b; }
+    .badge.info { background: #dbeafe; color: #1e40af; }
     .voice-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
     .voice-toggle input { width: auto; }
 
-    /* Печать этикетки 58x40 мм */
+    .label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 15px; margin-top: 15px; }
+    .label-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; position: relative; }
+    .label-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+    .label-card.printed { border-color: var(--success); background: #f0fdf4; }
+    .label-card.printed::after { content: '✓'; position: absolute; top: 5px; right: 8px; color: var(--success); font-weight: bold; font-size: 1.2rem; }
+
+    .print-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+    .print-toolbar .stat { font-size: 0.9rem; color: #64748b; }
+
+    .search-box { position: relative; margin-bottom: 15px; }
+    .search-box input { padding-left: 35px; }
+
+    .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+    .chip { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .stats-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+    .stat-card { flex: 1; min-width: 120px; background: #f1f5f9; padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-card .num { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+    .stat-card .lbl { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+
+    /* ===== LABEL TEMPLATE ===== */
+    .label-sheet {
+      width: 58mm;
+      height: 40mm;
+      padding: 1.5mm 2mm;
+      margin: 0;
+      border: none;
+      background: white;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .label-sheet .lbl-header {
+      font-size: 7pt;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 1.5px;
+      margin-bottom: 1.5px;
+      line-height: 1.1;
+    }
+    .label-sheet .lbl-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 8pt;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .label-sheet .lbl-article { font-weight: 700; font-size: 9pt; }
+    .label-sheet .lbl-counter { font-weight: 600; font-size: 8pt; }
+    .label-sheet .lbl-barcode-area {
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 0;
+    }
+    .label-sheet .lbl-barcode-area svg { width: 48mm; height: 12mm; }
+    .label-sheet .lbl-barcode-num {
+      font-size: 11pt; font-weight: 700; text-align: center;
+      letter-spacing: 1px; margin-bottom: 2px; font-family: monospace;
+    }
+    .label-sheet .lbl-desc {
+      font-size: 7.5pt; line-height: 1.2; margin-bottom: 2px;
+      min-height: 18px; overflow: hidden;
+    }
+    .label-sheet .lbl-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 7pt;
+    }
+    .label-sheet .lbl-expiry { font-size: 7.5pt; font-weight: 600; }
+    .label-sheet .lbl-quantity { font-size: 7.5pt; font-weight: 600; }
+    .label-sheet .lbl-instruction {
+      font-size: 6.5pt; line-height: 1.15; margin-top: 1px;
+      color: #333; overflow: hidden; max-height: 14px;
+    }
+
+    .label-card .label-sheet {
+      width: 100%; height: auto; min-height: 140px; border-radius: 4px;
+    }
+    .label-card .label-sheet .lbl-barcode-area svg { width: 100%; height: 35px; }
+
     @media print {
       @page { size: 58mm 40mm; margin: 0; }
       body * { visibility: hidden !important; }
-      #printable-label, #printable-label * { visibility: visible !important; }
-      #printable-label {
-        position: absolute; left: 0; top: 0;
-        width: 58mm; height: 40mm;
-        padding: 2mm;
-        background: white;
-        border: none;
-        box-shadow: none;
-        display: flex; flex-direction: column; justify-content: space-between;
+      #bulkPrintArea, #bulkPrintArea * { visibility: visible !important; }
+      #bulkPrintArea {
+        position: absolute; left: 0; top: 0; width: 100%; display: block;
       }
+      #bulkPrintArea .label-sheet { page-break-after: always; page-break-inside: avoid; }
     }
-    #printable-label { font-family: monospace; }
-    .lbl-barcode { text-align: center; margin-top: 2px; }
-    .lbl-barcode svg { width: 50mm; height: 12mm; }
-    .lbl-article { font-weight: bold; font-size: 9pt; margin: 2px 0; }
-    .lbl-expiry { font-size: 8pt; margin: 1px 0; }
-    .lbl-warning { font-size: 7pt; color: #333; margin-top: 2px; line-height: 1.1; }
+
+    /* Mapping debug */
+    .mapping-preview { margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 6px; }
+    .mapping-preview h4 { margin-bottom: 8px; }
+    .mapping-preview table { font-size: 0.85rem; }
+    .mapping-preview td { padding: 4px 8px; }
+    .mapping-preview .preview-val { color: var(--primary); font-weight: 500; }
+
+    .mapping-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>📦 Система контроля отгрузки</h1>
+      <h1> Система контроля отгрузки</h1>
       <div class="voice-toggle">
         <input type="checkbox" id="voiceToggle" checked>
         <label for="voiceToggle">🔊 Голосовое сопровождение</label>
@@ -78,11 +170,11 @@
 
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('upload')">📥 Загрузка ТЗ</button>
-      <button class="tab-btn" onclick="switchTab('mapping')">🗂️ Маппинг полей</button>
+      <button class="tab-btn" onclick="switchTab('mapping')">️ Маппинг полей</button>
+      <button class="tab-btn" onclick="switchTab('labels')">🏷️ Этикетки</button>
       <button class="tab-btn" onclick="switchTab('scanner')">📦 Сканер & Короба</button>
     </div>
 
-    <!-- 1. Загрузка -->
     <section id="tab-upload" class="panel">
       <h2>1. Загрузка ТЗ (Excel)</h2>
       <p>Выберите файл заказа. Система автоматически распознает структуру.</p>
@@ -93,20 +185,52 @@
       <div id="uploadStatus" style="margin-top:10px; font-weight:500;"></div>
     </section>
 
-    <!-- 2. Маппинг -->
     <section id="tab-mapping" class="panel hidden">
       <h2>2. Соответствие полей</h2>
-      <p>Проверьте, какие колонки из файла соответствуют системным полям.</p>
+      <p>Проверьте, какие колонки из файла соответствуют системным полям. <strong>Обязательно заполните "Наименование" и "Квант спайки"</strong></p>
       <table id="mappingTable">
-        <thead><tr><th>Системное поле</th><th>Колонка из Excel</th></tr></thead>
+        <thead><tr><th>Системное поле</th><th>Колонка из Excel</th><th>Пример значения</th></tr></thead>
         <tbody id="mappingBody"></tbody>
       </table>
-      <div class="grid" style="margin-top:15px;">
-        <button onclick="saveMapping()" class="success">✅ Сохранить и перейти к сканеру</button>
+      <div class="mapping-actions">
+        <button onclick="saveMapping()" class="success" style="width:auto;">✅ Сохранить и перейти к этикеткам</button>
+        <button onclick="previewMapping()" class="secondary" style="width:auto;">👁️ Предпросмотр данных</button>
       </div>
+      <div id="mappingPreview" class="mapping-preview hidden"></div>
     </section>
 
-    <!-- 3. Сканер -->
+    <section id="tab-labels" class="panel hidden">
+      <h2>3. Этикетки для сборки ТЗ</h2>
+      <p>Все позиции из ТЗ. Отметьте напечатанные и используйте при сборке.</p>
+
+      <div class="stats-row" id="labelStats">
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Всего позиций</div></div>
+        <div class="stat-card"><div class="num" id="statPrinted">0</div><div class="lbl">Напечатано</div></div>
+        <div class="stat-card"><div class="num" id="statRemaining">0</div><div class="lbl">Осталось</div></div>
+      </div>
+
+      <div class="print-toolbar">
+        <button onclick="printAllLabels()" class="purple" style="width:auto;">🖨️ Печать ВСЕХ</button>
+        <button onclick="printRemainingLabels()" class="orange" style="width:auto;">🖨️ Печать ОСТАВШИХСЯ</button>
+        <button onclick="printSingleFromGrid()" class="secondary" style="width:auto;" id="printSingleBtn">🖨️ Печать выбранных</button>
+        <button onclick="markAllPrinted()" class="success" style="width:auto;">✅ Отметить все</button>
+        <button onclick="resetPrintStatus()" class="secondary" style="width:auto;">🔄 Сбросить статус</button>
+        <span class="stat" id="printStat"></span>
+      </div>
+
+      <div class="filter-chips">
+        <div class="chip active" onclick="filterLabels('all', this)">Все</div>
+        <div class="chip" onclick="filterLabels('printed', this)">✅ Напечатанные</div>
+        <div class="chip" onclick="filterLabels('pending', this)">⏳ Не напечатаны</div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="labelSearch" placeholder="Поиск по артикулу, штрихкоду или наименованию..." oninput="searchLabels()">
+      </div>
+
+      <div class="label-grid" id="labelGrid"></div>
+    </section>
+
     <section id="tab-scanner" class="panel hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
         <div>
@@ -115,8 +239,7 @@
           <button class="secondary" style="width:auto; padding:8px 12px; margin-left:5px;" onclick="newBox()">+ Новый короб</button>
         </div>
         <div style="text-align:right;">
-          <span class="badge" id="platformBadge">WB</span>
-          <button class="secondary" style="width:auto; padding:8px 12px; margin-left:5px;" onclick="printLabel()">🏷️ Печать наклейки</button>
+          <span class="badge info" id="platformBadge">WB</span>
         </div>
       </div>
 
@@ -136,7 +259,7 @@
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
 
-      <h3 style="margin-top:20px;">📋 Отсканированные позиции</h3>
+      <h3 style="margin-top:20px;"> Отсканированные позиции</h3>
       <div style="max-height: 300px; overflow-y: auto;">
         <table id="scannedTable">
           <thead><tr><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Статус</th><th>Действие</th></tr></thead>
@@ -147,32 +270,31 @@
     </section>
   </div>
 
-  <!-- Скрытый блок для печати -->
-  <div id="printable-label">
-    <svg id="labelBarcode"></svg>
-    <div class="lbl-article" id="lblArticle"></div>
-    <div class="lbl-expiry" id="lblExpiry"></div>
-    <div class="lbl-warning" id="lblWarning"></div>
-  </div>
+  <div id="bulkPrintArea" class="hidden"></div>
 
   <script>
-    // --- State ---
     let excelData = [];
     let mapping = {};
     let boxes = { 1: [] };
     let currentBox = 1;
     let scannedSet = new Set();
-    let limitPerBox = 0;
     let currentItemForLabel = null;
     let voiceEnabled = true;
+    let printedSet = new Set();
+    let currentFilter = 'all';
+    let selectedIndices = new Set();
+    let labelCounterMap = {};
+    let allHeaders = [];
 
-    // --- UI Helpers ---
     function switchTab(tab) {
       document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      document.querySelectorAll('.tab-btn')[['upload','mapping','scanner'].indexOf(tab)].classList.add('active');
+      const tabNames = ['upload','mapping','labels','scanner'];
+      document.querySelectorAll('.tab-btn')[tabNames.indexOf(tab)].classList.add('active');
       if(tab === 'scanner') document.getElementById('scannerInput').focus();
+      if(tab === 'labels') { calculateCounters(); renderLabelGrid(); }
+      if(tab === 'mapping') previewMapping();
     }
 
     function speak(text) {
@@ -185,7 +307,6 @@
 
     document.getElementById('voiceToggle').addEventListener('change', e => voiceEnabled = e.target.checked);
 
-    // --- 1. Load & Parse ---
     function parseFile() {
       const file = document.getElementById('fileInput').files[0];
       if (!file) return alert('Выберите файл!');
@@ -196,7 +317,8 @@
           const sheet = wb.Sheets[wb.SheetNames[0]];
           excelData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
           if (excelData.length === 0) throw new Error('Файл пуст или неверный формат');
-          document.getElementById('uploadStatus').innerHTML = `<span class="badge success">✅ Загружено: ${excelData.length} строк</span>`;
+          allHeaders = Object.keys(excelData[0]);
+          document.getElementById('uploadStatus').innerHTML = `<span class="badge success">✅ Загружено: ${excelData.length} строк, ${allHeaders.length} колонок</span>`;
           buildMappingUI();
           switchTab('mapping');
           speak('Файл загружен. Проверьте соответствие полей.');
@@ -207,52 +329,418 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- 2. Mapping ---
-    const SYSTEM_FIELDS = {
-      wb_article: 'Артикул ВБ',
-      label_barcode: 'ШК на этикетку',
-      origin_barcode: 'ШК исход',
-      expiry: 'ГОДЕН ДО',
-      packing_instructions: 'ТЗ',
-      sets_per_box: 'спаек в коробе'
-    };
+    // Расширенная система маппинга с авто-определением
+    const SYSTEM_FIELDS = [
+      { key: 'wb_article', label: 'Артикул', hints: ['артикул', 'article', 'код', 'sku', 'wb'], required: true },
+      { key: 'label_barcode', label: 'ШК на этикетку', hints: ['шк', 'barcode', 'штрихкод', 'ean', 'код'], required: true },
+      { key: 'origin_barcode', label: 'ШК исходный', hints: ['шк', 'barcode', 'штрихкод', 'ean', 'код'], required: false },
+      { key: 'product_description', label: 'Наименование товара', hints: ['наименование', 'название', 'описание', 'товар', 'продукт', 'product', 'desc', 'name'], required: true },
+      { key: 'expiry', label: 'Годен до / Срок годности', hints: ['годен', 'срок', 'expiry', 'сг', 'годность'], required: false },
+      { key: 'packing_instructions', label: 'Инструкция / ТЗ', hints: ['тз', 'инструкция', 'instruction', 'примечание', 'упаковка'], required: false },
+      { key: 'sets_per_box', label: 'Спаек в коробе', hints: ['спайк', 'короб', 'box', 'комплект', 'sets'], required: false },
+      { key: 'quantity', label: 'Квант спайки / Кол-во', hints: ['квант', 'кол', 'количество', 'qty', 'шт', 'quantity', 'count', 'amount'], required: true },
+      { key: 'dimensions', label: 'Размеры', hints: ['размер', 'габарит', 'dimensions', 'size'], required: false }
+    ];
+
+    function findBestMatch(headers, hints) {
+      for(const hint of hints) {
+        const match = headers.find(h => h.toLowerCase().includes(hint.toLowerCase()));
+        if(match) return match;
+      }
+      // Более мягкий поиск — проверяем каждое слово
+      for(const hint of hints) {
+        const words = hint.toLowerCase().split(/[\s\/]+/);
+        for(const word of words) {
+          if(word.length < 2) continue;
+          const match = headers.find(h => h.toLowerCase().includes(word));
+          if(match) return match;
+        }
+      }
+      return '';
+    }
 
     function buildMappingUI() {
       const headers = Object.keys(excelData[0]);
+      allHeaders = headers;
       const tbody = document.getElementById('mappingBody');
       tbody.innerHTML = '';
-      
-      Object.entries(SYSTEM_FIELDS).forEach(([key, hint]) => {
+
+      SYSTEM_FIELDS.forEach((field) => {
+        const bestMatch = findBestMatch(headers, field.hints);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${key}</strong> <span style="color:#64748b; font-size:0.8em;">(подсказка: ${hint})</span></td>
           <td>
-            <select id="map_${key}">
-              <option value="">-- Выберите колонку --</option>
-              ${headers.map(h => `<option value="${h}" ${h.toLowerCase().includes(hint.toLowerCase().split(' ')[0]) ? 'selected' : ''}>${h}</option>`).join('')}
+            <strong>${field.label}</strong>
+            ${field.required ? '<span style="color:var(--danger);">*</span>' : ''}
+            <br><span style="color:#64748b; font-size:0.75em;">Ключ: ${field.key}</span>
+          </td>
+          <td>
+            <select id="map_${field.key}">
+              <option value="">-- Не выбрано --</option>
+              ${headers.map(h => `<option value="${h}" ${h === bestMatch ? 'selected' : ''}>${h}</option>`).join('')}
             </select>
-          </td>`;
+          </td>
+          <td class="preview-val" id="preview_${field.key}">—</td>`;
         tbody.appendChild(tr);
+
+        // Add change listener for live preview
+        setTimeout(() => {
+          const sel = document.getElementById(`map_${field.key}`);
+          sel.addEventListener('change', () => {
+            updateFieldPreview(field.key);
+          });
+          // Initial preview
+          updateFieldPreview(field.key);
+        }, 0);
       });
+    }
+
+    function updateFieldPreview(key) {
+      const sel = document.getElementById(`map_${key}`);
+      const colName = sel.value;
+      const previewEl = document.getElementById(`preview_${key}`);
+      
+      if(colName && excelData.length > 0) {
+        const val = excelData[0][colName];
+        previewEl.textContent = val !== undefined && val !== '' ? String(val).substring(0, 50) : '(пусто)';
+      } else {
+        previewEl.textContent = '—';
+      }
+    }
+
+    function previewMapping() {
+      const previewDiv = document.getElementById('mappingPreview');
+      
+      if(excelData.length === 0) {
+        previewDiv.classList.add('hidden');
+        return;
+      }
+
+      previewDiv.classList.remove('hidden');
+      
+      let html = '<h4> Предпросмотр данных (первые 5 строк)</h4>';
+      html += '<table><thead><tr>';
+      
+      SYSTEM_FIELDS.forEach(f => {
+        const sel = document.getElementById(`map_${f.key}`);
+        if(sel && sel.value) {
+          html += `<th>${f.label}<br><small style="font-weight:normal;color:#64748b;">${sel.value}</small></th>`;
+        }
+      });
+      
+      html += '</tr></thead><tbody>';
+      
+      for(let i = 0; i < Math.min(5, excelData.length); i++) {
+        html += '<tr>';
+        SYSTEM_FIELDS.forEach(f => {
+          const sel = document.getElementById(`map_${f.key}`);
+          if(sel && sel.value) {
+            const val = excelData[i][sel.value];
+            const display = val !== undefined && val !== '' ? String(val).substring(0, 40) : '—';
+            html += `<td>${display}</td>`;
+          }
+        });
+        html += '</tr>';
+      }
+      
+      html += '</tbody></table>';
+      previewDiv.innerHTML = html;
     }
 
     function saveMapping() {
       mapping = {};
       let filled = 0;
-      Object.keys(SYSTEM_FIELDS).forEach(key => {
-        const val = document.getElementById(`map_${key}`).value;
-        if(val) { mapping[key] = val; filled++; }
-      });
-      if(filled < 3) return alert('Сопоставьте минимум 3 поля!');
+      let missing = [];
       
-      // Init boxes
+      SYSTEM_FIELDS.forEach(f => {
+        const sel = document.getElementById(`map_${f.key}`);
+        const val = sel ? sel.value : '';
+        if(val) { 
+          mapping[f.key] = val; 
+          filled++; 
+        } else if(f.required) {
+          missing.push(f.label);
+        }
+      });
+      
+      if(missing.length > 0) {
+        return alert(`Обязательные поля не заполнены:\n${missing.join('\n')}\n\nВыберите соответствующие колонки из Excel.`);
+      }
+      
+      if(filled < 3) return alert('Сопоставьте минимум 3 поля!');
+
+      printedSet.clear();
+      selectedIndices.clear();
+      labelCounterMap = {};
+
       updateBoxSelect();
       changeBox(1);
-      switchTab('scanner');
-      speak('Маппинг сохранен. Начинаем отгрузку.');
+      switchTab('labels');
+      speak('Маппинг сохранен. Формируем этикетки.');
     }
 
-    // --- 3. Scanner & Box Logic ---
+    function getItemField(idx, key) {
+      if(!mapping[key]) return '';
+      const colName = mapping[key];
+      const val = excelData[idx][colName];
+      if(val === undefined || val === null || val === '') return '';
+      return String(val).trim();
+    }
+
+    function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
+    function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
+    function getItemDescription(idx) { return getItemField(idx, 'product_description'); }
+    function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
+    function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
+    function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
+
+    function calculateCounters() {
+      labelCounterMap = {};
+      const articleCounts = {};
+      excelData.forEach((item, idx) => {
+        const art = getItemArticle(idx);
+        const key = art || `__empty_${idx}`;
+        if(!articleCounts[key]) articleCounts[key] = 0;
+        articleCounts[key]++;
+        const current = articleCounts[key];
+        labelCounterMap[idx] = { current, total: articleCounts[key] };
+      });
+    }
+
+    function createLabelHTML(idx, forPrint = false) {
+      const art = getItemArticle(idx) || '---';
+      const bc = getItemBarcode(idx) || '---';
+      const desc = getItemDescription(idx) || '';
+      const expiry = getItemExpiry(idx) || '---';
+      const instruction = getItemInstruction(idx) || '';
+      const quantity = getItemQuantity(idx) || '1';
+      const counter = labelCounterMap[idx] || { current: 1, total: 1 };
+
+      const svgId = forPrint ? `bp_svg_${idx}` : `grid_svg_${idx}`;
+
+      let instructionHtml = '';
+      if(instruction) {
+        instructionHtml = `<div class="lbl-instruction">${instruction}</div>`;
+      }
+
+      return `
+        <div class="label-sheet" data-idx="${idx}">
+          <div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
+          <div class="lbl-header-row">
+            <span class="lbl-article">${art}</span>
+            <span class="lbl-counter">${counter.current} / ${counter.total}</span>
+          </div>
+          <div class="lbl-barcode-area">
+            <svg id="${svgId}"></svg>
+          </div>
+          <div class="lbl-barcode-num">${bc}</div>
+          <div class="lbl-desc">${desc}</div>
+          <div class="lbl-bottom-row">
+            <span class="lbl-expiry">Годен: ${expiry}</span>
+            <span class="lbl-quantity">Квант: ${quantity}</span>
+          </div>
+          ${instructionHtml}
+        </div>
+      `;
+    }
+
+    function renderLabelGrid() {
+      const grid = document.getElementById('labelGrid');
+      grid.innerHTML = '';
+
+      const searchTerm = (document.getElementById('labelSearch')?.value || '').toLowerCase();
+
+      excelData.forEach((item, idx) => {
+        const art = getItemArticle(idx);
+        const bc = getItemBarcode(idx);
+        const desc = getItemDescription(idx);
+
+        if(currentFilter === 'printed' && !printedSet.has(idx)) return;
+        if(currentFilter === 'pending' && printedSet.has(idx)) return;
+
+        if(searchTerm && !art.toLowerCase().includes(searchTerm) && !bc.toLowerCase().includes(searchTerm) && !desc.toLowerCase().includes(searchTerm)) return;
+
+        const card = document.createElement('div');
+        card.className = `label-card${printedSet.has(idx) ? ' printed' : ''}`;
+        card.onclick = (e) => {
+          if(e.ctrlKey || e.metaKey) {
+            if(selectedIndices.has(idx)) selectedIndices.delete(idx);
+            else selectedIndices.add(idx);
+            updateSelectionUI();
+          } else {
+            printSingleLabel(idx);
+          }
+        };
+
+        const svgId = `grid_svg_${idx}`;
+        card.innerHTML = createLabelHTML(idx, false);
+        grid.appendChild(card);
+
+        setTimeout(() => {
+          try {
+            JsBarcode(`#${svgId}`, bc, {
+              format: "CODE128",
+              width: 1.8,
+              height: 30,
+              displayValue: false,
+              margin: 0
+            });
+          } catch(e) { /* skip */ }
+        }, 0);
+      });
+
+      updateLabelStats();
+      updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+      document.querySelectorAll('.label-card').forEach(card => {
+        const idxAttr = card.querySelector('.label-sheet')?.dataset?.idx;
+        const idx = parseInt(idxAttr);
+        if(selectedIndices.has(idx)) {
+          card.style.outline = '3px solid var(--primary)';
+          card.style.outlineOffset = '-3px';
+        } else {
+          card.style.outline = '';
+        }
+      });
+
+      const btn = document.getElementById('printSingleBtn');
+      if(selectedIndices.size > 0) {
+        btn.textContent = `🖨️ Печать выбранных (${selectedIndices.size})`;
+        btn.classList.add('purple');
+      } else {
+        btn.textContent = '🖨️ Печать выбранных';
+        btn.classList.remove('purple');
+      }
+    }
+
+    function updateLabelStats() {
+      const total = excelData.length;
+      const printed = printedSet.size;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statPrinted').textContent = printed;
+      document.getElementById('statRemaining').textContent = total - printed;
+      document.getElementById('printStat').textContent = `${printed} / ${total} напечатано`;
+    }
+
+    function filterLabels(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+      if(el) el.classList.add('active');
+      renderLabelGrid();
+    }
+
+    function searchLabels() {
+      renderLabelGrid();
+    }
+
+    function printSingleLabel(idx) {
+      const printArea = document.getElementById('bulkPrintArea');
+      printArea.innerHTML = createLabelHTML(idx, true);
+      printArea.classList.remove('hidden');
+
+      setTimeout(() => {
+        const bc = getItemBarcode(idx);
+        try {
+          JsBarcode(`#bp_svg_${idx}`, bc, {
+            format: "CODE128",
+            width: 1.8,
+            height: 30,
+            displayValue: false,
+            margin: 0
+          });
+        } catch(e) { /* skip */ }
+        window.print();
+      }, 100);
+
+      setTimeout(() => {
+        printArea.classList.add('hidden');
+        printedSet.add(idx);
+        renderLabelGrid();
+        speak(`Этикетка ${getItemArticle(idx)} напечатана`);
+      }, 2000);
+    }
+
+    function printSelectedLabels() {
+      if(selectedIndices.size === 0) return speak('Выберите этикетки для печати.');
+      renderBulkPrint(Array.from(selectedIndices).sort((a, b) => a - b));
+    }
+
+    function printSingleFromGrid() {
+      if(selectedIndices.size > 0) {
+        printSelectedLabels();
+      } else {
+        speak('Выберите этикетки (Ctrl+клик) или нажмите на одну для печати');
+      }
+    }
+
+    function printAllLabels() {
+      if(excelData.length === 0) return speak('Нет данных для печати.');
+      const indices = [...Array(excelData.length).keys()];
+      renderBulkPrint(indices);
+    }
+
+    function printRemainingLabels() {
+      const remaining = [];
+      excelData.forEach((item, idx) => {
+        if(!printedSet.has(idx)) remaining.push(idx);
+      });
+      if(remaining.length === 0) return speak('Все этикетки уже напечатаны.');
+      renderBulkPrint(remaining);
+    }
+
+    function renderBulkPrint(indices) {
+      const printArea = document.getElementById('bulkPrintArea');
+      printArea.innerHTML = '';
+
+      indices.forEach(idx => {
+        printArea.insertAdjacentHTML('beforeend', createLabelHTML(idx, true));
+      });
+
+      printArea.classList.remove('hidden');
+
+      setTimeout(() => {
+        indices.forEach(idx => {
+          const bc = getItemBarcode(idx);
+          try {
+            JsBarcode(`#bp_svg_${idx}`, bc, {
+              format: "CODE128",
+              width: 1.8,
+              height: 30,
+              displayValue: false,
+              margin: 0
+            });
+          } catch(e) { /* skip */ }
+        });
+        window.print();
+      }, 300);
+
+      setTimeout(() => {
+        printArea.classList.add('hidden');
+        indices.forEach(idx => printedSet.add(idx));
+        selectedIndices.clear();
+        renderLabelGrid();
+        speak(`Напечатано ${indices.length} этикеток`);
+      }, 2000);
+    }
+
+    function markAllPrinted() {
+      if(!confirm('Отметить все этикетки как напечатанные?')) return;
+      printedSet = new Set([...Array(excelData.length).keys()]);
+      renderLabelGrid();
+      speak('Все этикетки отмечены');
+    }
+
+    function resetPrintStatus() {
+      if(!confirm('Сбросить статус печати всех этикеток?')) return;
+      printedSet.clear();
+      selectedIndices.clear();
+      renderLabelGrid();
+      speak('Статус печати сброшен');
+    }
+
+    // --- Scanner ---
     function updateBoxSelect() {
       const sel = document.getElementById('boxSelect');
       sel.innerHTML = '';
@@ -267,7 +755,6 @@
     function newBox() {
       const next = Math.max(...Object.keys(boxes).map(Number)) + 1;
       boxes[next] = [];
-      scannedSet.clear(); // Reset per box or keep global? Here global for safety
       changeBox(next);
       speak(`Создан короб номер ${next}`);
     }
@@ -281,18 +768,20 @@
     function updateUI() {
       const list = boxes[currentBox];
       const limit = getBoxLimit();
-      const progress = Math.min((list.length / limit) * 100, 100);
+      const progress = limit > 0 ? Math.min((list.length / limit) * 100, 100) : 0;
       document.getElementById('progressText').textContent = `${list.length} / ${limit}`;
       document.getElementById('progressFill').style.width = `${progress}%`;
-      
+
       const tbody = document.getElementById('scannedBody');
       tbody.innerHTML = '';
       list.forEach((item, i) => {
         const tr = document.createElement('tr');
+        const artVal = item[mapping.wb_article] || '-';
+        const bcVal = item[mapping.label_barcode] || '-';
         tr.innerHTML = `
-          <td>${item[mapping.wb_article] || '-'}</td>
-          <td>${item[mapping.label_barcode]}</td>
-          <td>${item['квант спайки'] || 1}</td>
+          <td>${artVal}</td>
+          <td>${bcVal}</td>
+          <td>1</td>
           <td><span class="badge success">Принято</span></td>
           <td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeItem(${i})">✖</button></td>
         `;
@@ -301,34 +790,30 @@
     }
 
     function getBoxLimit() {
-      // Use limit from first item or fallback to default
-      if(boxes[currentBox].length > 0) {
+      if(mapping.sets_per_box && boxes[currentBox].length > 0 && boxes[currentBox][0][mapping.sets_per_box]) {
         return parseInt(boxes[currentBox][0][mapping.sets_per_box]) || 15;
       }
-      return 15; // default fallback
+      return 15;
     }
 
     function removeItem(idx) {
       const item = boxes[currentBox][idx];
       const bc = item[mapping.label_barcode];
       boxes[currentBox].splice(idx, 1);
-      if(boxes[currentBox].length === 0) scannedSet.clear();
+      scannedSet.delete(String(bc).trim());
       updateUI();
       speak('Позиция удалена');
     }
 
-    // Scanner Input Handler
     const scannerInput = document.getElementById('scannerInput');
-    let scanBuffer = '';
     let scanTimeout = null;
 
     scannerInput.addEventListener('input', (e) => {
-      scanBuffer = e.target.value;
       clearTimeout(scanTimeout);
       scanTimeout = setTimeout(() => {
-        if(scanBuffer) processScan(scanBuffer.trim());
+        if(e.target.value.trim()) processScan(e.target.value.trim());
         e.target.value = '';
-      }, 300); // Wait for scanner finish
+      }, 300);
     });
 
     scannerInput.addEventListener('keydown', (e) => {
@@ -347,13 +832,13 @@
       }
 
       const item = excelData.find(row => {
-        const lb = String(row[mapping.label_barcode]).trim();
-        const ob = String(row[mapping.origin_barcode]).trim();
+        const lb = String(row[mapping.label_barcode] || '').trim();
+        const ob = String(row[mapping.origin_barcode] || '').trim();
         return lb === barcode || ob === barcode;
       });
 
       if(!item) {
-        speak('Ошибка. Артикул не найден в ТЗ.');
+        speak('Ошибка. Штрихкод не найден в ТЗ.');
         return;
       }
 
@@ -365,48 +850,18 @@
 
       boxes[currentBox].push(item);
       scannedSet.add(barcode);
-      currentItemForLabel = item; // For printing
+      currentItemForLabel = item;
       updateUI();
       speak(`Принято. В коробе ${currentBox}: ${boxes[currentBox].length} из ${limit}`);
     }
 
-    // --- Label Generation ---
-    function printLabel() {
-      if(!currentItemForLabel) return speak('Сначала отсканируйте товар для печати наклейки.');
-      const item = currentItemForLabel;
-      const barcode = String(item[mapping.label_barcode]);
-      const article = String(item[mapping.wb_article] || 'ARTICLE');
-      const expiry = String(item[mapping.expiry] || 'СГ: --');
-      const warning = String(item[mapping.packing_instructions] || '').includes('НЕ ВСКРЫВАТЬ') 
-        ? 'НЕ ВСКРЫВАТЬ! ЕДИНЫЙ ТОВАР' 
-        : 'ТЗ: Обернуть ВВП + термоусадка';
-
-      document.getElementById('lblArticle').textContent = `Арт: ${article}`;
-      document.getElementById('lblExpiry').textContent = `Годен до: ${expiry}`;
-      document.getElementById('lblWarning').textContent = warning;
-
-      try {
-        JsBarcode("#labelBarcode", barcode, {
-          format: "CODE128",
-          width: 1.5,
-          height: 30,
-          displayValue: false,
-          margin: 0
-        });
-      } catch(e) { console.warn(e); }
-
-      window.print();
-      speak('Наклейка отправлена на печать.');
-    }
-
     function resetSession() {
-      if(!confirm('Сбросить все данные?')) return;
+      if(!confirm('Сбросить все данные сканирования?')) return;
       boxes = {1:[]}; currentBox = 1; scannedSet.clear();
       updateBoxSelect(); updateUI();
       speak('Сессия сброшена.');
     }
 
-    // Init
     window.onload = () => {
       document.getElementById('scannerInput').focus();
       speak('Система готова. Загрузите ТЗ.');
@@ -414,3 +869,4 @@
   </script>
 </body>
 </html>
+
