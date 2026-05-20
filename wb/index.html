@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📦 Контроль отгрузки Озон/WB</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f8fafc;
+      --panel: #ffffff; --border: #e2e8f0; --text: #0f172a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 1.5rem; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; border-radius: 6px; font-weight: 500; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .panel { background: var(--panel); padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+    input, select, button { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; }
+    button { cursor: pointer; background: var(--primary); color: white; border: none; font-weight: 500; transition: 0.2s; }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: #64748b; }
+    button.success { background: var(--success); }
+    button.danger { background: var(--danger); }
+    .hidden { display: none !important; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+    th, td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { background: #f1f5f9; }
+    .scanner-box { text-align: center; padding: 30px; background: #f8fafc; border: 2px dashed var(--border); border-radius: 8px; }
+    .scanner-box input { font-size: 1.5rem; text-align: center; border: 2px solid var(--primary); }
+    .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; background: #e2e8f0; }
+    .badge.success { background: #dcfce7; color: #166534; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+    .badge.error { background: #fee2e2; color: #991b1b; }
+    .voice-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .voice-toggle input { width: auto; }
+
+    /* Печать этикетки 58x40 мм */
+    @media print {
+      @page { size: 58mm 40mm; margin: 0; }
+      body * { visibility: hidden !important; }
+      #printable-label, #printable-label * { visibility: visible !important; }
+      #printable-label {
+        position: absolute; left: 0; top: 0;
+        width: 58mm; height: 40mm;
+        padding: 2mm;
+        background: white;
+        border: none;
+        box-shadow: none;
+        display: flex; flex-direction: column; justify-content: space-between;
+      }
+    }
+    #printable-label { font-family: monospace; }
+    .lbl-barcode { text-align: center; margin-top: 2px; }
+    .lbl-barcode svg { width: 50mm; height: 12mm; }
+    .lbl-article { font-weight: bold; font-size: 9pt; margin: 2px 0; }
+    .lbl-expiry { font-size: 8pt; margin: 1px 0; }
+    .lbl-warning { font-size: 7pt; color: #333; margin-top: 2px; line-height: 1.1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📦 Система контроля отгрузки</h1>
+      <div class="voice-toggle">
+        <input type="checkbox" id="voiceToggle" checked>
+        <label for="voiceToggle">🔊 Голосовое сопровождение</label>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('upload')">📥 Загрузка ТЗ</button>
+      <button class="tab-btn" onclick="switchTab('mapping')">🗂️ Маппинг полей</button>
+      <button class="tab-btn" onclick="switchTab('scanner')">📦 Сканер & Короба</button>
+    </div>
+
+    <!-- 1. Загрузка -->
+    <section id="tab-upload" class="panel">
+      <h2>1. Загрузка ТЗ (Excel)</h2>
+      <p>Выберите файл заказа. Система автоматически распознает структуру.</p>
+      <div class="grid" style="grid-template-columns: 1fr;">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+      </div>
+      <button onclick="parseFile()" class="success">📊 Загрузить и подготовить</button>
+      <div id="uploadStatus" style="margin-top:10px; font-weight:500;"></div>
+    </section>
+
+    <!-- 2. Маппинг -->
+    <section id="tab-mapping" class="panel hidden">
+      <h2>2. Соответствие полей</h2>
+      <p>Проверьте, какие колонки из файла соответствуют системным полям.</p>
+      <table id="mappingTable">
+        <thead><tr><th>Системное поле</th><th>Колонка из Excel</th></tr></thead>
+        <tbody id="mappingBody"></tbody>
+      </table>
+      <div class="grid" style="margin-top:15px;">
+        <button onclick="saveMapping()" class="success">✅ Сохранить и перейти к сканеру</button>
+      </div>
+    </section>
+
+    <!-- 3. Сканер -->
+    <section id="tab-scanner" class="panel hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+        <div>
+          <label>📦 Текущий короб:</label>
+          <select id="boxSelect" style="width:auto; min-width:100px; display:inline-block;" onchange="changeBox(this.value)"></select>
+          <button class="secondary" style="width:auto; padding:8px 12px; margin-left:5px;" onclick="newBox()">+ Новый короб</button>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge" id="platformBadge">WB</span>
+          <button class="secondary" style="width:auto; padding:8px 12px; margin-left:5px;" onclick="printLabel()">🏷️ Печать наклейки</button>
+        </div>
+      </div>
+
+      <div class="scanner-box">
+        <label style="margin-bottom:10px;">⌨️ Поле для сканера (фокус автоматический)</label>
+        <input type="text" id="scannerInput" placeholder="Отсканируйте ШК..." autocomplete="off">
+        <div style="margin-top:10px; font-size:0.9rem; color:#64748b;">
+          Сканер работает в режиме HID. Нажимайте <kbd>Enter</kbd> после ШК (обычно автоматически).
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Прогресс короба:</span>
+          <span id="progressText">0 / 0</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+
+      <h3 style="margin-top:20px;">📋 Отсканированные позиции</h3>
+      <div style="max-height: 300px; overflow-y: auto;">
+        <table id="scannedTable">
+          <thead><tr><th>Артикул</th><th>ШК</th><th>Кол-во</th><th>Статус</th><th>Действие</th></tr></thead>
+          <tbody id="scannedBody"></tbody>
+        </table>
+      </div>
+      <button class="danger" style="margin-top:15px;" onclick="resetSession()">🗑️ Сбросить сессию</button>
+    </section>
+  </div>
+
+  <!-- Скрытый блок для печати -->
+  <div id="printable-label">
+    <svg id="labelBarcode"></svg>
+    <div class="lbl-article" id="lblArticle"></div>
+    <div class="lbl-expiry" id="lblExpiry"></div>
+    <div class="lbl-warning" id="lblWarning"></div>
+  </div>
+
+  <script>
+    // --- State ---
+    let excelData = [];
+    let mapping = {};
+    let boxes = { 1: [] };
+    let currentBox = 1;
+    let scannedSet = new Set();
+    let limitPerBox = 0;
+    let currentItemForLabel = null;
+    let voiceEnabled = true;
+
+    // --- UI Helpers ---
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn')[['upload','mapping','scanner'].indexOf(tab)].classList.add('active');
+      if(tab === 'scanner') document.getElementById('scannerInput').focus();
+    }
+
+    function speak(text) {
+      if (!voiceEnabled || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ru-RU'; u.rate = 1.1;
+      window.speechSynthesis.speak(u);
+    }
+
+    document.getElementById('voiceToggle').addEventListener('change', e => voiceEnabled = e.target.checked);
+
+    // --- 1. Load & Parse ---
+    function parseFile() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert('Выберите файл!');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          excelData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          if (excelData.length === 0) throw new Error('Файл пуст или неверный формат');
+          document.getElementById('uploadStatus').innerHTML = `<span class="badge success">✅ Загружено: ${excelData.length} строк</span>`;
+          buildMappingUI();
+          switchTab('mapping');
+          speak('Файл загружен. Проверьте соответствие полей.');
+        } catch (err) {
+          alert('Ошибка чтения: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // --- 2. Mapping ---
+    const SYSTEM_FIELDS = {
+      wb_article: 'Артикул ВБ',
+      label_barcode: 'ШК на этикетку',
+      origin_barcode: 'ШК исход',
+      expiry: 'ГОДЕН ДО',
+      packing_instructions: 'ТЗ',
+      sets_per_box: 'спаек в коробе'
+    };
+
+    function buildMappingUI() {
+      const headers = Object.keys(excelData[0]);
+      const tbody = document.getElementById('mappingBody');
+      tbody.innerHTML = '';
+      
+      Object.entries(SYSTEM_FIELDS).forEach(([key, hint]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${key}</strong> <span style="color:#64748b; font-size:0.8em;">(подсказка: ${hint})</span></td>
+          <td>
+            <select id="map_${key}">
+              <option value="">-- Выберите колонку --</option>
+              ${headers.map(h => `<option value="${h}" ${h.toLowerCase().includes(hint.toLowerCase().split(' ')[0]) ? 'selected' : ''}>${h}</option>`).join('')}
+            </select>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveMapping() {
+      mapping = {};
+      let filled = 0;
+      Object.keys(SYSTEM_FIELDS).forEach(key => {
+        const val = document.getElementById(`map_${key}`).value;
+        if(val) { mapping[key] = val; filled++; }
+      });
+      if(filled < 3) return alert('Сопоставьте минимум 3 поля!');
+      
+      // Init boxes
+      updateBoxSelect();
+      changeBox(1);
+      switchTab('scanner');
+      speak('Маппинг сохранен. Начинаем отгрузку.');
+    }
+
+    // --- 3. Scanner & Box Logic ---
+    function updateBoxSelect() {
+      const sel = document.getElementById('boxSelect');
+      sel.innerHTML = '';
+      Object.keys(boxes).forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b; opt.textContent = `Короб ${b}`;
+        if(b == currentBox) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function newBox() {
+      const next = Math.max(...Object.keys(boxes).map(Number)) + 1;
+      boxes[next] = [];
+      scannedSet.clear(); // Reset per box or keep global? Here global for safety
+      changeBox(next);
+      speak(`Создан короб номер ${next}`);
+    }
+
+    function changeBox(id) {
+      currentBox = parseInt(id);
+      if(!boxes[currentBox]) boxes[currentBox] = [];
+      updateUI();
+    }
+
+    function updateUI() {
+      const list = boxes[currentBox];
+      const limit = getBoxLimit();
+      const progress = Math.min((list.length / limit) * 100, 100);
+      document.getElementById('progressText').textContent = `${list.length} / ${limit}`;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+      
+      const tbody = document.getElementById('scannedBody');
+      tbody.innerHTML = '';
+      list.forEach((item, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item[mapping.wb_article] || '-'}</td>
+          <td>${item[mapping.label_barcode]}</td>
+          <td>${item['квант спайки'] || 1}</td>
+          <td><span class="badge success">Принято</span></td>
+          <td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeItem(${i})">✖</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getBoxLimit() {
+      // Use limit from first item or fallback to default
+      if(boxes[currentBox].length > 0) {
+        return parseInt(boxes[currentBox][0][mapping.sets_per_box]) || 15;
+      }
+      return 15; // default fallback
+    }
+
+    function removeItem(idx) {
+      const item = boxes[currentBox][idx];
+      const bc = item[mapping.label_barcode];
+      boxes[currentBox].splice(idx, 1);
+      if(boxes[currentBox].length === 0) scannedSet.clear();
+      updateUI();
+      speak('Позиция удалена');
+    }
+
+    // Scanner Input Handler
+    const scannerInput = document.getElementById('scannerInput');
+    let scanBuffer = '';
+    let scanTimeout = null;
+
+    scannerInput.addEventListener('input', (e) => {
+      scanBuffer = e.target.value;
+      clearTimeout(scanTimeout);
+      scanTimeout = setTimeout(() => {
+        if(scanBuffer) processScan(scanBuffer.trim());
+        e.target.value = '';
+      }, 300); // Wait for scanner finish
+    });
+
+    scannerInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') {
+        e.preventDefault();
+        processScan(scannerInput.value.trim());
+        scannerInput.value = '';
+      }
+    });
+
+    function processScan(barcode) {
+      if(!barcode) return;
+      if(scannedSet.has(barcode)) {
+        speak('Дубликат. Штрихкод уже в коробе.');
+        return;
+      }
+
+      const item = excelData.find(row => {
+        const lb = String(row[mapping.label_barcode]).trim();
+        const ob = String(row[mapping.origin_barcode]).trim();
+        return lb === barcode || ob === barcode;
+      });
+
+      if(!item) {
+        speak('Ошибка. Артикул не найден в ТЗ.');
+        return;
+      }
+
+      const limit = getBoxLimit();
+      if(boxes[currentBox].length >= limit) {
+        speak(`Короб ${currentBox} заполнен. Смените короб.`);
+        return;
+      }
+
+      boxes[currentBox].push(item);
+      scannedSet.add(barcode);
+      currentItemForLabel = item; // For printing
+      updateUI();
+      speak(`Принято. В коробе ${currentBox}: ${boxes[currentBox].length} из ${limit}`);
+    }
+
+    // --- Label Generation ---
+    function printLabel() {
+      if(!currentItemForLabel) return speak('Сначала отсканируйте товар для печати наклейки.');
+      const item = currentItemForLabel;
+      const barcode = String(item[mapping.label_barcode]);
+      const article = String(item[mapping.wb_article] || 'ARTICLE');
+      const expiry = String(item[mapping.expiry] || 'СГ: --');
+      const warning = String(item[mapping.packing_instructions] || '').includes('НЕ ВСКРЫВАТЬ') 
+        ? 'НЕ ВСКРЫВАТЬ! ЕДИНЫЙ ТОВАР' 
+        : 'ТЗ: Обернуть ВВП + термоусадка';
+
+      document.getElementById('lblArticle').textContent = `Арт: ${article}`;
+      document.getElementById('lblExpiry').textContent = `Годен до: ${expiry}`;
+      document.getElementById('lblWarning').textContent = warning;
+
+      try {
+        JsBarcode("#labelBarcode", barcode, {
+          format: "CODE128",
+          width: 1.5,
+          height: 30,
+          displayValue: false,
+          margin: 0
+        });
+      } catch(e) { console.warn(e); }
+
+      window.print();
+      speak('Наклейка отправлена на печать.');
+    }
+
+    function resetSession() {
+      if(!confirm('Сбросить все данные?')) return;
+      boxes = {1:[]}; currentBox = 1; scannedSet.clear();
+      updateBoxSelect(); updateUI();
+      speak('Сессия сброшена.');
+    }
+
+    // Init
+    window.onload = () => {
+      document.getElementById('scannerInput').focus();
+      speak('Система готова. Загрузите ТЗ.');
+    };
+  </script>
+</body>
+</html>
