@@ -1,1538 +1,718 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, RadialBarChart, RadialBar
-} from 'recharts';
-import {
-  Users, Clock, DollarSign, Package, TrendingUp,
-  AlertTriangle, CheckCircle, XCircle, Pause, Play,
-  LogIn, LogOut, Coffee, FileText, Calendar,
-  Search, Plus, Edit2, Trash2, Eye, Download,
-  Filter, ChevronDown, ChevronUp, Activity,
-  Truck, Box, Target, Award, BarChart3,
-  Home, Settings, Bell, Moon, Sun
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS Control - Система управления складом</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/framer-motion/dist/framer-motion.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
 
-const EMPLOYEE_STATUSES = {
-  ON_BREAK: 'break',
-  ON_SHIFT: 'on_shift',
-  OFFLINE: 'offline',
-  LATE: 'late'
-};
+    <script type="text/babel">
+        // Destructure libraries
+        const { useState, useEffect, useCallback, useMemo, createContext, useContext } = React;
+        
+        // Framer Motion safe access
+        const MotionLib = window.Motion || {};
+        const motion = MotionLib.motion || ((props) => {
+            const { initial, animate, exit, transition, ...rest } = props;
+            return React.createElement('div', rest);
+        });
+        const AnimatePresence = MotionLib.AnimatePresence || (({ children }) => children);
 
-const TASK_TYPES = {
-  PICKING: 'Сборка',
-  PACKING: 'Упаковка',
-  RECEIVING: 'Приемка',
-  SHIPMENT: 'Отгрузка',
-  INVENTORY: 'Инвентаризация'
-};
+        // Recharts safe access
+        const RC = window.Recharts || {};
+        const {
+            BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+            XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+            AreaChart, Area, RadialBarChart, RadialBar
+        } = RC;
 
-const TASK_PRIORITIES = {
-  LOW: 'low',
-  MEDIUM: 'medium',
-  HIGH: 'high',
-  URGENT: 'urgent'
-};
+        // Icon Component
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const paths = {
+                home: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+                users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75",
+                clock: "M12 2a10 10 0 1 0 10 10H12V2z M12 2v10l6 4",
+                dollar: "M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
+                package: "M16.5 9.4l-9-5.19 M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
+                trendingUp: "M23 6l-9.5 9.5-5-5L1 18 M17 6h6v6",
+                alert: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
+                check: "M20 6L9 17l-5-5",
+                x: "M18 6L6 18 M6 6l12 12",
+                pause: "M6 4h4v16H6zM14 4h4v16h-4z",
+                play: "M5 3l14 9-14 9V3z",
+                logIn: "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4 M10 17l5-5-5-5 M15 12H3",
+                logOut: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9",
+                coffee: "M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3",
+                file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
+                calendar: "M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M16 2v4 M8 2v4 M3 10h18",
+                search: "M11 11a8 8 0 1 0 8 8 M21 21l-4.35-4.35",
+                plus: "M12 5v14 M5 12h14",
+                edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
+                trash: "M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
+                eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 1 0 3 3",
+                download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+                filter: "M22 3H2l8 9.46V19l4 2v-8.54L22 3z",
+                chevronDown: "M6 9l6 6 6-6",
+                chevronUp: "M18 15l-6-6-6 6",
+                activity: "M22 12h-4l-3 9-9-18-3 9H2",
+                truck: "M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+                box: "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
+                target: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z M12 6a6 6 0 1 0 6 6 6 6 0 0 0-6-6z M12 10a2 2 0 1 0 2 2 2 2 0 0 0-2-2z",
+                award: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+                barChart: "M18 20V10 M12 20V4 M6 20v-6",
+                settings: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
+                bell: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0",
+                sun: "M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z",
+                moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+            };
+            
+            const d = paths[name] || "M12 2L2 12l10 10 10-10L12 2z";
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {React.createElement("path", { d: d })}
+                </svg>
+            );
+        };
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+        // Data & Constants
+        const EMPLOYEE_STATUSES = { ON_BREAK: 'break', ON_SHIFT: 'on_shift', OFFLINE: 'offline', LATE: 'late' };
+        const TASK_TYPES = { PICKING: 'Сборка', PACKING: 'Упаковка', RECEIVING: 'Приемка', SHIPMENT: 'Отгрузка', INVENTORY: 'Инвентаризация' };
+        const TASK_PRIORITIES = { LOW: 'Низкий', MEDIUM: 'Средний', HIGH: 'Высокий', URGENT: 'Срочный' };
+        const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+        
+        const formatCurrency = (amount) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 2 }).format(amount);
+        const formatTime = (date) => new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(date));
+        const formatDate = (date) => new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(date));
+        const formatDuration = (ms) => { const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); return `${h}ч ${m}м`; };
 
-const formatCurrency = (amount) => new Intl.NumberFormat('ru-RU', {
-  style: 'currency', currency: 'RUB', minimumFractionDigits: 2
-}).format(amount);
+        const initialEmployees = [
+            { id: 'e1', name: 'Иванов Алексей', position: 'Комплектовщик', department: 'Сборка', hourlyRate: 350, phone: '+7 901 234-56-78', email: 'ivanov@mail.ru', hireDate: '2023-01-15', status: 'on_shift', shiftStart: new Date(Date.now() - 3 * 3600000) },
+            { id: 'e2', name: 'Петрова Мария', position: 'Упаковщик', department: 'Упаковка', hourlyRate: 320, phone: '+7 902 345-67-89', email: 'petrova@mail.ru', hireDate: '2023-03-20', status: 'on_shift', shiftStart: new Date(Date.now() - 2 * 3600000) },
+            { id: 'e3', name: 'Сидоров Дмитрий', position: 'Кладовщик', department: 'Склад', hourlyRate: 400, phone: '+7 903 456-78-90', email: 'sidorov@mail.ru', hireDate: '2022-11-10', status: 'break', shiftStart: new Date(Date.now() - 4 * 3600000) },
+            { id: 'e4', name: 'Козлова Анна', position: 'Оператор', department: 'Приемка', hourlyRate: 380, phone: '+7 904 567-89-01', email: 'kozlova@mail.ru', hireDate: '2023-06-01', status: 'on_shift', shiftStart: new Date(Date.now() - 1 * 3600000) },
+            { id: 'e5', name: 'Новиков Сергей', position: 'Водитель', department: 'Отгрузка', hourlyRate: 450, phone: '+7 905 678-90-12', email: 'novikov@mail.ru', hireDate: '2022-08-05', status: 'offline', shiftStart: null },
+            { id: 'e6', name: 'Волкова Елена', position: 'Комплектовщик', department: 'Сборка', hourlyRate: 340, phone: '+7 906 789-01-23', email: 'volkova@mail.ru', hireDate: '2023-09-15', status: 'on_shift', shiftStart: new Date(Date.now() - 5 * 3600000) },
+            { id: 'e7', name: 'Морозов Павел', position: 'Супервайзер', department: 'Управление', hourlyRate: 550, phone: '+7 907 890-12-34', email: 'morozov@mail.ru', hireDate: '2022-01-20', status: 'late', shiftStart: null },
+            { id: 'e8', name: 'Лебедева Ольга', position: 'Упаковщик', department: 'Упаковка', hourlyRate: 330, phone: '+7 908 901-23-45', email: 'lebedeva@mail.ru', hireDate: '2023-04-10', status: 'on_shift', shiftStart: new Date(Date.now() - 6 * 3600000) },
+        ];
 
-const formatTime = (date) => new Intl.DateTimeFormat('ru-RU', {
-  hour: '2-digit', minute: '2-digit', second: '2-digit'
-}).format(new Date(date));
+        const initialTasks = [
+            { id: 't1', employeeId: 'e1', type: 'picking', priority: 'high', orderId: 'ORD-10234', items: 45, status: 'in_progress', startTime: new Date(Date.now() - 30 * 60000), estimatedTime: 60 },
+            { id: 't2', employeeId: 'e2', type: 'packing', priority: 'medium', orderId: 'ORD-10235', items: 12, status: 'in_progress', startTime: new Date(Date.now() - 15 * 60000), estimatedTime: 30 },
+            { id: 't3', employeeId: 'e4', type: 'receiving', priority: 'urgent', orderId: 'ORD-10236', items: 200, status: 'in_progress', startTime: new Date(Date.now() - 90 * 60000), estimatedTime: 120 },
+            { id: 't4', employeeId: 'e6', type: 'picking', priority: 'low', orderId: 'ORD-10237', items: 8, status: 'completed', startTime: new Date(Date.now() - 120 * 60000), completedTime: new Date(Date.now() - 30 * 60000), estimatedTime: 45 },
+            { id: 't5', employeeId: 'e1', type: 'packing', priority: 'medium', orderId: 'ORD-10238', items: 25, status: 'pending', startTime: null, estimatedTime: 40 },
+            { id: 't6', employeeId: 'e8', type: 'shipment', priority: 'high', orderId: 'ORD-10239', items: 60, status: 'in_progress', startTime: new Date(Date.now() - 45 * 60000), estimatedTime: 55 },
+            { id: 't7', employeeId: 'e3', type: 'inventory', priority: 'medium', orderId: null, items: 500, status: 'paused', startTime: new Date(Date.now() - 180 * 60000), estimatedTime: 240 },
+        ];
 
-const formatDate = (date) => new Intl.DateTimeFormat('ru-RU', {
-  day: '2-digit', month: '2-digit', year: 'numeric'
-}).format(new Date(date));
+        const initialShiftHistory = [
+            { id: 's1', employeeId: 'e1', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 350, earned: 3850, itemsProcessed: 234, tasksCompleted: 12, efficiency: 94 },
+            { id: 's2', employeeId: 'e1', date: '2024-01-13', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 350, earned: 3850, itemsProcessed: 220, tasksCompleted: 11, efficiency: 91 },
+            { id: 's3', employeeId: 'e2', date: '2024-01-14', shiftStart: '08:00', shiftEnd: '20:00', breakMinutes: 60, totalHours: 11, hourlyRate: 320, earned: 3520, itemsProcessed: 189, tasksCompleted: 10, efficiency: 88 },
+            { id: 's4', employeeId: 'e3', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 45, totalHours: 11.25, hourlyRate: 400, earned: 4500, itemsProcessed: 310, tasksCompleted: 15, efficiency: 96 },
+            { id: 's5', employeeId: 'e4', date: '2024-01-14', shiftStart: '10:00', shiftEnd: '22:00', breakMinutes: 60, totalHours: 11, hourlyRate: 380, earned: 4180, itemsProcessed: 275, tasksCompleted: 13, efficiency: 92 },
+            { id: 's6', employeeId: 'e6', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 340, earned: 3740, itemsProcessed: 205, tasksCompleted: 10, efficiency: 85 },
+            { id: 's7', employeeId: 'e8', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 330, earned: 3630, itemsProcessed: 198, tasksCompleted: 9, efficiency: 87 },
+            { id: 's8', employeeId: 'e5', date: '2024-01-13', shiftStart: '08:00', shiftEnd: '17:00', breakMinutes: 60, totalHours: 8, hourlyRate: 450, earned: 3600, itemsProcessed: 340, tasksCompleted: 8, efficiency: 90 },
+        ];
 
-const formatDuration = (ms) => {
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  return `${hours}ч ${minutes}м`;
-};
+        const weeklyData = [
+            { day: 'Пн', items: 1240, tasks: 85, revenue: 28500 }, { day: 'Вт', items: 1380, tasks: 92, revenue: 31200 },
+            { day: 'Ср', items: 1150, tasks: 78, revenue: 26800 }, { day: 'Чт', items: 1520, tasks: 105, revenue: 34500 },
+            { day: 'Пт', items: 1680, tasks: 118, revenue: 38900 }, { day: 'Сб', items: 890, tasks: 58, revenue: 19800 },
+            { day: 'Вс', items: 450, tasks: 30, revenue: 10200 },
+        ];
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+        const departmentData = [
+            { name: 'Сборка', value: 35 }, { name: 'Упаковка', value: 25 }, { name: 'Приемка', value: 20 },
+            { name: 'Отгрузка', value: 15 }, { name: 'Управление', value: 5 },
+        ];
 
-const initialEmployees = [
-  { id: 'e1', name: 'Иванов Алексей', position: 'Комплектовщик', department: 'Сборка', hourlyRate: 350, phone: '+7 901 234-56-78', email: 'ivanov@mail.ru', hireDate: '2023-01-15', status: 'on_shift', shiftStart: new Date(Date.now() - 3 * 3600000), avatar: '👨‍' },
-  { id: 'e2', name: 'Петрова Мария', position: 'Упаковщик', department: 'Упаковка', hourlyRate: 320, phone: '+7 902 345-67-89', email: 'petrova@mail.ru', hireDate: '2023-03-20', status: 'on_shift', shiftStart: new Date(Date.now() - 2 * 3600000), avatar: '👩‍💼' },
-  { id: 'e3', name: 'Сидоров Дмитрий', position: 'Кладовщик', department: 'Склад', hourlyRate: 400, phone: '+7 903 456-78-90', email: 'sidorov@mail.ru', hireDate: '2022-11-10', status: 'break', shiftStart: new Date(Date.now() - 4 * 3600000), avatar: '👨‍💻' },
-  { id: 'e4', name: 'Козлова Анна', position: 'Оператор', department: 'Приемка', hourlyRate: 380, phone: '+7 904 567-89-01', email: 'kozlova@mail.ru', hireDate: '2023-06-01', status: 'on_shift', shiftStart: new Date(Date.now() - 1 * 3600000), avatar: '👩‍🔧' },
-  { id: 'e5', name: 'Новиков Сергей', position: 'Водитель погрузчика', department: 'Отгрузка', hourlyRate: 450, phone: '+7 905 678-90-12', email: 'novikov@mail.ru', hireDate: '2022-08-05', status: 'offline', shiftStart: null, avatar: '‍✈️' },
-  { id: 'e6', name: 'Волкова Елена', position: 'Комплектовщик', department: 'Сборка', hourlyRate: 340, phone: '+7 906 789-01-23', email: 'volkova@mail.ru', hireDate: '2023-09-15', status: 'on_shift', shiftStart: new Date(Date.now() - 5 * 3600000), avatar: '‍🏭' },
-  { id: 'e7', name: 'Морозов Павел', position: 'Супервайзер', department: 'Управление', hourlyRate: 550, phone: '+7 907 890-12-34', email: 'morozov@mail.ru', hireDate: '2022-01-20', status: 'late', shiftStart: null, avatar: '👨💼' },
-  { id: 'e8', name: 'Лебедева Ольга', position: 'Упаковщик', department: 'Упаковка', hourlyRate: 330, phone: '+7 908 901-23-45', email: 'lebedeva@mail.ru', hireDate: '2023-04-10', status: 'on_shift', shiftStart: new Date(Date.now() - 6 * 3600000), avatar: '👩‍' },
-];
+        const efficiencyData = [
+            { name: 'Иванов А.', efficiency: 94, items: 234, fill: '#3B82F6' }, { name: 'Сидоров Д.', efficiency: 96, items: 310, fill: '#10B981' },
+            { name: 'Козлова А.', efficiency: 92, items: 275, fill: '#F59E0B' }, { name: 'Петрова М.', efficiency: 88, items: 189, fill: '#EF4444' },
+            { name: 'Лебедева О.', efficiency: 87, items: 198, fill: '#8B5CF6' }, { name: 'Волкова Е.', efficiency: 85, items: 205, fill: '#EC4899' },
+            { name: 'Новиков С.', efficiency: 90, items: 340, fill: '#06B6D4' },
+        ];
 
-const initialTasks = [
-  { id: 't1', employeeId: 'e1', type: 'picking', priority: 'high', orderId: 'ORD-10234', items: 45, status: 'in_progress', startTime: new Date(Date.now() - 30 * 60000), estimatedTime: 60 },
-  { id: 't2', employeeId: 'e2', type: 'packing', priority: 'medium', orderId: 'ORD-10235', items: 12, status: 'in_progress', startTime: new Date(Date.now() - 15 * 60000), estimatedTime: 30 },
-  { id: 't3', employeeId: 'e4', type: 'receiving', priority: 'urgent', orderId: 'ORD-10236', items: 200, status: 'in_progress', startTime: new Date(Date.now() - 90 * 60000), estimatedTime: 120 },
-  { id: 't4', employeeId: 'e6', type: 'picking', priority: 'low', orderId: 'ORD-10237', items: 8, status: 'completed', startTime: new Date(Date.now() - 120 * 60000), completedTime: new Date(Date.now() - 30 * 60000), estimatedTime: 45 },
-  { id: 't5', employeeId: 'e1', type: 'packing', priority: 'medium', orderId: 'ORD-10238', items: 25, status: 'pending', startTime: null, estimatedTime: 40 },
-  { id: 't6', employeeId: 'e8', type: 'shipment', priority: 'high', orderId: 'ORD-10239', items: 60, status: 'in_progress', startTime: new Date(Date.now() - 45 * 60000), estimatedTime: 55 },
-  { id: 't7', employeeId: 'e3', type: 'inventory', priority: 'medium', orderId: null, items: 500, status: 'paused', startTime: new Date(Date.now() - 180 * 60000), estimatedTime: 240 },
-];
+        const monthlyRevenue = [
+            { month: 'Авг', revenue: 850000, cost: 420000, profit: 430000 }, { month: 'Сен', revenue: 920000, cost: 445000, profit: 475000 },
+            { month: 'Окт', revenue: 1050000, cost: 480000, profit: 570000 }, { month: 'Ноя', revenue: 1180000, cost: 520000, profit: 660000 },
+            { month: 'Дек', revenue: 1320000, cost: 580000, profit: 740000 }, { month: 'Янв', revenue: 1150000, cost: 510000, profit: 640000 },
+        ];
 
-const initialShiftHistory = [
-  { id: 's1', employeeId: 'e1', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 350, earned: 3850, itemsProcessed: 234, tasksCompleted: 12, efficiency: 94 },
-  { id: 's2', employeeId: 'e1', date: '2024-01-13', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 350, earned: 3850, itemsProcessed: 220, tasksCompleted: 11, efficiency: 91 },
-  { id: 's3', employeeId: 'e2', date: '2024-01-14', shiftStart: '08:00', shiftEnd: '20:00', breakMinutes: 60, totalHours: 11, hourlyRate: 320, earned: 3520, itemsProcessed: 189, tasksCompleted: 10, efficiency: 88 },
-  { id: 's4', employeeId: 'e3', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 45, totalHours: 11.25, hourlyRate: 400, earned: 4500, itemsProcessed: 310, tasksCompleted: 15, efficiency: 96 },
-  { id: 's5', employeeId: 'e4', date: '2024-01-14', shiftStart: '10:00', shiftEnd: '22:00', breakMinutes: 60, totalHours: 11, hourlyRate: 380, earned: 4180, itemsProcessed: 275, tasksCompleted: 13, efficiency: 92 },
-  { id: 's6', employeeId: 'e6', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 340, earned: 3740, itemsProcessed: 205, tasksCompleted: 10, efficiency: 85 },
-  { id: 's7', employeeId: 'e8', date: '2024-01-14', shiftStart: '06:00', shiftEnd: '18:00', breakMinutes: 60, totalHours: 11, hourlyRate: 330, earned: 3630, itemsProcessed: 198, tasksCompleted: 9, efficiency: 87 },
-  { id: 's8', employeeId: 'e5', date: '2024-01-13', shiftStart: '08:00', shiftEnd: '17:00', breakMinutes: 60, totalHours: 8, hourlyRate: 450, earned: 3600, itemsProcessed: 340, tasksCompleted: 8, efficiency: 90 },
-];
+        const initialAlerts = [
+            { id: 'a1', type: 'warning', message: 'Морозов П. опаздывает на 25 минут', time: new Date(Date.now() - 5 * 60000), read: false },
+            { id: 'a2', type: 'info', message: 'Смена №45 завершена успешно', time: new Date(Date.now() - 30 * 60000), read: true },
+            { id: 'a3', type: 'error', message: 'Превышение лимита часов у Новикова С.', time: new Date(Date.now() - 60 * 60000), read: false },
+        ];
 
-const weeklyData = [
-  { day: 'Пн', items: 1240, tasks: 85, revenue: 28500 },
-  { day: 'Вт', items: 1380, tasks: 92, revenue: 31200 },
-  { day: 'Ср', items: 1150, tasks: 78, revenue: 26800 },
-  { day: 'Чт', items: 1520, tasks: 105, revenue: 34500 },
-  { day: 'Пт', items: 1680, tasks: 118, revenue: 38900 },
-  { day: 'Сб', items: 890, tasks: 58, revenue: 19800 },
-  { day: 'Вс', items: 450, tasks: 30, revenue: 10200 },
-];
+        // Main App Component
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [employees, setEmployees] = useState(initialEmployees);
+            const [tasks, setTasks] = useState(initialTasks);
+            const [shiftHistory, setShiftHistory] = useState(initialShiftHistory);
+            const [alerts, setAlerts] = useState(initialAlerts);
+            const [selectedEmployee, setSelectedEmployee] = useState(null);
+            const [showModal, setShowModal] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [dateFilter, setDateFilter] = useState('today');
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+            const [now, setNow] = useState(Date.now());
 
-const monthlyRevenue = [
-  { month: 'Авг', revenue: 850000, cost: 420000, profit: 430000 },
-  { month: 'Сен', revenue: 920000, cost: 445000, profit: 475000 },
-  { month: 'Окт', revenue: 1050000, cost: 480000, profit: 570000 },
-  { month: 'Ноя', revenue: 1180000, cost: 520000, profit: 660000 },
-  { month: 'Дек', revenue: 1320000, cost: 580000, profit: 740000 },
-  { month: 'Янв', revenue: 1150000, cost: 510000, profit: 640000 },
-];
+            useEffect(() => {
+                const interval = setInterval(() => setNow(Date.now()), 1000);
+                return () => clearInterval(interval);
+            }, []);
 
-const departmentData = [
-  { name: 'Сборка', value: 35 },
-  { name: 'Упаковка', value: 25 },
-  { name: 'Приемка', value: 20 },
-  { name: 'Отгрузка', value: 15 },
-  { name: 'Управление', value: 5 },
-];
+            const tabs = [
+                { id: 'dashboard', label: 'Дашборд', icon: 'home' },
+                { id: 'employees', label: 'Сотрудники', icon: 'users' },
+                { id: 'shifts', label: 'Смены', icon: 'clock' },
+                { id: 'tasks', label: 'Задачи', icon: 'package' },
+                { id: 'reports', label: 'Отчеты', icon: 'barChart' },
+                { id: 'payroll', label: 'Зарплата', icon: 'dollar' },
+                { id: 'settings', label: 'Настройки', icon: 'settings' },
+            ];
 
-const efficiencyData = [
-  { name: 'Иванов А.', efficiency: 94, items: 234, fill: '#3B82F6' },
-  { name: 'Сидоров Д.', efficiency: 96, items: 310, fill: '#10B981' },
-  { name: 'Козлова А.', efficiency: 92, items: 275, fill: '#F59E0B' },
-  { name: 'Петрова М.', efficiency: 88, items: 189, fill: '#EF4444' },
-  { name: 'Лебедева О.', efficiency: 87, items: 198, fill: '#8B5CF6' },
-  { name: 'Волкова Е.', efficiency: 85, items: 205, fill: '#EC4899' },
-  { name: 'Новиков С.', efficiency: 90, items: 340, fill: '#06B6D4' },
-];
+            const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Неизвестно';
+            const getTaskTypeLabel = (type) => TASK_TYPES[type?.toUpperCase()] || type;
+            const getPriorityLabel = (p) => ({ low: 'Низкий', medium: 'Средний', high: 'Высокий', urgent: 'Срочный' }[p] || p);
+            const getStatusLabel = (status) => ({ on_shift: 'На смене', break: 'Перерыв', offline: 'Оффлайн', late: 'Опаздывает' }[status] || status);
+            const getTaskStatusLabel = (status) => ({ pending: 'Ожидание', in_progress: 'В процессе', completed: 'Завершено', paused: 'Приостановлено' }[status] || status);
 
-const hourlyDistribution = [
-  { hour: '06:00', employees: 2 },
-  { hour: '07:00', employees: 5 },
-  { hour: '08:00', employees: 7 },
-  { hour: '09:00', employees: 6 },
-  { hour: '10:00', employees: 8 },
-  { hour: '11:00', employees: 8 },
-  { hour: '12:00', employees: 6 },
-  { hour: '13:00', employees: 7 },
-  { hour: '14:00', employees: 8 },
-  { hour: '15:00', employees: 7 },
-  { hour: '16:00', employees: 6 },
-  { hour: '17:00', employees: 5 },
-  { hour: '18:00', employees: 3 },
-  { hour: '19:00', employees: 4 },
-  { hour: '20:00', employees: 2 },
-  { hour: '21:00', employees: 1 },
-  { hour: '22:00', employees: 1 },
-];
+            const filteredEmployees = useMemo(() => employees.filter(e =>
+                e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                e.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                e.position.toLowerCase().includes(searchQuery.toLowerCase())
+            ), [employees, searchQuery]);
 
-const initialAlerts = [
-  { id: 'a1', type: 'warning', message: 'Морозов П. опаздывает на 25 минут', time: new Date(Date.now() - 5 * 60000), read: false },
-  { id: 'a2', type: 'info', message: 'Смена №45 завершена успешно', time: new Date(Date.now() - 30 * 60000), read: true },
-  { id: 'a3', type: 'error', message: 'Превышение лимита часов у Новикова С.', time: new Date(Date.now() - 60 * 60000), read: false },
-  { id: 'a4', type: 'warning', message: 'Козлова А. - низкая эффективность сегодня (78%)', time: new Date(Date.now() - 90 * 60000), read: true },
-  { id: 'a5', type: 'info', message: 'Новый заказ ORD-10240 назначен на сборку', time: new Date(Date.now() - 120 * 60000), read: true },
-];
+            const stats = useMemo(() => {
+                const onShift = employees.filter(e => e.status === 'on_shift').length;
+                const onBreak = employees.filter(e => e.status === 'break').length;
+                const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
+                const todayRevenue = shiftHistory.reduce((sum, s) => sum + s.earned, 0); // Simplified for demo
+                return { onShift, onBreak, activeTasks, todayRevenue, totalEmployees: employees.length };
+            }, [employees, tasks, shiftHistory]);
 
-function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [employees, setEmployees] = useState(initialEmployees);
-  const [tasks, setTasks] = useState(initialTasks);
-  const [shiftHistory, setShiftHistory] = useState(initialShiftHistory);
-  const [alerts, setAlerts] = useState(initialAlerts);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [showModal, setShowModal] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState('today');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [now, setNow] = useState(Date.now());
+            const toggleBreak = useCallback((empId) => {
+                setEmployees(prev => prev.map(e => e.id === empId ? { ...e, status: e.status === 'on_shift' ? 'break' : 'on_shift' } : e));
+            }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+            const startShift = useCallback((empId) => {
+                setEmployees(prev => prev.map(e => e.id === empId ? { ...e, status: 'on_shift', shiftStart: new Date() } : e));
+            }, []);
 
-  const tabs = [
-    { id: 'dashboard', label: 'Дашборд', icon: Home },
-    { id: 'employees', label: 'Сотрудники', icon: Users },
-    { id: 'shifts', label: 'Смены', icon: Clock },
-    { id: 'tasks', label: 'Задачи', icon: Package },
-    { id: 'reports', label: 'Отчеты', icon: BarChart3 },
-    { id: 'payroll', label: 'Зарплата', icon: DollarSign },
-    { id: 'settings', label: 'Настройки', icon: Settings },
-  ];
+            const endShift = useCallback((empId) => {
+                setEmployees(prev => prev.map(e => e.id === empId ? { ...e, status: 'offline', shiftStart: null } : e));
+            }, []);
 
-  const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Неизвестно';
+            const updateTaskStatus = useCallback((taskId, status) => {
+                setTasks(prev => prev.map(t => {
+                    if (t.id !== taskId) return t;
+                    return { ...t, status, startTime: t.startTime || new Date(), completedTime: status === 'completed' ? new Date() : t.completedTime };
+                }));
+            }, []);
 
-  const getTaskTypeLabel = (type) => TASK_TYPES[type?.toUpperCase()] || type;
+            // --- Render Helpers ---
 
-  const getPriorityLabel = (p) => {
-    const labels = { low: 'Низкий', medium: 'Средний', high: 'Высокий', urgent: 'Срочный' };
-    return labels[p] || p;
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = { on_shift: 'На смене', break: 'Перерыв', offline: 'Оффлайн', late: 'Опаздывает' };
-    return labels[status] || status;
-  };
-
-  const getTaskStatusLabel = (status) => {
-    const labels = { pending: 'Ожидание', in_progress: 'В процессе', completed: 'Завершено', paused: 'Приостановлено' };
-    return labels[status] || status;
-  };
-
-  const filteredEmployees = useMemo(() => {
-    return employees.filter(e =>
-      e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.position.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [employees, searchQuery]);
-
-  const stats = useMemo(() => {
-    const onShift = employees.filter(e => e.status === 'on_shift').length;
-    const onBreak = employees.filter(e => e.status === 'break').length;
-    const offline = employees.filter(e => e.status === 'offline').length;
-    const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
-    const todayShifts = shiftHistory.filter(s => s.date === '2024-01-15');
-    const todayRevenue = todayShifts.reduce((sum, s) => sum + s.earned, 0);
-    const todayItems = todayShifts.reduce((sum, s) => sum + s.itemsProcessed, 0);
-    const avgEfficiency = todayShifts.length ? (todayShifts.reduce((sum, s) => sum + s.efficiency, 0) / todayShifts.length).toFixed(1) : 0;
-    return { onShift, onBreak, offline, activeTasks, todayRevenue, todayItems, avgEfficiency, totalEmployees: employees.length };
-  }, [employees, tasks, shiftHistory]);
-
-  const renderSidebar = () => (
-    <motion.aside
-      initial={{ width: 260 }}
-      animate={{ width: sidebarCollapsed ? 72 : 260 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 h-full bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 text-white z-50 flex flex-col shadow-2xl"
-    >
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <Package size={22} />
-          </div>
-          {!sidebarCollapsed && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-              <h1 className="font-bold text-lg leading-tight">WMS Control</h1>
-              <p className="text-xs text-gray-400">Fulfillment Center</p>
-            </motion.div>
-          )}
-        </div>
-      </div>
-
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-              activeTab === tab.id
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-            }`}
-          >
-            <tab.icon size={20} className="flex-shrink-0" />
-            {!sidebarCollapsed && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-medium">
-                {tab.label}
-              </motion.span>
-            )}
-            {tab.id === 'tasks' && !sidebarCollapsed && (
-              <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{tasks.filter(t => t.status === 'in_progress').length}</span>
-            )}
-            {tab.id === 'employees' && !sidebarCollapsed && (
-              <span className="ml-auto bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.onShift}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      <div className="p-3 border-t border-gray-700">
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
-        >
-          {sidebarCollapsed ? '→' : '← Свернуть'}
-        </button>
-      </div>
-    </motion.aside>
-  );
-
-  const renderHeader = () => (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-bold text-gray-800">
-          {tabs.find(t => t.id === activeTab)?.label}
-        </h2>
-        <span className="text-sm text-gray-500">
-          {formatDate(now)} • {formatTime(now)}
-        </span>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Bell size={20} className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors" />
-          {alerts.filter(a => !a.read).length > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-              {alerts.filter(a => !a.read).length}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-            АП
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Администратор</p>
-            <p className="text-xs text-gray-400">Управляющий</p>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'На смене', value: stats.onShift, icon: Users, color: 'blue', change: '+2', suffix: `/ ${stats.totalEmployees}` },
-          { label: 'Активные задачи', value: stats.activeTasks, icon: Package, color: 'amber', change: '+5', suffix: '' },
-          { label: 'Выработка сегодня', value: stats.todayItems, icon: TrendingUp, color: 'green', change: '+12%', suffix: ' шт.' },
-          { label: 'Зарплата сегодня', value: formatCurrency(stats.todayRevenue), icon: DollarSign, color: 'purple', change: '+8%', suffix: '' },
-        ].map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">{card.label}</p>
-                <p className="text-2xl font-bold text-gray-800">{card.value}</p>
-                {card.suffix && <span className="text-xs text-gray-400">{card.suffix}</span>}
-                {card.change && (
-                  <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                    <TrendingUp size={12} /> {card.change}
-                  </p>
-                )}
-              </div>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                card.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                card.color === 'amber' ? 'bg-amber-100 text-amber-600' :
-                card.color === 'green' ? 'bg-green-100 text-green-600' :
-                'bg-purple-100 text-purple-600'
-              }`}>
-                <card.icon size={24} />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <h3 className="font-semibold text-gray-700 mb-4">Недельная выработка</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={weeklyData}>
-              <defs>
-                <linearGradient id="colorItems" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="day" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip formatter={(v) => [v, 'Шт.']} />
-              <Area type="monotone" dataKey="items" stroke="#3B82F6" fill="url(#colorItems)" strokeWidth={2} />
-              <Area type="monotone" dataKey="tasks" stroke="#10B981" fill="transparent" strokeWidth={2} />
-              <Legend />
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <h3 className="font-semibold text-gray-700 mb-4">По отделам</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={departmentData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
-                {departmentData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v) => [`${v}%`, 'Загрузка']} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* Efficiency & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <h3 className="font-semibold text-gray-700 mb-4">Эффективность сотрудников</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={efficiencyData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis type="number" domain={[0, 100]} stroke="#9CA3AF" />
-              <YAxis dataKey="name" type="category" width={80} stroke="#9CA3AF" fontSize={11} />
-              <Tooltip />
-              <Bar dataKey="efficiency" radius={[0, 4, 4, 0]}>
-                {efficiencyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">Уведомления</h3>
-            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">{alerts.filter(a => !a.read).length} новых</span>
-          </div>
-          <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {alerts.slice(0, 5).map(alert => (
-              <div key={alert.id} className={`p-3 rounded-xl border-l-4 ${
-                alert.type === 'error' ? 'border-red-500 bg-red-50' :
-                alert.type === 'warning' ? 'border-amber-500 bg-amber-50' :
-                'border-blue-500 bg-blue-50'
-              }`}>
-                <p className="text-sm text-gray-700">{alert.message}</p>
-                <p className="text-xs text-gray-400 mt-1">{formatTime(alert.time)}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Hourly Distribution */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-      >
-        <h3 className="font-semibold text-gray-700 mb-4">Распределение сотрудников по часам (сегодня)</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={hourlyDistribution}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="hour" stroke="#9CA3AF" fontSize={10} />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip />
-            <Bar dataKey="employees" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </motion.div>
-    </div>
-  );
-
-  const renderEmployees = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3 flex-1 max-w-md">
-          <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Поиск сотрудников..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            />
-          </div>
-        </div>
-        <button
-          onClick={() => setShowModal('addEmployee')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
-        >
-          <Plus size={18} />
-          Добавить сотрудника
-        </button>
-      </div>
-
-      {/* Status filters */}
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { label: 'Все', count: employees.length },
-          { label: 'На смене', count: stats.onShift, color: 'green' },
-          { label: 'Перерыв', count: stats.onBreak, color: 'amber' },
-          { label: 'Оффлайн', count: stats.offline, color: 'gray' },
-          { label: 'Опаздывает', count: employees.filter(e => e.status === 'late').length, color: 'red' },
-        ].map(f => (
-          <button key={f.label} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            f.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-            f.color === 'amber' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' :
-            f.color === 'red' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
-            'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}>
-            {f.label} ({f.count})
-          </button>
-        ))}
-      </div>
-
-      {/* Employee Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredEmployees.map((employee, i) => (
-          <motion.div
-            key={employee.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all cursor-pointer group"
-            onClick={() => setSelectedEmployee(employee)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-2xl">
-                  {employee.avatar}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 text-sm">{employee.name}</h4>
-                  <p className="text-xs text-gray-500">{employee.position}</p>
-                </div>
-              </div>
-              <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                employee.status === 'on_shift' ? 'bg-green-100 text-green-700' :
-                employee.status === 'break' ? 'bg-amber-100 text-amber-700' :
-                employee.status === 'late' ? 'bg-red-100 text-red-700' :
-                'bg-gray-100 text-gray-500'
-              }`}>
-                {getStatusLabel(employee.status)}
-              </span>
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Отдел:</span>
-                <span className="text-gray-700 font-medium">{employee.department}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Ставка:</span>
-                <span className="text-gray-700 font-medium">{formatCurrency(employee.hourlyRate)}/ч</span>
-              </div>
-              {employee.shiftStart && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">На смене:</span>
-                  <span className="text-gray-700 font-medium">{formatDuration(now - new Date(employee.shiftStart).getTime())}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
-              {employee.status === 'on_shift' && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleBreak(employee.id); }}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors text-xs font-medium"
-                >
-                  <Coffee size={14} /> Перерыв
-                </button>
-              )}
-              {employee.status === 'break' && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleBreak(employee.id); }}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-medium"
-                >
-                  <Play size={14} /> На смену
-                </button>
-              )}
-              {(employee.status === 'offline' || employee.status === 'late') && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); startShift(employee.id); }}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-medium"
-                >
-                  <LogIn size={14} /> Начать смену
-                </button>
-              )}
-              {employee.status !== 'offline' && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); endShift(employee.id); }}
-                  className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium"
-                >
-                  <LogOut size={14} />
-                </button>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderShifts = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h3 className="text-lg font-semibold text-gray-700">История смен</h3>
-        <div className="flex items-center gap-3">
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          >
-            <option value="today">Сегодня</option>
-            <option value="week">Неделя</option>
-            <option value="month">Месяц</option>
-          </select>
-          <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm">
-            <Download size={16} /> Экспорт
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Сотрудник</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Дата</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Начало</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Конец</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Перерыв</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Часы</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Обработано</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Задачи</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Эффективность</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Начислено</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {shiftHistory.map((shift, i) => (
-                <motion.tr
-                  key={shift.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{employees.find(e => e.id === shift.employeeId)?.avatar}</span>
-                      <span className="text-sm font-medium text-gray-700">{getEmployeeName(shift.employeeId)}</span>
+            const renderSidebar = () => (
+                <div className={`fixed left-0 top-0 h-full bg-gray-900 text-white z-50 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
+                    <div className="p-4 border-b border-gray-700 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0"><Icon name="package" size={22} /></div>
+                        {!sidebarCollapsed && <div><h1 className="font-bold text-lg">WMS Control</h1><p className="text-xs text-gray-400">Fulfillment Center</p></div>}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.date}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.shiftStart}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.shiftEnd}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.breakMinutes} мин</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-700">{shift.totalHours} ч</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.itemsProcessed} шт.</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{shift.tasksCompleted}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${
-                          shift.efficiency >= 90 ? 'bg-green-500' :
-                          shift.efficiency >= 80 ? 'bg-amber-500' : 'bg-red-500'
-                        }`} style={{ width: `${shift.efficiency}%` }} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600">{shift.efficiency}%</span>
+                    <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                        {tabs.map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-blue-600 shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}>
+                                <Icon name={tab.icon} size={20} />
+                                {!sidebarCollapsed && <span className="text-sm font-medium">{tab.label}</span>}
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="p-3 border-t border-gray-700">
+                        <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:bg-gray-800">
+                            <Icon name={sidebarCollapsed ? "chevronDown" : "chevronUp"} size={16} className="rotate-90" />
+                        </button>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-green-600">{formatCurrency(shift.earned)}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-gray-50 font-semibold">
-                <td className="px-4 py-3 text-sm" colSpan={5}>Итого</td>
-                <td className="px-4 py-3 text-sm">{shiftHistory.reduce((s, sh) => s + sh.totalHours, 0)} ч</td>
-                <td className="px-4 py-3 text-sm">{shiftHistory.reduce((s, sh) => s + sh.itemsProcessed, 0)} шт.</td>
-                <td className="px-4 py-3 text-sm">{shiftHistory.reduce((s, sh) => s + sh.tasksCompleted, 0)}</td>
-                <td className="px-4 py-3 text-sm">
-                  {(shiftHistory.reduce((s, sh) => s + sh.efficiency, 0) / shiftHistory.length).toFixed(1)}%
-                </td>
-                <td className="px-4 py-3 text-sm text-green-600">
-                  {formatCurrency(shiftHistory.reduce((s, sh) => s + sh.earned, 0))}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderTasks = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex gap-2 flex-wrap">
-          {['all', 'pending', 'in_progress', 'completed', 'paused'].map(status => (
-            <button
-              key={status}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                status === 'all' ? 'bg-blue-600 text-white' :
-                status === 'pending' ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' :
-                status === 'in_progress' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
-                status === 'completed' ? 'bg-green-100 text-green-600 hover:bg-green-200' :
-                'bg-amber-100 text-amber-600 hover:bg-amber-200'
-              }`}
-            >
-              {status === 'all' ? 'Все' : getTaskStatusLabel(status)} ({status === 'all' ? tasks.length : tasks.filter(t => t.status === status).length})
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setShowModal('addTask')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
-        >
-          <Plus size={18} /> Новая задача
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {tasks.map((task, i) => {
-          const employee = employees.find(e => e.id === task.employeeId);
-          return (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                    task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                    task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                    task.priority === 'medium' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {getPriorityLabel(task.priority)}
-                  </span>
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                    task.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                    task.status === 'paused' ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-500'
-                  }`}>
-                    {getTaskStatusLabel(task.status)}
-                  </span>
                 </div>
-                <span className="text-xs text-gray-400">{task.orderId}</span>
-              </div>
+            );
 
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">{employee?.avatar}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{getEmployeeName(task.employeeId)}</p>
-                  <p className="text-xs text-gray-500">{getTaskTypeLabel(task.type)}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Единиц</p>
-                  <p className="text-sm font-bold text-gray-700">{task.items}</p>
-                </div>
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Время (мин)</p>
-                  <p className="text-sm font-bold text-gray-700">{task.estimatedTime}</p>
-                </div>
-                {task.startTime && (
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500">Прошло</p>
-                    <p className="text-sm font-bold text-gray-700">
-                      {Math.floor((now - new Date(task.startTime).getTime()) / 60000)} мин
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                {task.status === 'pending' && (
-                  <button
-                    onClick={() => updateTaskStatus(task.id, 'in_progress')}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-medium"
-                  >
-                    <Play size={14} /> Начать
-                  </button>
-                )}
-                {task.status === 'in_progress' && (
-                  <>
-                    <button
-                      onClick={() => updateTaskStatus(task.id, 'paused')}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors text-xs font-medium"
-                    >
-                      <Pause size={14} /> Пауза
-                    </button>
-                    <button
-                      onClick={() => updateTaskStatus(task.id, 'completed')}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-xs font-medium"
-                    >
-                      <CheckCircle size={14} /> Завершить
-                    </button>
-                  </>
-                )}
-                {task.status === 'paused' && (
-                  <button
-                    onClick={() => updateTaskStatus(task.id, 'in_progress')}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-medium"
-                  >
-                    <Play size={14} /> Продолжить
-                  </button>
-                )}
-                {task.status === 'completed' && (
-                  <div className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium">
-                    <CheckCircle size={14} /> Завершено
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderReports = () => (
-    <div className="space-y-6">
-      {/* Report type selector */}
-      <div className="flex gap-3 flex-wrap">
-        {['Общий', 'По сотрудникам', 'По отделам', 'По задачам', 'Зарплатный'].map(type => (
-          <button
-            key={type}
-            className="px-5 py-2.5 bg-white rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-all"
-          >
-            {type}
-          </button>
-        ))}
-      </div>
-
-      {/* Revenue Trend */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-      >
-        <h3 className="font-semibold text-gray-700 mb-4">Динамика выручки и расходов</h3>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={monthlyRevenue}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="month" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" />
-            <Tooltip formatter={(v) => [formatCurrency(v), '']} />
-            <Legend />
-            <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Выручка" />
-            <Bar dataKey="cost" fill="#EF4444" radius={[4, 4, 0, 0]} name="Расходы" />
-            <Bar dataKey="profit" fill="#10B981" radius={[4, 4, 0, 0]} name="Прибыль" />
-          </BarChart>
-        </ResponsiveContainer>
-      </motion.div>
-
-      {/* Efficiency Report */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <h3 className="font-semibold text-gray-700 mb-4">Рейтинг эффективности</h3>
-          <div className="space-y-4">
-            {efficiencyData.sort((a, b) => b.efficiency - a.efficiency).map((emp, i) => (
-              <div key={emp.name} className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                  {i + 1}
-                </span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">{emp.name}</span>
-                    <span className="text-sm font-bold text-gray-700">{emp.efficiency}%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${emp.efficiency}%` }}
-                      transition={{ delay: 0.5 + i * 0.1, duration: 0.8 }}
-                      className={`h-full rounded-full ${
-                        emp.efficiency >= 90 ? 'bg-green-500' :
-                        emp.efficiency >= 80 ? 'bg-amber-500' : 'bg-red-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500 w-16 text-right">{emp.items} шт.</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-        >
-          <h3 className="font-semibold text-gray-700 mb-4">Задачи по типам</h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: 'Сборка', value: 45 },
-                  { name: 'Упаковка', value: 30 },
-                  { name: 'Приемка', value: 15 },
-                  { name: 'Отгрузка', value: 10 },
-                ]}
-                cx="50%" cy="50%"
-                innerRadius={60} outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {COLORS.slice(0, 4).map((color, index) => (
-                  <Cell key={`cell-${index}`} fill={color} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Всего часов', value: shiftHistory.reduce((s, sh) => s + sh.totalHours, 0).toFixed(1), icon: Clock, color: 'blue' },
-          { label: 'Обработано', value: shiftHistory.reduce((s, sh) => s + sh.itemsProcessed, 0), icon: Package, color: 'green' },
-          { label: 'Ср. эффективность', value: (shiftHistory.reduce((s, sh) => s + sh.efficiency, 0) / shiftHistory.length).toFixed(1) + '%', icon: Target, color: 'amber' },
-          { label: 'Общий ФОТ', value: formatCurrency(shiftHistory.reduce((s, sh) => s + sh.earned, 0)), icon: DollarSign, color: 'purple' },
-        ].map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 + i * 0.1 }}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"
-          >
-            <card.icon size={24} className={`mx-auto mb-2 ${
-              card.color === 'blue' ? 'text-blue-500' :
-              card.color === 'green' ? 'text-green-500' :
-              card.color === 'amber' ? 'text-amber-500' : 'text-purple-500'
-            }`} />
-            <p className="text-2xl font-bold text-gray-800">{card.value}</p>
-            <p className="text-sm text-gray-500">{card.label}</p>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderPayroll = () => {
-    const payrollData = employees.map(emp => {
-      const empShifts = shiftHistory.filter(s => s.employeeId === emp.id);
-      const totalHours = empShifts.reduce((s, sh) => s + sh.totalHours, 0);
-      const totalEarned = empShifts.reduce((s, sh) => s + sh.earned, 0);
-      const totalItems = empShifts.reduce((s, sh) => s + sh.itemsProcessed, 0);
-      const avgEfficiency = empShifts.length ? (empShifts.reduce((s, sh) => s + sh.efficiency, 0) / empShifts.length).toFixed(1) : '0';
-      return { ...emp, totalHours, totalEarned, totalItems, avgEfficiency, shiftsCount: empShifts.length };
-    });
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h3 className="text-lg font-semibold text-gray-700">Расчет заработной платы</h3>
-          <div className="flex gap-3">
-            <select className="px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-              <option>Январь 2024</option>
-              <option>Декабрь 2023</option>
-              <option>Ноябрь 2023</option>
-            </select>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm">
-              <Download size={16} /> Выгрузить ведомость
-            </button>
-          </div>
-        </div>
-
-        {/* Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-6 text-white">
-            <p className="text-blue-100 text-sm">Общий ФОТ за месяц</p>
-            <p className="text-3xl font-bold mt-1">{formatCurrency(payrollData.reduce((s, p) => s + p.totalEarned, 0))}</p>
-            <p className="text-blue-200 text-xs mt-2">↑ 8% к прошлому месяцу</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white">
-            <p className="text-green-100 text-sm">Средняя зарплата</p>
-            <p className="text-3xl font-bold mt-1">{formatCurrency(payrollData.length ? payrollData.reduce((s, p) => s + p.totalEarned, 0) / payrollData.length : 0)}</p>
-            <p className="text-green-200 text-xs mt-2">На сотрудника</p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-6 text-white">
-            <p className="text-purple-100 text-sm">Средняя эффективность</p>
-            <p className="text-3xl font-bold mt-1">{(payrollData.reduce((s, p) => s + parseFloat(p.avgEfficiency), 0) / (payrollData.length || 1)).toFixed(1)}%</p>
-            <p className="text-purple-200 text-xs mt-2">По всем сотрудникам</p>
-          </div>
-        </div>
-
-        {/* Payroll Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Сотрудник</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Должность</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Отдел</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Ставка/ч</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Смен</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Часов</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Единиц</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Эффективность</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Начислено</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {payrollData.map((emp, i) => (
-                  <motion.tr
-                    key={emp.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{emp.avatar}</span>
-                        <span className="text-sm font-medium text-gray-700">{emp.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{emp.position}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{emp.department}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(emp.hourlyRate)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{emp.shiftsCount}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-700">{emp.totalHours.toFixed(1)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{emp.totalItems}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-sm font-medium ${
-                        parseFloat(emp.avgEfficiency) >= 90 ? 'text-green-600' :
-                        parseFloat(emp.avgEfficiency) >= 80 ? 'text-amber-600' : 'text-red-600'
-                      }`}>{emp.avgEfficiency}%</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-green-600">{formatCurrency(emp.totalEarned)}</td>
-                    <td className="px-4 py-3">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 font-bold">
-                  <td className="px-4 py-3 text-sm" colSpan={4}>Итого по складу</td>
-                  <td className="px-4 py-3 text-sm">{payrollData.reduce((s, e) => s + e.shiftsCount, 0)}</td>
-                  <td className="px-4 py-3 text-sm">{payrollData.reduce((s, e) => s + e.totalHours, 0).toFixed(1)}</td>
-                  <td className="px-4 py-3 text-sm">{payrollData.reduce((s, e) => s + e.totalItems, 0)}</td>
-                  <td className="px-4 py-3 text-sm">{(payrollData.reduce((s, e) => s + parseFloat(e.avgEfficiency), 0) / payrollData.length).toFixed(1)}%</td>
-                  <td className="px-4 py-3 text-sm text-green-700">{formatCurrency(payrollData.reduce((s, e) => s + e.totalEarned, 0))}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSettings = () => (
-    <div className="space-y-6 max-w-3xl">
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="font-semibold text-gray-700 mb-4">Настройки склада</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Название склада</label>
-            <input type="text" defaultValue="WMS Fulfillment Center Moscow" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Адрес</label>
-            <input type="text" defaultValue="г. Москва, ул. Складская, д. 15" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Начало рабочей смены</label>
-              <input type="time" defaultValue="06:00" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Конец рабочей смены</label>
-              <input type="time" defaultValue="22:00" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Максимум часов в смене</label>
-            <input type="number" defaultValue="12" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Стандартный перерыв (минуты)</label>
-            <input type="number" defaultValue="60" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="font-semibold text-gray-700 mb-4">Настройки оплаты</h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Минимальная ставка (руб/ч)</label>
-              <input type="number" defaultValue="300" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Сверхурочные (множитель)</label>
-              <input type="number" defaultValue="1.5" step="0.1" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Бонус за эффективность (руб)</label>
-            <input type="number" defaultValue="500" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Порог эффективности для бонуса (%)</label>
-            <input type="number" defaultValue="90" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="font-semibold text-gray-700 mb-4">Уведомления</h3>
-        <div className="space-y-3">
-          {[
-            { label: 'Оповещения об опозданиях', defaultChecked: true },
-            { label: 'Оповещения о переработках', defaultChecked: true },
-            { label: 'Оповещения о низкой эффективности', defaultChecked: true },
-            { label: 'Ежедневный отчет на email', defaultChecked: false },
-          ].map(setting => (
-            <label key={setting.label} className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" defaultChecked={setting.defaultChecked} className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm text-gray-600">{setting.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <button className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/30">
-        Сохранить настройки
-      </button>
-    </div>
-  );
-
-  const renderModal = () => {
-    if (!showModal) return null;
-
-    return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowModal(null)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {showModal === 'addEmployee' && (
-              <AddEmployeeForm onClose={() => setShowModal(null)} onSave={(emp) => {
-                setEmployees([...employees, { ...emp, id: generateId(), status: 'offline', shiftStart: null }]);
-                setShowModal(null);
-              }} />
-            )}
-            {showModal === 'addTask' && (
-              <AddTaskForm
-                employees={employees}
-                onClose={() => setShowModal(null)}
-                onSave={(task) => {
-                  setTasks([...tasks, { ...task, id: generateId() }]);
-                  setShowModal(null);
-                }}
-              />
-            )}
-            {showModal === 'employeeDetail' && selectedEmployee && (
-              <EmployeeDetail
-                employee={selectedEmployee}
-                tasks={tasks}
-                shiftHistory={shiftHistory}
-                onClose={() => { setShowModal(null); setSelectedEmployee(null); }}
-              />
-            )}
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
-    );
-  };
-
-  const AddEmployeeForm = ({ onClose, onSave }) => {
-    const [form, setForm] = useState({
-      name: '', position: '', department: 'Сборка', hourlyRate: 350,
-      phone: '', email: '', hireDate: new Date().toISOString().split('T')[0]
-    });
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-800">Новый сотрудник</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XCircle size={24} /></button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">ФИО</label>
-            <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Иванов Иван Иванович" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Должность</label>
-            <input type="text" value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Комплектовщик" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Отдел</label>
-            <select value={form.department} onChange={e => setForm({...form, department: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
-              {['Сборка', 'Упаковка', 'Приемка', 'Отгрузка', 'Склад', 'Управление'].map(d => <option key={d}>{d}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Часовая ставка (руб)</label>
-            <input type="number" value={form.hourlyRate} onChange={e => setForm({...form, hourlyRate: Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Телефон</label>
-            <input type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="+7 900 000-00-00" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
-            <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="email@mail.ru" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Дата найма</label>
-            <input type="date" value={form.hireDate} onChange={e => setForm({...form, hireDate: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Отмена</button>
-          <button onClick={() => onSave(form)} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">Сохранить</button>
-        </div>
-      </div>
-    );
-  };
-
-  const AddTaskForm = ({ employees, onClose, onSave }) => {
-    const [form, setForm] = useState({
-      employeeId: employees[0]?.id || '', type: 'picking', priority: 'medium',
-      orderId: '', items: 10, estimatedTime: 30, status: 'pending'
-    });
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-800">Новая задача</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XCircle size={24} /></button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Сотрудник</label>
-            <select value={form.employeeId} onChange={e => setForm({...form, employeeId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
-              {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.position})</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Тип задачи</label>
-            <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
-              {Object.entries(TASK_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Приоритет</label>
-            <select value={form.priority} onChange={e => setForm({...form, priority: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
-              {Object.entries(TASK_PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.charAt(0).toUpperCase() + v.slice(1)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Номер заказа</label>
-            <input type="text" value={form.orderId} onChange={e => setForm({...form, orderId: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ORD-XXXXX" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Количество ед.</label>
-              <input type="number" value={form.items} onChange={e => setForm({...form, items: Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Время (мин)</label>
-              <input type="number" value={form.estimatedTime} onChange={e => setForm({...form, estimatedTime: Number(e.target.value)})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Отмена</button>
-          <button onClick={() => onSave(form)} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">Создать</button>
-        </div>
-      </div>
-    );
-  };
-
-  const EmployeeDetail = ({ employee, tasks, shiftHistory, onClose }) => {
-    const empTasks = tasks.filter(t => t.employeeId === employee.id);
-    const empShifts = shiftHistory.filter(s => s.employeeId === employee.id);
-    const totalHours = empShifts.reduce((s, sh) => s + sh.totalHours, 0);
-    const totalEarned = empShifts.reduce((s, sh) => s + sh.earned, 0);
-
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-800">Профиль сотрудника</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XCircle size={24} /></button>
-        </div>
-        <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-3xl">{employee.avatar}</div>
-          <div>
-            <h4 className="text-lg font-bold text-gray-800">{employee.name}</h4>
-            <p className="text-sm text-gray-500">{employee.position} • {employee.department}</p>
-            <p className="text-sm text-gray-500">{employee.email} • {employee.phone}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="p-3 bg-blue-50 rounded-xl text-center">
-            <p className="text-xs text-blue-500">Ставка</p>
-            <p className="text-lg font-bold text-blue-700">{formatCurrency(employee.hourlyRate)}/ч</p>
-          </div>
-          <div className="p-3 bg-green-50 rounded-xl text-center">
-            <p className="text-xs text-green-500">Начислено</p>
-            <p className="text-lg font-bold text-green-700">{formatCurrency(totalEarned)}</p>
-          </div>
-          <div className="p-3 bg-amber-50 rounded-xl text-center">
-            <p className="text-xs text-amber-500">Часов</p>
-            <p className="text-lg font-bold text-amber-700">{totalHours.toFixed(1)}</p>
-          </div>
-          <div className="p-3 bg-purple-50 rounded-xl text-center">
-            <p className="text-xs text-purple-500">Смен</p>
-            <p className="text-lg font-bold text-purple-700">{empShifts.length}</p>
-          </div>
-        </div>
-        <h4 className="font-semibold text-gray-700 mb-3">Последние задачи</h4>
-        <div className="space-y-2 mb-6">
-          {empTasks.slice(0, 5).map(task => (
-            <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-              <div>
-                <p className="text-sm font-medium text-gray-700">{getTaskTypeLabel(task.type)} • {task.orderId}</p>
-                <p className="text-xs text-gray-500">{task.items} ед.</p>
-              </div>
-              <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                task.status === 'completed' ? 'bg-green-100 text-green-700' :
-                task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                'bg-gray-100 text-gray-500'
-              }`}>{getTaskStatusLabel(task.status)}</span>
-            </div>
-          ))}
-        </div>
-        <h4 className="font-semibold text-gray-700 mb-3">Эффективность по сменам</h4>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={empShifts.slice(0, 10).reverse()}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} />
-            <YAxis domain={[0, 100]} stroke="#9CA3AF" />
-            <Tooltip />
-            <Line type="monotone" dataKey="efficiency" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  };
-
-  // Actions
-  const toggleBreak = useCallback((empId) => {
-    setEmployees(prev => prev.map(e =>
-      e.id === empId ? { ...e, status: e.status === 'on_shift' ? 'break' : 'on_shift' } : e
-    ));
-  }, []);
-
-  const startShift = useCallback((empId) => {
-    setEmployees(prev => prev.map(e =>
-      e.id === empId ? { ...e, status: 'on_shift', shiftStart: new Date() } : e
-    ));
-  }, []);
-
-  const endShift = useCallback((empId) => {
-    setEmployees(prev => prev.map(e =>
-      e.id === empId ? { ...e, status: 'offline', shiftStart: null } : e
-    ));
-  }, []);
-
-  const updateTaskStatus = useCallback((taskId, status) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t;
-      return {
-        ...t,
-        status,
-        startTime: t.startTime || new Date(),
-        completedTime: status === 'completed' ? new Date() : t.completedTime
-      };
-    }));
-  }, []);
-
-  const renderMainContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return renderDashboard();
-      case 'employees': return renderEmployees();
-      case 'shifts': return renderShifts();
-      case 'tasks': return renderTasks();
-      case 'reports': return renderReports();
-      case 'payroll': return renderPayroll();
-      case 'settings': return renderSettings();
-      default: return renderDashboard();
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {renderSidebar()}
-      <div style={{ marginLeft: sidebarCollapsed ? 72 : 260 }} className="transition-all duration-300">
-        {renderHeader()}
-        <main className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderMainContent()}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
-      {renderModal()}
-
-      {/* Employee Detail Modal */}
-      <AnimatePresence>
-        {selectedEmployee && showModal !== 'employeeDetail' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setSelectedEmployee(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Профиль сотрудника</h3>
-                <button onClick={() => setSelectedEmployee(null)} className="text-gray-400 hover:text-gray-600"><XCircle size={24} /></button>
-              </div>
-              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-3xl">{selectedEmployee.avatar}</div>
-                <div>
-                  <h4 className="text-lg font-bold text-gray-800">{selectedEmployee.name}</h4>
-                  <p className="text-sm text-gray-500">{selectedEmployee.position} • {selectedEmployee.department}</p>
-                  <p className="text-sm text-gray-500">{selectedEmployee.email} • {selectedEmployee.phone}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="p-3 bg-blue-50 rounded-xl text-center">
-                  <p className="text-xs text-blue-500">Ставка</p>
-                  <p className="text-lg font-bold text-blue-700">{formatCurrency(selectedEmployee.hourlyRate)}/ч</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-xl text-center">
-                  <p className="text-xs text-green-500">Статус</p>
-                  <p className="text-lg font-bold text-green-700">{getStatusLabel(selectedEmployee.status)}</p>
-                </div>
-              </div>
-              <h4 className="font-semibold text-gray-700 mb-3">Задачи сотрудника</h4>
-              <div className="space-y-2 mb-4">
-                {tasks.filter(t => t.employeeId === selectedEmployee.id).slice(0, 5).map(task => (
-                  <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">{getTaskTypeLabel(task.type)} • {task.orderId}</p>
-                      <p className="text-xs text-gray-500">{task.items} ед.</p>
+            const renderHeader = () => (
+                <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+                    <h2 className="text-xl font-bold text-gray-800">{tabs.find(t => t.id === activeTab)?.label}</h2>
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-500">{formatDate(now)} • {formatTime(now)}</span>
+                        <div className="relative cursor-pointer">
+                            <Icon name="bell" size={20} className="text-gray-500" />
+                            {alerts.filter(a => !a.read).length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">{alerts.filter(a => !a.read).length}</span>}
+                        </div>
+                        <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">A</div>
                     </div>
-                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                      task.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                      task.status === 'paused' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>{getTaskStatusLabel(task.status)}</span>
-                  </div>
-                ))}
-              </div>
-              <h4 className="font-semibold text-gray-700 mb-3">Эффективность по сменам</h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={shiftHistory.filter(s => s.employeeId === selectedEmployee.id).slice(0, 10).reverse()}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} />
-                  <YAxis domain={[0, 100]} stroke="#9CA3AF" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="efficiency" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => { setShowModal('employeeDetail'); setSelectedEmployee(selectedEmployee); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-                >
-                  <FileText size={16} /> Полный отчет
-                </button>
-                <button className="px-4 py-2.5 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+                </header>
+            );
 
-export default App;
+            const renderDashboard = () => (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'На смене', value: stats.onShift, icon: 'users', color: 'blue' },
+                            { label: 'Активные задачи', value: stats.activeTasks, icon: 'package', color: 'amber' },
+                            { label: 'Выработка (шт)', value: shiftHistory.reduce((s, sh) => s + sh.itemsProcessed, 0), icon: 'trendingUp', color: 'green' },
+                            { label: 'ФОТ сегодня', value: formatCurrency(stats.todayRevenue), icon: 'dollar', color: 'purple' },
+                        ].map((card, i) => (
+                            <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-1">{card.label}</p>
+                                        <p className="text-2xl font-bold text-gray-800">{card.value}</p>
+                                    </div>
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.color === 'blue' ? 'bg-blue-100 text-blue-600' : card.color === 'amber' ? 'bg-amber-100 text-amber-600' : card.color === 'green' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
+                                        <Icon name={card.icon} size={24} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                            <h3 className="font-semibold text-gray-700 mb-4">Недельная выработка</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <AreaChart data={weeklyData}>
+                                    <defs><linearGradient id="colorItems" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3B82F6" stopOpacity={0} /></linearGradient></defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey="day" stroke="#9CA3AF" /><YAxis stroke="#9CA3AF" />
+                                    <Tooltip formatter={(v) => [v, 'Шт.']} />
+                                    <Area type="monotone" dataKey="items" stroke="#3B82F6" fill="url(#colorItems)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                            <h3 className="font-semibold text-gray-700 mb-4">По отделам</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie data={departmentData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                                        {departmentData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v) => [`${v}%`, 'Загрузка']} />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4">Уведомления</h3>
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                            {alerts.map(alert => (
+                                <div key={alert.id} className={`p-3 rounded-xl border-l-4 ${alert.type === 'error' ? 'border-red-500 bg-red-50' : alert.type === 'warning' ? 'border-amber-500 bg-amber-50' : 'border-blue-500 bg-blue-50'}`}>
+                                    <p className="text-sm text-gray-700">{alert.message}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{formatTime(alert.time)}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderEmployees = () => (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="relative flex-1 max-w-md">
+                            <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input type="text" placeholder="Поиск сотрудников..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                        </div>
+                        <button onClick={() => setShowModal('addEmployee')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">
+                            <Icon name="plus" size={18} /> Добавить сотрудника
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {filteredEmployees.map((employee) => (
+                            <div key={employee.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all cursor-pointer group" onClick={() => setSelectedEmployee(employee)}>
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl">👤</div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-800 text-sm">{employee.name}</h4>
+                                            <p className="text-xs text-gray-500">{employee.position}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${employee.status === 'on_shift' ? 'bg-green-100 text-green-700' : employee.status === 'break' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                        {getStatusLabel(employee.status)}
+                                    </span>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between"><span className="text-gray-500">Отдел:</span><span className="text-gray-700 font-medium">{employee.department}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Ставка:</span><span className="text-gray-700 font-medium">{formatCurrency(employee.hourlyRate)}/ч</span></div>
+                                    {employee.shiftStart && <div className="flex justify-between"><span className="text-gray-500">На смене:</span><span className="text-gray-700 font-medium">{formatDuration(now - new Date(employee.shiftStart).getTime())}</span></div>}
+                                </div>
+                                <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                                    {employee.status === 'on_shift' && (
+                                        <button onClick={(e) => { e.stopPropagation(); toggleBreak(employee.id); }} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 text-xs font-medium">
+                                            <Icon name="coffee" size={14} /> Перерыв
+                                        </button>
+                                    )}
+                                    {employee.status === 'break' && (
+                                        <button onClick={(e) => { e.stopPropagation(); toggleBreak(employee.id); }} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-xs font-medium">
+                                            <Icon name="play" size={14} /> На смену
+                                        </button>
+                                    )}
+                                    {employee.status !== 'on_shift' && (
+                                        <button onClick={(e) => { e.stopPropagation(); startShift(employee.id); }} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium">
+                                            <Icon name="logIn" size={14} /> Начать смену
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            const renderTasks = () => (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex gap-2 flex-wrap">
+                            {['all', 'in_progress', 'completed'].map(status => (
+                                <button key={status} className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">
+                                    {status === 'all' ? 'Все' : getTaskStatusLabel(status)}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={() => setShowModal('addTask')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg">
+                            <Icon name="plus" size={18} /> Новая задача
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {tasks.map((task) => {
+                            const employee = employees.find(e => e.id === task.employeeId);
+                            return (
+                                <div key={task.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${task.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {getPriorityLabel(task.priority)}
+                                        </span>
+                                        <span className="text-xs text-gray-400">{task.orderId}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="text-2xl">👤</span>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700">{getEmployeeName(task.employeeId)}</p>
+                                            <p className="text-xs text-gray-500">{getTaskTypeLabel(task.type)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 mb-3">
+                                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                                            <p className="text-xs text-gray-500">Единиц</p>
+                                            <p className="text-sm font-bold text-gray-700">{task.items}</p>
+                                        </div>
+                                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                                            <p className="text-xs text-gray-500">Время (мин)</p>
+                                            <p className="text-sm font-bold text-gray-700">{task.estimatedTime}</p>
+                                        </div>
+                                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                                            <p className="text-xs text-gray-500">Статус</p>
+                                            <p className="text-sm font-bold text-gray-700">{getTaskStatusLabel(task.status)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {task.status === 'pending' && (
+                                            <button onClick={() => updateTaskStatus(task.id, 'in_progress')} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium">
+                                                <Icon name="play" size={14} /> Начать
+                                            </button>
+                                        )}
+                                        {task.status === 'in_progress' && (
+                                            <button onClick={() => updateTaskStatus(task.id, 'completed')} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-xs font-medium">
+                                                <Icon name="check" size={14} /> Завершить
+                                            </button>
+                                        )}
+                                        {task.status === 'completed' && <div className="flex-1 text-center p-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium">Завершено</div>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
+            const renderShifts = () => (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 className="font-semibold text-gray-700">История смен</h3>
+                        <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm">
+                            <Icon name="download" size={16} /> Экспорт
+                        </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Сотрудник</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Часы</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Обработано</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Эффективность</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Начислено</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {shiftHistory.map((shift) => (
+                                    <tr key={shift.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-700">{getEmployeeName(shift.employeeId)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{shift.totalHours} ч</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{shift.itemsProcessed} шт.</td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full ${shift.efficiency >= 90 ? 'bg-green-500' : 'bg-amber-500'}`} style={{ width: `${shift.efficiency}%` }} />
+                                                </div>
+                                                <span className="text-xs font-medium">{shift.efficiency}%</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-green-600">{formatCurrency(shift.earned)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            const renderPayroll = () => {
+                const payrollData = employees.map(emp => {
+                    const empShifts = shiftHistory.filter(s => s.employeeId === emp.id);
+                    const totalEarned = empShifts.reduce((s, sh) => s + sh.earned, 0);
+                    return { ...emp, totalEarned, totalHours: empShifts.reduce((s, sh) => s + sh.totalHours, 0), shiftsCount: empShifts.length };
+                });
+
+                return (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-6 text-white">
+                                <p className="text-blue-100 text-sm">Общий ФОТ</p>
+                                <p className="text-3xl font-bold mt-1">{formatCurrency(payrollData.reduce((s, p) => s + p.totalEarned, 0))}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white">
+                                <p className="text-green-100 text-sm">Средняя зарплата</p>
+                                <p className="text-3xl font-bold mt-1">{formatCurrency(payrollData.length ? payrollData.reduce((s, p) => s + p.totalEarned, 0) / payrollData.length : 0)}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-6 text-white">
+                                <p className="text-purple-100 text-sm">Всего часов</p>
+                                <p className="text-3xl font-bold mt-1">{payrollData.reduce((s, p) => s + p.totalHours, 0).toFixed(1)}</p>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Сотрудник</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Ставка/ч</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Часов</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Начислено</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {payrollData.map((emp) => (
+                                        <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-700">{emp.name}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(emp.hourlyRate)}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">{emp.totalHours.toFixed(1)}</td>
+                                            <td className="px-4 py-3 text-sm font-bold text-green-600">{formatCurrency(emp.totalEarned)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderReports = () => (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4">Динамика выручки и расходов</h3>
+                        <ResponsiveContainer width="100%" height={350}>
+                            <BarChart data={monthlyRevenue}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="month" stroke="#9CA3AF" /><YAxis stroke="#9CA3AF" />
+                                <Tooltip formatter={(v) => [formatCurrency(v), '']} />
+                                <Legend />
+                                <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Выручка" />
+                                <Bar dataKey="cost" fill="#EF4444" radius={[4, 4, 0, 0]} name="Расходы" />
+                                <Bar dataKey="profit" fill="#10B981" radius={[4, 4, 0, 0]} name="Прибыль" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4">Рейтинг эффективности</h3>
+                        <div className="space-y-4">
+                            {efficiencyData.sort((a, b) => b.efficiency - a.efficiency).map((emp, i) => (
+                                <div key={emp.name} className="flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">{i + 1}</span>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-sm font-medium text-gray-700">{emp.name}</span>
+                                            <span className="text-sm font-bold text-gray-700">{emp.efficiency}%</span>
+                                        </div>
+                                        <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                                            <div className={`h-full rounded-full ${emp.efficiency >= 90 ? 'bg-green-500' : 'bg-amber-500'}`} style={{ width: `${emp.efficiency}%` }}></div>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm text-gray-500 w-16 text-right">{emp.items} шт.</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderSettings = () => (
+                <div className="max-w-2xl space-y-6">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4">Настройки склада</h3>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium text-gray-600 mb-1">Название склада</label><input type="text" defaultValue="WMS Fulfillment Center" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium text-gray-600 mb-1">Начало смены</label><input type="time" defaultValue="06:00" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                                <div><label className="block text-sm font-medium text-gray-600 mb-1">Конец смены</label><input type="time" defaultValue="22:00" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4">Настройки оплаты</h3>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium text-gray-600 mb-1">Мин. ставка (руб/ч)</label><input type="number" defaultValue="300" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                            <div><label className="block text-sm font-medium text-gray-600 mb-1">Сверхурочные (множитель)</label><input type="number" defaultValue="1.5" step="0.1" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                        </div>
+                    </div>
+                    <button className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg">Сохранить</button>
+                </div>
+            );
+
+            const renderModal = () => {
+                if (!showModal) return null;
+                return (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(null)}>
+                        <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-gray-800">
+                                    {showModal === 'addEmployee' ? 'Новый сотрудник' : showModal === 'addTask' ? 'Новая задача' : 'Инфо'}
+                                </h3>
+                                <button onClick={() => setShowModal(null)} className="text-gray-400 hover:text-gray-600"><Icon name="x" size={24} /></button>
+                            </div>
+                            
+                            {showModal === 'addEmployee' && (
+                                <div className="space-y-4">
+                                    <input type="text" placeholder="ФИО" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <input type="text" placeholder="Должность" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="Ставка" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                        <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                            <option>Сборка</option><option>Упаковка</option><option>Склад</option>
+                                        </select>
+                                    </div>
+                                    <button className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">Сохранить</button>
+                                </div>
+                            )}
+
+                            {showModal === 'addTask' && (
+                                <div className="space-y-4">
+                                    <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        {employees.filter(e => e.status !== 'offline').map(e => <option key={e.id}>{e.name}</option>)}
+                                    </select>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="Единиц" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                        <input type="number" placeholder="Время (мин)" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    </div>
+                                    <button className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">Создать</button>
+                                </div>
+                            )}
+
+                            {showModal === 'employeeDetail' && selectedEmployee && (
+                                <div>
+                                    <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                                        <div className="w-16 h-16 rounded-xl bg-gray-200 flex items-center justify-center text-3xl">👤</div>
+                                        <div>
+                                            <h4 className="text-lg font-bold text-gray-800">{selectedEmployee.name}</h4>
+                                            <p className="text-sm text-gray-500">{selectedEmployee.position} • {selectedEmployee.department}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="p-3 bg-blue-50 rounded-xl text-center"><p className="text-xs text-blue-500">Ставка</p><p className="text-lg font-bold text-blue-700">{formatCurrency(selectedEmployee.hourlyRate)}/ч</p></div>
+                                        <div className="p-3 bg-green-50 rounded-xl text-center"><p className="text-xs text-green-500">Статус</p><p className="text-lg font-bold text-green-700">{getStatusLabel(selectedEmployee.status)}</p></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {renderSidebar()}
+                    <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+                        {renderHeader()}
+                        <main className="p-6">
+                            {activeTab === 'dashboard' && renderDashboard()}
+                            {activeTab === 'employees' && renderEmployees()}
+                            {activeTab === 'shifts' && renderShifts()}
+                            {activeTab === 'tasks' && renderTasks()}
+                            {activeTab === 'reports' && renderReports()}
+                            {activeTab === 'payroll' && renderPayroll()}
+                            {activeTab === 'settings' && renderSettings()}
+                        </main>
+                    </div>
+                    {renderModal()}
+                    
+                    {selectedEmployee && showModal !== 'employeeDetail' && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedEmployee(null)}>
+                            <div className="bg-white rounded-2xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-bold">Профиль</h3>
+                                    <button onClick={() => setSelectedEmployee(null)}><Icon name="x" size={24} className="text-gray-400" /></button>
+                                </div>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-2xl">👤</div>
+                                    <div>
+                                        <h4 className="font-bold">{selectedEmployee.name}</h4>
+                                        <p className="text-sm text-gray-500">{selectedEmployee.position}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => { setShowModal('employeeDetail'); }} className="flex-1 py-2 bg-blue-600 text-white rounded-lg">Полный отчет</button>
+                                    <button className="px-4 py-2 bg-red-50 text-red-600 rounded-lg"><Icon name="trash" size={16} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
