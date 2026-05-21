@@ -302,15 +302,13 @@
     let mapping = {};
     let boxes = { 1: [] };
     let currentBox = 1;
-    let scannedSet = new Set();
-    let currentItemForLabel = null;
     let voiceEnabled = true;
     let printedSet = new Set();
     let currentFilter = 'all';
     let selectedIndices = new Set();
-    let labelCounterMap = {};
     let allHeaders = [];
-    let printCopies = {}; // Store user-defined copies per item index
+    let printCopies = {};
+    let labelCounterMap = {};
 
     // --- Tab switching ---
     function switchTab(tab) {
@@ -373,17 +371,14 @@
     ];
 
     function findBestMatch(headers, hints) {
-      // Exact match first
       for(const hint of hints) {
         const exact = headers.find(h => h.toLowerCase().replace(/\s+/g,'') === hint.toLowerCase().replace(/\s+/g,''));
         if(exact) return exact;
       }
-      // Contains match
       for(const hint of hints) {
         const match = headers.find(h => h.toLowerCase().includes(hint.toLowerCase()));
         if(match) return match;
       }
-      // Word-by-word soft match
       for(const hint of hints) {
         const words = hint.toLowerCase().split(/[\s\/]+/);
         for(const word of words) {
@@ -501,30 +496,25 @@
       labelCounterMap = {};
       printCopies = {};
 
-      // Initialize print copies with total_quantity if available
+      // Устанавливаем количество копий для печати из total_quantity
       excelData.forEach((item, idx) => {
-        if(mapping.total_quantity) {
-          let val = item[mapping.total_quantity];
-          // Handle "2,025" format
-          if(typeof val === 'string') val = val.replace(/,/g, '').replace(/\s/g, '');
-          val = parseInt(val);
-          if(!isNaN(val) && val > 0) {
-            printCopies[idx] = val;
-          } else {
-            printCopies[idx] = 1;
-          }
+        if(mapping.total_quantity && item[mapping.total_quantity]) {
+          let val = String(item[mapping.total_quantity]).replace(/,/g, '').replace(/\s/g, '');
+          let parsed = parseInt(val);
+          printCopies[idx] = (!isNaN(parsed) && parsed > 0) ? parsed : 1;
         } else {
           printCopies[idx] = 1;
         }
       });
 
+      calculateCounters();
       updateBoxSelect();
       changeBox(1);
       switchTab('labels');
       speak('Маппинг сохранен. Формируем этикетки.');
     }
 
-    // --- Data getters using mapping ---
+    // --- Data getters ---
     function getItemField(idx, key) {
       if(!mapping[key]) return '';
       const colName = mapping[key];
@@ -540,43 +530,27 @@
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
 
-    // --- Counters ---
     function calculateCounters() {
       labelCounterMap = {};
-      // If total_quantity is mapped, use it. Otherwise count rows.
-      if(mapping.total_quantity) {
-         excelData.forEach((item, idx) => {
-           let val = item[mapping.total_quantity];
-           if(typeof val === 'string') val = val.replace(/,/g, '').replace(/\s/g, '');
-           val = parseInt(val);
-           labelCounterMap[idx] = { current: 1, total: isNaN(val) ? 1 : val };
-         });
-      } else {
-         // Fallback: assume 1 per row or count duplicates
-         const articleCounts = {};
-         excelData.forEach((item, idx) => {
-           const art = getItemArticle(idx);
-           const key = art || '__empty_' + idx;
-           if(!articleCounts[key]) articleCounts[key] = 0;
-           articleCounts[key]++;
-           labelCounterMap[idx] = { current: articleCounts[key], total: articleCounts[key] };
-         });
-      }
+      excelData.forEach((item, idx) => {
+        let total = printCopies[idx] || 1;
+        labelCounterMap[idx] = { current: 1, total: total };
+      });
     }
 
     // --- Create label HTML ---
-    function createLabelHTML(idx, forPrint) {
+    function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
       var art = getItemArticle(idx) || '---';
       var bc = getItemBarcode(idx) || '---';
       var desc = getItemDescription(idx) || '';
       var expiry = getItemExpiry(idx) || '---';
       var instruction = getItemInstruction(idx) || '';
       var quantity = getItemQuantity(idx) || '';
-      var counter = labelCounterMap[idx] || { current: 1, total: 1 };
+      
+      var cNum = copyNum || 1;
+      var tCopies = totalCopies || (printCopies[idx] || 1);
+      var svgId = forPrint ? 'bp_svg_' + idx + '_' + cNum : 'grid_svg_' + idx;
 
-      var svgId = forPrint ? 'bp_svg_' + idx : 'grid_svg_' + idx;
-
-      // Build bottom row
       var bottomRowHtml = '<span class="lbl-expiry">Годен: ' + expiry + '</span>';
       if(quantity && quantity !== '' && quantity !== '0') {
         bottomRowHtml += '<span class="lbl-quantity">Квант: ' + quantity + '</span>';
@@ -591,7 +565,7 @@
         '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
         '<div class="lbl-header-row">' +
           '<span class="lbl-article">' + art + '</span>' +
-          '<span class="lbl-counter">' + counter.current + ' / ' + counter.total + '</span>' +
+          '<span class="lbl-counter">' + cNum + ' / ' + tCopies + '</span>' +
         '</div>' +
         '<div class="lbl-barcode-area">' +
           '<svg id="' + svgId + '"></svg>' +
@@ -628,14 +602,12 @@
         var card = document.createElement('div');
         card.className = 'label-card' + (printedSet.has(idx) ? ' printed' : '');
         
-        // Click handler for single print
         card.onclick = function(e) {
           if(e.ctrlKey || e.metaKey) {
             if(selectedIndices.has(idx)) selectedIndices.delete(idx);
             else selectedIndices.add(idx);
             updateSelectionUI();
           } else {
-            // Prevent triggering if clicking input
             if(e.target.tagName !== 'INPUT') printSingleLabel(idx);
           }
         };
@@ -643,12 +615,11 @@
         var svgId = 'grid_svg_' + idx;
         var copies = printCopies[idx] || 1;
 
-        var cardContent = createLabelHTML(idx, false);
+        var cardContent = createLabelHTML(idx, false, 1, copies);
         cardContent += 
           '<div class="copies-input">' +
             '<label>Копий:</label>' +
             '<input type="number" value="' + copies + '" min="1" onchange="updateCopies(' + idx + ', this.value)" onclick="event.stopPropagation()">' +
-            '<span style="font-size:0.8rem; color:#64748b;">(Всего: ' + (labelCounterMap[idx] ? labelCounterMap[idx].total : '?') + ')</span>' +
           '</div>';
         
         card.innerHTML = cardContent;
@@ -672,7 +643,11 @@
     }
 
     function updateCopies(idx, val) {
-      printCopies[idx] = parseInt(val) || 1;
+      var num = parseInt(val);
+      if(isNaN(num) || num < 1) num = 1;
+      printCopies[idx] = num;
+      labelCounterMap[idx] = { current: 1, total: num };
+      renderLabelGrid();
     }
 
     function updateSelectionUI() {
@@ -720,29 +695,24 @@
     // --- Printing ---
     function printSingleLabel(idx) {
       var printArea = document.getElementById('bulkPrintArea');
-      printArea.innerHTML = createLabelHTML(idx, true);
+      var copies = printCopies[idx] || 1;
+      printArea.innerHTML = createLabelHTML(idx, true, 1, copies);
       printArea.classList.remove('hidden');
 
       setTimeout(function() {
         var bc = getItemBarcode(idx);
         try {
-          JsBarcode('#bp_svg_' + idx, bc, {
-            format: 'CODE128',
-            width: 1.8,
-            height: 30,
-            displayValue: false,
-            margin: 0
-          });
-        } catch(err) { /* skip */ }
+          JsBarcode('#bp_svg_' + idx + '_1', bc, { format: 'CODE128', width: 1.8, height: 30, displayValue: false, margin: 0 });
+        } catch(err) {}
         window.print();
-      }, 100);
+      }, 150);
 
       setTimeout(function() {
         printArea.classList.add('hidden');
         printedSet.add(idx);
         renderLabelGrid();
         speak('Этикетка ' + getItemArticle(idx) + ' напечатана');
-      }, 2000);
+      }, 2500);
     }
 
     function renderBulkPrint(indices) {
@@ -751,11 +721,8 @@
 
       indices.forEach(function(idx) {
         var copies = printCopies[idx] || 1;
-        // Generate 'copies' number of labels for this item
-        for(var c = 0; c < copies; c++) {
-           // We need unique SVG IDs for each copy
-           var uniqueIdx = idx + '_copy_' + c;
-           printArea.insertAdjacentHTML('beforeend', createLabelHTMLForCopy(idx, uniqueIdx));
+        for(var c = 1; c <= copies; c++) {
+           printArea.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, c, copies));
         }
       });
 
@@ -764,22 +731,15 @@
       setTimeout(function() {
         indices.forEach(function(idx) {
           var copies = printCopies[idx] || 1;
-          for(var c = 0; c < copies; c++) {
-             var uniqueIdx = idx + '_copy_' + c;
+          for(var c = 1; c <= copies; c++) {
              var bc = getItemBarcode(idx);
              try {
-               JsBarcode('#bp_svg_' + uniqueIdx, bc, {
-                 format: 'CODE128',
-                 width: 1.8,
-                 height: 30,
-                 displayValue: false,
-                 margin: 0
-               });
-             } catch(err) { /* skip */ }
+               JsBarcode('#bp_svg_' + idx + '_' + c, bc, { format: 'CODE128', width: 1.8, height: 30, displayValue: false, margin: 0 });
+             } catch(err) {}
           }
         });
         window.print();
-      }, 500); // Increased delay for bulk generation
+      }, 800);
 
       setTimeout(function() {
         printArea.classList.add('hidden');
@@ -787,48 +747,7 @@
         selectedIndices.clear();
         renderLabelGrid();
         speak('Печать завершена');
-      }, 3000);
-    }
-
-    function createLabelHTMLForCopy(idx, uniqueId) {
-      var art = getItemArticle(idx) || '---';
-      var bc = getItemBarcode(idx) || '---';
-      var desc = getItemDescription(idx) || '';
-      var expiry = getItemExpiry(idx) || '---';
-      var instruction = getItemInstruction(idx) || '';
-      var quantity = getItemQuantity(idx) || '';
-      var counter = labelCounterMap[idx] || { current: 1, total: 1 };
-
-      // For bulk print, we might want to adjust counter or keep it. 
-      // Usually counter is 1/Total for the batch, but for printing copies, it's just labels.
-      // Let's keep the counter as is.
-
-      var svgId = 'bp_svg_' + uniqueId;
-
-      var bottomRowHtml = '<span class="lbl-expiry">Годен: ' + expiry + '</span>';
-      if(quantity && quantity !== '' && quantity !== '0') {
-        bottomRowHtml += '<span class="lbl-quantity">Квант: ' + quantity + '</span>';
-      }
-
-      var instructionHtml = '';
-      if(instruction) {
-        instructionHtml = '<div class="lbl-instruction">' + instruction + '</div>';
-      }
-
-      return '<div class="label-sheet">' +
-        '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
-        '<div class="lbl-header-row">' +
-          '<span class="lbl-article">' + art + '</span>' +
-          '<span class="lbl-counter">' + counter.current + ' / ' + counter.total + '</span>' +
-        '</div>' +
-        '<div class="lbl-barcode-area">' +
-          '<svg id="' + svgId + '"></svg>' +
-        '</div>' +
-        '<div class="lbl-barcode-num">' + bc + '</div>' +
-        '<div class="lbl-desc">' + desc + '</div>' +
-        '<div class="lbl-bottom-row">' + bottomRowHtml + '</div>' +
-        instructionHtml +
-      '</div>';
+      }, 4000);
     }
 
     function printSelectedLabels() {
@@ -911,34 +830,59 @@
 
       var tbody = document.getElementById('scannedBody');
       tbody.innerHTML = '';
-      list.forEach(function(item, i) {
+      
+      // Group identical items for cleaner UI
+      var grouped = {};
+      var scanOrder = [];
+      
+      list.forEach(function(item) {
+        var bc = String(item[mapping.label_barcode] || '').trim();
+        if(!grouped[bc]) {
+          grouped[bc] = { item: item, count: 0 };
+          scanOrder.push(bc);
+        }
+        grouped[bc].count++;
+      });
+
+      scanOrder.forEach(function(bc) {
+        var g = grouped[bc];
         var tr = document.createElement('tr');
-        var artVal = item[mapping.wb_article] || '-';
-        var bcVal = item[mapping.label_barcode] || '-';
+        var artVal = g.item[mapping.wb_article] || '-';
+        var bcVal = bc;
         tr.innerHTML =
           '<td>' + artVal + '</td>' +
           '<td>' + bcVal + '</td>' +
-          '<td>1</td>' +
+          '<td>' + g.count + '</td>' +
           '<td><span class="badge success">Принято</span></td>' +
-          '<td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeItem(' + i + ')">✖</button></td>';
+          '<td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeOneFromBox(\'' + bc.replace(/'/g, "\\'") + '\')">✖</button></td>';
         tbody.appendChild(tr);
       });
     }
 
     function getBoxLimit() {
-      if(mapping.sets_per_box && boxes[currentBox].length > 0 && boxes[currentBox][0][mapping.sets_per_box]) {
-        return parseInt(boxes[currentBox][0][mapping.sets_per_box]) || 15;
+      if(mapping.sets_per_box && boxes[currentBox].length > 0) {
+        var firstItem = boxes[currentBox][0];
+        var val = firstItem[mapping.sets_per_box];
+        if(val) {
+          var parsed = parseInt(String(val).replace(/,/g,'').replace(/\s/g,''));
+          if(!isNaN(parsed) && parsed > 0) return parsed;
+        }
       }
       return 15;
     }
 
-    function removeItem(idx) {
-      var item = boxes[currentBox][idx];
-      var bc = item[mapping.label_barcode];
-      boxes[currentBox].splice(idx, 1);
-      scannedSet.delete(String(bc).trim());
-      updateUI();
-      speak('Позиция удалена');
+    function removeOneFromBox(barcode) {
+      var idxToRemove = boxes[currentBox].findIndex(function(it) {
+        var itLb = String(it[mapping.label_barcode] || '').trim();
+        var itOb = String(it[mapping.origin_barcode] || '').trim();
+        return itLb === barcode || itOb === barcode;
+      });
+      
+      if(idxToRemove !== -1) {
+        boxes[currentBox].splice(idxToRemove, 1);
+        updateUI();
+        speak('Позиция удалена');
+      }
     }
 
     // --- Scanner Input ---
@@ -964,15 +908,16 @@
 
     function processScan(barcode) {
       if(!barcode) return;
-      if(scannedSet.has(barcode)) {
-        speak('Дубликат. Штрихкод уже в коробе.');
-        return;
-      }
-
-      var foundItem = excelData.find(function(row) {
+      
+      var foundItem = null;
+      var foundItemIdx = -1;
+      excelData.forEach(function(row, idx) {
         var lb = String(row[mapping.label_barcode] || '').trim();
         var ob = String(row[mapping.origin_barcode] || '').trim();
-        return lb === barcode || ob === barcode;
+        if(lb === barcode || ob === barcode) { 
+          foundItem = row; 
+          foundItemIdx = idx;
+        }
       });
 
       if(!foundItem) {
@@ -980,22 +925,43 @@
         return;
       }
 
-      var limit = getBoxLimit();
-      if(boxes[currentBox].length >= limit) {
+      // Определяем максимальное количество для этого штрихкода из total_quantity
+      var maxQty = 1;
+      if(mapping.total_quantity && foundItem[mapping.total_quantity]) {
+        var val = String(foundItem[mapping.total_quantity]).replace(/,/g,'').replace(/\s/g,'');
+        var parsed = parseInt(val);
+        if(!isNaN(parsed) && parsed > 0) maxQty = parsed;
+      }
+
+      // Считаем сколько уже пробито этого ШК в текущем коробе
+      var currentCount = 0;
+      boxes[currentBox].forEach(function(it) {
+        var itLb = String(it[mapping.label_barcode] || '').trim();
+        var itOb = String(it[mapping.origin_barcode] || '').trim();
+        if(itLb === barcode || itOb === barcode) currentCount++;
+      });
+
+      if(currentCount >= maxQty) {
+        speak('Лимит ' + maxQty + ' для ШК ' + barcode + ' достигнут.');
+        return;
+      }
+
+      // Check box capacity
+      var boxLimit = getBoxLimit();
+      if(boxes[currentBox].length >= boxLimit) {
         speak('Короб ' + currentBox + ' заполнен. Смените короб.');
         return;
       }
 
+      // Добавляем позицию
       boxes[currentBox].push(foundItem);
-      scannedSet.add(barcode);
-      currentItemForLabel = foundItem;
       updateUI();
-      speak('Принято. В коробе ' + currentBox + ': ' + boxes[currentBox].length + ' из ' + limit);
+      speak('Принято ' + (currentCount + 1) + ' из ' + maxQty);
     }
 
     function resetSession() {
       if(!confirm('Сбросить все данные сканирования?')) return;
-      boxes = {1:[]}; currentBox = 1; scannedSet.clear();
+      boxes = {1:[]}; currentBox = 1;
       updateBoxSelect(); updateUI();
       speak('Сессия сброшена.');
     }
