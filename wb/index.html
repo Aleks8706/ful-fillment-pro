@@ -169,6 +169,11 @@
     .raw-headers summary { cursor: pointer; font-weight: 500; }
     .raw-headers .header-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
     .raw-headers .header-tag { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+
+    .print-summary {
+      background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 8px; padding: 12px; margin-bottom: 15px;
+      font-size: 0.9rem; color: #0c4a6e;
+    }
   </style>
 </head>
 <body>
@@ -227,9 +232,11 @@
 
       <div class="stats-row" id="labelStats">
         <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Позиций</div></div>
+        <div class="stat-card"><div class="num" id="statLabels">0</div><div class="lbl">Этикеток</div></div>
         <div class="stat-card"><div class="num" id="statPrinted">0</div><div class="lbl">Напечатано</div></div>
-        <div class="stat-card"><div class="num" id="statRemaining">0</div><div class="lbl">Осталось</div></div>
       </div>
+
+      <div id="printSummary" class="print-summary hidden"></div>
 
       <div class="print-toolbar">
         <button onclick="printAllLabels()" class="purple" style="width:auto;">️ Печать ВСЕХ</button>
@@ -318,7 +325,7 @@
       const tabNames = ['upload','mapping','labels','scanner'];
       document.querySelectorAll('.tab-btn')[tabNames.indexOf(tab)].classList.add('active');
       if(tab === 'scanner') document.getElementById('scannerInput').focus();
-      if(tab === 'labels') { calculateCounters(); renderLabelGrid(); }
+      if(tab === 'labels') { calculateCounters(); renderLabelGrid(); updatePrintSummary(); }
       if(tab === 'mapping') { showRawHeaders(); previewMapping(); }
     }
 
@@ -470,6 +477,18 @@
       previewDiv.innerHTML = html;
     }
 
+    // Helper: parse quantity value from Excel cell
+    function parseQuantityValue(rawVal) {
+      if(rawVal === undefined || rawVal === null || rawVal === '') return 1;
+      if(typeof rawVal === 'number') {
+        return Number.isInteger(rawVal) && rawVal > 0 ? rawVal : 1;
+      }
+      // String: remove spaces, replace comma with dot (for decimal), then parse
+      let cleaned = String(rawVal).replace(/\s/g, '').replace(',', '.');
+      let parsed = parseFloat(cleaned);
+      return (!isNaN(parsed) && parsed > 0) ? Math.round(parsed) : 1;
+    }
+
     function saveMapping() {
       mapping = {};
       let filled = 0;
@@ -498,10 +517,8 @@
 
       // Устанавливаем количество копий для печати из total_quantity
       excelData.forEach((item, idx) => {
-        if(mapping.total_quantity && item[mapping.total_quantity]) {
-          let val = String(item[mapping.total_quantity]).replace(/,/g, '').replace(/\s/g, '');
-          let parsed = parseInt(val);
-          printCopies[idx] = (!isNaN(parsed) && parsed > 0) ? parsed : 1;
+        if(mapping.total_quantity && mapping.total_quantity !== '') {
+          printCopies[idx] = parseQuantityValue(item[mapping.total_quantity]);
         } else {
           printCopies[idx] = 1;
         }
@@ -516,7 +533,7 @@
 
     // --- Data getters ---
     function getItemField(idx, key) {
-      if(!mapping[key]) return '';
+      if(!mapping[key] || mapping[key] === '') return '';
       const colName = mapping[key];
       const val = excelData[idx][colName];
       if(val === undefined || val === null || val === '') return '';
@@ -524,11 +541,14 @@
     }
 
     function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
-    function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
+    function getItemArticle(idx) { return getItemArticle; }
     function getItemDescription(idx) { return getItemField(idx, 'product_name'); }
     function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
+
+    // Переопределяем для работы
+    function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
 
     function calculateCounters() {
       labelCounterMap = {};
@@ -575,6 +595,38 @@
         '<div class="lbl-bottom-row">' + bottomRowHtml + '</div>' +
         instructionHtml +
       '</div>';
+    }
+
+    // --- Calculate total labels ---
+    function calcTotalLabels(indices) {
+      var total = 0;
+      indices.forEach(function(idx) {
+        total += (printCopies[idx] || 1);
+      });
+      return total;
+    }
+
+    // --- Update print summary ---
+    function updatePrintSummary() {
+      var sumDiv = document.getElementById('printSummary');
+      if(excelData.length === 0) { sumDiv.classList.add('hidden'); return; }
+      
+      var totalLabels = 0;
+      var totalItems = excelData.length;
+      
+      for(var i = 0; i < excelData.length; i++) {
+        totalLabels += (printCopies[i] || 1);
+      }
+      
+      var printedLabels = 0;
+      printedSet.forEach(function(idx) {
+        printedLabels += (printCopies[idx] || 1);
+      });
+      
+      sumDiv.classList.remove('hidden');
+      sumDiv.innerHTML = '📊 Позиций: <b>' + totalItems + '</b> | Всего этикеток: <b>' + totalLabels + '</b> | Напечатано: <b>' + printedLabels + '</b> | Осталось: <b>' + (totalLabels - printedLabels) + '</b>';
+      
+      document.getElementById('statLabels').textContent = totalLabels;
     }
 
     // --- Render label grid ---
@@ -640,6 +692,7 @@
 
       updateLabelStats();
       updateSelectionUI();
+      updatePrintSummary();
     }
 
     function updateCopies(idx, val) {
@@ -647,6 +700,7 @@
       if(isNaN(num) || num < 1) num = 1;
       printCopies[idx] = num;
       labelCounterMap[idx] = { current: 1, total: num };
+      updatePrintSummary();
       renderLabelGrid();
     }
 
@@ -664,7 +718,8 @@
 
       var btn = document.getElementById('printSingleBtn');
       if(selectedIndices.size > 0) {
-        btn.textContent = '🖨️ Печать выбранных (' + selectedIndices.size + ')';
+        var totalCopies = calcTotalLabels(Array.from(selectedIndices));
+        btn.textContent = '🖨️ Печать выбранных (' + selectedIndices.size + ' поз. / ' + totalCopies + ' этик.)';
         btn.classList.add('purple');
       } else {
         btn.textContent = '🖨️ Печать выбранных';
@@ -677,8 +732,7 @@
       var printed = printedSet.size;
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statPrinted').textContent = printed;
-      document.getElementById('statRemaining').textContent = total - printed;
-      document.getElementById('printStat').textContent = printed + ' / ' + total + ' напечатано';
+      document.getElementById('printStat').textContent = printed + ' / ' + total + ' позиций напечатано';
     }
 
     function filterLabels(filter, el) {
@@ -694,8 +748,13 @@
 
     // --- Printing ---
     function printSingleLabel(idx) {
-      var printArea = document.getElementById('bulkPrintArea');
       var copies = printCopies[idx] || 1;
+      if(copies > 1) {
+        printMultipleLabels([idx]);
+        return;
+      }
+
+      var printArea = document.getElementById('bulkPrintArea');
       printArea.innerHTML = createLabelHTML(idx, true, 1, copies);
       printArea.classList.remove('hidden');
 
@@ -715,31 +774,35 @@
       }, 2500);
     }
 
-    function renderBulkPrint(indices) {
+    function printMultipleLabels(indices) {
       var printArea = document.getElementById('bulkPrintArea');
       printArea.innerHTML = '';
+      var totalLabels = 0;
 
       indices.forEach(function(idx) {
         var copies = printCopies[idx] || 1;
         for(var c = 1; c <= copies; c++) {
            printArea.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, c, copies));
+           totalLabels++;
         }
       });
 
       printArea.classList.remove('hidden');
 
+      // Generate all barcodes before print
       setTimeout(function() {
         indices.forEach(function(idx) {
           var copies = printCopies[idx] || 1;
+          var bc = getItemBarcode(idx);
           for(var c = 1; c <= copies; c++) {
-             var bc = getItemBarcode(idx);
              try {
                JsBarcode('#bp_svg_' + idx + '_' + c, bc, { format: 'CODE128', width: 1.8, height: 30, displayValue: false, margin: 0 });
              } catch(err) {}
           }
         });
+        speak('Печатаю ' + totalLabels + ' этикеток');
         window.print();
-      }, 800);
+      }, 1000);
 
       setTimeout(function() {
         printArea.classList.add('hidden');
@@ -752,7 +815,7 @@
 
     function printSelectedLabels() {
       if(selectedIndices.size === 0) return speak('Выберите этикетки для печати.');
-      renderBulkPrint(Array.from(selectedIndices).sort(function(a, b) { return a - b; }));
+      printMultipleLabels(Array.from(selectedIndices).sort(function(a, b) { return a - b; }));
     }
 
     function printSingleFromGrid() {
@@ -767,7 +830,7 @@
       if(excelData.length === 0) return speak('Нет данных для печати.');
       var indices = [];
       for(var i = 0; i < excelData.length; i++) indices.push(i);
-      renderBulkPrint(indices);
+      printMultipleLabels(indices);
     }
 
     function printRemainingLabels() {
@@ -776,7 +839,7 @@
         if(!printedSet.has(idx)) remaining.push(idx);
       });
       if(remaining.length === 0) return speak('Все этикетки уже напечатаны.');
-      renderBulkPrint(remaining);
+      printMultipleLabels(remaining);
     }
 
     function markAllPrinted() {
@@ -831,7 +894,6 @@
       var tbody = document.getElementById('scannedBody');
       tbody.innerHTML = '';
       
-      // Group identical items for cleaner UI
       var grouped = {};
       var scanOrder = [];
       
@@ -848,10 +910,9 @@
         var g = grouped[bc];
         var tr = document.createElement('tr');
         var artVal = g.item[mapping.wb_article] || '-';
-        var bcVal = bc;
         tr.innerHTML =
           '<td>' + artVal + '</td>' +
-          '<td>' + bcVal + '</td>' +
+          '<td>' + bc + '</td>' +
           '<td>' + g.count + '</td>' +
           '<td><span class="badge success">Принято</span></td>' +
           '<td><button class="secondary" style="padding:4px 8px; width:auto;" onclick="removeOneFromBox(\'' + bc.replace(/'/g, "\\'") + '\')">✖</button></td>';
@@ -864,8 +925,7 @@
         var firstItem = boxes[currentBox][0];
         var val = firstItem[mapping.sets_per_box];
         if(val) {
-          var parsed = parseInt(String(val).replace(/,/g,'').replace(/\s/g,''));
-          if(!isNaN(parsed) && parsed > 0) return parsed;
+          return parseQuantityValue(val);
         }
       }
       return 15;
@@ -927,10 +987,8 @@
 
       // Определяем максимальное количество для этого штрихкода из total_quantity
       var maxQty = 1;
-      if(mapping.total_quantity && foundItem[mapping.total_quantity]) {
-        var val = String(foundItem[mapping.total_quantity]).replace(/,/g,'').replace(/\s/g,'');
-        var parsed = parseInt(val);
-        if(!isNaN(parsed) && parsed > 0) maxQty = parsed;
+      if(mapping.total_quantity && mapping.total_quantity !== '' && foundItem[mapping.total_quantity]) {
+        maxQty = parseQuantityValue(foundItem[mapping.total_quantity]);
       }
 
       // Считаем сколько уже пробито этого ШК в текущем коробе
