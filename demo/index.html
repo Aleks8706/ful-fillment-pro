@@ -41,6 +41,8 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
         .chart-container { position: relative; height: 200px; }
+        .badge-card { width: 58mm; height: 40mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .badge-qr { width: 14mm; height: 14mm; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -87,7 +89,7 @@
                 </a>
                 <a href="#" onclick="navigate('qrcodes')" class="sidebar-item flex items-center gap-3 px-5 py-2.5 text-sm" data-page="qrcodes">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
-                    QR-коды
+                    Бейджи
                 </a>
                 <a href="#" onclick="navigate('analytics')" class="sidebar-item flex items-center gap-3 px-5 py-2.5 text-sm" data-page="analytics">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -389,16 +391,16 @@
                 </div>
             </div>
 
-            <!-- QR Codes -->
+            <!-- Badges (QR Codes) -->
             <div id="page-qrcodes" class="page hidden fade-in">
                 <div class="flex justify-between items-center mb-4">
-                    <p class="text-sm text-gray-400">QR-коды для отметки сотрудников</p>
-                    <button onclick="printAllQR()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                    <p class="text-sm text-gray-400">Бейджи сотрудников 58×40 мм для печати</p>
+                    <button onclick="printAllBadges()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                        Печать всех
+                        Печать всех бейджей
                     </button>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="qrGrid"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="badgeGrid"></div>
             </div>
 
             <!-- Analytics -->
@@ -426,86 +428,41 @@
                         <h3 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Голосовые уведомления</h3>
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-medium">Включить голос</p>
-                                    <p class="text-xs text-gray-500">Озвучивание событий системы</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="setVoice" class="sr-only peer" checked onchange="saveSettings()">
-                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                </label>
+                                <div><p class="text-sm font-medium">Включить голос</p><p class="text-xs text-gray-500">Озвучивание событий системы</p></div>
+                                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setVoice" class="sr-only peer" checked onchange="saveSettings()"><div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div></label>
                             </div>
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-medium">Звук прихода</p>
-                                    <p class="text-xs text-gray-500">Озвучивать приход сотрудника</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="setCheckin" class="sr-only peer" checked onchange="saveSettings()">
-                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                </label>
+                                <div><p class="text-sm font-medium">Звук прихода</p><p class="text-xs text-gray-500">Озвучивать приход сотрудника</p></div>
+                                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setCheckin" class="sr-only peer" checked onchange="saveSettings()"><div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div></label>
                             </div>
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-medium">Звук ухода</p>
-                                    <p class="text-xs text-gray-500">Озвучивать уход сотрудника</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="setCheckout" class="sr-only peer" checked onchange="saveSettings()">
-                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
-                                </label>
+                                <div><p class="text-sm font-medium">Звук ухода</p><p class="text-xs text-gray-500">Озвучивать уход сотрудника</p></div>
+                                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setCheckout" class="sr-only peer" checked onchange="saveSettings()"><div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div></label>
                             </div>
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-medium">Оповещение о ТЗ</p>
-                                    <p class="text-xs text-gray-500">Озвучивать при создании ТЗ</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="setTaskNotify" class="sr-only peer" checked onchange="saveSettings()">
-                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
-                                </label>
+                                <div><p class="text-sm font-medium">Оповещение о ТЗ</p><p class="text-xs text-gray-500">Озвучивать при создании ТЗ</p></div>
+                                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setTaskNotify" class="sr-only peer" checked onchange="saveSettings()"><div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div></label>
                             </div>
                         </div>
                     </div>
                     <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] p-6 mb-4">
                         <h3 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Параметры склада</h3>
                         <div class="space-y-4">
-                            <div>
-                                <label class="text-sm text-gray-400 mb-1 block">Название склада</label>
-                                <input type="text" id="setWarehouse" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Склад Москва-Юг" onchange="saveSettings()">
-                            </div>
+                            <div><label class="text-sm text-gray-400 mb-1 block">Название склада</label><input type="text" id="setWarehouse" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Склад Москва-Юг" onchange="saveSettings()"></div>
                             <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm text-gray-400 mb-1 block">Начало смены</label>
-                                    <input type="time" id="setShiftStart" class="w-full rounded-lg px-4 py-2.5 text-sm" value="08:00" onchange="saveSettings()">
-                                </div>
-                                <div>
-                                    <label class="text-sm text-gray-400 mb-1 block">Конец смены</label>
-                                    <input type="time" id="setShiftEnd" class="w-full rounded-lg px-4 py-2.5 text-sm" value="20:00" onchange="saveSettings()">
-                                </div>
+                                <div><label class="text-sm text-gray-400 mb-1 block">Начало смены</label><input type="time" id="setShiftStart" class="w-full rounded-lg px-4 py-2.5 text-sm" value="08:00" onchange="saveSettings()"></div>
+                                <div><label class="text-sm text-gray-400 mb-1 block">Конец смены</label><input type="time" id="setShiftEnd" class="w-full rounded-lg px-4 py-2.5 text-sm" value="20:00" onchange="saveSettings()"></div>
                             </div>
-                            <div>
-                                <label class="text-sm text-gray-400 mb-1 block">Бонус за выполненное ТЗ (₽)</label>
-                                <input type="number" id="setTaskBonus" class="w-full rounded-lg px-4 py-2.5 text-sm" value="500" onchange="saveSettings()">
-                            </div>
-                            <div>
-                                <label class="text-sm text-gray-400 mb-1 block">Штраф за опоздание (₽)</label>
-                                <input type="number" id="setLatePenalty" class="w-full rounded-lg px-4 py-2.5 text-sm" value="200" onchange="saveSettings()">
-                            </div>
+                            <div><label class="text-sm text-gray-400 mb-1 block">Бонус за выполненное ТЗ (₽)</label><input type="number" id="setTaskBonus" class="w-full rounded-lg px-4 py-2.5 text-sm" value="500" onchange="saveSettings()"></div>
+                            <div><label class="text-sm text-gray-400 mb-1 block">Штраф за опоздание (₽)</label><input type="number" id="setLatePenalty" class="w-full rounded-lg px-4 py-2.5 text-sm" value="200" onchange="saveSettings()"></div>
                         </div>
                     </div>
                     <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] p-6">
                         <h3 class="font-semibold mb-4 text-sm uppercase tracking-wider text-red-400">Данные</h3>
                         <div class="flex gap-3">
-                            <button onclick="clearAllData()" class="bg-red-600/20 text-red-400 hover:bg-red-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-500/20">
-                                Очистить все данные
-                            </button>
-                            <button onclick="loadDemoData()" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500/20">
-                                Загрузить демо
-                            </button>
-                            <button onclick="exportAllData()" class="bg-green-600/20 text-green-400 hover:bg-green-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-green-500/20">
-                                Бэкап данных
-                            </button>
+                            <button onclick="clearAllData()" class="bg-red-600/20 text-red-400 hover:bg-red-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-500/20">Очистить все данные</button>
+                            <button onclick="loadDemoData()" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500/20">Загрузить демо</button>
+                            <button onclick="exportAllData()" class="bg-green-600/20 text-green-400 hover:bg-green-600/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-green-500/20">Бэкап данных</button>
                         </div>
                     </div>
                 </div>
@@ -518,52 +475,24 @@
         <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto modal-content">
             <div class="p-5 border-b border-[#1e1e3a] flex justify-between items-center">
                 <h3 class="font-bold text-lg" id="empModalTitle">Добавить сотрудника</h3>
-                <button onclick="closeEmpModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <button onclick="closeEmpModal()" class="text-gray-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <form onsubmit="saveEmp(event)" class="p-5 space-y-4">
                 <input type="hidden" id="eId">
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Имя</label>
-                        <input type="text" id="eFirst" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Иван">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Фамилия</label>
-                        <input type="text" id="eLast" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Иванов">
-                    </div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Имя</label><input type="text" id="eFirst" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Иван"></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Фамилия</label><input type="text" id="eLast" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Иванов"></div>
                 </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Должность</label>
-                    <select id="ePos" required class="w-full rounded-lg px-4 py-2.5 text-sm">
-                        <option>Кладовщик</option><option>Упаковщик</option><option>Комплектовщик</option><option>Водитель</option><option>Менеджер</option><option>Грузчик</option><option>Оператор</option>
-                    </select>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Должность</label><select id="ePos" required class="w-full rounded-lg px-4 py-2.5 text-sm"><option>Кладовщик</option><option>Упаковщик</option><option>Комплектовщик</option><option>Водитель</option><option>Менеджер</option><option>Грузчик</option><option>Оператор</option></select></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Телефон</label><input type="tel" id="ePhone" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="+7 (999) 123-45-67"></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Email</label><input type="email" id="eEmail" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="email@mail.ru"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Телефон</label>
-                        <input type="tel" id="ePhone" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="+7 (999) 123-45-67">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Email</label>
-                        <input type="email" id="eEmail" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="email@mail.ru">
-                    </div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Ставка ₽/час</label><input type="number" id="eRate" required min="0" step="10" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="450"></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата приёма</label><input type="date" id="eHire" required class="w-full rounded-lg px-4 py-2.5 text-sm"></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Ставка ₽/час</label>
-                        <input type="number" id="eRate" required min="0" step="10" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="450">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата приёма</label>
-                        <input type="date" id="eHire" required class="w-full rounded-lg px-4 py-2.5 text-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Примечание</label>
-                    <textarea id="eNote" rows="2" class="w-full rounded-lg px-4 py-2.5 text-sm resize-none" placeholder="Доп. информация..."></textarea>
-                </div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Примечание</label><textarea id="eNote" rows="2" class="w-full rounded-lg px-4 py-2.5 text-sm resize-none" placeholder="Доп. информация..."></textarea></div>
                 <div class="flex gap-3 pt-2">
                     <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Сохранить</button>
                     <button type="button" onclick="closeEmpModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Отмена</button>
@@ -577,48 +506,21 @@
         <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto modal-content">
             <div class="p-5 border-b border-[#1e1e3a] flex justify-between items-center">
                 <h3 class="font-bold text-lg" id="taskModalTitle">Создать ТЗ</h3>
-                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <form onsubmit="saveTask(event)" class="p-5 space-y-4">
                 <input type="hidden" id="tId">
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Название</label>
-                    <input type="text" id="tTitle" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Приёмка товара от поставщика">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Описание</label>
-                    <textarea id="tDesc" rows="3" required class="w-full rounded-lg px-4 py-2.5 text-sm resize-none" placeholder="Подробное описание..."></textarea>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Название</label><input type="text" id="tTitle" required class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Приёмка товара"></div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Описание</label><textarea id="tDesc" rows="3" required class="w-full rounded-lg px-4 py-2.5 text-sm resize-none" placeholder="Подробное описание..."></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Назначить</label><select id="tAssignee" required class="w-full rounded-lg px-4 py-2.5 text-sm"></select></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Приоритет</label><select id="tPriority" class="w-full rounded-lg px-4 py-2.5 text-sm"><option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option><option value="critical">Критический</option></select></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Назначить</label>
-                        <select id="tAssignee" required class="w-full rounded-lg px-4 py-2.5 text-sm"></select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Приоритет</label>
-                        <select id="tPriority" class="w-full rounded-lg px-4 py-2.5 text-sm">
-                            <option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option><option value="critical">Критический</option>
-                        </select>
-                    </div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата</label><input type="date" id="tDate" required class="w-full rounded-lg px-4 py-2.5 text-sm"></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дедлайн</label><input type="time" id="tDeadline" required class="w-full rounded-lg px-4 py-2.5 text-sm"></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата</label>
-                        <input type="date" id="tDate" required class="w-full rounded-lg px-4 py-2.5 text-sm">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дедлайн</label>
-                        <input type="time" id="tDeadline" required class="w-full rounded-lg px-4 py-2.5 text-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Зона склада</label>
-                    <select id="tZone" class="w-full rounded-lg px-4 py-2.5 text-sm">
-                        <option>Зона приёмки</option><option>Зона хранения</option><option>Зона комплектации</option><option>Зона упаковки</option><option>Зона отгрузки</option>
-                    </select>
-                </div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Зона склада</label><select id="tZone" class="w-full rounded-lg px-4 py-2.5 text-sm"><option>Зона приёмки</option><option>Зона хранения</option><option>Зона комплектации</option><option>Зона упаковки</option><option>Зона отгрузки</option></select></div>
                 <div class="flex gap-3 pt-2">
                     <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Создать</button>
                     <button type="button" onclick="closeTaskModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Отмена</button>
@@ -632,22 +534,12 @@
         <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto modal-content">
             <div class="p-5 border-b border-[#1e1e3a] flex justify-between items-center">
                 <h3 class="font-bold text-lg">Пакетное создание ТЗ</h3>
-                <button onclick="closeBulkTaskModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <button onclick="closeBulkTaskModal()" class="text-gray-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <div class="p-5">
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата</label>
-                        <input type="date" id="bulkDate" class="w-full rounded-lg px-4 py-2.5 text-sm">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Приоритет</label>
-                        <select id="bulkPriority" class="w-full rounded-lg px-4 py-2.5 text-sm">
-                            <option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option>
-                        </select>
-                    </div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Дата</label><input type="date" id="bulkDate" class="w-full rounded-lg px-4 py-2.5 text-sm"></div>
+                    <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Приоритет</label><select id="bulkPriority" class="w-full rounded-lg px-4 py-2.5 text-sm"><option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option></select></div>
                 </div>
                 <div id="bulkTaskList" class="space-y-3 max-h-80 overflow-y-auto mb-4"></div>
                 <div class="flex gap-3">
@@ -663,25 +555,14 @@
         <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] w-full max-w-md mx-4 modal-content">
             <div class="p-5 border-b border-[#1e1e3a] flex justify-between items-center">
                 <h3 class="font-bold text-lg">Редактировать зарплату</h3>
-                <button onclick="closeSalModal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <button onclick="closeSalModal()" class="text-gray-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <div class="p-5 space-y-4">
                 <input type="hidden" id="salEmpId">
                 <p class="text-sm font-medium" id="salEmpName"></p>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Бонус ₽</label>
-                    <input type="number" id="salBonus" class="w-full rounded-lg px-4 py-2.5 text-sm" value="0">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Штраф ₽</label>
-                    <input type="number" id="salPenalty" class="w-full rounded-lg px-4 py-2.5 text-sm" value="0">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Примечание</label>
-                    <input type="text" id="salNote" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Причина бонуса/штрафа">
-                </div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Бонус ₽</label><input type="number" id="salBonus" class="w-full rounded-lg px-4 py-2.5 text-sm" value="0"></div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Штраф ₽</label><input type="number" id="salPenalty" class="w-full rounded-lg px-4 py-2.5 text-sm" value="0"></div>
+                <div><label class="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Примечание</label><input type="text" id="salNote" class="w-full rounded-lg px-4 py-2.5 text-sm" placeholder="Причина"></div>
                 <div class="flex gap-3">
                     <button onclick="saveSalEdit()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Сохранить</button>
                     <button onclick="closeSalModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">Отмена</button>
@@ -690,1177 +571,215 @@
         </div>
     </div>
 
-    <!-- Notifications Container -->
+    <!-- Notifications -->
     <div id="notifications" class="fixed top-4 right-4 z-[60] space-y-2 w-80"></div>
 
     <script>
-    // ===========================
-    // DATA STORE
-    // ===========================
-    const KEYS = {
-        employees: 'fh_emp', scans: 'fh_scans', tasks: 'fh_tasks',
-        salaries: 'fh_sal', attendance: 'fh_att', settings: 'fh_settings', voiceQueue: 'fh_vq'
-    };
+    const KEYS = { employees:'fh_emp', scans:'fh_scans', tasks:'fh_tasks', salaries:'fh_sal', attendance:'fh_att', settings:'fh_settings' };
+    function ld(k){try{const d=localStorage.getItem(k);return d?JSON.parse(d):[];}catch{return[];}}
+    function sv(k,d){localStorage.setItem(k,JSON.stringify(d));}
 
-    function ld(k) { try { const d = localStorage.getItem(k); return d ? JSON.parse(d) : []; } catch { return []; } }
-    function sv(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
+    let employees=ld(KEYS.employees), scans=ld(KEYS.scans), tasks=ld(KEYS.tasks), salaries=ld(KEYS.salaries), attendance=ld(KEYS.attendance);
+    let settings=ld(KEYS.settings)||{voice:true,checkin:true,checkout:true,taskNotify:true,warehouse:'Склад Москва-Юг',shiftStart:'08:00',shiftEnd:'20:00',taskBonus:500,latePenalty:200};
+    let scannerInstance=null, isScanning=false, voiceEnabled=true, isSpeaking=false, voiceQueue=[], charts={};
 
-    let employees = ld(KEYS.employees);
-    let scans = ld(KEYS.scans);
-    let tasks = ld(KEYS.tasks);
-    let salaries = ld(KEYS.salaries);
-    let attendance = ld(KEYS.attendance);
-    let settings = ld(KEYS.settings) || { voice: true, checkin: true, checkout: true, taskNotify: true, warehouse: 'Склад Москва-Юг', shiftStart: '08:00', shiftEnd: '20:00', taskBonus: 500, latePenalty: 200 };
-
-    let scannerInstance = null;
-    let isScanning = false;
-    let voiceEnabled = true;
-    let voiceQueue = [];
-    let isSpeaking = false;
-    let charts = {};
-
-    // ===========================
-    // VOICE SYSTEM
-    // ===========================
-    function speak(text, priority = false) {
-        if (!voiceEnabled) return;
-        if (!('speechSynthesis' in window)) return;
-
-        if (priority) {
-            window.speechSynthesis.cancel();
-            voiceQueue = [];
-        }
-
+    // ===== VOICE =====
+    function speak(text, priority=false){
+        if(!voiceEnabled||!('speechSynthesis' in window))return;
+        if(priority){window.speechSynthesis.cancel();voiceQueue=[];}
         voiceQueue.push(text);
         processVoiceQueue();
     }
-
-    function processVoiceQueue() {
-        if (isSpeaking || voiceQueue.length === 0) return;
-        if (!voiceEnabled) { voiceQueue = []; return; }
-
-        isSpeaking = true;
-        const text = voiceQueue.shift();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'ru-RU';
-        utter.rate = 1.0;
-        utter.pitch = 1.0;
-        utter.volume = 1.0;
-
-        // Try to find Russian voice
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru'));
-        if (ruVoice) utter.voice = ruVoice;
-
-        utter.onend = () => {
-            isSpeaking = false;
-            setTimeout(processVoiceQueue, 200);
-        };
-        utter.onerror = () => {
-            isSpeaking = false;
-            setTimeout(processVoiceQueue, 200);
-        };
-
+    function processVoiceQueue(){
+        if(isSpeaking||voiceQueue.length===0||!voiceEnabled){if(!voiceEnabled)voiceQueue=[];return;}
+        isSpeaking=true;
+        const text=voiceQueue.shift();
+        const utter=new SpeechSynthesisUtterance(text);
+        utter.lang='ru-RU';utter.rate=1.0;utter.pitch=1.0;
+        const voices=window.speechSynthesis.getVoices();
+        const ruVoice=voices.find(v=>v.lang.startsWith('ru'));
+        if(ruVoice)utter.voice=ruVoice;
+        utter.onend=()=>{isSpeaking=false;setTimeout(processVoiceQueue,200);};
+        utter.onerror=()=>{isSpeaking=false;setTimeout(processVoiceQueue,200);};
         window.speechSynthesis.speak(utter);
     }
+    if('speechSynthesis' in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
 
-    // Preload voices
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
-
-    function toggleVoice() {
-        voiceEnabled = !voiceEnabled;
-        settings.voice = voiceEnabled;
-        sv(KEYS.settings, settings);
-        document.getElementById('voiceIcon').textContent = voiceEnabled ? '🔊' : '🔇';
-        document.getElementById('voiceLabel').textContent = voiceEnabled ? 'Голос' : 'Без звука';
-        if (voiceEnabled) speak('Голосовое сопровождение включено', true);
+    function toggleVoice(){
+        voiceEnabled=!voiceEnabled;settings.voice=voiceEnabled;sv(KEYS.settings,settings);
+        document.getElementById('voiceIcon').textContent=voiceEnabled?'🔊':'🔇';
+        document.getElementById('voiceLabel').textContent=voiceEnabled?'Голос':'Без звука';
+        if(voiceEnabled)speak('Голосовое сопровождение включено',true);
         else window.speechSynthesis.cancel();
     }
+    function voiceCheckin(name,time){if(!settings.checkin)return;speak(`${name} отметился. Приход в ${time}`);}
+    function voiceCheckout(name,time,hours){if(!settings.checkout)return;speak(`${name} отметился. Уход в ${time}. Отработано ${hours} часов`);}
+    function voiceTask(title,assignee){if(!settings.taskNotify)return;speak(`Создано задание: ${title}. Назначено на ${assignee}`);}
+    function voiceAlert(text){speak(text,true);}
 
-    function voiceCheckin(name, time) {
-        if (!settings.checkin) return;
-        speak(`${name} отметился. Приход в ${time}`, false);
+    function playBeep(type){
+        try{
+            const ctx=new(window.AudioContext||window.webkitAudioContext)();
+            const osc=ctx.createOscillator(),gain=ctx.createGain();
+            osc.connect(gain);gain.connect(ctx.destination);
+            if(type==='checkin'){osc.frequency.value=800;gain.gain.value=0.3;osc.start();setTimeout(()=>{osc.frequency.value=1000;},100);setTimeout(()=>{osc.stop();ctx.close();},300);}
+            else if(type==='checkout'){osc.frequency.value=600;gain.gain.value=0.3;osc.start();setTimeout(()=>{osc.frequency.value=400;},150);setTimeout(()=>{osc.stop();ctx.close();},350);}
+            else if(type==='error'){osc.frequency.value=300;gain.gain.value=0.3;osc.type='sawtooth';osc.start();setTimeout(()=>{osc.stop();ctx.close();},200);}
+            else if(type==='success'){osc.frequency.value=523;gain.gain.value=0.2;osc.start();setTimeout(()=>{osc.frequency.value=659;},100);setTimeout(()=>{osc.frequency.value=784;},200);setTimeout(()=>{osc.stop();ctx.close();},400);}
+        }catch(e){}
     }
 
-    function voiceCheckout(name, time, hours) {
-        if (!settings.checkout) return;
-        speak(`${name} отметился. Уход в ${time}. Отработано ${hours} часов`, false);
+    // ===== NOTIFICATIONS =====
+    function notify(message,type='success'){
+        const container=document.getElementById('notifications');
+        const colors={success:'bg-green-900/90 border-green-500/30 text-green-300',error:'bg-red-900/90 border-red-500/30 text-red-300',warning:'bg-yellow-900/90 border-yellow-500/30 text-yellow-300',info:'bg-blue-900/90 border-blue-500/30 text-blue-300'};
+        const icons={success:'✓',error:'✕',warning:'⚠',info:'ℹ'};
+        const el=document.createElement('div');
+        el.className=`notification-toast ${colors[type]} border rounded-lg px-4 py-3 text-sm flex items-center gap-3 shadow-xl backdrop-blur-sm`;
+        el.innerHTML=`<span class="text-lg">${icons[type]}</span><span>${message}</span>`;
+        container.appendChild(el);setTimeout(()=>el.remove(),4000);
     }
 
-    function voiceTask(title, assignee) {
-        if (!settings.taskNotify) return;
-        speak(`Создано задание: ${title}. Назначено на ${assignee}`, false);
-    }
-
-    function voiceAlert(text) {
-        speak(text, true);
-    }
-
-    function playBeep(type) {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            if (type === 'checkin') {
-                osc.frequency.value = 800;
-                gain.gain.value = 0.3;
-                osc.start();
-                setTimeout(() => { osc.frequency.value = 1000; }, 100);
-                setTimeout(() => { osc.stop(); ctx.close(); }, 300);
-            } else if (type === 'checkout') {
-                osc.frequency.value = 600;
-                gain.gain.value = 0.3;
-                osc.start();
-                setTimeout(() => { osc.frequency.value = 400; }, 150);
-                setTimeout(() => { osc.stop(); ctx.close(); }, 350);
-            } else if (type === 'error') {
-                osc.frequency.value = 300;
-                gain.gain.value = 0.3;
-                osc.type = 'sawtooth';
-                osc.start();
-                setTimeout(() => { osc.stop(); ctx.close(); }, 200);
-            } else if (type === 'success') {
-                osc.frequency.value = 523;
-                gain.gain.value = 0.2;
-                osc.start();
-                setTimeout(() => { osc.frequency.value = 659; }, 100);
-                setTimeout(() => { osc.frequency.value = 784; }, 200);
-                setTimeout(() => { osc.stop(); ctx.close(); }, 400);
-            }
-        } catch(e) {}
-    }
-
-    // ===========================
-    // NOTIFICATIONS
-    // ===========================
-    function notify(message, type = 'success') {
-        const container = document.getElementById('notifications');
-        const colors = {
-            success: 'bg-green-900/90 border-green-500/30 text-green-300',
-            error: 'bg-red-900/90 border-red-500/30 text-red-300',
-            warning: 'bg-yellow-900/90 border-yellow-500/30 text-yellow-300',
-            info: 'bg-blue-900/90 border-blue-500/30 text-blue-300'
-        };
-        const icons = {
-            success: '✓',
-            error: '✕',
-            warning: '⚠',
-            info: 'ℹ'
-        };
-
-        const el = document.createElement('div');
-        el.className = `notification-toast ${colors[type]} border rounded-lg px-4 py-3 text-sm flex items-center gap-3 shadow-xl backdrop-blur-sm`;
-        el.innerHTML = `<span class="text-lg">${icons[type]}</span><span>${message}</span>`;
-        container.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
-    }
-
-    // ===========================
-    // UTILS
-    // ===========================
-    function fmtDate(d) { return d.toISOString().split('T')[0]; }
-    function fmtTime(iso) { return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
-    function genId(prefix) { return prefix + '-' + String(Date.now()).slice(-6) + String(Math.floor(Math.random()*100)).padStart(2,'0'); }
-    function rub(n) { return '₽' + Math.round(n).toLocaleString('ru-RU'); }
-
-    function todayScans() {
-        const t = new Date().toDateString();
-        return scans.filter(s => new Date(s.time).toDateString() === t);
-    }
-
-    function empStatus(id) {
-        const ts = todayScans().filter(s => s.employeeId === id).sort((a,b) => new Date(a.time) - new Date(b.time));
-        if (!ts.length) return 'absent';
-        return ts[ts.length-1].type === 'checkin' ? 'on_shift' : 'left';
-    }
-
-    function onShiftCount() { return employees.filter(e => e.status !== 'deleted').filter(e => empStatus(e.id) === 'on_shift').length; }
-
-    function getHours(id, date) {
-        const r = attendance.find(a => a.employeeId === id && a.date === date);
-        if (r?.checkIn && r?.checkOut) {
-            const [h1,m1] = r.checkIn.split(':').map(Number);
-            const [h2,m2] = r.checkOut.split(':').map(Number);
-            return Math.round(((h2*60+m2)-(h1*60+m1))/60*10)/10;
-        }
-        if (r?.checkIn) {
-            const now = new Date();
-            const [h,m] = r.checkIn.split(':').map(Number);
-            return Math.round(((now.getHours()*60+now.getMinutes())-(h*60+m))/60*10)/10;
-        }
+    // ===== UTILS =====
+    function fmtDate(d){return d.toISOString().split('T')[0];}
+    function fmtTime(iso){return new Date(iso).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+    function genId(prefix){return prefix+'-'+String(Date.now()).slice(-6)+String(Math.floor(Math.random()*100)).padStart(2,'0');}
+    function rub(n){return'₽'+Math.round(n).toLocaleString('ru-RU');}
+    function todayScans(){const t=new Date().toDateString();return scans.filter(s=>new Date(s.time).toDateString()===t);}
+    function empStatus(id){const ts=todayScans().filter(s=>s.employeeId===id).sort((a,b)=>new Date(a.time)-new Date(b.time));if(!ts.length)return'absent';return ts[ts.length-1].type==='checkin'?'on_shift':'left';}
+    function onShiftCount(){return employees.filter(e=>e.status!=='deleted').filter(e=>empStatus(e.id)==='on_shift').length;}
+    function getHours(id,date){
+        const r=attendance.find(a=>a.employeeId===id&&a.date===date);
+        if(r?.checkIn&&r?.checkOut){const[h1,m1]=r.checkIn.split(':').map(Number);const[h2,m2]=r.checkOut.split(':').map(Number);return Math.round(((h2*60+m2)-(h1*60+m1))/60*10)/10;}
+        if(r?.checkIn){const now=new Date();const[h,m]=r.checkIn.split(':').map(Number);return Math.round(((now.getHours()*60+now.getMinutes())-(h*60+m))/60*10)/10;}
         return 0;
     }
+    function getEmp(id){return employees.find(e=>e.id===id);}
 
-    function getEmp(id) { return employees.find(e => e.id === id); }
-
-    // ===========================
-    // NAVIGATION
-    // ===========================
-    function navigate(page) {
-        document.querySelectorAll('.page').forEach(el => el.classList.add('hidden'));
+    // ===== NAVIGATION =====
+    function navigate(page){
+        document.querySelectorAll('.page').forEach(el=>el.classList.add('hidden'));
         document.getElementById('page-'+page)?.classList.remove('hidden');
-        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
         document.querySelector(`.sidebar-item[data-page="${page}"]`)?.classList.add('active');
-
-        const titles = {
-            dashboard: ['Дашборд', 'Обзор работы склада'],
-            employees: ['Сотрудники', 'Управление персоналом склада'],
-            scanner: ['QR Сканер', 'Отметка прихода и ухода'],
-            tasks: ['ТЗ на день', 'Технические задания и задачи'],
-            salary: ['Зарплатный проект', 'Расчёт и начисление зарплаты'],
-            timesheet: ['Табель учёта', 'Учёт рабочего времени'],
-            qrcodes: ['QR-коды', 'Генерация и печать кодов'],
-            analytics: ['Аналитика', 'Статистика и отчёты'],
-            settings: ['Настройки', 'Параметры системы']
-        };
-        document.getElementById('pageTitle').textContent = titles[page]?.[0] || '';
-        document.getElementById('pageSubtitle').textContent = titles[page]?.[1] || '';
-
-        switch(page) {
-            case 'dashboard': refreshDashboard(); break;
-            case 'employees': renderEmployees(); break;
-            case 'tasks': renderTasks(); break;
-            case 'salary': renderSalary(); break;
-            case 'timesheet': renderTimesheet(); break;
-            case 'qrcodes': renderQRCodes(); break;
-            case 'analytics': renderAnalytics(); break;
-            case 'settings': loadSettings(); break;
-        }
+        const titles={dashboard:['Дашборд','Обзор работы склада'],employees:['Сотрудники','Управление персоналом'],scanner:['QR Сканер','Отметка прихода и ухода'],tasks:['ТЗ на день','Технические задания'],salary:['Зарплатный проект','Расчёт зарплаты'],timesheet:['Табель учёта','Учёт рабочего времени'],qrcodes:['Бейджи','Печать бейджей 58×40 мм'],analytics:['Аналитика','Статистика и отчёты'],settings:['Настройки','Параметры системы']};
+        document.getElementById('pageTitle').textContent=titles[page]?.[0]||'';
+        document.getElementById('pageSubtitle').textContent=titles[page]?.[1]||'';
+        switch(page){case'dashboard':refreshDashboard();break;case'employees':renderEmployees();break;case'tasks':renderTasks();break;case'salary':renderSalary();break;case'timesheet':renderTimesheet();break;case'qrcodes':renderBadges();break;case'analytics':renderAnalytics();break;case'settings':loadSettings();break;}
     }
 
-    // ===========================
-    // CLOCK
-    // ===========================
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('currentDate').textContent = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
-        document.getElementById('currentTime').textContent = now.toLocaleTimeString('ru-RU');
-        document.getElementById('onlineCount').textContent = onShiftCount() + ' на смене';
-    }
+    // ===== CLOCK =====
+    function updateClock(){const now=new Date();document.getElementById('currentDate').textContent=now.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});document.getElementById('currentTime').textContent=now.toLocaleTimeString('ru-RU');document.getElementById('onlineCount').textContent=onShiftCount()+' на смене';}
 
-    // ===========================
-    // DASHBOARD
-    // ===========================
-    function refreshDashboard() {
-        const today = fmtDate(new Date());
-        document.getElementById('statTotal').textContent = employees.filter(e => e.status !== 'deleted').length;
-        document.getElementById('statOnShift').textContent = onShiftCount();
+    // ===== DASHBOARD =====
+    function refreshDashboard(){
+        const today=fmtDate(new Date());
+        document.getElementById('statTotal').textContent=employees.filter(e=>e.status!=='deleted').length;
+        document.getElementById('statOnShift').textContent=onShiftCount();
+        const dayTasks=tasks.filter(t=>t.date===today);
+        const doneTasks=dayTasks.filter(t=>t.status==='completed').length;
+        document.getElementById('statTasks').textContent=doneTasks+'/'+dayTasks.length;
+        let fund=0;const mo=new Date().getMonth(),yr=new Date().getFullYear();
+        employees.filter(e=>e.status!=='deleted').forEach(emp=>{let h=0;attendance.filter(a=>a.employeeId===emp.id).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr)h+=a.hours||0;});fund+=h*emp.rate;});
+        document.getElementById('statFund').textContent=rub(fund);
 
-        const dayTasks = tasks.filter(t => t.date === today);
-        const doneTasks = dayTasks.filter(t => t.status === 'completed').length;
-        document.getElementById('statTasks').textContent = doneTasks + '/' + dayTasks.length;
+        const sl=document.getElementById('shiftList');
+        const onShift=employees.filter(e=>e.status!=='deleted'&&empStatus(e.id)==='on_shift');
+        if(!onShift.length)sl.innerHTML='<p class="text-gray-600 text-sm text-center py-8">Нет сотрудников на смене</p>';
+        else sl.innerHTML=onShift.map(emp=>{const att=attendance.find(a=>a.employeeId===emp.id&&a.date===today);const hrs=att?getHours(emp.id,today):0;return`<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-3"><div class="w-9 h-9 rounded-full bg-green-500/15 flex items-center justify-center text-green-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${emp.firstName} ${emp.lastName}</p><p class="text-xs text-gray-500">${emp.position}</p></div><div class="text-right"><p class="text-xs text-gray-400">${att?.checkIn||'--:--'}</p><p class="text-xs text-green-400">${hrs.toFixed(1)}ч</p></div><div class="w-2 h-2 bg-green-400 rounded-full pulse-green"></div></div>`;}).join('');
 
-        let fund = 0;
-        const mo = new Date().getMonth(), yr = new Date().getFullYear();
-        employees.filter(e => e.status !== 'deleted').forEach(emp => {
-            let h = 0;
-            attendance.filter(a => a.employeeId === emp.id).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr) h += a.hours || 0;
-            });
-            fund += h * emp.rate;
-        });
-        document.getElementById('statFund').textContent = rub(fund);
+        const rs=document.getElementById('recentScans');
+        const tScans=todayScans().sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,10);
+        if(!tScans.length)rs.innerHTML='<p class="text-gray-600 text-sm text-center py-8">Нет сканирований</p>';
+        else rs.innerHTML=tScans.map(scan=>{const emp=getEmp(scan.employeeId);if(!emp)return'';const isIn=scan.type==='checkin';return`<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-3"><div class="w-8 h-8 rounded-full ${isIn?'bg-green-500/15 text-green-400':'bg-orange-500/15 text-orange-400'} flex items-center justify-center text-xs font-bold">${emp.firstName[0]}${emp.lastName[0]}</div><div class="flex-1 min-w-0"><p class="text-sm truncate">${emp.firstName} ${emp.lastName}</p><p class="text-xs ${isIn?'text-green-400':'text-orange-400'}">${isIn?'→ Приход':'← Уход'}</p></div><span class="text-xs text-gray-500">${fmtTime(scan.time)}</span></div>`;}).join('');
 
-        // Shift list
-        const sl = document.getElementById('shiftList');
-        const onShift = employees.filter(e => e.status !== 'deleted' && empStatus(e.id) === 'on_shift');
-        if (!onShift.length) {
-            sl.innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Нет сотрудников на смене</p>';
-        } else {
-            sl.innerHTML = onShift.map(emp => {
-                const att = attendance.find(a => a.employeeId === emp.id && a.date === today);
-                const hrs = att ? getHours(emp.id, today) : 0;
-                return `<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-3">
-                    <div class="w-9 h-9 rounded-full bg-green-500/15 flex items-center justify-center text-green-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">${emp.firstName} ${emp.lastName}</p>
-                        <p class="text-xs text-gray-500">${emp.position}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-400">${att?.checkIn || '--:--'}</p>
-                        <p class="text-xs text-green-400">${hrs.toFixed(1)}ч</p>
-                    </div>
-                    <div class="w-2 h-2 bg-green-400 rounded-full pulse-green"></div>
-                </div>`;
-            }).join('');
-        }
-
-        // Recent scans
-        const rs = document.getElementById('recentScans');
-        const tScans = todayScans().sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
-        if (!tScans.length) {
-            rs.innerHTML = '<p class="text-gray-600 text-sm text-center py-8">Нет сканирований</p>';
-        } else {
-            rs.innerHTML = tScans.map(scan => {
-                const emp = getEmp(scan.employeeId);
-                if (!emp) return '';
-                const isIn = scan.type === 'checkin';
-                return `<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-3">
-                    <div class="w-8 h-8 rounded-full ${isIn ? 'bg-green-500/15 text-green-400' : 'bg-orange-500/15 text-orange-400'} flex items-center justify-center text-xs font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm truncate">${emp.firstName} ${emp.lastName}</p>
-                        <p class="text-xs ${isIn ? 'text-green-400' : 'text-orange-400'}">${isIn ? '→ Приход' : '← Уход'}</p>
-                    </div>
-                    <span class="text-xs text-gray-500">${fmtTime(scan.time)}</span>
-                </div>`;
-            }).join('');
-        }
-
-        // Task progress
-        const tp = document.getElementById('taskProgress');
-        if (!dayTasks.length) {
-            tp.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">Нет заданий на сегодня</p>';
-        } else {
-            const pColors = { low: 'bg-blue-500', medium: 'bg-yellow-500', high: 'bg-orange-500', critical: 'bg-red-500' };
-            tp.innerHTML = dayTasks.map(t => {
-                const emp = getEmp(t.assigneeId);
-                const pct = t.status === 'completed' ? 100 : t.status === 'in_progress' ? 50 : 0;
-                return `<div class="flex items-center gap-4">
-                    <div class="flex-1">
-                        <div class="flex justify-between mb-1">
-                            <p class="text-sm font-medium">${t.title}</p>
-                            <span class="text-xs text-gray-500">${pct}%</span>
-                        </div>
-                        <div class="w-full bg-gray-800 rounded-full h-2">
-                            <div class="progress-fill h-2 rounded-full ${pColors[t.priority]}" style="width:${pct}%"></div>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-1">${emp ? emp.firstName + ' ' + emp.lastName : '—'} · ${t.zone || ''} · Дедлайн: ${t.deadline}</p>
-                    </div>
-                    <span class="badge ${t.status==='completed'?'bg-green-500/20 text-green-400':t.status==='in_progress'?'bg-yellow-500/20 text-yellow-400':'bg-gray-700 text-gray-400'}">${t.status==='completed'?'Готово':t.status==='in_progress'?'В работе':'Ожидает'}</span>
-                </div>`;
-            }).join('');
-        }
-
+        const tp=document.getElementById('taskProgress');
+        if(!dayTasks.length)tp.innerHTML='<p class="text-gray-600 text-sm text-center py-4">Нет заданий</p>';
+        else{const pC={low:'bg-blue-500',medium:'bg-yellow-500',high:'bg-orange-500',critical:'bg-red-500'};tp.innerHTML=dayTasks.map(t=>{const emp=getEmp(t.assigneeId);const pct=t.status==='completed'?100:t.status==='in_progress'?50:0;return`<div class="flex items-center gap-4"><div class="flex-1"><div class="flex justify-between mb-1"><p class="text-sm font-medium">${t.title}</p><span class="text-xs text-gray-500">${pct}%</span></div><div class="w-full bg-gray-800 rounded-full h-2"><div class="progress-fill h-2 rounded-full ${pC[t.priority]}" style="width:${pct}%"></div></div><p class="text-xs text-gray-600 mt-1">${emp?emp.firstName+' '+emp.lastName:'—'} · ${t.zone||''} · Дедлайн: ${t.deadline}</p></div><span class="badge ${t.status==='completed'?'bg-green-500/20 text-green-400':t.status==='in_progress'?'bg-yellow-500/20 text-yellow-400':'bg-gray-700 text-gray-400'}">${t.status==='completed'?'Готово':t.status==='in_progress'?'В работе':'Ожидает'}</span></div>`;}).join('');}
         renderCharts();
     }
 
-    function renderCharts() {
-        // Week chart
-        const weekCanvas = document.getElementById('weekChart');
-        if (charts.week) charts.week.destroy();
+    function renderCharts(){
+        const weekCanvas=document.getElementById('weekChart');if(charts.week)charts.week.destroy();
+        const days=[],data=[];
+        for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=fmtDate(d);const dayNames=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];days.push(dayNames[d.getDay()]+' '+d.getDate());let totalH=0;attendance.filter(a=>a.date===ds).forEach(a=>{totalH+=a.hours||0;});data.push(Math.round(totalH*10)/10);}
+        charts.week=new Chart(weekCanvas,{type:'bar',data:{labels:days,datasets:[{label:'Часы',data:data,backgroundColor:'rgba(99,102,241,0.4)',borderColor:'rgba(99,102,241,0.8)',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280',font:{size:11}}}}}});
 
-        const days = [];
-        const data = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const ds = fmtDate(d);
-            const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-            days.push(dayNames[d.getDay()] + ' ' + d.getDate());
-
-            let totalH = 0;
-            attendance.filter(a => a.date === ds).forEach(a => { totalH += a.hours || 0; });
-            data.push(Math.round(totalH * 10) / 10);
-        }
-
-        charts.week = new Chart(weekCanvas, {
-            type: 'bar',
-            data: {
-                labels: days,
-                datasets: [{
-                    label: 'Часы',
-                    data: data,
-                    backgroundColor: 'rgba(99, 102, 241, 0.4)',
-                    borderColor: 'rgba(99, 102, 241, 0.8)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', font: { size: 11 } } }
-                }
-            }
-        });
-
-        // Status chart
-        const statusCanvas = document.getElementById('statusChart');
-        if (charts.status) charts.status.destroy();
-
-        const onShift = employees.filter(e => e.status !== 'deleted' && empStatus(e.id) === 'on_shift').length;
-        const left = employees.filter(e => e.status !== 'deleted' && empStatus(e.id) === 'left').length;
-        const absent = employees.filter(e => e.status !== 'deleted' && empStatus(e.id) === 'absent').length;
-
-        charts.status = new Chart(statusCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['На смене', 'Ушли', 'Не вышли'],
-                datasets: [{
-                    data: [onShift, left, absent],
-                    backgroundColor: ['rgba(34,197,94,0.6)', 'rgba(251,146,60,0.6)', 'rgba(239,68,68,0.6)'],
-                    borderColor: ['#12122a','#12122a','#12122a'],
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 12, font: { size: 11 } } }
-                },
-                cutout: '65%'
-            }
-        });
+        const statusCanvas=document.getElementById('statusChart');if(charts.status)charts.status.destroy();
+        const onS=employees.filter(e=>e.status!=='deleted'&&empStatus(e.id)==='on_shift').length;
+        const left=employees.filter(e=>e.status!=='deleted'&&empStatus(e.id)==='left').length;
+        const abs=employees.filter(e=>e.status!=='deleted'&&empStatus(e.id)==='absent').length;
+        charts.status=new Chart(statusCanvas,{type:'doughnut',data:{labels:['На смене','Ушли','Не вышли'],datasets:[{data:[onS,left,abs],backgroundColor:['rgba(34,197,94,0.6)','rgba(251,146,60,0.6)','rgba(239,68,68,0.6)'],borderColor:['#12122a','#12122a','#12122a'],borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',padding:12,font:{size:11}}}},cutout:'65%'}});
     }
 
-    // ===========================
-    // EMPLOYEES
-    // ===========================
-    function renderEmployees() {
-        const search = (document.getElementById('searchEmp')?.value || '').toLowerCase();
-        const filterPos = document.getElementById('filterPos')?.value || '';
-        let list = employees.filter(e => e.status !== 'deleted');
-        if (search) list = list.filter(e => (e.firstName+' '+e.lastName+' '+e.id).toLowerCase().includes(search));
-        if (filterPos) list = list.filter(e => e.position === filterPos);
-
-        const tbody = document.getElementById('empTable');
-        tbody.innerHTML = list.map(emp => {
-            const st = empStatus(emp.id);
-            const stColors = { on_shift: 'bg-green-500/20 text-green-400', left: 'bg-orange-500/20 text-orange-400', absent: 'bg-red-500/20 text-red-400' };
-            const stLabels = { on_shift: 'На смене', left: 'Ушёл', absent: 'Не вышел' };
-            return `<tr class="hover:bg-[#1a1a3a]/50 transition-colors">
-                <td class="p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
-                        <div>
-                            <p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p>
-                            <p class="text-xs text-gray-600">${emp.id}</p>
-                        </div>
-                    </div>
-                </td>
-                <td class="p-4 text-sm text-gray-300">${emp.position}</td>
-                <td class="p-4 text-sm text-gray-300">${emp.phone}</td>
-                <td class="p-4 text-sm font-medium">${rub(emp.rate)}</td>
-                <td class="p-4"><span class="badge ${stColors[st]}">${stLabels[st]}</span></td>
-                <td class="p-4">
-                    <div class="flex gap-1">
-                        <button onclick="editEmp('${emp.id}')" class="p-1.5 rounded hover:bg-indigo-500/20 text-indigo-400 transition-colors" title="Редактировать">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        </button>
-                        <button onclick="deleteEmp('${emp.id}')" class="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors" title="Удалить">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>`;
-        }).join('');
+    // ===== EMPLOYEES =====
+    function renderEmployees(){
+        const search=(document.getElementById('searchEmp')?.value||'').toLowerCase();
+        const filterPos=document.getElementById('filterPos')?.value||'';
+        let list=employees.filter(e=>e.status!=='deleted');
+        if(search)list=list.filter(e=>(e.firstName+' '+e.lastName+' '+e.id).toLowerCase().includes(search));
+        if(filterPos)list=list.filter(e=>e.position===filterPos);
+        const tbody=document.getElementById('empTable');
+        tbody.innerHTML=list.map(emp=>{const st=empStatus(emp.id);const stC={on_shift:'bg-green-500/20 text-green-400',left:'bg-orange-500/20 text-orange-400',absent:'bg-red-500/20 text-red-400'};const stL={on_shift:'На смене',left:'Ушёл',absent:'Не вышел'};return`<tr class="hover:bg-[#1a1a3a]/50 transition-colors"><td class="p-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div><div><p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p><p class="text-xs text-gray-600">${emp.id}</p></div></div></td><td class="p-4 text-sm text-gray-300">${emp.position}</td><td class="p-4 text-sm text-gray-300">${emp.phone}</td><td class="p-4 text-sm font-medium">${rub(emp.rate)}</td><td class="p-4"><span class="badge ${stC[st]}">${stL[st]}</span></td><td class="p-4"><div class="flex gap-1"><button onclick="editEmp('${emp.id}')" class="p-1.5 rounded hover:bg-indigo-500/20 text-indigo-400 transition-colors" title="Редактировать"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteEmp('${emp.id}')" class="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors" title="Удалить"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td></tr>`;}).join('');
     }
 
-    function openEmpModal(id) {
-        const modal = document.getElementById('empModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.getElementById('eId').value = '';
-        document.querySelectorAll('#empModal input, #empModal textarea').forEach(el => el.value = '');
-        document.getElementById('eHire').value = fmtDate(new Date());
+    function openEmpModal(id){const modal=document.getElementById('empModal');modal.classList.remove('hidden');modal.classList.add('flex');document.querySelectorAll('#empModal input, #empModal textarea').forEach(el=>el.value='');document.getElementById('eId').value='';document.getElementById('eHire').value=fmtDate(new Date());if(id){const emp=getEmp(id);if(emp){document.getElementById('empModalTitle').textContent='Редактировать';document.getElementById('eId').value=emp.id;document.getElementById('eFirst').value=emp.firstName;document.getElementById('eLast').value=emp.lastName;document.getElementById('ePos').value=emp.position;document.getElementById('ePhone').value=emp.phone;document.getElementById('eEmail').value=emp.email||'';document.getElementById('eRate').value=emp.rate;document.getElementById('eHire').value=emp.hireDate;document.getElementById('eNote').value=emp.note||'';}}else{document.getElementById('empModalTitle').textContent='Добавить сотрудника';}}
+    function closeEmpModal(){const modal=document.getElementById('empModal');modal.classList.add('hidden');modal.classList.remove('flex');}
+    function editEmp(id){openEmpModal(id);}
+    function deleteEmp(id){if(!confirm('Удалить сотрудника?'))return;const emp=getEmp(id);const idx=employees.findIndex(e=>e.id===id);if(idx!==-1){employees[idx].status='deleted';sv(KEYS.employees,employees);}notify(`${emp?.firstName} ${emp?.lastName} удалён`,'warning');speak(`${emp?.firstName} ${emp?.lastName} удалён из системы`);renderEmployees();refreshDashboard();}
+    function saveEmp(e){e.preventDefault();const id=document.getElementById('eId').value;const data={firstName:document.getElementById('eFirst').value.trim(),lastName:document.getElementById('eLast').value.trim(),position:document.getElementById('ePos').value,phone:document.getElementById('ePhone').value.trim(),email:document.getElementById('eEmail').value.trim(),rate:parseFloat(document.getElementById('eRate').value)||0,hireDate:document.getElementById('eHire').value,note:document.getElementById('eNote').value.trim(),status:'active'};if(id){const idx=employees.findIndex(e=>e.id===id);if(idx!==-1){employees[idx]={...employees[idx],...data};}notify('Данные обновлены');speak(`Данные сотрудника ${data.firstName} ${data.lastName} обновлены`);}else{const newId=genId('EMP');employees.push({id:newId,...data});notify(`Сотрудник добавлен: ${newId}`);speak(`Добавлен новый сотрудник: ${data.firstName} ${data.lastName}, должность ${data.position}`);}sv(KEYS.employees,employees);closeEmpModal();renderEmployees();refreshDashboard();renderBadges();}
 
-        if (id) {
-            const emp = getEmp(id);
-            if (emp) {
-                document.getElementById('empModalTitle').textContent = 'Редактировать';
-                document.getElementById('eId').value = emp.id;
-                document.getElementById('eFirst').value = emp.firstName;
-                document.getElementById('eLast').value = emp.lastName;
-                document.getElementById('ePos').value = emp.position;
-                document.getElementById('ePhone').value = emp.phone;
-                document.getElementById('eEmail').value = emp.email || '';
-                document.getElementById('eRate').value = emp.rate;
-                document.getElementById('eHire').value = emp.hireDate;
-                document.getElementById('eNote').value = emp.note || '';
-            }
-        } else {
-            document.getElementById('empModalTitle').textContent = 'Добавить сотрудника';
-        }
+    // ===== SCANNER =====
+    function startScanner(){if(isScanning)return;document.getElementById('scanner-placeholder').classList.add('hidden');document.getElementById('scanner-beam').classList.remove('hidden');scannerInstance=new Html5Qrcode("scanner-reader");scannerInstance.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250},aspectRatio:1.0},(decodedText)=>{processScan(decodedText);},()=>{}).then(()=>{isScanning=true;document.getElementById('btnStartScan').classList.add('hidden');document.getElementById('btnStopScan').classList.remove('hidden');}).catch(err=>{notify('Ошибка камеры: '+err,'error');playBeep('error');stopScanner();});}
+    function stopScanner(){if(scannerInstance&&isScanning){scannerInstance.stop().then(()=>{scannerInstance.clear();isScanning=false;document.getElementById('btnStartScan').classList.remove('hidden');document.getElementById('btnStopScan').classList.add('hidden');document.getElementById('scanner-placeholder').classList.remove('hidden');document.getElementById('scanner-beam').classList.add('hidden');}).catch(()=>{});}}
+    function manualScan(){const code=document.getElementById('manualId').value.trim().toUpperCase();if(!code){notify('Введите ID','warning');playBeep('error');return;}processScan(code);document.getElementById('manualId').value='';}
+    function processScan(code){
+        const emp=getEmp(code);const resultDiv=document.getElementById('scanResult');
+        if(!emp){resultDiv.innerHTML=`<div class="bg-red-500/10 border border-red-500/30 rounded-xl p-6"><div class="w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-3"><svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><p class="text-red-400 font-bold text-lg">Не найден</p><p class="text-gray-400 text-sm mt-1">Код: ${code}</p></div>`;notify('Сотрудник не найден: '+code,'error');playBeep('error');speak('Сотрудник не найден');return;}
+        const st=empStatus(emp.id);const type=st==='on_shift'?'checkout':'checkin';const now=new Date();
+        scans.push({employeeId:emp.id,type,time:now.toISOString()});sv(KEYS.scans,scans);
+        const today=fmtDate(now);let att=attendance.find(a=>a.employeeId===emp.id&&a.date===today);if(!att){att={employeeId:emp.id,date:today,checkIn:'',checkOut:'',hours:0};attendance.push(att);}
+        const timeStr=now.toTimeString().slice(0,5);let hours=0;
+        if(type==='checkin'){att.checkIn=timeStr;const[sh,sm]=settings.shiftStart.split(':').map(Number);const shiftStart=sh*60+sm;const arrival=now.getHours()*60+now.getMinutes();let lateMsg='';if(arrival>shiftStart+15){const lateMin=arrival-shiftStart;lateMsg=` Опоздание ${lateMin} мин.`;}notify(`${emp.firstName} ${emp.lastName} — Приход ${timeStr}${lateMsg}`,'success');playBeep('checkin');voiceCheckin(emp.firstName+' '+emp.lastName,timeStr);}else{att.checkOut=timeStr;hours=getHours(emp.id,today);att.hours=hours;notify(`${emp.firstName} ${emp.lastName} — Уход ${timeStr}. Отработано: ${hours}ч`,'info');playBeep('checkout');voiceCheckout(emp.firstName+' '+emp.lastName,timeStr,hours);}
+        sv(KEYS.attendance,attendance);
+        const isIn=type==='checkin';resultDiv.innerHTML=`<div class="bg-${isIn?'green':'orange'}-500/10 border border-${isIn?'green':'orange'}-500/30 rounded-xl p-6"><div class="w-20 h-20 rounded-full bg-${isIn?'green':'orange'}-500/15 flex items-center justify-center text-${isIn?'green':'orange'}-400 text-3xl font-bold mx-auto mb-3">${emp.firstName[0]}${emp.lastName[0]}</div><p class="text-xl font-bold">${emp.firstName} ${emp.lastName}</p><p class="text-gray-400 text-sm">${emp.position} · ${emp.id}</p><div class="mt-4 flex items-center justify-center gap-2"><div class="w-3 h-3 bg-${isIn?'green':'orange'}-400 rounded-full ${isIn?'pulse-green':'pulse-red'}"></div><span class="text-${isIn?'green':'orange'}-400 font-semibold text-lg">${isIn?'✓ Приход':'✓ Уход'}</span></div><p class="text-gray-400 text-lg mt-2 font-mono">${timeStr}</p>${hours>0?`<p class="text-yellow-400 text-sm mt-1">Отработано: ${hours} часов</p>`:''}</div>`;
+        renderScanHistory();refreshDashboard();
     }
-
-    function closeEmpModal() {
-        const modal = document.getElementById('empModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-
-    function editEmp(id) { openEmpModal(id); }
-
-    function deleteEmp(id) {
-        if (!confirm('Удалить сотрудника?')) return;
-        const emp = getEmp(id);
-        const idx = employees.findIndex(e => e.id === id);
-        if (idx !== -1) { employees[idx].status = 'deleted'; sv(KEYS.employees, employees); }
-        notify(`${emp?.firstName} ${emp?.lastName} удалён`, 'warning');
-        speak(`${emp?.firstName} ${emp?.lastName} удалён из системы`);
-        renderEmployees();
-        refreshDashboard();
-    }
-
-    function saveEmp(e) {
-        e.preventDefault();
-        const id = document.getElementById('eId').value;
-        const data = {
-            firstName: document.getElementById('eFirst').value.trim(),
-            lastName: document.getElementById('eLast').value.trim(),
-            position: document.getElementById('ePos').value,
-            phone: document.getElementById('ePhone').value.trim(),
-            email: document.getElementById('eEmail').value.trim(),
-            rate: parseFloat(document.getElementById('eRate').value) || 0,
-            hireDate: document.getElementById('eHire').value,
-            note: document.getElementById('eNote').value.trim(),
-            status: 'active'
-        };
-
-        if (id) {
-            const idx = employees.findIndex(e => e.id === id);
-            if (idx !== -1) { employees[idx] = { ...employees[idx], ...data }; }
-            notify('Данные обновлены');
-            speak(`Данные сотрудника ${data.firstName} ${data.lastName} обновлены`);
-        } else {
-            const newId = genId('EMP');
-            employees.push({ id: newId, ...data });
-            notify(`Сотрудник добавлен: ${newId}`);
-            speak(`Добавлен новый сотрудник: ${data.firstName} ${data.lastName}, должность ${data.position}`);
-        }
-
-        sv(KEYS.employees, employees);
-        closeEmpModal();
-        renderEmployees();
-        refreshDashboard();
-        renderQRCodes();
-    }
-
-    // ===========================
-    // SCANNER
-    // ===========================
-    function startScanner() {
-        const readerDiv = document.getElementById('scanner-reader');
-        if (isScanning) return;
-
-        // Clear placeholder
-        document.getElementById('scanner-placeholder').classList.add('hidden');
-        document.getElementById('scanner-beam').classList.remove('hidden');
-
-        scannerInstance = new Html5Qrcode("scanner-reader");
-        scannerInstance.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-            (decodedText) => { processScan(decodedText); },
-            () => {}
-        ).then(() => {
-            isScanning = true;
-            document.getElementById('btnStartScan').classList.add('hidden');
-            document.getElementById('btnStopScan').classList.remove('hidden');
-        }).catch(err => {
-            notify('Ошибка камеры: ' + err, 'error');
-            playBeep('error');
-            stopScanner();
-        });
-    }
-
-    function stopScanner() {
-        if (scannerInstance && isScanning) {
-            scannerInstance.stop().then(() => {
-                scannerInstance.clear();
-                isScanning = false;
-                document.getElementById('btnStartScan').classList.remove('hidden');
-                document.getElementById('btnStopScan').classList.add('hidden');
-                document.getElementById('scanner-placeholder').classList.remove('hidden');
-                document.getElementById('scanner-beam').classList.add('hidden');
-            }).catch(() => {});
-        }
-    }
-
-    function manualScan() {
-        const code = document.getElementById('manualId').value.trim().toUpperCase();
-        if (!code) { notify('Введите ID сотрудника', 'warning'); playBeep('error'); return; }
-        processScan(code);
-        document.getElementById('manualId').value = '';
-    }
-
-    function processScan(code) {
-        const emp = getEmp(code);
-        const resultDiv = document.getElementById('scanResult');
-
-        if (!emp) {
-            resultDiv.innerHTML = `<div class="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
-                <div class="w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-3"><svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-                <p class="text-red-400 font-bold text-lg">Не найден</p>
-                <p class="text-gray-400 text-sm mt-1">Код: ${code}</p>
-            </div>`;
-            notify('Сотрудник не найден: ' + code, 'error');
-            playBeep('error');
-            speak('Сотрудник не найден');
-            return;
-        }
-
-        const st = empStatus(emp.id);
-        const type = st === 'on_shift' ? 'checkout' : 'checkin';
-        const now = new Date();
-
-        scans.push({ employeeId: emp.id, type, time: now.toISOString() });
-        sv(KEYS.scans, scans);
-
-        // Attendance
-        const today = fmtDate(now);
-        let att = attendance.find(a => a.employeeId === emp.id && a.date === today);
-        if (!att) {
-            att = { employeeId: emp.id, date: today, checkIn: '', checkOut: '', hours: 0 };
-            attendance.push(att);
-        }
-
-        const timeStr = now.toTimeString().slice(0, 5);
-        let hours = 0;
-
-        if (type === 'checkin') {
-            att.checkIn = timeStr;
-            // Check lateness
-            const [sh, sm] = settings.shiftStart.split(':').map(Number);
-            const shiftStart = sh * 60 + sm;
-            const arrival = now.getHours() * 60 + now.getMinutes();
-            let lateMsg = '';
-            if (arrival > shiftStart + 15) {
-                const lateMin = arrival - shiftStart;
-                lateMsg = ` Опоздание ${lateMin} мин.`;
-            }
-            notify(`${emp.firstName} ${emp.lastName} — Приход ${timeStr}${lateMsg}`, 'success');
-            playBeep('checkin');
-            voiceCheckin(emp.firstName + ' ' + emp.lastName, timeStr);
-        } else {
-            att.checkOut = timeStr;
-            hours = getHours(emp.id, today);
-            att.hours = hours;
-            notify(`${emp.firstName} ${emp.lastName} — Уход ${timeStr}. Отработано: ${hours}ч`, 'info');
-            playBeep('checkout');
-            voiceCheckout(emp.firstName + ' ' + emp.lastName, timeStr, hours);
-        }
-
-        sv(KEYS.attendance, attendance);
-
-        // Result display
-        const isIn = type === 'checkin';
-        resultDiv.innerHTML = `<div class="bg-${isIn ? 'green' : 'orange'}-500/10 border border-${isIn ? 'green' : 'orange'}-500/30 rounded-xl p-6">
-            <div class="w-20 h-20 rounded-full bg-${isIn ? 'green' : 'orange'}-500/15 flex items-center justify-center text-${isIn ? 'green' : 'orange'}-400 text-3xl font-bold mx-auto mb-3">${emp.firstName[0]}${emp.lastName[0]}</div>
-            <p class="text-xl font-bold">${emp.firstName} ${emp.lastName}</p>
-            <p class="text-gray-400 text-sm">${emp.position} · ${emp.id}</p>
-            <div class="mt-4 flex items-center justify-center gap-2">
-                <div class="w-3 h-3 bg-${isIn ? 'green' : 'orange'}-400 rounded-full ${isIn ? 'pulse-green' : 'pulse-red'}"></div>
-                <span class="text-${isIn ? 'green' : 'orange'}-400 font-semibold text-lg">${isIn ? '✓ Приход' : '✓ Уход'}</span>
-            </div>
-            <p class="text-gray-400 text-lg mt-2 font-mono">${timeStr}</p>
-            ${hours > 0 ? `<p class="text-yellow-400 text-sm mt-1">Отработано: ${hours} часов</p>` : ''}
-        </div>`;
-
-        renderScanHistory();
-        refreshDashboard();
-    }
-
-    function renderScanHistory() {
-        const div = document.getElementById('scanHistory');
-        const ts = todayScans().sort((a,b) => new Date(b.time) - new Date(a.time));
-        if (!ts.length) {
-            div.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">Нет записей</p>';
-            return;
-        }
-        div.innerHTML = ts.map(scan => {
-            const emp = getEmp(scan.employeeId);
-            if (!emp) return '';
-            const isIn = scan.type === 'checkin';
-            return `<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-2.5">
-                <div class="w-7 h-7 rounded-full ${isIn ? 'bg-green-500/15 text-green-400' : 'bg-orange-500/15 text-orange-400'} flex items-center justify-center text-xs font-bold">${emp.firstName[0]}</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm truncate">${emp.firstName} ${emp.lastName[0]}.</p>
-                    <p class="text-xs ${isIn ? 'text-green-400' : 'text-orange-400'}">${isIn ? 'Приход' : 'Уход'}</p>
-                </div>
-                <span class="text-xs text-gray-600">${fmtTime(scan.time)}</span>
-            </div>`;
-        }).join('');
-    }
-
-    // ===========================
-    // TASKS
-    // ===========================
-    function renderTasks() {
-        const date = document.getElementById('taskDate')?.value || fmtDate(new Date());
-        const dayTasks = tasks.filter(t => t.date === date);
-        const grid = document.getElementById('tasksGrid');
-
-        if (!dayTasks.length) {
-            grid.innerHTML = '<div class="col-span-3 text-center py-16"><div class="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><p class="text-gray-600">Нет заданий на этот день</p></div>';
-            return;
-        }
-
-        const pBorders = { low: 'border-l-blue-500', medium: 'border-l-yellow-500', high: 'border-l-orange-500', critical: 'border-l-red-500' };
-        const pLabels = { low: 'Низкий', medium: 'Средний', high: 'Высокий', critical: 'Критический' };
-        const pTextColors = { low: 'text-blue-400', medium: 'text-yellow-400', high: 'text-orange-400', critical: 'text-red-400' };
-
-        grid.innerHTML = dayTasks.map(t => {
-            const emp = getEmp(t.assigneeId);
-            return `<div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] border-l-4 ${pBorders[t.priority]} p-5 card">
-                <div class="flex justify-between items-start mb-3">
-                    <h4 class="font-semibold leading-tight">${t.title}</h4>
-                    <span class="badge ${t.status==='completed'?'bg-green-500/20 text-green-400':t.status==='in_progress'?'bg-yellow-500/20 text-yellow-400':'bg-gray-700 text-gray-400'} flex-shrink-0">${t.status==='completed'?'Готово':t.status==='in_progress'?'В работе':'Ожидает'}</span>
-                </div>
-                <p class="text-gray-500 text-sm mb-3">${t.description}</p>
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-6 h-6 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-[10px] font-bold">${emp?.firstName?.[0]||'?'}${emp?.lastName?.[0]||''}</div>
-                    <span class="text-sm text-gray-300">${emp ? emp.firstName + ' ' + emp.lastName : '—'}</span>
-                </div>
-                ${t.zone ? `<p class="text-xs text-gray-600 mb-2">📍 ${t.zone}</p>` : ''}
-                <div class="flex justify-between items-center text-xs text-gray-600 mb-3">
-                    <span>⏰ ${t.deadline}</span>
-                    <span class="${pTextColors[t.priority]}">${pLabels[t.priority]}</span>
-                </div>
-                <div class="flex gap-2">
-                    ${t.status !== 'completed' ? `<button onclick="setTaskStatus('${t.id}','in_progress')" class="flex-1 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded text-xs transition-colors border border-yellow-500/20">▶ В работу</button>` : ''}
-                    ${t.status !== 'completed' ? `<button onclick="setTaskStatus('${t.id}','completed')" class="flex-1 bg-green-500/10 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded text-xs transition-colors border border-green-500/20">✓ Готово</button>` : ''}
-                    <button onclick="editTask('${t.id}')" class="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded text-xs transition-colors border border-indigo-500/20">✎</button>
-                    <button onclick="deleteTask('${t.id}')" class="bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2.5 py-1.5 rounded text-xs transition-colors border border-red-500/20">✕</button>
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    function openTaskModal(id) {
-        const modal = document.getElementById('taskModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.querySelectorAll('#taskModal input, #taskModal textarea, #taskModal select').forEach(el => {
-            if (el.type !== 'hidden') el.value = '';
-        });
-        document.getElementById('tId').value = '';
-        document.getElementById('tDate').value = document.getElementById('taskDate')?.value || fmtDate(new Date());
-
-        const sel = document.getElementById('tAssignee');
-        sel.innerHTML = employees.filter(e => e.status !== 'deleted').map(e =>
-            `<option value="${e.id}">${e.firstName} ${e.lastName} (${e.position})</option>`
-        ).join('');
-
-        if (id) {
-            const t = tasks.find(x => x.id === id);
-            if (t) {
-                document.getElementById('taskModalTitle').textContent = 'Редактировать ТЗ';
-                document.getElementById('tId').value = t.id;
-                document.getElementById('tTitle').value = t.title;
-                document.getElementById('tDesc').value = t.description;
-                document.getElementById('tAssignee').value = t.assigneeId;
-                document.getElementById('tPriority').value = t.priority;
-                document.getElementById('tDate').value = t.date;
-                document.getElementById('tDeadline').value = t.deadline;
-                document.getElementById('tZone').value = t.zone || 'Зона приёмки';
-            }
-        } else {
-            document.getElementById('taskModalTitle').textContent = 'Создать ТЗ';
-        }
-    }
-
-    function closeTaskModal() {
-        const modal = document.getElementById('taskModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-
-    function saveTask(e) {
-        e.preventDefault();
-        const id = document.getElementById('tId').value;
-        const data = {
-            title: document.getElementById('tTitle').value.trim(),
-            description: document.getElementById('tDesc').value.trim(),
-            assigneeId: document.getElementById('tAssignee').value,
-            priority: document.getElementById('tPriority').value,
-            date: document.getElementById('tDate').value,
-            deadline: document.getElementById('tDeadline').value,
-            zone: document.getElementById('tZone').value
-        };
-
-        if (id) {
-            const idx = tasks.findIndex(t => t.id === id);
-            if (idx !== -1) { tasks[idx] = { ...tasks[idx], ...data }; }
-            notify('ТЗ обновлено');
-        } else {
-            const assignee = getEmp(data.assigneeId);
-            tasks.push({ id: genId('TSK'), ...data, status: 'pending', createdAt: new Date().toISOString() });
-            notify('ТЗ создано');
-            voiceTask(data.title, assignee ? assignee.firstName + ' ' + assignee.lastName : '');
-            playBeep('success');
-        }
-
-        sv(KEYS.tasks, tasks);
-        closeTaskModal();
-        renderTasks();
-        refreshDashboard();
-    }
-
-    function editTask(id) { openTaskModal(id); }
-
-    function setTaskStatus(id, status) {
-        const t = tasks.find(x => x.id === id);
-        if (t) {
-            t.status = status;
-            sv(KEYS.tasks, tasks);
-            notify(`ТЗ: ${status === 'completed' ? 'выполнено' : 'в работе'}`, status === 'completed' ? 'success' : 'info');
-            if (status === 'completed') {
-                const emp = getEmp(t.assigneeId);
-                speak(`Задание ${t.title} выполнено сотрудником ${emp ? emp.firstName + ' ' + emp.lastName : ''}`);
-                playBeep('success');
-            }
-            renderTasks();
-            refreshDashboard();
-        }
-    }
-
-    function deleteTask(id) {
-        if (!confirm('Удалить задание?')) return;
-        tasks = tasks.filter(t => t.id !== id);
-        sv(KEYS.tasks, tasks);
-        renderTasks();
-        refreshDashboard();
-        notify('Задание удалено', 'warning');
-    }
-
-    // Bulk tasks
-    function openBulkTaskModal() {
-        const modal = document.getElementById('bulkTaskModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.getElementById('bulkDate').value = document.getElementById('taskDate')?.value || fmtDate(new Date());
-        document.getElementById('bulkTaskList').innerHTML = '';
-        for (let i = 0; i < 3; i++) addBulkTaskRow();
-    }
-
-    function closeBulkTaskModal() {
-        const modal = document.getElementById('bulkTaskModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-
-    function addBulkTaskRow() {
-        const list = document.getElementById('bulkTaskList');
-        const idx = list.children.length;
-        const empOptions = employees.filter(e => e.status !== 'deleted').map(e =>
-            `<option value="${e.id}">${e.firstName} ${e.lastName}</option>`
-        ).join('');
-
-        const row = document.createElement('div');
-        row.className = 'grid grid-cols-12 gap-2 items-center bg-[#1a1a3a] rounded-lg p-3';
-        row.innerHTML = `
-            <div class="col-span-4"><input type="text" class="w-full rounded px-3 py-1.5 text-xs bulk-title" placeholder="Название задачи"></div>
-            <div class="col-span-2"><select class="w-full rounded px-2 py-1.5 text-xs bulk-assignee">${empOptions}</select></div>
-            <div class="col-span-2"><input type="time" class="w-full rounded px-2 py-1.5 text-xs bulk-deadline" value="18:00"></div>
-            <div class="col-span-2"><select class="w-full rounded px-2 py-1.5 text-xs bulk-zone">
-                <option>Зона приёмки</option><option>Зона хранения</option><option>Зона комплектации</option><option>Зона упаковки</option><option>Зона отгрузки</option>
-            </select></div>
-            <div class="col-span-2"><button onclick="this.closest('.grid').remove()" class="w-full bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded px-2 py-1.5 text-xs transition-colors">✕</button></div>
-        `;
-        list.appendChild(row);
-    }
-
-    function saveBulkTasks() {
-        const rows = document.querySelectorAll('#bulkTaskList .grid');
-        const date = document.getElementById('bulkDate').value;
-        const priority = document.getElementById('bulkPriority').value;
-        let count = 0;
-
-        rows.forEach(row => {
-            const title = row.querySelector('.bulk-title').value.trim();
-            const assignee = row.querySelector('.bulk-assignee').value;
-            const deadline = row.querySelector('.bulk-deadline').value;
-            const zone = row.querySelector('.bulk-zone').value;
-
-            if (title) {
-                tasks.push({
-                    id: genId('TSK'), title, description: title,
-                    assigneeId: assignee, priority, date, deadline, zone,
-                    status: 'pending', createdAt: new Date().toISOString()
-                });
-                count++;
-            }
-        });
-
-        if (count > 0) {
-            sv(KEYS.tasks, tasks);
-            closeBulkTaskModal();
-            renderTasks();
-            refreshDashboard();
-            notify(`Создано ${count} заданий`);
-            speak(`Создано ${count} новых заданий на ${date}`);
-            playBeep('success');
-        } else {
-            notify('Заполните хотя бы одну задачу', 'warning');
-        }
-    }
-
-    // ===========================
-    // SALARY
-    // ===========================
-    function renderSalary() {
-        const mo = parseInt(document.getElementById('salMonth').value);
-        const yr = parseInt(document.getElementById('salYear').value);
-        const monthSals = salaries.filter(s => s.month === mo && s.year === yr);
-        const tbody = document.getElementById('salTable');
-
-        tbody.innerHTML = employees.filter(e => e.status !== 'deleted').map(emp => {
-            let totalHours = 0;
-            attendance.filter(a => a.employeeId === emp.id).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr) totalHours += a.hours || 0;
-            });
-
-            const baseSalary = totalHours * emp.rate;
-            const sal = monthSals.find(s => s.employeeId === emp.id);
-            const bonus = sal?.bonus || 0;
-            const penalty = sal?.penalty || 0;
-            const total = baseSalary + bonus - penalty;
-            const paid = sal?.paid || false;
-
-            return `<tr class="hover:bg-[#1a1a3a]/50 transition-colors">
-                <td class="p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
-                        <div><p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p><p class="text-xs text-gray-600">${emp.position}</p></div>
-                    </div>
-                </td>
-                <td class="p-4 text-sm">${totalHours.toFixed(1)}ч</td>
-                <td class="p-4 text-sm">${rub(emp.rate)}/ч</td>
-                <td class="p-4 text-sm font-medium">${rub(baseSalary)}</td>
-                <td class="p-4 text-sm text-green-400">${bonus > 0 ? '+' + rub(bonus) : '—'}</td>
-                <td class="p-4 text-sm text-red-400">${penalty > 0 ? '-' + rub(penalty) : '—'}</td>
-                <td class="p-4 text-sm font-bold ${total > 0 ? 'text-white' : 'text-gray-600'}">${rub(total)}</td>
-                <td class="p-4">
-                    <div class="flex gap-1">
-                        ${paid
-                            ? '<span class="badge bg-green-500/20 text-green-400">✓</span>'
-                            : `<button onclick="markPaid('${emp.id}',${mo},${yr})" class="bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 px-2.5 py-1 rounded text-xs transition-colors border border-yellow-500/20">Выплатить</button>`
-                        }
-                        <button onclick="openSalModal('${emp.id}',${mo},${yr})" class="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2.5 py-1 rounded text-xs transition-colors border border-indigo-500/20">✎</button>
-                    </div>
-                </td>
-            </tr>`;
-        }).join('');
-
-        // Totals
-        let totalFund = 0, paidSum = 0, unpaidSum = 0;
-        employees.filter(e => e.status !== 'deleted').forEach(emp => {
-            let h = 0;
-            attendance.filter(a => a.employeeId === emp.id).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr) h += a.hours || 0;
-            });
-            const base = h * emp.rate;
-            const sal = monthSals.find(s => s.employeeId === emp.id);
-            const b = sal?.bonus || 0, p = sal?.penalty || 0;
-            const total = base + b - p;
-            totalFund += total;
-            if (sal?.paid) paidSum += total; else unpaidSum += total;
-        });
-
-        document.getElementById('salTotalFund').textContent = rub(totalFund);
-        document.getElementById('salPaid').textContent = rub(paidSum);
-        document.getElementById('salUnpaid').textContent = rub(unpaidSum);
-    }
-
-    function calcSalaries() {
-        const mo = parseInt(document.getElementById('salMonth').value);
-        const yr = parseInt(document.getElementById('salYear').value);
-
-        employees.filter(e => e.status !== 'deleted').forEach(emp => {
-            let totalHours = 0;
-            attendance.filter(a => a.employeeId === emp.id).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr) totalHours += a.hours || 0;
-            });
-
-            const baseSalary = totalHours * emp.rate;
-
-            // Auto bonus for completed tasks
-            const monthTasks = tasks.filter(t => {
-                const td = new Date(t.date);
-                return t.assigneeId === emp.id && t.status === 'completed' && td.getMonth() === mo && td.getFullYear() === yr;
-            });
-            const bonus = monthTasks.length * settings.taskBonus;
-
-            // Auto penalty for lateness
-            let penalty = 0;
-            attendance.filter(a => a.employeeId === emp.id).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr && a.checkIn) {
-                    const [sh, sm] = settings.shiftStart.split(':').map(Number);
-                    const [h, m] = a.checkIn.split(':').map(Number);
-                    if (h * 60 + m > sh * 60 + sm + 15) penalty += settings.latePenalty;
-                }
-            });
-
-            const idx = salaries.findIndex(s => s.employeeId === emp.id && s.month === mo && s.year === yr);
-            const salData = {
-                employeeId: emp.id, month: mo, year: yr,
-                hours: totalHours, baseSalary, bonus, penalty,
-                total: baseSalary + bonus - penalty,
-                paid: false, calculatedAt: new Date().toISOString()
-            };
-
-            if (idx !== -1) salaries[idx] = salData;
-            else salaries.push(salData);
-        });
-
-        sv(KEYS.salaries, salaries);
-        renderSalary();
-        notify('Зарплата рассчитана');
-        speak('Расчёт зарплаты завершён');
-        playBeep('success');
-    }
-
-    function markPaid(id, mo, yr) {
-        const sal = salaries.find(s => s.employeeId === id && s.month === mo && s.year === yr);
-        if (sal) {
-            sal.paid = true;
-            sal.paidAt = new Date().toISOString();
-            sv(KEYS.salaries, salaries);
-            renderSalary();
-            const emp = getEmp(id);
-            notify(`${emp?.firstName} ${emp?.lastName} — выплачено`);
-            speak(`Зарплата выплачена сотруднику ${emp?.firstName} ${emp?.lastName}`);
-            playBeep('success');
-        }
-    }
-
-    function markAllPaid() {
-        const mo = parseInt(document.getElementById('salMonth').value);
-        const yr = parseInt(document.getElementById('salYear').value);
-        salaries.filter(s => s.month === mo && s.year === yr && !s.paid).forEach(s => {
-            s.paid = true;
-            s.paidAt = new Date().toISOString();
-        });
-        sv(KEYS.salaries, salaries);
-        renderSalary();
-        notify('Все зарплаты отмечены как выплаченные');
-        speak('Все зарплаты отмечены как выплаченные');
-        playBeep('success');
-    }
-
-    function openSalModal(id, mo, yr) {
-        const emp = getEmp(id);
-        const sal = salaries.find(s => s.employeeId === id && s.month === mo && s.year === yr);
-        document.getElementById('salModal').classList.remove('hidden');
-        document.getElementById('salModal').classList.add('flex');
-        document.getElementById('salEmpId').value = id;
-        document.getElementById('salEmpName').textContent = emp ? emp.firstName + ' ' + emp.lastName : '';
-        document.getElementById('salBonus').value = sal?.bonus || 0;
-        document.getElementById('salPenalty').value = sal?.penalty || 0;
-        document.getElementById('salNote').value = sal?.note || '';
-    }
-
-    function closeSalModal() {
-        document.getElementById('salModal').classList.add('hidden');
-        document.getElementById('salModal').classList.remove('flex');
-    }
-
-    function saveSalEdit() {
-        const id = document.getElementById('salEmpId').value;
-        const mo = parseInt(document.getElementById('salMonth').value);
-        const yr = parseInt(document.getElementById('salYear').value);
-        const idx = salaries.findIndex(s => s.employeeId === id && s.month === mo && s.year === yr);
-
-        if (idx !== -1) {
-            salaries[idx].bonus = parseFloat(document.getElementById('salBonus').value) || 0;
-            salaries[idx].penalty = parseFloat(document.getElementById('salPenalty').value) || 0;
-            salaries[idx].note = document.getElementById('salNote').value;
-            salaries[idx].total = salaries[idx].baseSalary + salaries[idx].bonus - salaries[idx].penalty;
-            sv(KEYS.salaries, salaries);
-            closeSalModal();
-            renderSalary();
-            notify('Обновлено');
-        }
-    }
-
-    // ===========================
-    // TIMESHEET
-    // ===========================
-    function renderTimesheet() {
-        const tsDate = document.getElementById('tsDate')?.value || fmtDate(new Date());
-        const d = new Date(tsDate);
-        const dayOfWeek = d.getDay();
-        const monday = new Date(d);
-        monday.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-        const weekDays = [];
-        for (let i = 0; i < 7; i++) {
-            const wd = new Date(monday);
-            wd.setDate(monday.getDate() + i);
-            weekDays.push(fmtDate(wd));
-        }
-
-        renderTimesheetWeek(weekDays);
-    }
-
-    function showWeekTimesheet() {
-        const val = document.getElementById('tsWeek').value;
-        if (!val) { renderTimesheet(); return; }
-
-        const now = new Date();
-        const today = new Date(now);
-        const dayOfWeek = today.getDay();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-        let weekDays = [];
-        if (val === 'this') {
-            for (let i = 0; i < 7; i++) {
-                const wd = new Date(monday);
-                wd.setDate(monday.getDate() + i);
-                weekDays.push(fmtDate(wd));
-            }
-        } else {
-            const prevMonday = new Date(monday);
-            prevMonday.setDate(monday.getDate() - 7);
-            for (let i = 0; i < 7; i++) {
-                const wd = new Date(prevMonday);
-                wd.setDate(prevMonday.getDate() + i);
-                weekDays.push(fmtDate(wd));
-            }
-        }
-
-        renderTimesheetWeek(weekDays);
-    }
-
-    function renderTimesheetWeek(weekDays) {
-        const tbody = document.getElementById('tsTable');
-        tbody.innerHTML = employees.filter(e => e.status !== 'deleted').map(emp => {
-            let totalH = 0;
-            const cells = weekDays.map((wd, i) => {
-                const att = attendance.find(a => a.employeeId === emp.id && a.date === wd);
-                const h = att ? (att.hours || 0) : 0;
-                totalH += h;
-                const color = h > 0 ? 'text-green-400' : 'text-gray-700';
-                return `<td class="p-3 text-center text-xs ${color}">${h > 0 ? h.toFixed(1) : '—'}</td>`;
-            }).join('');
-
-            return `<tr class="hover:bg-[#1a1a3a]/50 transition-colors">
-                <td class="p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
-                        <p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p>
-                    </div>
-                </td>
-                ${cells}
-                <td class="p-3 text-center text-sm font-bold ${totalH > 0 ? 'text-white' : 'text-gray-700'}">${totalH > 0 ? totalH.toFixed(1) + 'ч' : '—'}</td>
-            </tr>`;
-        }).join('');
-    }
-
-    // ===========================
-    // QR CODES
-    // ===========================
-    function renderQRCodes() {
-        const grid = document.getElementById('qrGrid');
-        const activeEmps = employees.filter(e => e.status !== 'deleted');
-
-        grid.innerHTML = activeEmps.map(emp => `
-            <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] p-5 text-center card">
+    function renderScanHistory(){const div=document.getElementById('scanHistory');const ts=todayScans().sort((a,b)=>new Date(b.time)-new Date(a.time));if(!ts.length){div.innerHTML='<p class="text-gray-600 text-sm text-center py-4">Нет записей</p>';return;}div.innerHTML=ts.map(scan=>{const emp=getEmp(scan.employeeId);if(!emp)return'';const isIn=scan.type==='checkin';return`<div class="flex items-center gap-3 bg-[#1a1a3a] rounded-lg p-2.5"><div class="w-7 h-7 rounded-full ${isIn?'bg-green-500/15 text-green-400':'bg-orange-500/15 text-orange-400'} flex items-center justify-center text-xs font-bold">${emp.firstName[0]}</div><div class="flex-1 min-w-0"><p class="text-sm truncate">${emp.firstName} ${emp.lastName[0]}.</p><p class="text-xs ${isIn?'text-green-400':'text-orange-400'}">${isIn?'Приход':'Уход'}</p></div><span class="text-xs text-gray-600">${fmtTime(scan.time)}</span></div>`;}).join('');}
+
+    // ===== TASKS =====
+    function renderTasks(){const date=document.getElementById('taskDate')?.value||fmtDate(new Date());const dayTasks=tasks.filter(t=>t.date===date);const grid=document.getElementById('tasksGrid');if(!dayTasks.length){grid.innerHTML='<div class="col-span-3 text-center py-16"><div class="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><p class="text-gray-600">Нет заданий</p></div>';return;}const pB={low:'border-l-blue-500',medium:'border-l-yellow-500',high:'border-l-orange-500',critical:'border-l-red-500'};const pL={low:'Низкий',medium:'Средний',high:'Высокий',critical:'Критический'};const pT={low:'text-blue-400',medium:'text-yellow-400',high:'text-orange-400',critical:'text-red-400'};grid.innerHTML=dayTasks.map(t=>{const emp=getEmp(t.assigneeId);return`<div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] border-l-4 ${pB[t.priority]} p-5 card"><div class="flex justify-between items-start mb-3"><h4 class="font-semibold leading-tight">${t.title}</h4><span class="badge ${t.status==='completed'?'bg-green-500/20 text-green-400':t.status==='in_progress'?'bg-yellow-500/20 text-yellow-400':'bg-gray-700 text-gray-400'} flex-shrink-0">${t.status==='completed'?'Готово':t.status==='in_progress'?'В работе':'Ожидает'}</span></div><p class="text-gray-500 text-sm mb-3">${t.description}</p><div class="flex items-center gap-3 mb-3"><div class="w-6 h-6 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-[10px] font-bold">${emp?.firstName?.[0]||'?'}${emp?.lastName?.[0]||''}</div><span class="text-sm text-gray-300">${emp?emp.firstName+' '+emp.lastName:'—'}</span></div>${t.zone?`<p class="text-xs text-gray-600 mb-2">📍 ${t.zone}</p>`:''}<div class="flex justify-between items-center text-xs text-gray-600 mb-3"><span>⏰ ${t.deadline}</span><span class="${pT[t.priority]}">${pL[t.priority]}</span></div><div class="flex gap-2">${t.status!=='completed'?`<button onclick="setTaskStatus('${t.id}','in_progress')" class="flex-1 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded text-xs transition-colors border border-yellow-500/20">▶ В работу</button>`:''}${t.status!=='completed'?`<button onclick="setTaskStatus('${t.id}','completed')" class="flex-1 bg-green-500/10 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded text-xs transition-colors border border-green-500/20">✓ Готово</button>`:''}<button onclick="editTask('${t.id}')" class="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2.5 py-1.5 rounded text-xs transition-colors border border-indigo-500/20">✎</button><button onclick="deleteTask('${t.id}')" class="bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2.5 py-1.5 rounded text-xs transition-colors border border-red-500/20">✕</button></div></div>`;}).join('');}
+    function openTaskModal(id){const modal=document.getElementById('taskModal');modal.classList.remove('hidden');modal.classList.add('flex');document.querySelectorAll('#taskModal input, #taskModal textarea, #taskModal select').forEach(el=>{if(el.type!=='hidden')el.value='';});document.getElementById('tId').value='';document.getElementById('tDate').value=document.getElementById('taskDate')?.value||fmtDate(new Date());document.getElementById('tAssignee').innerHTML=employees.filter(e=>e.status!=='deleted').map(e=>`<option value="${e.id}">${e.firstName} ${e.lastName} (${e.position})</option>`).join('');if(id){const t=tasks.find(x=>x.id===id);if(t){document.getElementById('taskModalTitle').textContent='Редактировать ТЗ';document.getElementById('tId').value=t.id;document.getElementById('tTitle').value=t.title;document.getElementById('tDesc').value=t.description;document.getElementById('tAssignee').value=t.assigneeId;document.getElementById('tPriority').value=t.priority;document.getElementById('tDate').value=t.date;document.getElementById('tDeadline').value=t.deadline;document.getElementById('tZone').value=t.zone||'Зона приёмки';}}else{document.getElementById('taskModalTitle').textContent='Создать ТЗ';}}
+    function closeTaskModal(){document.getElementById('taskModal').classList.add('hidden');document.getElementById('taskModal').classList.remove('flex');}
+    function saveTask(e){e.preventDefault();const id=document.getElementById('tId').value;const data={title:document.getElementById('tTitle').value.trim(),description:document.getElementById('tDesc').value.trim(),assigneeId:document.getElementById('tAssignee').value,priority:document.getElementById('tPriority').value,date:document.getElementById('tDate').value,deadline:document.getElementById('tDeadline').value,zone:document.getElementById('tZone').value};if(id){const idx=tasks.findIndex(t=>t.id===id);if(idx!==-1){tasks[idx]={...tasks[idx],...data};}notify('ТЗ обновлено');}else{const assignee=getEmp(data.assigneeId);tasks.push({id:genId('TSK'),...data,status:'pending',createdAt:new Date().toISOString()});notify('ТЗ создано');voiceTask(data.title,assignee?assignee.firstName+' '+assignee.lastName:'');playBeep('success');}sv(KEYS.tasks,tasks);closeTaskModal();renderTasks();refreshDashboard();}
+    function editTask(id){openTaskModal(id);}
+    function setTaskStatus(id,status){const t=tasks.find(x=>x.id===id);if(t){t.status=status;sv(KEYS.tasks,tasks);notify(`ТЗ: ${status==='completed'?'выполнено':'в работе'}`,status==='completed'?'success':'info');if(status==='completed'){const emp=getEmp(t.assigneeId);speak(`Задание ${t.title} выполнено`);playBeep('success');}renderTasks();refreshDashboard();}}
+    function deleteTask(id){if(!confirm('Удалить?'))return;tasks=tasks.filter(t=>t.id!==id);sv(KEYS.tasks,tasks);renderTasks();refreshDashboard();notify('Задание удалено','warning');}
+    function openBulkTaskModal(){document.getElementById('bulkTaskModal').classList.remove('hidden');document.getElementById('bulkTaskModal').classList.add('flex');document.getElementById('bulkDate').value=document.getElementById('taskDate')?.value||fmtDate(new Date());document.getElementById('bulkTaskList').innerHTML='';for(let i=0;i<3;i++)addBulkTaskRow();}
+    function closeBulkTaskModal(){document.getElementById('bulkTaskModal').classList.add('hidden');document.getElementById('bulkTaskModal').classList.remove('flex');}
+    function addBulkTaskRow(){const list=document.getElementById('bulkTaskList');const empOptions=employees.filter(e=>e.status!=='deleted').map(e=>`<option value="${e.id}">${e.firstName} ${e.lastName}</option>`).join('');const row=document.createElement('div');row.className='grid grid-cols-12 gap-2 items-center bg-[#1a1a3a] rounded-lg p-3';row.innerHTML=`<div class="col-span-4"><input type="text" class="w-full rounded px-3 py-1.5 text-xs bulk-title" placeholder="Название"></div><div class="col-span-2"><select class="w-full rounded px-2 py-1.5 text-xs bulk-assignee">${empOptions}</select></div><div class="col-span-2"><input type="time" class="w-full rounded px-2 py-1.5 text-xs bulk-deadline" value="18:00"></div><div class="col-span-2"><select class="w-full rounded px-2 py-1.5 text-xs bulk-zone"><option>Зона приёмки</option><option>Зона хранения</option><option>Зона комплектации</option><option>Зона упаковки</option><option>Зона отгрузки</option></select></div><div class="col-span-2"><button onclick="this.closest('.grid').remove()" class="w-full bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded px-2 py-1.5 text-xs transition-colors">✕</button></div>`;list.appendChild(row);}
+    function saveBulkTasks(){const rows=document.querySelectorAll('#bulkTaskList .grid');const date=document.getElementById('bulkDate').value;const priority=document.getElementById('bulkPriority').value;let count=0;rows.forEach(row=>{const title=row.querySelector('.bulk-title').value.trim();const assignee=row.querySelector('.bulk-assignee').value;const deadline=row.querySelector('.bulk-deadline').value;const zone=row.querySelector('.bulk-zone').value;if(title){tasks.push({id:genId('TSK'),title,description:title,assigneeId:assignee,priority,date,deadline,zone,status:'pending',createdAt:new Date().toISOString()});count++;}});if(count>0){sv(KEYS.tasks,tasks);closeBulkTaskModal();renderTasks();refreshDashboard();notify(`Создано ${count} заданий`);speak(`Создано ${count} заданий на ${date}`);playBeep('success');}else{notify('Заполните хотя бы одну задачу','warning');}}
+
+    // ===== SALARY =====
+    function renderSalary(){const mo=parseInt(document.getElementById('salMonth').value);const yr=parseInt(document.getElementById('salYear').value);const monthSals=salaries.filter(s=>s.month===mo&&s.year===yr);const tbody=document.getElementById('salTable');tbody.innerHTML=employees.filter(e=>e.status!=='deleted').map(emp=>{let totalHours=0;attendance.filter(a=>a.employeeId===emp.id).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr)totalHours+=a.hours||0;});const baseSalary=totalHours*emp.rate;const sal=monthSals.find(s=>s.employeeId===emp.id);const bonus=sal?.bonus||0;const penalty=sal?.penalty||0;const total=baseSalary+bonus-penalty;const paid=sal?.paid||false;return`<tr class="hover:bg-[#1a1a3a]/50"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div><div><p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p><p class="text-xs text-gray-600">${emp.position}</p></div></div></td><td class="p-4 text-sm">${totalHours.toFixed(1)}ч</td><td class="p-4 text-sm">${rub(emp.rate)}/ч</td><td class="p-4 text-sm font-medium">${rub(baseSalary)}</td><td class="p-4 text-sm text-green-400">${bonus>0?'+'+rub(bonus):'—'}</td><td class="p-4 text-sm text-red-400">${penalty>0?'-'+rub(penalty):'—'}</td><td class="p-4 text-sm font-bold">${rub(total)}</td><td class="p-4"><div class="flex gap-1">${paid?'<span class="badge bg-green-500/20 text-green-400">✓</span>':`<button onclick="markPaid('${emp.id}',${mo},${yr})" class="bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 px-2.5 py-1 rounded text-xs transition-colors border border-yellow-500/20">Выплатить</button>`}<button onclick="openSalModal('${emp.id}',${mo},${yr})" class="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2.5 py-1 rounded text-xs transition-colors border border-indigo-500/20">✎</button></div></td></tr>`;}).join('');let totalFund=0,paidSum=0,unpaidSum=0;employees.filter(e=>e.status!=='deleted').forEach(emp=>{let h=0;attendance.filter(a=>a.employeeId===emp.id).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr)h+=a.hours||0;});const base=h*emp.rate;const sal=monthSals.find(s=>s.employeeId===emp.id);const b=sal?.bonus||0,p=sal?.penalty||0;const total=base+b-p;totalFund+=total;if(sal?.paid)paidSum+=total;else unpaidSum+=total;});document.getElementById('salTotalFund').textContent=rub(totalFund);document.getElementById('salPaid').textContent=rub(paidSum);document.getElementById('salUnpaid').textContent=rub(unpaidSum);}
+    function calcSalaries(){const mo=parseInt(document.getElementById('salMonth').value);const yr=parseInt(document.getElementById('salYear').value);employees.filter(e=>e.status!=='deleted').forEach(emp=>{let totalHours=0;attendance.filter(a=>a.employeeId===emp.id).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr)totalHours+=a.hours||0;});const baseSalary=totalHours*emp.rate;const monthTasks=tasks.filter(t=>{const td=new Date(t.date);return t.assigneeId===emp.id&&t.status==='completed'&&td.getMonth()===mo&&td.getFullYear()===yr;});const bonus=monthTasks.length*settings.taskBonus;let penalty=0;attendance.filter(a=>a.employeeId===emp.id).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr&&a.checkIn){const[sh,sm]=settings.shiftStart.split(':').map(Number);const[h,m]=a.checkIn.split(':').map(Number);if(h*60+m>sh*60+sm+15)penalty+=settings.latePenalty;}});const idx=salaries.findIndex(s=>s.employeeId===emp.id&&s.month===mo&&s.year===yr);const salData={employeeId:emp.id,month:mo,year:yr,hours:totalHours,baseSalary,bonus,penalty,total:baseSalary+bonus-penalty,paid:false,calculatedAt:new Date().toISOString()};if(idx!==-1)salaries[idx]=salData;else salaries.push(salData);});sv(KEYS.salaries,salaries);renderSalary();notify('Зарплата рассчитана');speak('Расчёт зарплаты завершён');playBeep('success');}
+    function markPaid(id,mo,yr){const sal=salaries.find(s=>s.employeeId===id&&s.month===mo&&s.year===yr);if(sal){sal.paid=true;sal.paidAt=new Date().toISOString();sv(KEYS.salaries,salaries);renderSalary();const emp=getEmp(id);notify(`${emp?.firstName} ${emp?.lastName} — выплачено`);speak(`Зарплата выплачена: ${emp?.firstName} ${emp?.lastName}`);playBeep('success');}}
+    function markAllPaid(){const mo=parseInt(document.getElementById('salMonth').value);const yr=parseInt(document.getElementById('salYear').value);salaries.filter(s=>s.month===mo&&s.year===yr&&!s.paid).forEach(s=>{s.paid=true;s.paidAt=new Date().toISOString();});sv(KEYS.salaries,salaries);renderSalary();notify('Все зарплаты отмечены');speak('Все зарплаты выплачены');playBeep('success');}
+    function openSalModal(id,mo,yr){const emp=getEmp(id);const sal=salaries.find(s=>s.employeeId===id&&s.month===mo&&s.year===yr);document.getElementById('salModal').classList.remove('hidden');document.getElementById('salModal').classList.add('flex');document.getElementById('salEmpId').value=id;document.getElementById('salEmpName').textContent=emp?emp.firstName+' '+emp.lastName:'';document.getElementById('salBonus').value=sal?.bonus||0;document.getElementById('salPenalty').value=sal?.penalty||0;document.getElementById('salNote').value=sal?.note||'';}
+    function closeSalModal(){document.getElementById('salModal').classList.add('hidden');document.getElementById('salModal').classList.remove('flex');}
+    function saveSalEdit(){const id=document.getElementById('salEmpId').value;const mo=parseInt(document.getElementById('salMonth').value);const yr=parseInt(document.getElementById('salYear').value);const idx=salaries.findIndex(s=>s.employeeId===id&&s.month===mo&&s.year===yr);if(idx!==-1){salaries[idx].bonus=parseFloat(document.getElementById('salBonus').value)||0;salaries[idx].penalty=parseFloat(document.getElementById('salPenalty').value)||0;salaries[idx].note=document.getElementById('salNote').value;salaries[idx].total=salaries[idx].baseSalary+salaries[idx].bonus-salaries[idx].penalty;sv(KEYS.salaries,salaries);closeSalModal();renderSalary();notify('Обновлено');}}
+
+    // ===== TIMESHEET =====
+    function renderTimesheet(){const tsDate=document.getElementById('tsDate')?.value||fmtDate(new Date());const d=new Date(tsDate);const dow=d.getDay();const monday=new Date(d);monday.setDate(d.getDate()-(dow===0?6:dow-1));const weekDays=[];for(let i=0;i<7;i++){const wd=new Date(monday);wd.setDate(monday.getDate()+i);weekDays.push(fmtDate(wd));}renderTimesheetWeek(weekDays);}
+    function showWeekTimesheet(){const val=document.getElementById('tsWeek').value;if(!val){renderTimesheet();return;}const now=new Date();const today=new Date(now);const dow=today.getDay();const monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));let weekDays=[];if(val==='this'){for(let i=0;i<7;i++){const wd=new Date(monday);wd.setDate(monday.getDate()+i);weekDays.push(fmtDate(wd));}}else{const pm=new Date(monday);pm.setDate(monday.getDate()-7);for(let i=0;i<7;i++){const wd=new Date(pm);wd.setDate(pm.getDate()+i);weekDays.push(fmtDate(wd));}}renderTimesheetWeek(weekDays);}
+    function renderTimesheetWeek(weekDays){const tbody=document.getElementById('tsTable');tbody.innerHTML=employees.filter(e=>e.status!=='deleted').map(emp=>{let totalH=0;const cells=weekDays.map(wd=>{const att=attendance.find(a=>a.employeeId===emp.id&&a.date===wd);const h=att?(att.hours||0):0;totalH+=h;return`<td class="p-3 text-center text-xs ${h>0?'text-green-400':'text-gray-700'}">${h>0?h.toFixed(1):'—'}</td>`;}).join('');return`<tr class="hover:bg-[#1a1a3a]/50"><td class="p-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-sm font-bold">${emp.firstName[0]}${emp.lastName[0]}</div><p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p></div></td>${cells}<td class="p-3 text-center text-sm font-bold ${totalH>0?'text-white':'text-gray-700'}">${totalH>0?totalH.toFixed(1)+'ч':'—'}</td></tr>`;}).join('');}
+
+    // ===== BADGES 58x40mm =====
+    function renderBadges(){
+        const grid=document.getElementById('badgeGrid');
+        const activeEmps=employees.filter(e=>e.status!=='deleted');
+        grid.innerHTML=activeEmps.map(emp=>`
+            <div class="bg-[#12122a] rounded-xl border border-[#1e1e3a] p-5 card">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold">${emp.firstName[0]}${emp.lastName[0]}</div>
                     <div class="text-left">
@@ -1868,404 +787,159 @@
                         <p class="text-xs text-gray-500">${emp.position}</p>
                     </div>
                 </div>
-                <div id="qr-${emp.id}" class="bg-white rounded-xl p-3 inline-block mb-3"></div>
-                <p class="text-xs text-gray-600 mb-3 font-mono">${emp.id}</p>
-                <button onclick="printQR('${emp.id}')" class="w-full bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Печать
-                </button>
+                <div class="bg-white rounded-lg p-3 inline-block mb-3">
+                    <div id="badge-qr-${emp.id}" class="badge-qr"></div>
+                </div>
+                <p class="text-xs text-gray-600 mb-1 font-mono text-center">${emp.id}</p>
+                <p class="text-[10px] text-gray-500 text-center mb-3">Размер бейджа: 58×40 мм</p>
+                <div class="flex gap-2">
+                    <button onclick="printBadge('${emp.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Печать
+                    </button>
+                    <button onclick="downloadBadge('${emp.id}')" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </button>
+                </div>
             </div>
         `).join('');
 
-        setTimeout(() => {
-            activeEmps.forEach(emp => {
-                const qrDiv = document.getElementById('qr-' + emp.id);
-                if (qrDiv && qrDiv.children.length === 0) {
-                    new QRCode(qrDiv, {
-                        text: emp.id,
-                        width: 140,
-                        height: 140,
-                        colorDark: "#1e1b4b",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
+        setTimeout(()=>{
+            activeEmps.forEach(emp=>{
+                const qrDiv=document.getElementById('badge-qr-'+emp.id);
+                if(qrDiv&&qrDiv.children.length===0){
+                    new QRCode(qrDiv,{text:emp.id,width:52,height:52,colorDark:'#1e1b4b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
                 }
             });
-        }, 100);
+        },150);
     }
 
-    function printQR(id) {
-        const emp = getEmp(id);
-        if (!emp) return;
-        const w = window.open('', '_blank');
-        w.document.write(`<!DOCTYPE html><html><head><title>QR: ${emp.firstName} ${emp.lastName}</title>
-        <style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fff}
-        .card{text-align:center;padding:40px;border:2px solid #333;border-radius:16px}
-        h2{margin:0 0 5px;font-size:24px}.pos{color:#666;margin:0 0 20px;font-size:14px}
-        .id{font-size:11px;color:#999;margin-top:15px}@media print{body{min-height:auto}}</style></head>
-        <body><div class="card"><h2>${emp.firstName} ${emp.lastName}</h2><p class="pos">${emp.position}</p>
-        <div id="qr"></div><p class="id">${emp.id}</p></div>
+    function printBadge(id){
+        const emp=getEmp(id);if(!emp)return;
+        const w=window.open('','_blank');
+        w.document.write(`<!DOCTYPE html><html><head><title>Бейдж: ${emp.firstName} ${emp.lastName}</title>
+        <style>
+            @page{size:58mm 40mm;margin:0;}
+            body{margin:0;padding:0;width:58mm;height:40mm;display:flex;justify-content:center;align-items:center;font-family:Arial,sans-serif;overflow:hidden;}
+            .badge{width:54mm;height:36mm;border:1px solid #333;border-radius:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;text-align:center;background:#fff;}
+            .name{font-size:8pt;font-weight:bold;margin:1mm 0 0.5mm;line-height:1.1;}
+            .position{font-size:6pt;color:#666;margin-bottom:1.5mm;}
+            .qr{width:12mm;height:12mm;margin-bottom:1mm;}
+            .id{font-size:5pt;color:#999;}
+        </style></head><body>
+        <div class="badge">
+            <div class="name">${emp.firstName} ${emp.lastName}</div>
+            <div class="position">${emp.position}</div>
+            <div class="qr" id="qr"></div>
+            <div class="id">${emp.id}</div>
+        </div>
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
-        <script>new QRCode(document.getElementById("qr"),{text:"${emp.id}",width:200,height:200,correctLevel:QRCode.CorrectLevel.H});
-        setTimeout(()=>window.print(),500);<\/script></body></html>`);
+        <script>new QRCode(document.getElementById("qr"),{text:"${emp.id}",width:45,height:45,correctLevel:QRCode.CorrectLevel.H});setTimeout(()=>window.print(),500);<\/script></body></html>`);
     }
 
-    function printAllQR() {
-        const activeEmps = employees.filter(e => e.status !== 'deleted');
-        const w = window.open('', '_blank');
-        let cards = activeEmps.map(emp => `
-            <div class="card">
-                <h2>${emp.firstName} ${emp.lastName}</h2>
-                <p class="pos">${emp.position}</p>
-                <div class="qr-${emp.id}"></div>
-                <p class="id">${emp.id}</p>
+    function printAllBadges(){
+        const activeEmps=employees.filter(e=>e.status!=='deleted');
+        const w=window.open('','_blank');
+        let badges=activeEmps.map(emp=>`
+            <div class="badge">
+                <div class="name">${emp.firstName} ${emp.lastName}</div>
+                <div class="position">${emp.position}</div>
+                <div class="qr qr-${emp.id}"></div>
+                <div class="id">${emp.id}</div>
             </div>
         `).join('');
-
-        w.document.write(`<!DOCTYPE html><html><head><title>Все QR-коды</title>
-        <style>body{font-family:Arial,sans-serif;margin:20px;background:#fff}
-        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-        .card{text-align:center;padding:20px;border:2px solid #333;border-radius:12px}
-        h2{margin:0 0 3px;font-size:16px}.pos{color:#666;margin:0 0 12px;font-size:12px}
-        .id{font-size:10px;color:#999;margin-top:10px}
-        @media print{.grid{grid-template-columns:repeat(3,1fr)}}</style></head>
-        <body><div class="grid">${cards}</div>
+        w.document.write(`<!DOCTYPE html><html><head><title>Все бейджи</title>
+        <style>
+            @page{size:58mm 40mm;margin:0;}
+            body{margin:5mm;font-family:Arial,sans-serif;background:#fff;}
+            .grid{display:grid;grid-template-columns:repeat(auto-fill,58mm);gap:5mm;justify-content:center;}
+            .badge{width:54mm;height:36mm;border:1px solid #333;border-radius:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;text-align:center;background:#fff;}
+            .name{font-size:8pt;font-weight:bold;margin:1mm 0 0.5mm;line-height:1.1;}
+            .position{font-size:6pt;color:#666;margin-bottom:1.5mm;}
+            .qr{width:12mm;height:12mm;margin-bottom:1mm;}
+            .id{font-size:5pt;color:#999;}
+            @media print{body{margin:5mm}.grid{gap:2mm}}
+        </style></head><body><div class="grid">${badges}</div>
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
-        <script>
-        ${activeEmps.map(emp => `new QRCode(document.querySelector(".qr-${emp.id}"),{text:"${emp.id}",width:120,height:120,correctLevel:QRCode.CorrectLevel.H});`).join('\n')}
-        setTimeout(()=>window.print(),800);
-        <\/script></body></html>`);
+        <script>${activeEmps.map(emp=>`new QRCode(document.querySelector(".qr-${emp.id}"),{text:"${emp.id}",width:45,height:45,correctLevel:QRCode.CorrectLevel.H});`).join('\n')}setTimeout(()=>window.print(),800);<\/script></body></html>`);
     }
 
-    // ===========================
-    // ANALYTICS
-    // ===========================
-    function renderAnalytics() {
-        // Department chart
-        const deptCanvas = document.getElementById('deptChart');
-        if (charts.dept) charts.dept.destroy();
-
-        const positions = [...new Set(employees.filter(e => e.status !== 'deleted').map(e => e.position))];
-        const deptData = positions.map(pos => {
-            const empIds = employees.filter(e => e.position === pos).map(e => e.id);
-            let totalH = 0;
-            const mo = new Date().getMonth(), yr = new Date().getFullYear();
-            attendance.filter(a => empIds.includes(a.employeeId)).forEach(a => {
-                const d = new Date(a.date);
-                if (d.getMonth() === mo && d.getFullYear() === yr) totalH += a.hours || 0;
-            });
-            return totalH;
-        });
-
-        const colors = ['rgba(99,102,241,0.6)', 'rgba(168,85,247,0.6)', 'rgba(34,197,94,0.6)', 'rgba(251,146,60,0.6)', 'rgba(239,68,68,0.6)', 'rgba(56,189,248,0.6)', 'rgba(250,204,21,0.6)'];
-        charts.dept = new Chart(deptCanvas, {
-            type: 'bar',
-            data: {
-                labels: positions,
-                datasets: [{
-                    label: 'Часы',
-                    data: deptData,
-                    backgroundColor: colors.slice(0, positions.length),
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
-                }
-            }
-        });
-
-        // Task completion chart
-        const taskCanvas = document.getElementById('taskChart');
-        if (charts.task) charts.task.destroy();
-
-        const last7 = [];
-        const taskDone = [];
-        const taskTotal = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const ds = fmtDate(d);
-            last7.push(d.getDate() + '.' + (d.getMonth()+1));
-            const dt = tasks.filter(t => t.date === ds);
-            taskTotal.push(dt.length);
-            taskDone.push(dt.filter(t => t.status === 'completed').length);
-        }
-
-        charts.task = new Chart(taskCanvas, {
-            type: 'line',
-            data: {
-                labels: last7,
-                datasets: [
-                    { label: 'Выполнено', data: taskDone, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.4, pointRadius: 4 },
-                    { label: 'Всего', data: taskTotal, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 4 }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#9ca3af' } } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', stepSize: 1 } }
-                }
-            }
-        });
-
-        // Rating
-        const ratingDiv = document.getElementById('ratingList');
-        const now = new Date();
-        const ratings = employees.filter(e => e.status !== 'deleted').map(emp => {
-            const completed = tasks.filter(t => {
-                const td = new Date(t.date);
-                return t.assigneeId === emp.id && t.status === 'completed' && td.getMonth() === now.getMonth() && td.getFullYear() === now.getFullYear();
-            }).length;
-            return { emp, completed };
-        }).sort((a, b) => b.completed - a.completed);
-
-        const medals = ['🥇', '🥈', '🥉'];
-        ratingDiv.innerHTML = ratings.map((r, i) => `
-            <div class="flex items-center gap-4 bg-[#1a1a3a] rounded-lg p-4">
-                <span class="text-2xl">${medals[i] || (i + 1)}</span>
-                <div class="w-10 h-10 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold">${r.emp.firstName[0]}${r.emp.lastName[0]}</div>
-                <div class="flex-1">
-                    <p class="font-medium text-sm">${r.emp.firstName} ${r.emp.lastName}</p>
-                    <p class="text-xs text-gray-500">${r.emp.position}</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-lg font-bold text-indigo-400">${r.completed}</p>
-                    <p class="text-xs text-gray-500">ТЗ выполнено</p>
-                </div>
-                <div class="w-24 bg-gray-800 rounded-full h-2">
-                    <div class="h-2 rounded-full bg-indigo-500 progress-fill" style="width:${ratings.length > 0 ? (r.completed / Math.max(ratings[0].completed, 1) * 100) : 0}%"></div>
-                </div>
-            </div>
-        `).join('');
+    function downloadBadge(id){
+        const emp=getEmp(id);if(!emp)return;
+        const w=window.open('','_blank');
+        w.document.write(`<!DOCTYPE html><html><head><title>Бейдж: ${emp.firstName} ${emp.lastName}</title>
+        <style>
+            body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}
+            .badge{width:219px;height:151px;border:2px solid #333;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;text-align:center;font-family:Arial,sans-serif;background:#fff;}
+            .name{font-size:14px;font-weight:bold;margin:4px 0 2px;}
+            .position{font-size:10px;color:#666;margin-bottom:8px;}
+            .id{font-size:8px;color:#999;}
+        </style></head><body>
+        <div class="badge">
+            <div class="name">${emp.firstName} ${emp.lastName}</div>
+            <div class="position">${emp.position}</div>
+            <div id="qr"></div>
+            <div class="id">${emp.id}</div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
+        <script>new QRCode(document.getElementById("qr"),{text:"${emp.id}",width:45,height:45,correctLevel:QRCode.CorrectLevel.H});<\/script></body></html>`);
     }
 
-    // ===========================
-    // SETTINGS
-    // ===========================
-    function loadSettings() {
-        document.getElementById('setVoice').checked = settings.voice;
-        document.getElementById('setCheckin').checked = settings.checkin;
-        document.getElementById('setCheckout').checked = settings.checkout;
-        document.getElementById('setTaskNotify').checked = settings.taskNotify;
-        document.getElementById('setWarehouse').value = settings.warehouse || '';
-        document.getElementById('setShiftStart').value = settings.shiftStart || '08:00';
-        document.getElementById('setShiftEnd').value = settings.shiftEnd || '20:00';
-        document.getElementById('setTaskBonus').value = settings.taskBonus || 500;
-        document.getElementById('setLatePenalty').value = settings.latePenalty || 200;
-        voiceEnabled = settings.voice;
-        document.getElementById('voiceIcon').textContent = voiceEnabled ? '🔊' : '🔇';
-        document.getElementById('voiceLabel').textContent = voiceEnabled ? 'Голос' : 'Без звука';
+    // ===== ANALYTICS =====
+    function renderAnalytics(){
+        const deptCanvas=document.getElementById('deptChart');if(charts.dept)charts.dept.destroy();
+        const positions=[...new Set(employees.filter(e=>e.status!=='deleted').map(e=>e.position))];
+        const deptData=positions.map(pos=>{const empIds=employees.filter(e=>e.position===pos).map(e=>e.id);let totalH=0;const mo=new Date().getMonth(),yr=new Date().getFullYear();attendance.filter(a=>empIds.includes(a.employeeId)).forEach(a=>{const d=new Date(a.date);if(d.getMonth()===mo&&d.getFullYear()===yr)totalH+=a.hours||0;});return totalH;});
+        const colors=['rgba(99,102,241,0.6)','rgba(168,85,247,0.6)','rgba(34,197,94,0.6)','rgba(251,146,60,0.6)','rgba(239,68,68,0.6)','rgba(56,189,248,0.6)','rgba(250,204,21,0.6)'];
+        charts.dept=new Chart(deptCanvas,{type:'bar',data:{labels:positions,datasets:[{label:'Часы',data:deptData,backgroundColor:colors.slice(0,positions.length),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#9ca3af'}}}}});
+
+        const taskCanvas=document.getElementById('taskChart');if(charts.task)charts.task.destroy();
+        const last7=[],taskDone=[],taskTotal=[];
+        for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.getDate()+'.'+(d.getMonth()+1));const dt=tasks.filter(t=>t.date===fmtDate(d));taskTotal.push(dt.length);taskDone.push(dt.filter(t=>t.status==='completed').length);}
+        charts.task=new Chart(taskCanvas,{type:'line',data:{labels:last7,datasets:[{label:'Выполнено',data:taskDone,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',fill:true,tension:0.4,pointRadius:4},{label:'Всего',data:taskTotal,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9ca3af'}}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b7280',stepSize:1}}}}});
+
+        const ratingDiv=document.getElementById('ratingList');const now=new Date();
+        const ratings=employees.filter(e=>e.status!=='deleted').map(emp=>{const completed=tasks.filter(t=>{const td=new Date(t.date);return t.assigneeId===emp.id&&t.status==='completed'&&td.getMonth()===now.getMonth()&&td.getFullYear()===now.getFullYear();}).length;return{emp,completed};}).sort((a,b)=>b.completed-a.completed);
+        const medals=['🥇','🥈','🥉'];
+        ratingDiv.innerHTML=ratings.map((r,i)=>`<div class="flex items-center gap-4 bg-[#1a1a3a] rounded-lg p-4"><span class="text-2xl">${medals[i]||(i+1)}</span><div class="w-10 h-10 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold">${r.emp.firstName[0]}${r.emp.lastName[0]}</div><div class="flex-1"><p class="font-medium text-sm">${r.emp.firstName} ${r.emp.lastName}</p><p class="text-xs text-gray-500">${r.emp.position}</p></div><div class="text-right"><p class="text-lg font-bold text-indigo-400">${r.completed}</p><p class="text-xs text-gray-500">ТЗ выполнено</p></div><div class="w-24 bg-gray-800 rounded-full h-2"><div class="h-2 rounded-full bg-indigo-500 progress-fill" style="width:${ratings.length>0?(r.completed/Math.max(ratings[0].completed,1)*100):0}%"></div></div></div>`).join('');
     }
 
-    function saveSettings() {
-        settings = {
-            voice: document.getElementById('setVoice').checked,
-            checkin: document.getElementById('setCheckin').checked,
-            checkout: document.getElementById('setCheckout').checked,
-            taskNotify: document.getElementById('setTaskNotify').checked,
-            warehouse: document.getElementById('setWarehouse').value,
-            shiftStart: document.getElementById('setShiftStart').value,
-            shiftEnd: document.getElementById('setShiftEnd').value,
-            taskBonus: parseFloat(document.getElementById('setTaskBonus').value) || 500,
-            latePenalty: parseFloat(document.getElementById('setLatePenalty').value) || 200
-        };
-        sv(KEYS.settings, settings);
-        voiceEnabled = settings.voice;
-        notify('Настройки сохранены');
+    // ===== SETTINGS =====
+    function loadSettings(){document.getElementById('setVoice').checked=settings.voice;document.getElementById('setCheckin').checked=settings.checkin;document.getElementById('setCheckout').checked=settings.checkout;document.getElementById('setTaskNotify').checked=settings.taskNotify;document.getElementById('setWarehouse').value=settings.warehouse||'';document.getElementById('setShiftStart').value=settings.shiftStart||'08:00';document.getElementById('setShiftEnd').value=settings.shiftEnd||'20:00';document.getElementById('setTaskBonus').value=settings.taskBonus||500;document.getElementById('setLatePenalty').value=settings.latePenalty||200;voiceEnabled=settings.voice;document.getElementById('voiceIcon').textContent=voiceEnabled?'🔊':'🔇';document.getElementById('voiceLabel').textContent=voiceEnabled?'Голос':'Без звука';}
+    function saveSettings(){settings={voice:document.getElementById('setVoice').checked,checkin:document.getElementById('setCheckin').checked,checkout:document.getElementById('setCheckout').checked,taskNotify:document.getElementById('setTaskNotify').checked,warehouse:document.getElementById('setWarehouse').value,shiftStart:document.getElementById('setShiftStart').value,shiftEnd:document.getElementById('setShiftEnd').value,taskBonus:parseFloat(document.getElementById('setTaskBonus').value)||500,latePenalty:parseFloat(document.getElementById('setLatePenalty').value)||200};sv(KEYS.settings,settings);voiceEnabled=settings.voice;notify('Настройки сохранены');}
+    function clearAllData(){if(!confirm('Удалить ВСЕ данные?'))return;if(!confirm('Точно удалить?'))return;Object.values(KEYS).forEach(k=>localStorage.removeItem(k));location.reload();}
+    function loadDemoData(){
+        if(employees.length>0&&!confirm('Текущие данные будут заменены. Продолжить?'))return;
+        const names=[{f:'Алексей',l:'Петров',p:'Кладовщик',r:450},{f:'Мария',l:'Сидорова',p:'Упаковщик',r:400},{f:'Дмитрий',l:'Козлов',p:'Комплектовщик',r:420},{f:'Елена',l:'Волкова',p:'Менеджер',r:600},{f:'Сергей',l:'Новиков',p:'Водитель',r:500},{f:'Анна',l:'Морозова',p:'Упаковщик',r:380},{f:'Игорь',l:'Соколов',p:'Грузчик',r:350},{f:'Ольга',l:'Кузнецова',p:'Оператор',r:430}];
+        employees=names.map((n,i)=>({id:'EMP-'+String(i+1).padStart(3,'0'),firstName:n.f,lastName:n.l,position:n.p,phone:'+7 (9'+(16+i)+') '+(100+i*11)+'-'+(10+i*12)+'-'+(10+i*13),email:n.l.toLowerCase()+'@mail.ru',rate:n.r,hireDate:'2024-'+String(1+i).padStart(2,'0')+'-'+String(10+i).padStart(2,'0'),status:'active',note:''}));sv(KEYS.employees,employees);
+        attendance=[];scans=[];tasks=[];
+        for(let d=6;d>=0;d--){const date=new Date();date.setDate(date.getDate()-d);const ds=fmtDate(date);const isWeekend=date.getDay()===0||date.getDay()===6;
+        employees.forEach(emp=>{if(isWeekend&&Math.random()>0.3)return;const ciH=7+Math.floor(Math.random()*2);const ciM=Math.floor(Math.random()*60);const wH=8+Math.floor(Math.random()*4);const coH=ciH+wH;const coM=Math.floor(Math.random()*60);const ci=`${String(ciH).padStart(2,'0')}:${String(ciM).padStart(2,'0')}`;const co=d===0&&coH>=new Date().getHours()?'':`${String(Math.min(coH,23)).padStart(2,'0')}:${String(coM).padStart(2,'0')}`;const hours=co?Math.round(((Math.min(coH,23)*60+coM)-(ciH*60+ciM))/60*10)/10:0;attendance.push({employeeId:emp.id,date:ds,checkIn:ci,checkOut:co,hours});if(ci)scans.push({employeeId:emp.id,type:'checkin',time:new Date(date.getFullYear(),date.getMonth(),date.getDate(),ciH,ciM).toISOString()});if(co)scans.push({employeeId:emp.id,type:'checkout',time:new Date(date.getFullYear(),date.getMonth(),date.getDate(),Math.min(coH,23),coM).toISOString()});});
+        const tpl=[{t:'Приёмка товара от Ozon',z:'Зона приёмки'},{t:'Упаковка заказов WB',z:'Зона упаковки'},{t:'Комплектация Яндекс',z:'Зона комплектации'},{t:'Доставка на ПВЗ',z:'Зона отгрузки'},{t:'Инвентаризация',z:'Зона хранения'},{t:'Обработка возвратов',z:'Зона приёмки'},{t:'Погрузка контейнера',z:'Зона отгрузки'}];const numT=4+Math.floor(Math.random()*4);for(let ti=0;ti<numT;ti++){const tp=tpl[Math.floor(Math.random()*tpl.length)];const as=employees[Math.floor(Math.random()*employees.length)];tasks.push({id:genId('TSK'),title:tp.t,description:tp.t,assigneeId:as.id,priority:['low','medium','high','critical'][Math.floor(Math.random()*4)],date:ds,deadline:'18:00',zone:tp.z,status:['completed','completed','completed','in_progress','pending'][Math.floor(Math.random()*5)],createdAt:new Date().toISOString()});}}
+        sv(KEYS.attendance,attendance);sv(KEYS.scans,scans);sv(KEYS.tasks,tasks);
+        notify('Демо-данные загружены');speak('Демо-данные загружены');playBeep('success');navigate('dashboard');
     }
 
-    function clearAllData() {
-        if (!confirm('Удалить ВСЕ данные? Это действие нельзя отменить.')) return;
-        if (!confirm('Точно удалить?')) return;
-        Object.values(KEYS).forEach(k => localStorage.removeItem(k));
-        location.reload();
+    // ===== EXPORT =====
+    function exportReport(){const today=fmtDate(new Date());let csv='Имя,Фамилия,Должность,Приход,Уход,Часы,Ставка,Сумма\n';employees.filter(e=>e.status!=='deleted').forEach(emp=>{const att=attendance.find(a=>a.employeeId===emp.id&&a.date===today);const h=att?att.hours||0:0;csv+=`${emp.firstName},${emp.lastName},${emp.position},${att?.checkIn||'-'},${att?.checkOut||'-'},${h},${emp.rate},${h*emp.rate}\n`;});const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`otchet_${today}.csv`;a.click();notify('Отчёт экспортирован');speak('Отчёт экспортирован');}
+    function exportTimesheet(){exportReport();}
+    function exportAllData(){const data={employees,scans,tasks,salaries,attendance,settings,exportDate:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`backup_${fmtDate(new Date())}.json`;a.click();notify('Бэкап сохранён');speak('Бэкап данных сохранён');}
+
+    // ===== INIT =====
+    function init(){
+        updateClock();setInterval(updateClock,1000);
+        const now=new Date();
+        document.getElementById('salMonth').value=now.getMonth();
+        const sy=document.getElementById('salYear');
+        for(let y=2023;y<=2026;y++){const opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===now.getFullYear())opt.selected=true;sy.appendChild(opt);}
+        document.getElementById('taskDate').value=fmtDate(now);
+        document.getElementById('tsDate').value=fmtDate(now);
+        voiceEnabled=settings.voice;
+        document.getElementById('voiceIcon').textContent=voiceEnabled?'🔊':'🔇';
+        document.getElementById('voiceLabel').textContent=voiceEnabled?'Голос':'Без звука';
+        refreshDashboard();renderEmployees();renderTasks();renderSalary();renderTimesheet();renderBadges();
+        setTimeout(()=>{const hour=now.getHours();let g='Добрый день';if(hour<12)g='Доброе утро';else if(hour>=18)g='Добрый вечер';speak(g+'. Система FulfillHub готова к работе');},1000);
     }
-
-    function loadDemoData() {
-        if (employees.length > 0 && !confirm('Текущие данные будут заменены. Продолжить?')) return;
-
-        const names = [
-            { f: 'Алексей', l: 'Петров', p: 'Кладовщик', r: 450 },
-            { f: 'Мария', l: 'Сидорова', p: 'Упаковщик', r: 400 },
-            { f: 'Дмитрий', l: 'Козлов', p: 'Комплектовщик', r: 420 },
-            { f: 'Елена', l: 'Волкова', p: 'Менеджер', r: 600 },
-            { f: 'Сергей', l: 'Новиков', p: 'Водитель', r: 500 },
-            { f: 'Анна', l: 'Морозова', p: 'Упаковщик', r: 380 },
-            { f: 'Игорь', l: 'Соколов', p: 'Грузчик', r: 350 },
-            { f: 'Ольга', l: 'Кузнецова', p: 'Оператор', r: 430 },
-        ];
-
-        employees = names.map((n, i) => ({
-            id: 'EMP-' + String(i + 1).padStart(3, '0'),
-            firstName: n.f, lastName: n.l, position: n.p,
-            phone: '+7 (9' + (16 + i) + ') ' + (100 + i * 11) + '-' + (10 + i * 12) + '-' + (10 + i * 13),
-            email: n.l.toLowerCase() + '@mail.ru', rate: n.r,
-            hireDate: '2024-' + String(1 + i).padStart(2, '0') + '-' + String(10 + i).padStart(2, '0'),
-            status: 'active', note: ''
-        }));
-        sv(KEYS.employees, employees);
-
-        // Generate attendance for past week
-        attendance = [];
-        scans = [];
-        tasks = [];
-
-        for (let d = 6; d >= 0; d--) {
-            const date = new Date();
-            date.setDate(date.getDate() - d);
-            const ds = fmtDate(date);
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-            employees.forEach(emp => {
-                if (isWeekend && Math.random() > 0.3) return;
-                const checkInH = 7 + Math.floor(Math.random() * 2);
-                const checkInM = Math.floor(Math.random() * 60);
-                const workH = 8 + Math.floor(Math.random() * 4);
-                const checkOutH = checkInH + workH;
-                const checkOutM = Math.floor(Math.random() * 60);
-
-                const checkIn = `${String(checkInH).padStart(2,'0')}:${String(checkInM).padStart(2,'0')}`;
-                const checkOut = d === 0 && checkOutH >= new Date().getHours() ? '' : `${String(Math.min(checkOutH, 23)).padStart(2,'0')}:${String(checkOutM).padStart(2,'0')}`;
-                const hours = checkOut ? Math.round(((Math.min(checkOutH,23)*60+checkOutM)-(checkInH*60+checkInM))/60*10)/10 : 0;
-
-                attendance.push({ employeeId: emp.id, date: ds, checkIn, checkOut, hours });
-
-                if (checkIn) scans.push({ employeeId: emp.id, type: 'checkin', time: new Date(date.getFullYear(), date.getMonth(), date.getDate(), checkInH, checkInM).toISOString() });
-                if (checkOut) scans.push({ employeeId: emp.id, type: 'checkout', time: new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.min(checkOutH,23), checkOutM).toISOString() });
-            });
-
-            // Tasks
-            const taskTemplates = [
-                { t: 'Приёмка товара от Ozon', z: 'Зона приёмки' },
-                { t: 'Упаковка заказов Wildberries', z: 'Зона упаковки' },
-                { t: 'Комплектация заказов Яндекс', z: 'Зона комплектации' },
-                { t: 'Доставка на ПВЗ', z: 'Зона отгрузки' },
-                { t: 'Инвентаризация зоны A', z: 'Зона хранения' },
-                { t: 'Обработка возвратов', z: 'Зона приёмки' },
-                { t: 'Погрузка контейнера', z: 'Зона отгрузки' },
-                { t: 'Маркировка паллетов', z: 'Зона хранения' },
-            ];
-
-            const numTasks = 4 + Math.floor(Math.random() * 4);
-            for (let ti = 0; ti < numTasks; ti++) {
-                const tpl = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
-                const assignee = employees[Math.floor(Math.random() * employees.length)];
-                const priorities = ['low', 'medium', 'high', 'critical'];
-                const statuses = ['completed', 'completed', 'completed', 'in_progress', 'pending'];
-
-                tasks.push({
-                    id: genId('TSK'),
-                    title: tpl.t,
-                    description: tpl.t + ' — срочное задание на ' + ds,
-                    assigneeId: assignee.id,
-                    priority: priorities[Math.floor(Math.random() * priorities.length)],
-                    date: ds,
-                    deadline: '18:00',
-                    zone: tpl.z,
-                    status: statuses[Math.floor(Math.random() * statuses.length)],
-                    createdAt: new Date().toISOString()
-                });
-            }
-        }
-
-        sv(KEYS.attendance, attendance);
-        sv(KEYS.scans, scans);
-        sv(KEYS.tasks, tasks);
-
-        notify('Демо-данные загружены');
-        speak('Демо-данные загружены');
-        playBeep('success');
-        navigate('dashboard');
-    }
-
-    // ===========================
-    // EXPORT
-    // ===========================
-    function exportReport() {
-        const today = fmtDate(new Date());
-        let csv = 'Имя,Фамилия,Должность,Приход,Уход,Часы,Ставка,Сумма\n';
-
-        employees.filter(e => e.status !== 'deleted').forEach(emp => {
-            const att = attendance.find(a => a.employeeId === emp.id && a.date === today);
-            const h = att ? att.hours || 0 : 0;
-            const sum = h * emp.rate;
-            csv += `${emp.firstName},${emp.lastName},${emp.position},${att?.checkIn||'-'},${att?.checkOut||'-'},${h},${emp.rate},${sum}\n`;
-        });
-
-        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `otchet_${today}.csv`;
-        a.click();
-        notify('Отчёт экспортирован');
-        speak('Отчёт экспортирован');
-    }
-
-    function exportTimesheet() { exportReport(); }
-
-    function exportAllData() {
-        const data = {
-            employees, scans, tasks, salaries, attendance, settings,
-            exportDate: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `backup_${fmtDate(new Date())}.json`;
-        a.click();
-        notify('Бэкап сохранён');
-        speak('Бэкап данных сохранён');
-    }
-
-    // ===========================
-    // INIT
-    // ===========================
-    function init() {
-        updateClock();
-        setInterval(updateClock, 1000);
-
-        const now = new Date();
-        document.getElementById('salMonth').value = now.getMonth();
-        const sy = document.getElementById('salYear');
-        for (let y = 2023; y <= 2026; y++) {
-            const opt = document.createElement('option');
-            opt.value = y; opt.textContent = y;
-            if (y === now.getFullYear()) opt.selected = true;
-            sy.appendChild(opt);
-        }
-
-        document.getElementById('taskDate').value = fmtDate(now);
-        document.getElementById('tsDate').value = fmtDate(now);
-
-        voiceEnabled = settings.voice;
-        document.getElementById('voiceIcon').textContent = voiceEnabled ? '🔊' : '🔇';
-        document.getElementById('voiceLabel').textContent = voiceEnabled ? 'Голос' : 'Без звука';
-
-        refreshDashboard();
-        renderEmployees();
-        renderTasks();
-        renderSalary();
-        renderTimesheet();
-        renderQRCodes();
-
-        // Welcome
-        setTimeout(() => {
-            const hour = now.getHours();
-            let greeting = 'Добрый день';
-            if (hour < 12) greeting = 'Доброе утро';
-            else if (hour < 18) greeting = 'Добрый день';
-            else greeting = 'Добрый вечер';
-            speak(greeting + '. Система FulfillHub готова к работе');
-        }, 1000);
-    }
-
     init();
     </script>
 </body>
