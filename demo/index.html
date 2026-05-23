@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.0.4/dist/bwip-js-min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     :root {
@@ -205,7 +206,7 @@
     .camera-scanner-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;}
     .camera-scanner-header{background:var(--surface3);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .camera-scanner-header h3{margin:0;font-size:1rem;display:flex;align-items:center;gap:8px;}
-    #camera-reader-container{width:100%;background:#000;min-height:250px;display:flex;align-items:center;justify-content:center;position:relative;}
+    #camera-reader-container{width:100%!important;background:#000;min-height:250px;display:flex;align-items:center;justify-content:center;position:relative;}
     #camera-reader-container video{width:100%!important;border-radius:0!important;}
     #camera-status-bar{padding:10px 18px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
     #camera-status-bar .status-text{font-size:0.85rem;color:var(--text-secondary);}
@@ -217,7 +218,7 @@
     .last-scanned-bar span{color:var(--cyan);font-family:monospace;font-weight:600;}
     @media(max-width:768px){.container{padding:12px;}header{padding:14px 18px;flex-direction:column;align-items:flex-start;gap:10px;}header h1{font-size:1.3rem;}.panel{padding:18px;}.label-grid{grid-template-columns:1fr;}.stats-row{flex-direction:column;}.stat-card{min-width:100%;}.scanner-box{padding:20px;}.scanner-box input{font-size:1.2rem;padding:12px;}}
 
-    /* ===== LABEL PRINT STYLES — 58x40mm HIGH READABILITY ===== */
+    /* ===== LABEL PRINT STYLES — 58x40mm HIGH READABILITY WITH ЧЕСТНЫЙ ЗНАК ===== */
     .label-sheet {
       width: 58mm !important;
       height: 40mm !important;
@@ -238,7 +239,6 @@
       position: relative !important;
     }
 
-    /* Top instruction strip — thin, high contrast */
     .label-sheet .lbl-top-strip {
       background: #000 !important;
       color: #fff !important;
@@ -252,7 +252,6 @@
       line-height: 1.1 !important;
     }
 
-    /* Article row — big and bold */
     .label-sheet .lbl-article-row {
       display: flex !important;
       justify-content: space-between !important;
@@ -272,31 +271,59 @@
       line-height: 1 !important;
     }
 
-    /* Barcode area — large and clear */
-    .label-sheet .lbl-barcode-wrap {
-      text-align: center !important;
+    .label-sheet .lbl-barcode-area {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
       margin-bottom: 0.5mm !important;
-      min-height: 16mm !important;
+      min-height: 14mm !important;
+      gap: 2mm !important;
+    }
+    .label-sheet .lbl-barcode-wrap {
+      flex: 1 !important;
+      text-align: center !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
+      min-height: 14mm !important;
     }
     .label-sheet .lbl-barcode-wrap svg {
-      width: 95% !important;
-      max-height: 14mm !important;
+      width: 100% !important;
+      max-height: 12mm !important;
     }
     .label-sheet .lbl-barcode-num {
-      font-size: 10pt !important;
+      font-size: 8pt !important;
       font-weight: 900 !important;
       text-align: center !important;
-      letter-spacing: 1.5px !important;
+      letter-spacing: 1px !important;
       font-family: 'Courier New', Courier, monospace !important;
       color: #000 !important;
-      margin: 0.5mm 0 !important;
+      margin: 0.3mm 0 0 0 !important;
     }
 
-    /* Description — readable */
+    .label-sheet .lbl-cz-wrap {
+      width: 15mm !important;
+      height: 15mm !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-shrink: 0 !important;
+    }
+    .label-sheet .lbl-cz-wrap canvas {
+      width: 14mm !important;
+      height: 14mm !important;
+    }
+    .label-sheet .lbl-cz-label {
+      font-size: 4pt !important;
+      font-weight: 700 !important;
+      color: #333 !important;
+      text-align: center !important;
+      line-height: 1 !important;
+      margin-top: 0.3mm !important;
+    }
+
     .label-sheet .lbl-desc {
       font-size: 6.5pt !important;
       font-weight: 600 !important;
@@ -308,7 +335,6 @@
       text-overflow: ellipsis !important;
     }
 
-    /* Bottom info row */
     .label-sheet .lbl-bottom-row {
       display: flex !important;
       justify-content: space-between !important;
@@ -381,30 +407,62 @@
       font-weight: 700;
       color: #555;
     }
-    .label-preview .lbl-barcode-wrap {
-      text-align: center;
+    .label-preview .lbl-barcode-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 0.4mm;
-      min-height: 12mm;
+      min-height: 11mm;
+      gap: 1.5mm;
+    }
+    .label-preview .lbl-barcode-wrap {
+      flex: 1;
+      text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      min-height: 11mm;
       background: #fafafa;
       border-radius: 2px;
-      padding: 0.5mm 0;
+      padding: 0.3mm 0;
     }
     .label-preview .lbl-barcode-wrap svg {
-      width: 95%;
-      max-height: 11mm;
+      width: 100%;
+      max-height: 9mm;
     }
     .label-preview .lbl-barcode-num {
-      font-size: 8.5pt;
+      font-size: 7pt;
       font-weight: 900;
       text-align: center;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       font-family: 'Courier New', Courier, monospace;
       color: #000;
-      margin: 0.3mm 0;
+      margin: 0.2mm 0 0 0;
+    }
+    .label-preview .lbl-cz-wrap {
+      width: 12mm;
+      height: 12mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #fafafa;
+      border-radius: 2px;
+      padding: 0.3mm;
+    }
+    .label-preview .lbl-cz-wrap canvas {
+      width: 11mm;
+      height: 11mm;
+    }
+    .label-preview .lbl-cz-label {
+      font-size: 3.5pt;
+      font-weight: 700;
+      color: #555;
+      text-align: center;
+      line-height: 1;
+      margin-top: 0.2mm;
     }
     .label-preview .lbl-desc {
       font-size: 5.5pt;
@@ -504,15 +562,24 @@
         color: #333 !important;
       }
       #bulkPrintArea .label-sheet .lbl-barcode-wrap svg {
-        width: 95% !important;
-        max-height: 14mm !important;
+        width: 100% !important;
+        max-height: 12mm !important;
       }
       #bulkPrintArea .label-sheet .lbl-barcode-num {
-        font-size: 10pt !important;
+        font-size: 8pt !important;
         font-weight: 900 !important;
-        letter-spacing: 1.5px !important;
+        letter-spacing: 1px !important;
         font-family: 'Courier New', monospace !important;
         color: #000 !important;
+      }
+      #bulkPrintArea .label-sheet .lbl-cz-wrap canvas {
+        width: 14mm !important;
+        height: 14mm !important;
+      }
+      #bulkPrintArea .label-sheet .lbl-cz-label {
+        font-size: 4pt !important;
+        font-weight: 700 !important;
+        color: #333 !important;
       }
       #bulkPrintArea .label-sheet .lbl-desc {
         font-size: 6.5pt !important;
@@ -755,7 +822,7 @@
 
     <section id="tab-labels" class="panel hidden">
       <h2>🏷️ Этикетки 58×40 мм</h2>
-      <p>Клик по карточке — печать. Размер этикетки: <kbd>58×40 мм</kbd>. Оптимизированы для чёткой читаемости.</p>
+      <p>Клик по карточке — печать. Размер этикетки: <kbd>58×40 мм</kbd>. Оптимизированы для чёткой читаемости. <span style="color:var(--cyan);">🏷️ Честный знак DataMatrix</span> формируется автоматически при наличии кода.</p>
       <div class="stats-row" id="labelStats">
         <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Позиций</div></div>
         <div class="stat-card"><div class="num" id="statLabels">0</div><div class="lbl">Этикеток</div></div>
@@ -953,6 +1020,7 @@
     var SYSTEM_FIELDS = [
       {key:'wb_article',label:'Артикул',hints:['артикул','article','код','sku','wb','art','код товара'],required:true},
       {key:'label_barcode',label:'ШК на этикетку',hints:['шк','barcode','штрихкод','ean','код','код товара','шк товара'],required:true},
+      {key:'chestny_znak',label:'Честный знак (DataMatrix)',hints:['честный','знак','datamatrix','data.matrix','честный знак','маркировка','марк','код маркировки','киз','data matrix'],required:false},
       {key:'origin_barcode',label:'ШК исходный',hints:['шк','barcode','штрихкод','ean','исход','исходный'],required:false},
       {key:'product_name',label:'Наименование',hints:['наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
       {key:'expiry',label:'Годен до',hints:['годен','срок','expiry','сг','годность','срок годности','годен до'],required:false},
@@ -1030,10 +1098,35 @@
     function getItemExpiry(idx){return getItemField(idx,'expiry');}
     function getItemInstruction(idx){return getItemField(idx,'packing_instructions');}
     function getItemQuantity(idx){return getItemField(idx,'quantity');}
+    function getItemChestnyZnak(idx){return getItemField(idx,'chestny_znak');}
 
     function calculateCounters(){labelCounterMap={};excelData.forEach(function(_,idx){labelCounterMap[idx]={current:1,total:printCopies[idx]||1};});}
 
-    // ===== HIGH-READABILITY LABEL HTML =====
+    // ===== Generate DataMatrix using bwip-js =====
+    function generateDataMatrix(canvasId, czCode) {
+      if (!czCode) return false;
+      try {
+        if (typeof bwipjs === 'undefined') {
+          // Fallback: try to use the global bwipjs from CDN
+          console.warn('bwip-js not loaded yet');
+          return false;
+        }
+        bwipjs.toCanvas(canvasId, {
+          bcid: 'datamatrix',
+          text: czCode,
+          scale: 3,
+          padding: 2,
+          width: 16,
+          height: 16
+        });
+        return true;
+      } catch (e) {
+        console.warn('DataMatrix generation failed:', e);
+        return false;
+      }
+    }
+
+    // ===== HIGH-READABILITY LABEL HTML WITH ЧЕСТНЫЙ ЗНАК =====
     function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
       var art = getItemArticle(idx) || '---';
       var bc = getItemBarcode(idx) || '---';
@@ -1041,9 +1134,11 @@
       var expiry = getItemExpiry(idx) || '—';
       var instruction = getItemInstruction(idx) || '';
       var quantity = getItemQuantity(idx) || '';
+      var czCode = getItemChestnyZnak(idx) || '';
       var cNum = copyNum || 1;
       var tCopies = totalCopies || (printCopies[idx] || 1);
       var svgId = forPrint ? 'bp_svg_'+idx+'_'+cNum : 'grid_svg_'+idx;
+      var canvasId = forPrint ? 'bp_cz_'+idx+'_'+cNum : 'grid_cz_'+idx;
 
       var cls = forPrint ? 'label-sheet' : 'label-preview';
 
@@ -1051,13 +1146,28 @@
       if(quantity && quantity!=='' && quantity!=='0') br += '<span class="lbl-quantity">Квант: '+quantity+'</span>';
       var ih = instruction ? '<div class="lbl-instruction">'+instruction+'</div>' : '';
 
+      // Честный знак DataMatrix section
+      var czHtml = '';
+      if (czCode && czCode !== '') {
+        czHtml = '<div class="lbl-cz-wrap"><canvas id="'+canvasId+'" width="56" height="56"></canvas><div class="lbl-cz-label">Честный Знак</div></div>';
+      }
+
+      var barcodeAreaContent = '';
+      if (czCode && czCode !== '') {
+        barcodeAreaContent = '<div class="lbl-barcode-wrap"><svg id="'+svgId+'"></svg></div>' + czHtml;
+      } else {
+        barcodeAreaContent = '<div class="lbl-barcode-wrap" style="flex:2;"><svg id="'+svgId+'"></svg></div>';
+      }
+
       return '<div class="'+cls+'" data-idx="'+idx+'">'+
         '<div class="lbl-top-strip">Единый товар • Не вскрывать</div>'+
         '<div class="lbl-article-row">'+
           '<span class="lbl-article">'+art+'</span>'+
           '<span class="lbl-counter">'+cNum+' / '+tCopies+'</span>'+
         '</div>'+
-        '<div class="lbl-barcode-wrap"><svg id="'+svgId+'"></svg></div>'+
+        '<div class="lbl-barcode-area">'+
+          barcodeAreaContent+
+        '</div>'+
         '<div class="lbl-barcode-num">'+bc+'</div>'+
         '<div class="lbl-desc">'+desc+'</div>'+
         '<div class="lbl-bottom-row">'+br+'</div>'+
@@ -1084,10 +1194,16 @@
         cnt++;
         var card=document.createElement('div');card.className='label-card'+(printedSet.has(idx)?' printed':'');
         card.onclick=function(e){if(e.ctrlKey||e.metaKey){if(selectedIndices.has(idx))selectedIndices.delete(idx);else selectedIndices.add(idx);updateSelectionUI();}else{if(e.target.tagName!=='INPUT')printSingleLabel(idx);}};
-        var svgId='grid_svg_'+idx;var copies=printCopies[idx]||1;
+        var copies=printCopies[idx]||1;
         card.innerHTML=createLabelHTML(idx,false,1,copies)+'<div class="copies-input"><label>Копий:</label><input type="number" value="'+copies+'" min="1" onchange="updateCopies('+idx+',this.value)" onclick="event.stopPropagation()"></div>';
         grid.appendChild(card);
-        setTimeout(function(){try{JsBarcode('#'+svgId,bc,{format:'CODE128',width:1.5,height:30,displayValue:false,margin:2});}catch(e){}},50);
+        setTimeout(function(){
+          try{JsBarcode('#grid_svg_'+idx,bc,{format:'CODE128',width:1.5,height:30,displayValue:false,margin:2});}catch(e){}
+          var czCode=getItemChestnyZnak(idx);
+          if(czCode&&czCode!==''){
+            try{generateDataMatrix('grid_cz_'+idx,czCode);}catch(e){}
+          }
+        },50);
       });
       if(!cnt) grid.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>Ничего не найдено</p></div>';
       updateLabelStats();updateSelectionUI();updatePrintSummary();
@@ -1102,11 +1218,19 @@
     function filterLabels(f,el){currentFilter=f;document.querySelectorAll('.filter-chips .chip').forEach(function(c){c.classList.remove('active');});if(el)el.classList.add('active');renderLabelGrid();}
     function searchLabels(){renderLabelGrid();}
 
+    function renderBulkDataMatrix(idx, bc, cNum, czCode) {
+      try { JsBarcode('#bp_svg_'+idx+'_'+cNum, bc, {format:'CODE128',width:1.5,height:30,displayValue:false,margin:2}); } catch(e){}
+      if (czCode && czCode !== '') {
+        try { generateDataMatrix('bp_cz_'+idx+'_'+cNum, czCode); } catch(e){}
+      }
+    }
+
     function printSingleLabel(idx){
       var copies=printCopies[idx]||1;if(copies>1){printMultipleLabels([idx]);return;}
       var pa=document.getElementById('bulkPrintArea');pa.innerHTML=createLabelHTML(idx,true,1,copies);pa.classList.remove('hidden');
+      var czCode=getItemChestnyZnak(idx);
       setTimeout(function(){
-        try{JsBarcode('#bp_svg_'+idx+'_1',getItemBarcode(idx),{format:'CODE128',width:1.5,height:30,displayValue:false,margin:2});}catch(e){}
+        renderBulkDataMatrix(idx, getItemBarcode(idx), 1, czCode);
         window.print();
       },200);
       setTimeout(function(){pa.classList.add('hidden');printedSet.add(idx);renderLabelGrid();showToast('Этикетка напечатана','success');},3000);
@@ -1118,8 +1242,8 @@
       pa.classList.remove('hidden');
       setTimeout(function(){
         indices.forEach(function(idx){
-          var c=printCopies[idx]||1;var bc=getItemBarcode(idx);
-          for(var i=1;i<=c;i++){try{JsBarcode('#bp_svg_'+idx+'_'+i,bc,{format:'CODE128',width:1.5,height:30,displayValue:false,margin:2});}catch(e){}}
+          var c=printCopies[idx]||1;var bc=getItemBarcode(idx);var czCode=getItemChestnyZnak(idx);
+          for(var i=1;i<=c;i++){renderBulkDataMatrix(idx,bc,i,czCode);}
         });
         showToast('Печать '+tl+' этикеток 58×40...','info');
         window.print();
@@ -1257,9 +1381,9 @@
       var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});var wi=ids.filter(function(id){return boxes[id].items.length>0;});if(!wi.length){showToast('Нет данных','error');return;}
       var ua=wi.filter(function(id){return !boxPalletMap[id];});if(ua.length){var ap=createPallet();pallets[ap]=[];ua.forEach(function(b){pallets[ap].push(b);boxPalletMap[b]=ap;});}
       var rows=[];rows.push(['Отчёт по отгрузке']);rows.push(['Дата: '+new Date().toLocaleDateString('ru-RU')+' '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})]);rows.push([]);
-      rows.push(['Палет','Короб','Артикул','ШК','Наименование','Кол-во','Квант','Годен до']);
+      rows.push(['Палет','Короб','Артикул','ШК','Честный Знак','Наименование','Кол-во','Квант','Годен до']);
       var pIds=getPalletIds().filter(function(pid){return pallets[pid]&&pallets[pid].length>0;});
-      pIds.forEach(function(pid){pallets[pid].sort(function(a,b){return a-b;}).forEach(function(bid){var bd=getBoxGroupedItems(bid);bd.order.forEach(function(key){var gg=bd.grouped[key];rows.push(['Палет '+pid,'Короб '+bid,gg.article,gg.barcode,gg.name,gg.count,gg.quantity,gg.expiry]);});});});
+      pIds.forEach(function(pid){pallets[pid].sort(function(a,b){return a-b;}).forEach(function(bid){var bd=getBoxGroupedItems(bid);bd.order.forEach(function(key){var gg=bd.grouped[key];rows.push(['Палет '+pid,'Короб '+bid,gg.article,gg.barcode,gg.cz||'',gg.name,gg.count,gg.quantity,gg.expiry]);});});});
       rows.push([]);rows.push(['ИТОГО']);rows.push(['Палетов:',pIds.length]);rows.push(['Коробов:',wi.length]);var t=0;wi.forEach(function(bid){t+=boxes[bid].items.length;});rows.push(['Всего позиций:',t]);
       var ws=XLSX.utils.aoa_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Отчёт');XLSX.writeFile(wb,'Отчёт_отгрузка_'+new Date().toISOString().slice(0,10)+'.xlsx');showToast('Отчёт экспортирован!','success');
     }
