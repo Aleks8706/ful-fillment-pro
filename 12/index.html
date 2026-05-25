@@ -1734,6 +1734,487 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<!-- Добавьте перед закрывающим </body> -->
+<script>
+// ====== НОВЫЕ УТИЛИТЫ ======
+const Storage = {
+  save: (key, data) => {
+    try {
+      localStorage.setItem(`shipment_${key}`, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.warn('Storage save failed:', e);
+      return false;
+    }
+  },
+  load: (key) => {
+    try {
+      const data = localStorage.getItem(`shipment_${key}`);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.warn('Storage load failed:', e);
+      return null;
+    }
+  },
+  clear: () => {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('shipment_'))
+      .forEach(k => localStorage.removeItem(k));
+  }
+};
+
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// ====== ACTION HISTORY ======
+class ActionHistory {
+  constructor(maxSteps = 50) {
+    this.history = [];
+    this.pointer = -1;
+    this.maxSteps = maxSteps;
+  }
+  push(action, inverse, description) {
+    if (this.pointer < this.history.length - 1) {
+      this.history = this.history.slice(0, this.pointer + 1);
+    }
+    this.history.push({ action, inverse, description });
+    if (this.history.length > this.maxSteps) this.history.shift();
+    else this.pointer++;
+    this.updateUI();
+  }
+  undo() {
+    if (this.pointer >= 0) {
+      const item = this.history[this.pointer];
+      item.inverse();
+      this.pointer--;
+      this.updateUI();
+      showToast(`Отменено: ${item.description || 'действие'}`, 'info');
+      return true;
+    }
+    return false;
+  }
+  redo() {
+    if (this.pointer < this.history.length - 1) {
+      this.pointer++;
+      const item = this.history[this.pointer];
+      item.action();
+      this.updateUI();
+      showToast(`Повторено: ${item.description || 'действие'}`, 'info');
+      return true;
+    }
+    return false;
+  }
+  updateUI() {
+    const undoBtn = document.querySelector('[data-action="undo"]');
+    const redoBtn = document.querySelector('[data-action="redo"]');
+    if (undoBtn) undoBtn.disabled = this.pointer < 0;
+    if (redoBtn) redoBtn.disabled = this.pointer >= this.history.length - 1;
+  }
+}
+const history = new ActionHistory();
+
+// ====== SCAN HISTORY ======
+const scanHistory = [];
+function addToScanHistory(code, boxId, timestamp = Date.now()) {
+  scanHistory.unshift({ code, boxId, timestamp });
+  if (scanHistory.length > 100) scanHistory.pop();
+  renderScanHistory();
+  Storage.save('scanHistory', scanHistory);
+}
+
+function renderScanHistory() {
+  const list = document.getElementById('scanHistoryList');
+  if (!list) return;
+  list.innerHTML = scanHistory.slice(0, 20).map(item => `
+    <div class="scan-history-item" data-code="${item.code}">
+      <span class="scan-code">${item.code}</span>
+      <span class="scan-meta">📦 ${item.boxId} · ${new Date(item.timestamp).toLocaleTimeString()}</span>
+    </div>
+  `).join('');
+  document.getElementById('scanCount').textContent = scanHistory.length;
+}
+
+function undoLastScan() {
+  if (scanHistory.length === 0) return;
+  const last = scanHistory.shift();
+  // Найти и удалить из текущего короба
+  if (boxes[last.boxId]) {
+    const idx = boxes[last.boxId].items.findIndex(it => 
+      String(it[mapping.label_barcode]||'').trim() === last.code ||
+      String(it[mapping.origin_barcode]||'').trim() === last.code
+    );
+    if (idx !== -1) {
+      boxes[last.boxId].items.splice(idx, 1);
+      renderBoxChips();
+      updateScannerUI();
+      showToast('Последний скан отменён', 'info');
+    }
+  }
+  renderScanHistory();
+  Storage.save('scanHistory', scanHistory);
+}
+
+// ====== KEYBOARD SHORTCUTS ======
+function initShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Игнорировать в полях ввода
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    
+    if (e.ctrlKey || e.metaKey) {
+      switch(e.key.toLowerCase()) {
+        case 'p': e.preventDefault(); 
+          if (document.getElementById('tab-labels').classList.contains('hidden') === false) {
+            printSelectedLabels();
+          }
+          break;
+        case 's': e.preventDefault(); saveMapping(); break;
+        case 'f': e.preventDefault(); 
+          const search = document.getElementById('labelSearch');
+          if (search) { search.focus(); search.select(); }
+          break;
+        case 'n': e.preventDefault(); newBox(); break;
+        case 'z': e.preventDefault(); history.undo(); break;
+        case 'y': e.preventDefault(); history.redo(); break;
+        case 'd': e.preventDefault(); toggleTheme(); break;
+      }
+    }
+    if (e.key === 'Escape') {
+      closeAllDialogs();
+      document.getElementById('scannerInput')?.focus();
+    }
+    // Быстрый переход по табам цифрами
+    if (e.altKey && /^[1-6]$/.test(e.key)) {
+      e.preventDefault();
+      const tabs = ['upload','mapping','tzEditor','labels','scanner','report'];
+      switchTab(tabs[parseInt(e.key)-1]);
+    }
+  });
+}
+
+// ====== THEME TOGGLE ======
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  Storage.save('theme', next);
+  showToast(`Тема: ${next === 'dark' ? '🌙 Тёмная' : '☀️ Светлая'}`, 'info');
+}
+
+// ====== AUTO-SAVE ======
+let autoSaveTimeout;
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimeout);
+  autoSaveTimeout = setTimeout(() => {
+    if (excelData.length > 0) {
+      Storage.save('session', {
+        mapping,
+        printedSet: Array.from(printedSet),
+        boxes: JSON.parse(JSON.stringify(boxes)),
+        currentBox,
+        pallets,
+        boxPalletMap,
+        nextPalletId,
+        timestamp: Date.now()
+      });
+      showAutoSaveToast();
+    }
+  }, 30000);
+}
+
+function showAutoSaveToast() {
+  const toast = document.createElement('div');
+  toast.className = 'toast info';
+  toast.textContent = '💾 Автосохранение';
+  toast.style.animationDuration = '2s';
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
+}
+
+// ====== VALIDATION ======
+function validateImportData(data, mapping) {
+  const errors = [], warnings = [];
+  
+  data.forEach((row, idx) => {
+    SYSTEM_FIELDS.filter(f => f.required).forEach(field => {
+      const val = row[mapping[field.key]];
+      if (val === undefined || val === null || String(val).trim() === '') {
+        errors.push(`Стр. ${idx+1}: нет "${field.label}"`);
+      }
+    });
+    
+    if (mapping.label_barcode && row[mapping.label_barcode]) {
+      const bc = String(row[mapping.label_barcode]).trim();
+      if (!/^\d{8,14}$|^[A-Za-z0-9\-_\.\*\$\/\+\%]+$/.test(bc)) {
+        warnings.push(`Стр. ${idx+1}: формат ШК "${bc}"`);
+      }
+    }
+  });
+  
+  return { errors, warnings, isValid: errors.length === 0 };
+}
+
+// ====== ENHANCED PROCESS SCAN ======
+const originalProcessScan = processScan;
+processScan = function(barcode) {
+  if (!barcode) return;
+  
+  // Проверка дубликата в истории (за последние 3 сек)
+  const recent = scanHistory.find(h => h.code === barcode && Date.now() - h.timestamp < 3000);
+  if (recent) {
+    showToast('⚠️ Дубликат скана', 'warning');
+    return;
+  }
+  
+  const boxIdBefore = currentBox;
+  const itemsCountBefore = boxes[currentBox]?.items.length || 0;
+  
+  originalProcessScan(barcode);
+  
+  // Если скан успешен — добавить в историю
+  if (boxes[currentBox]?.items.length > itemsCountBefore) {
+    addToScanHistory(barcode, currentBox);
+    
+    // Сохранить действие для undo
+    history.push(
+      () => {}, // action (уже выполнено)
+      () => { // inverse
+        if (boxes[currentBox]) {
+          const idx = boxes[currentBox].items.findIndex(it => 
+            String(it[mapping.label_barcode]||'').trim() === barcode
+          );
+          if (idx !== -1) boxes[currentBox].items.splice(idx, 1);
+          renderBoxChips();
+          updateScannerUI();
+        }
+      },
+      `Скан ${barcode}`
+    );
+  }
+  
+  scheduleAutoSave();
+};
+
+// ====== ENHANCED LABEL CLICK ======
+let lastSelectedLabelIdx = null;
+function handleLabelCardClick(idx, event) {
+  if (event.shiftKey && lastSelectedLabelIdx !== null) {
+    const [start, end] = [lastSelectedLabelIdx, idx].sort((a,b) => a-b);
+    for (let i = start; i <= end; i++) selectedIndices.add(i);
+  } else if (event.ctrlKey || event.metaKey) {
+    selectedIndices.has(idx) ? selectedIndices.delete(idx) : selectedIndices.add(idx);
+  } else {
+    selectedIndices.clear();
+    selectedIndices.add(idx);
+  }
+  lastSelectedLabelIdx = idx;
+  updateSelectionUI();
+}
+
+// Перехват кликов на карточках
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.label-card');
+  if (card && !e.target.matches('input')) {
+    e.preventDefault();
+    const idx = parseInt(card.querySelector('.label-preview')?.dataset.idx);
+    if (!isNaN(idx)) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        handleLabelCardClick(idx, e);
+      } else {
+        printSingleLabel(idx);
+      }
+    }
+  }
+}, true);
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+  // Восстановление темы
+  const savedTheme = Storage.load('theme');
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Восстановление истории сканов
+  const savedHistory = Storage.load('scanHistory');
+  if (savedHistory) {
+    scanHistory.push(...savedHistory);
+    renderScanHistory();
+  }
+  
+  // Восстановление сессии
+  const savedSession = Storage.load('session');
+  if (savedSession && Date.now() - savedSession.timestamp < 24*60*60*1000) {
+    // Предложить восстановление только если нет загруженных данных
+    if (excelData.length === 0 && confirm('Найдена несохранённая сессия. Восстановить?')) {
+      mapping = savedSession.mapping || {};
+      printedSet = new Set(savedSession.printedSet || []);
+      boxes = savedSession.boxes || {1:{items:[],fixed:false}};
+      currentBox = savedSession.currentBox || 1;
+      pallets = savedSession.pallets || {};
+      boxPalletMap = savedSession.boxPalletMap || {};
+      nextPalletId = savedSession.nextPalletId || 1;
+      
+      if (mapping && Object.keys(mapping).length > 0) {
+        renderLabelGrid();
+        renderBoxChips();
+        updateScannerUI();
+        showToast('Сессия восстановлена', 'success');
+      }
+    }
+  }
+  
+  initShortcuts();
+  
+  // Авто-планировщик сохранений
+  ['input', 'change', 'click'].forEach(evt => {
+    document.addEventListener(evt, scheduleAutoSave, { passive: true });
+  });
+  
+  // Кнопки undo/redo в тулбаре
+  const tzToolbar = document.querySelector('.tz-editor-toolbar');
+  if (tzToolbar) {
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'secondary';
+    undoBtn.setAttribute('data-action', 'undo');
+    undoBtn.innerHTML = '↩️';
+    undoBtn.title = 'Отменить (Ctrl+Z)';
+    undoBtn.onclick = () => history.undo();
+    undoBtn.disabled = true;
+    
+    const redoBtn = document.createElement('button');
+    redoBtn.className = 'secondary';
+    redoBtn.setAttribute('data-action', 'redo');
+    redoBtn.innerHTML = '↪️';
+    redoBtn.title = 'Повторить (Ctrl+Y)';
+    redoBtn.onclick = () => history.redo();
+    redoBtn.disabled = true;
+    
+    tzToolbar.insertBefore(undoBtn, tzToolbar.firstChild);
+    tzToolbar.insertBefore(redoBtn, tzToolbar.firstChild);
+  }
+  
+  // Панель истории сканов (добавить в сканер)
+  const scannerPanel = document.querySelector('.camera-scanner-panel');
+  if (scannerPanel && !document.getElementById('scanHistoryPanel')) {
+    const historyPanel = document.createElement('div');
+    historyPanel.id = 'scanHistoryPanel';
+    historyPanel.className = 'scan-history-panel';
+    historyPanel.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;margin:12px 0;';
+    historyPanel.innerHTML = `
+      <details open>
+        <summary style="cursor:pointer;font-weight:600;margin-bottom:8px;">
+          📜 История сканирования (<span id="scanCount">0</span>)
+        </summary>
+        <div id="scanHistoryList" class="scrollable-list" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button onclick="undoLastScan()" class="secondary" style="width:auto;padding:6px 12px;font-size:0.8rem;">↩️ Отменить</button>
+          <button onclick="if(confirm('Очистить историю?')){scanHistory.length=0;renderScanHistory();Storage.save('scanHistory',[]);}" class="danger" style="width:auto;padding:6px 12px;font-size:0.8rem;">🗑️ Очистить</button>
+        </div>
+      </details>
+    `;
+    scannerPanel.insertBefore(historyPanel, scannerPanel.lastElementChild);
+  }
+  
+  showToast('🚀 Система обновлена! Нажмите Ctrl+H для помощи', 'success');
+});
+
+// ====== HELP MODAL ======
+function showHelp() {
+  const help = `
+📦 Горячие клавиши:
+• Ctrl+P — Печать выбранных этикеток
+• Ctrl+S — Сохранить маппинг
+• Ctrl+F — Поиск по этикеткам
+• Ctrl+N — Новый короб
+• Ctrl+Z / Ctrl+Y — Отменить / Повторить
+• Ctrl+D — Сменить тему
+• Alt+1..6 — Переключение вкладок
+• Escape — Закрыть диалоги
+
+🖱️ Мышь:
+• Ctrl+клик по этикетке — Добавить к выделению
+• Shift+клик — Выделить диапазон
+• Клик по значению в ТЗ — Быстрый фильтр
+
+💡 Советы:
+• История сканов сохраняет последние 100 операций
+• Автосохранение каждые 30 сек
+• Экспорт конфигурации маппинга для повторного использования
+  `;
+  
+  if (typeof showToast === 'function') {
+    showToast('Помощь: см. консоль для горячих клавиш', 'info');
+  }
+  console.log(help);
+  
+  // Модальное окно (опционально)
+  const modal = document.createElement('div');
+  modal.className = 'print-dialog-overlay';
+  modal.innerHTML = `
+    <div class="print-dialog" style="max-width:500px;">
+      <h3>⌨️ Горячие клавиши</h3>
+      <pre style="background:var(--surface2);padding:16px;border-radius:8px;font-size:0.85rem;white-space:pre-wrap;">${help}</pre>
+      <button onclick="this.closest('.print-dialog-overlay').remove()" class="success" style="width:100%;margin-top:16px;">Понятно</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Ctrl+H для помощи
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+    e.preventDefault();
+    showHelp();
+  }
+});
+</script>
+
+<!-- Добавьте стили для новых элементов -->
+<style>
+.scan-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--surface3);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+.scan-history-item .scan-code {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--cyan);
+}
+.scan-history-item .scan-meta {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.scrollable-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) var(--surface);
+}
+.scrollable-list::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollable-list::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 2px;
+}
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --surface3: #e2e8f0;
+  --border: #cbd5e1;
+  --border-light: #94a3b8;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+}
+</style>
 </body>
 </html>
 
