@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f1117">
-  <title>📦 Контроль отгрузки</title>
+  <title>📦 Контроль отгрузки v2</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -297,7 +297,7 @@
 <body>
   <div class="container">
     <header>
-      <h1>📦 Контроль отгрузки</h1>
+      <h1>📦 Контроль отгрузки v2</h1>
       <div class="voice-toggle">
         <input type="checkbox" id="voiceToggle" checked>
         <label for="voiceToggle" style="margin:0;text-transform:none;font-weight:500;font-size:0.85rem;">🔊 Голос</label>
@@ -314,7 +314,7 @@
 
     <section id="tab-upload" class="panel">
       <h2>📥 Загрузка ТЗ</h2>
-      <p>Выберите файл Excel. Система автоматически распознает структуру.</p>
+      <p>Выберите файл Excel. Система автоматически распознает структуру и пропустит лишние заголовки.</p>
       <div style="max-width:600px;margin-bottom:16px;"><input type="file" id="fileInput" accept=".xlsx,.xls,.csv"></div>
       <button onclick="parseFile()" class="success">📂 Загрузить</button>
       <div id="uploadStatus" style="margin-top:14px;"></div>
@@ -665,21 +665,60 @@
         try {
           var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
           var sheet = wb.Sheets[wb.SheetNames[0]];
-          var rawData = XLSX.utils.sheet_to_json(sheet, {defval:''});
-          if(rawData.length === 0) throw new Error('Файл пуст');
+          var rawData = XLSX.utils.sheet_to_json(sheet, {defval:'', header: 1}); // Читаем как массив массивов
+
+          if(!rawData || rawData.length < 2) throw new Error('Файл пуст или поврежден');
+
+          // === ИНТЕЛЛЕКТУАЛЬНЫЙ ПОИСК ЗАГОЛОВКОВ ===
+          var headerRowIndex = -1;
+          var maxSearchRows = 20; // Ищем в первых 20 строках
           
-          excelData = rawData.map(function(row) {
-            var norm = {};
-            Object.keys(row).forEach(function(k) { norm[k.trim().replace(/\s+/g, ' ')] = row[k]; });
-            return norm;
-          });
-          allHeaders = Object.keys(excelData[0]);
-          document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ '+excelData.length+' строк, '+allHeaders.length+' колонок</span>';
+          for(var i=0; i < Math.min(rawData.length, maxSearchRows); i++) {
+            var row = rawData[i];
+            // Проверяем наличие ключевых слов в строке
+            var hasKeyWords = row.some(function(cell){ 
+              var s = String(cell).trim().toLowerCase();
+              return s.includes('озон id') || s.includes('шк на этикетку') || s.includes('артикул продавца');
+            });
+            if(hasKeyWords) {
+              headerRowIndex = i;
+              break;
+            }
+          }
+
+          if(headerRowIndex === -1) {
+            throw new Error('Не удалось найти строку заголовков (Озон ID, ШК и т.д.)');
+          }
+
+          var rawHeaders = rawData[headerRowIndex];
+          allHeaders = rawHeaders.map(function(h){ return String(h).trim().replace(/\s+/g, ' '); });
+          
+          // Преобразуем данные в объекты
+          excelData = [];
+          for(var j = headerRowIndex + 1; j < rawData.length; j++) {
+            var rowValues = rawData[j];
+            // Пропускаем полностью пустые строки
+            if(!rowValues || rowValues.every(function(v){return v === undefined || v === '' || v === null;})) continue;
+
+            var rowObj = {};
+            allHeaders.forEach(function(h, idx) {
+              rowObj[h] = rowValues[idx] !== undefined ? rowValues[idx] : '';
+            });
+            
+            // Дополнительная проверка на наличие ID или ШК, чтобы отсечь мусор
+            if(rowObj['Озон ID'] || rowObj['шк на этикетку']) {
+              excelData.push(rowObj);
+            }
+          }
+
+          if(excelData.length === 0) throw new Error('Данные не найдены после заголовков');
+
+          document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ Загружено: '+excelData.length+' строк (заголовки в строке '+(headerRowIndex+1)+')</span>';
           buildMappingUI();
           switchTab('mapping');
-          showToast('Файл загружен!', 'success');
+          showToast('Файл успешно загружен!', 'success');
           speak('Файл загружен.');
-        } catch(err) { showToast('Ошибка: '+err.message, 'error'); }
+        } catch(err) { showToast('Ошибка: '+err.message, 'error'); console.error(err); }
       };
       reader.readAsArrayBuffer(file);
     }
@@ -689,11 +728,11 @@
       {key:'label_barcode',label:'ШК на этикетку',hints:['шк на этикетку','шк','barcode','штрихкод','ean','код','код товара','шк товара'],required:true},
       {key:'chestny_znak',label:'Честный знак (DataMatrix)',hints:['честный','знак','datamatrix','data.matrix','честный знак','маркировка','марк','код маркировки','киз','data matrix'],required:false},
       {key:'origin_barcode',label:'ШК исходный',hints:['шк','barcode','штрихкод','ean','исход','исходный'],required:false},
-      {key:'product_name',label:'Наименование',hints:['наименование составляющего','наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
+      {key:'product_name',label:'Наименование',hints:['наименование составляющего в наборе','наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
       {key:'expiry',label:'Годен до',hints:['ГОДЕН ДО','годен','срок','expiry','сг','годность','срок годности','годен до'],required:false},
       {key:'packing_instructions',label:'Инструкция / ТЗ',hints:['тз','инструкция','instruction','примечание','упаковка','паковать','комментарий'],required:false},
       {key:'quantity',label:'Квант / Кол-во',hints:['кол-во в упаковку','квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'],required:true},
-      {key:'total_quantity',label:'Итого к отгрузке',hints:['ИТОГО К ОТГРУЗКЕ','итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'],required:false}
+      {key:'total_quantity',label:'Итого к отгрузке',hints:['ИТОГО К ОТГРУЗКЕ спаек','итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'],required:false}
     ];
 
     function findBestMatch(headers, hints) {
@@ -1192,9 +1231,11 @@
       var exported = 0;
       
       var matchedCities = [];
+      // Проходим по всем найденным заголовкам
       allHeaders.forEach(function(h) {
+        var cleanH = h.toLowerCase().replace(/\s/g,'');
         CITY_PATTERNS.forEach(function(p) {
-          if(h.toLowerCase().replace(/\s/g,'') === p.toLowerCase().replace(/\s/g,'')) {
+          if(cleanH === p.toLowerCase().replace(/\s/g,'') || cleanH.includes(p.toLowerCase().replace(/\s/g,''))) {
             matchedCities.push({name: h, pattern: p});
           }
         });
@@ -1279,3 +1320,4 @@
   </script>
 </body>
 </html>
+
