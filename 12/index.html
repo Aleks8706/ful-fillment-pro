@@ -549,9 +549,10 @@
     var tzRangeFilters = {};
     var tzChipsActiveCol = '';
     var tzChipsActiveValue = '';
-    var pendingPrintIndices = []; // ✅ Для подтверждения печати
+    var pendingPrintIndices = [];
 
-    const CITY_COLUMNS = ['Москва-Пушкино-1','Ростов','СП','Краснодар','Ярославль','Воронеж','Екатеринбург','Самара','уфа','Тюмень','Новосиб','казань','Тверь','Саратов','Омск','Красноярск','Воронеж2','Невинномыск','Махачкала'];
+    // Умный поиск колонок городов (нечувствительный к регистру/пробелам)
+    var CITY_PATTERNS = ['Москва-Пушкино-1','Ростов','СП','Краснодар','Ярославль','Воронеж','Екатеринбург','Самара','уфа','Тюмень','Новосиб','казань','Тверь','Саратов','Омск','Красноярск','Воронеж2','Невинномыск','Махачкала'];
 
     function showToast(msg, type) {
       type = type || 'info';
@@ -586,30 +587,30 @@
 
     document.getElementById('voiceToggle').addEventListener('change', function(e) { voiceEnabled = e.target.checked; });
 
-    // ✅ ЗАГРУЗКА/СОХРАНЕНИЕ СОСТОЯНИЯ ПЕЧАТИ
+    // ✅ ЗАГРУЗКА/СОХРАНЕНИЕ СОСТОЯНИЯ ПЕЧАТИ (с защитой от ошибок)
     function loadPrintedState() {
       try {
-        const saved = localStorage.getItem('printed_labels_set');
+        var saved = localStorage.getItem('printed_labels_set');
         if (saved) printedSet = new Set(JSON.parse(saved));
-        const savedCopies = localStorage.getItem('print_copies');
+        var savedCopies = localStorage.getItem('print_copies');
         if (savedCopies) printCopies = JSON.parse(savedCopies);
-      } catch(e) {}
+      } catch(e) { console.warn('LocalStorage недоступен:', e); }
     }
     function savePrintedState() {
       try {
         localStorage.setItem('printed_labels_set', JSON.stringify([...printedSet]));
         localStorage.setItem('print_copies', JSON.stringify(printCopies));
-      } catch(e) {}
+      } catch(e) { console.warn('LocalStorage недоступен:', e); }
     }
 
     // ✅ ПОДТВЕРЖДЕНИЕ ПЕЧАТИ
     function askPrintConfirmation(indices) {
       pendingPrintIndices = indices;
-      document.getElementById('printConfirmText').textContent = `Отправлено ${indices.length} этикеток. Принтер обработал задание без сбоев?`;
+      document.getElementById('printConfirmText').textContent = `Отправлено ${indices.length} позиций. Принтер обработал задание без сбоев?`;
       document.getElementById('printConfirmModal').classList.remove('hidden');
     }
     function confirmPrintSuccess() {
-      pendingPrintIndices.forEach(idx => printedSet.add(idx));
+      pendingPrintIndices.forEach(function(idx) { printedSet.add(idx); });
       savePrintedState();
       document.getElementById('printConfirmModal').classList.add('hidden');
       renderLabelGrid(); updatePrintSummary();
@@ -619,7 +620,7 @@
     }
     function declinePrint() {
       document.getElementById('printConfirmModal').classList.add('hidden');
-      showToast('⚠️ Статус сохранён как "не напечатано". Проверьте принтер и попробуйте снова.', 'warning');
+      showToast('⚠️ Статус сохранён как "не напечатано". Попробуйте снова.', 'warning');
       pendingPrintIndices = [];
     }
     function togglePrintStatusManually(idx) {
@@ -636,10 +637,20 @@
       var reader = new FileReader();
       reader.onload = function(e) {
         try {
-          var wb = XLSX.read(e.target.result, {type:'array'});
+          var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
           var sheet = wb.Sheets[wb.SheetNames[0]];
-          excelData = XLSX.utils.sheet_to_json(sheet, {defval:''});
-          if(excelData.length === 0) throw new Error('Файл пуст');
+          var rawData = XLSX.utils.sheet_to_json(sheet, {defval:''});
+          if(rawData.length === 0) throw new Error('Файл пуст или не содержит данных');
+          
+          // Нормализация заголовков (убираем лишние пробелы, приводим к единому виду)
+          excelData = rawData.map(function(row) {
+            var norm = {};
+            Object.keys(row).forEach(function(k) {
+              var newKey = k.trim().replace(/\s+/g, ' ');
+              norm[newKey] = row[k];
+            });
+            return norm;
+          });
           allHeaders = Object.keys(excelData[0]);
           document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ '+excelData.length+' строк, '+allHeaders.length+' колонок</span>';
           buildMappingUI();
@@ -676,13 +687,12 @@
     }
 
     function buildMappingUI() {
-      var headers = Object.keys(excelData[0]); allHeaders = headers;
       var tbody = document.getElementById('mappingBody'); tbody.innerHTML = '';
       SYSTEM_FIELDS.forEach(function(field) {
-        var best = findBestMatch(headers, field.hints);
+        var best = findBestMatch(allHeaders, field.hints);
         var tr = document.createElement('tr');
         tr.innerHTML = '<td><strong>'+field.label+'</strong>'+(field.required?'<span style="color:var(--danger);"> *</span>':'')+'<br><span style="color:var(--text-muted);font-size:0.7rem;">'+field.key+'</span></td>'+
-          '<td><select id="map_'+field.key+'"><option value="">— Не выбрано —</option>'+headers.map(function(h){ return '<option value="'+h+'"'+(h===best?' selected':'')+'>'+h+'</option>'; }).join('')+'</select></td>'+
+          '<td><select id="map_'+field.key+'"><option value="">— Не выбрано —</option>'+allHeaders.map(function(h){ return '<option value="'+h+'"'+(h===best?' selected':'')+'>'+h+'</option>'; }).join('')+'</select></td>'+
           '<td id="preview_'+field.key+'" style="color:var(--primary-light);font-weight:600;">—</td>';
         tbody.appendChild(tr);
         setTimeout(function(){ var sel=document.getElementById('map_'+field.key); sel.addEventListener('change',function(){updateFieldPreview(field.key);}); updateFieldPreview(field.key); }, 0);
@@ -722,6 +732,7 @@
       printedSet.clear();selectedIndices.clear();labelCounterMap={};printCopies={};
       excelData.forEach(function(item,idx){ if(mapping.total_quantity&&mapping.total_quantity!=='') printCopies[idx]=parseQuantityValue(item[mapping.total_quantity]); else printCopies[idx]=1; });
       calculateCounters();boxes={1:{items:[],fixed:false}};currentBox=1;pallets={};boxPalletMap={};nextPalletId=1;
+      savePrintedState(); // Сохраняем начальное состояние
       switchTab('labels');showToast('Маппинг сохранён!','success');speak('Маппинг сохранен.');
     }
 
@@ -801,7 +812,6 @@
         var copies=printCopies[idx]||1;
         card.innerHTML=createLabelHTML(idx,false,1,copies)+'<div class="copies-input"><label>Копий:</label><input type="number" value="'+copies+'" min="1" onchange="updateCopies('+idx+',this.value)" onclick="event.stopPropagation()"></div>';
         
-        // ✅ Кнопка ручного переключения статуса
         var toggleBtn = document.createElement('div');
         toggleBtn.style.cssText = 'position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
         toggleBtn.textContent = printedSet.has(idx) ? '✅' : '⏳';
@@ -841,7 +851,7 @@
       var czCode=getItemChestnyZnak(idx);
       setTimeout(function(){
         renderBulkDataMatrix(idx, getItemBarcode(idx), 1, czCode);
-        window.print(); // Блокирует JS до закрытия диалога печати
+        window.print(); 
         askPrintConfirmation([idx]);
         setTimeout(function(){pa.classList.add('hidden');},200);
       },200);
@@ -854,7 +864,7 @@
       setTimeout(function(){
         indices.forEach(function(idx){var c=printCopies[idx]||1;var bc=getItemBarcode(idx);var czCode=getItemChestnyZnak(idx);for(var i=1;i<=c;i++){renderBulkDataMatrix(idx,bc,i,czCode);}});
         showToast('Печать '+indices.length+' позиций...','info');
-        window.print(); // Блокирует JS до закрытия диалога печати
+        window.print();
         askPrintConfirmation(indices);
         setTimeout(function(){pa.classList.add('hidden');},1500);
       },500);
@@ -1128,63 +1138,83 @@
       showToast('Отчёт отправлен на печать А4...','info');
     }
 
-    // ✅ ЭКСПОРТ ТЗ ПО ГОРОДАМ
+    // ✅ ЭКСПОРТ ТЗ ПО ГОРОДАМ (Исправленный)
     function exportTZByCities() {
       if(!excelData.length) { showToast('Загрузите файл сначала!', 'error'); return; }
-      const required = ['wb_article','label_barcode','product_name','quantity'];
-      const missing = required.filter(k => !mapping[k]);
+      var required = ['wb_article','label_barcode','product_name','quantity'];
+      var missing = required.filter(function(k) { return !mapping[k]; });
       if(missing.length) { showToast('Настройте маппинг полей!', 'error'); return; }
       
       document.getElementById('cityExportModal').classList.remove('hidden');
-      const progressFill = document.getElementById('cityProgressFill');
-      const progressText = document.getElementById('cityProgressText');
-      let exported = 0;
-      const total = CITY_COLUMNS.length;
+      var progressFill = document.getElementById('cityProgressFill');
+      var progressText = document.getElementById('cityProgressText');
+      var exported = 0;
+      
+      // Находим реальные названия колонок городов в файле
+      var matchedCities = [];
+      allHeaders.forEach(function(h) {
+        CITY_PATTERNS.forEach(function(p) {
+          if(h.toLowerCase().replace(/\s/g,'') === p.toLowerCase().replace(/\s/g,'')) {
+            matchedCities.push({name: h, pattern: p});
+          }
+        });
+      });
+      
+      if(matchedCities.length === 0) {
+        closeCityExportModal();
+        showToast('⚠️ Колонки городов не найдены в файле. Проверьте заголовки.', 'warning');
+        return;
+      }
+      
+      var total = matchedCities.length;
       processNextCity(0);
       
       function processNextCity(index) {
-        if(index >= CITY_COLUMNS.length) { finishExport(); return; }
-        const city = CITY_COLUMNS[index];
-        progressText.textContent = `Обработка: ${city} (${index+1}/${total})...`;
+        if(index >= total) { finishExport(); return; }
+        var cityData = matchedCities[index];
+        progressText.textContent = `Обработка: ${cityData.pattern} (${index+1}/${total})...`;
         progressFill.style.width = `${Math.round((index/total)*100)}%`;
-        setTimeout(() => { exportSingleCity(city); exported++; processNextCity(index + 1); }, 80);
+        setTimeout(function() { exportSingleCity(cityData); exported++; processNextCity(index + 1); }, 80);
       }
       
-      function exportSingleCity(cityName) {
-        const cityData = excelData.filter((row) => {
-          const val = row[cityName];
-          if(val === undefined || val === null || val === '') return false;
-          const num = parseFloat(String(val).replace(/\s/g,'').replace(',','.'));
-          return !isNaN(num) && num > 0;
-        });
+      function exportSingleCity(cityObj) {
+        var cityName = cityObj.name;
+        var cityData = [];
+        for(var i=0; i<excelData.length; i++) {
+          var val = excelData[i][cityName];
+          if(val === undefined || val === null || val === '') continue;
+          var num = parseFloat(String(val).replace(/\s/g,'').replace(',','.'));
+          if(!isNaN(num) && num > 0) cityData.push({idx: i, row: excelData[i], qty: num});
+        }
+        
         if(cityData.length === 0) return;
         
-        const exportRows = cityData.map(row => {
-          const qty = parseFloat(String(row[cityName]).replace(/\s/g,'').replace(',','.'));
-          const idx = excelData.indexOf(row);
+        var exportRows = cityData.map(function(item) {
           return {
-            'Озон ID': row[mapping.wb_article] || '',
-            'Артикул': getItemArticle(idx) || '',
-            'ШК на этикетку': getItemBarcode(idx) || '',
-            'Честный Знак': getItemChestnyZnak(idx) || '',
-            'Наименование': getItemDescription(idx) || '',
-            'Квант': getItemQuantity(idx) || '',
-            'Годен до': getItemExpiry(idx) || '—',
-            'Инструкция': getItemInstruction(idx) || '',
-            'Кол-во для отгрузки': qty,
-            'Город назначения': cityName
+            'Озон ID': item.row[mapping.wb_article] || '',
+            'Артикул': getItemArticle(item.idx) || '',
+            'ШК на этикетку': getItemBarcode(item.idx) || '',
+            'Честный Знак': getItemChestnyZnak(item.idx) || '',
+            'Наименование': getItemDescription(item.idx) || '',
+            'Квант': getItemQuantity(item.idx) || '',
+            'Годен до': getItemExpiry(item.idx) || '—',
+            'Инструкция': getItemInstruction(item.idx) || '',
+            'Кол-во для отгрузки': item.qty,
+            'Город назначения': cityObj.pattern
           };
         });
         
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(exportRows);
-        const colWidths = Object.keys(exportRows[0]||{}).map(key => ({ wch: Math.max(key.length, 20, ...exportRows.map(r => String(r[key]||'').length)) }));
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.json_to_sheet(exportRows);
+        var colWidths = Object.keys(exportRows[0]||{}).map(function(key) { 
+          return { wch: Math.max(key.length, 20, ...exportRows.map(function(r){return String(r[key]||'').length;})) }; 
+        });
         ws['!cols'] = colWidths;
-        XLSX.utils.book_append_sheet(wb, ws, cityName);
+        XLSX.utils.book_append_sheet(wb, ws, cityObj.pattern);
         
-        const safeName = cityName.replace(/[\/\\:*?"<>|]/g, '_');
-        const dateStr = new Date().toISOString().slice(0,10);
-        XLSX.writeFile(wb, `ТЗ_${safeName}_${dateStr}.xlsx`);
+        var safeName = cityObj.pattern.replace(/[\/\\:*?"<>|]/g, '_');
+        var dateStr = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(wb, 'ТЗ_'+safeName+'_'+dateStr+'.xlsx');
       }
       
       function finishExport() {
@@ -1203,7 +1233,7 @@
 
     window.onload = function() {
       document.getElementById('scannerInput').focus();
-      loadPrintedState(); // ✅ Загружаем сохранённое состояние печати при старте
+      loadPrintedState();
       speak('Система готова.');
     };
   </script>
