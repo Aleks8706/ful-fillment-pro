@@ -84,7 +84,6 @@
     .label-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;margin-top:16px;}
     .label-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:var(--transition);position:relative;}
     .label-card:hover{border-color:var(--primary);box-shadow:0 8px 32px rgba(99,102,241,0.15);transform:translateY(-3px);}
-    .label-card.printed{border-color:var(--success);background:var(--success-bg);}
     .label-card .copies-input{margin-top:12px;display:flex;gap:10px;align-items:center;}
     .label-card .copies-input label{margin:0;font-size:0.8rem;text-transform:none;}
     .label-card .copies-input input{width:64px;text-align:center;padding:6px;}
@@ -236,8 +235,6 @@
     .label-sheet .lbl-expiry { font-size: 6pt !important; font-weight: 700 !important; color: #000 !important; }
     .label-sheet .lbl-quantity { font-size: 6pt !important; font-weight: 700 !important; color: #000 !important; }
     .label-sheet .lbl-instruction { font-size: 5pt !important; font-weight: 600 !important; line-height: 1.15 !important; color: #222 !important; margin-top: 0.5mm !important; overflow: hidden !important; max-height: 4mm !important; }
-
-    /* Grid preview of label */
     .label-preview { width: 100%; background: white; color: #000; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; border: 1px solid #ddd; padding: 3mm; box-sizing: border-box; }
     .label-preview .lbl-top-strip { background: #000; color: #fff; font-size: 3.5pt; font-weight: 900; text-align: center; padding: 0.6mm 0; margin: 0 0 0.8mm 0; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.1; border-radius: 2px; }
     .label-preview .lbl-article-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4mm; }
@@ -254,8 +251,6 @@
     .label-preview .lbl-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.4mm; border-top: 0.5px solid #ddd; }
     .label-preview .lbl-expiry, .label-preview .lbl-quantity { font-size: 5pt; font-weight: 700; color: #000; }
     .label-preview .lbl-instruction { font-size: 4.5pt; font-weight: 600; line-height: 1.15; color: #222; margin-top: 0.4mm; overflow: hidden; max-height: 3mm; }
-
-    /* Print: 58x40 only */
     @media print {
       @page { size: 58mm 40mm; margin: 0; }
       body { background: white !important; }
@@ -274,8 +269,6 @@
       #bulkPrintArea .label-sheet .lbl-expiry, #bulkPrintArea .label-sheet .lbl-quantity { font-size: 6pt !important; font-weight: 700 !important; color: #000 !important; }
       #bulkPrintArea .label-sheet .lbl-instruction { font-size: 5pt !important; font-weight: 600 !important; color: #222 !important; }
     }
-
-    /* A4 Print for TZ and Reports */
     body.printing #tzPrintArea, body.printing #tzPrintArea * { visibility: visible !important; }
     body.printing { background: white !important; }
     body.printing #tzPrintArea { position: absolute; left: 0; top: 0; background: white !important; color: #000 !important; font-family: Arial, sans-serif !important; padding: 10mm !important; margin: 0 !important; width: 100% !important; }
@@ -286,12 +279,10 @@
     body.printing #tzPrintArea td { padding: 1.5mm 2mm; border: 1px solid #ccc; color: #000 !important; font-size: 9pt; }
     body.printing #tzPrintArea tr:nth-child(even) td { background: #f0f0f0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body.printing #tzPrintArea .tz-print-footer { text-align: center; margin-top: 3mm; font-size: 8pt; color: #999 !important; }
-
-    /* Print orientation dialog */
     .print-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
-    .print-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; max-width: 420px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+    .print-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; max-width: 520px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
     .print-dialog h3 { font-size: 1.2rem; margin-bottom: 8px; color: var(--text); }
-    .print-dialog p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; }
+    .print-dialog p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; }
     .print-dialog .orient-options { display: flex; gap: 12px; margin-bottom: 24px; }
     .print-dialog .orient-btn { flex: 1; padding: 20px 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); background: var(--surface2); cursor: pointer; text-align: center; transition: var(--transition); }
     .print-dialog .orient-btn:hover { border-color: var(--primary); }
@@ -495,10 +486,11 @@
   <div id="printConfirmModal" class="print-dialog-overlay hidden">
     <div class="print-dialog">
       <h3>🖨️ Подтверждение печати</h3>
-      <p id="printConfirmText">Этикетки отправлены на Xprinter XP-420B. Всё напечаталось корректно?</p>
+      <p>Укажите, сколько этикеток <b>фактически</b> вышло из принтера Xprinter XP-420B. Если всё ок — просто нажмите ✅.</p>
+      <div id="printConfirmList" style="max-height:300px;overflow-y:auto;margin-bottom:20px;padding:4px;"></div>
       <div class="dialog-actions">
-        <button onclick="declinePrint()" class="danger" style="flex:1;">❌ Нет / Был сброс</button>
-        <button onclick="confirmPrintSuccess()" class="success" style="flex:1;">✅ Да, всё ок</button>
+        <button onclick="declinePrint()" class="secondary" style="flex:1;">⚠️ Отмена / Ноль</button>
+        <button onclick="confirmActualPrint()" class="success" style="flex:1;">✅ Подтвердить</button>
       </div>
     </div>
   </div>
@@ -523,7 +515,7 @@
     var boxes = {1:{items:[],fixed:false}};
     var currentBox = 1;
     var voiceEnabled = true;
-    var printedSet = new Set();
+    var printLog = {}; // { idx: { total: N, actual: M } }
     var currentFilter = 'all';
     var selectedIndices = new Set();
     var allHeaders = [];
@@ -549,10 +541,9 @@
     var tzRangeFilters = {};
     var tzChipsActiveCol = '';
     var tzChipsActiveValue = '';
-    var pendingPrintIndices = [];
+    var pendingPrintJobs = [];
 
-    // Умный поиск колонок городов (нечувствительный к регистру/пробелам)
-    var CITY_PATTERNS = ['Москва-Пушкино-1','Ростов','СП','Краснодар','Ярославль','Воронеж','Екатеринбург','Самара','уфа','Тюмень','Новосиб','казань','Тверь','Саратов','Омск','Красноярск','Воронеж2','Невинномыск','Махачкала'];
+    const CITY_PATTERNS = ['Москва-Пушкино-1','Ростов','СП','Краснодар','Ярославль','Воронеж','Екатеринбург','Самара','уфа','Тюмень','Новосиб','казань','Тверь','Саратов','Омск','Красноярск','Воронеж2','Невинномыск','Махачкала'];
 
     function showToast(msg, type) {
       type = type || 'info';
@@ -587,48 +578,83 @@
 
     document.getElementById('voiceToggle').addEventListener('change', function(e) { voiceEnabled = e.target.checked; });
 
-    // ✅ ЗАГРУЗКА/СОХРАНЕНИЕ СОСТОЯНИЯ ПЕЧАТИ (с защитой от ошибок)
-    function loadPrintedState() {
+    // ✅ ЗАГРУЗКА/СОХРАНЕНИЕ СОСТОЯНИЯ ПЕЧАТИ
+    function loadPrintState() {
       try {
-        var saved = localStorage.getItem('printed_labels_set');
-        if (saved) printedSet = new Set(JSON.parse(saved));
+        var saved = localStorage.getItem('print_log_v2');
+        if (saved) printLog = JSON.parse(saved);
         var savedCopies = localStorage.getItem('print_copies');
         if (savedCopies) printCopies = JSON.parse(savedCopies);
       } catch(e) { console.warn('LocalStorage недоступен:', e); }
     }
-    function savePrintedState() {
+    function savePrintState() {
       try {
-        localStorage.setItem('printed_labels_set', JSON.stringify([...printedSet]));
+        localStorage.setItem('print_log_v2', JSON.stringify(printLog));
         localStorage.setItem('print_copies', JSON.stringify(printCopies));
       } catch(e) { console.warn('LocalStorage недоступен:', e); }
     }
 
-    // ✅ ПОДТВЕРЖДЕНИЕ ПЕЧАТИ
-    function askPrintConfirmation(indices) {
-      pendingPrintIndices = indices;
-      document.getElementById('printConfirmText').textContent = `Отправлено ${indices.length} позиций. Принтер обработал задание без сбоев?`;
+    function getPrintStatus(idx) {
+      var total = printCopies[idx] || 1;
+      var log = printLog[idx];
+      if (!log) return { total: total, actual: 0, remaining: total };
+      return { total: log.total, actual: log.actual, remaining: Math.max(0, log.total - log.actual) };
+    }
+
+    function updatePrintLog(idx, actualPrinted) {
+      var total = printCopies[idx] || 1;
+      var prev = printLog[idx] || { total: total, actual: 0 };
+      prev.actual = Math.min(total, Math.max(0, prev.actual + actualPrinted));
+      printLog[idx] = prev;
+      savePrintState();
+    }
+
+    // ✅ МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ
+    function showPrintConfirmationModal(jobs) {
+      pendingPrintJobs = jobs;
+      var list = document.getElementById('printConfirmList');
+      list.innerHTML = '';
+      jobs.forEach(function(job, i) {
+        var status = getPrintStatus(job.idx);
+        var art = getItemArticle(job.idx) || '—';
+        var bc = getItemBarcode(job.idx) || '—';
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);';
+        row.innerHTML = `<div style="flex:1;min-width:0;"><b style="font-size:0.85rem;">${art}</b><br><span style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">${bc}</span><br><span style="font-size:0.7rem;color:var(--text-secondary);">Запрошено: ${job.requested} | Уже: ${status.actual}/${status.total}</span></div>
+          <input type="number" min="0" max="${job.requested}" value="${job.requested}" data-job-idx="${i}" style="width:64px;text-align:center;padding:6px;font-weight:700;">`;
+        list.appendChild(row);
+      });
       document.getElementById('printConfirmModal').classList.remove('hidden');
     }
-    function confirmPrintSuccess() {
-      pendingPrintIndices.forEach(function(idx) { printedSet.add(idx); });
-      savePrintedState();
+
+    function confirmActualPrint() {
+      var inputs = document.querySelectorAll('#printConfirmList input');
+      inputs.forEach(function(inp) {
+        var i = parseInt(inp.getAttribute('data-job-idx'));
+        var job = pendingPrintJobs[i];
+        var actual = parseInt(inp.value) || 0;
+        updatePrintLog(job.idx, actual);
+      });
       document.getElementById('printConfirmModal').classList.add('hidden');
       renderLabelGrid(); updatePrintSummary();
-      showToast('✅ Отмечено как напечатанное', 'success');
-      speak('Печать подтверждена.');
-      pendingPrintIndices = [];
+      showToast('✅ Статус печати обновлён', 'success');
+      speak('Количество напечатанных этикеток сохранено.');
     }
+
     function declinePrint() {
       document.getElementById('printConfirmModal').classList.add('hidden');
-      showToast('⚠️ Статус сохранён как "не напечатано". Попробуйте снова.', 'warning');
-      pendingPrintIndices = [];
+      showToast('⚠️ Печать не подтверждена. Этикетки останутся в очереди.', 'warning');
     }
+
     function togglePrintStatusManually(idx) {
-      if(printedSet.has(idx)) printedSet.delete(idx);
-      else printedSet.add(idx);
-      savePrintedState();
-      renderLabelGrid(); updatePrintSummary();
-      showToast(printedSet.has(idx) ? '✅ Отмечено как напечатанное' : '🔄 Снято с печати', 'info');
+      var status = getPrintStatus(idx);
+      if(status.actual >= status.total) {
+        printLog[idx] = { total: status.total, actual: 0 };
+      } else {
+        printLog[idx] = { total: status.total, actual: status.total };
+      }
+      savePrintState(); renderLabelGrid(); updatePrintSummary();
+      showToast(printLog[idx].actual >= printLog[idx].total ? '✅ Отмечено как напечатанное' : '🔄 Сброшено в очередь', 'info');
     }
 
     function parseFile() {
@@ -640,15 +666,11 @@
           var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
           var sheet = wb.Sheets[wb.SheetNames[0]];
           var rawData = XLSX.utils.sheet_to_json(sheet, {defval:''});
-          if(rawData.length === 0) throw new Error('Файл пуст или не содержит данных');
+          if(rawData.length === 0) throw new Error('Файл пуст');
           
-          // Нормализация заголовков (убираем лишние пробелы, приводим к единому виду)
           excelData = rawData.map(function(row) {
             var norm = {};
-            Object.keys(row).forEach(function(k) {
-              var newKey = k.trim().replace(/\s+/g, ' ');
-              norm[newKey] = row[k];
-            });
+            Object.keys(row).forEach(function(k) { norm[k.trim().replace(/\s+/g, ' ')] = row[k]; });
             return norm;
           });
           allHeaders = Object.keys(excelData[0]);
@@ -663,15 +685,15 @@
     }
 
     var SYSTEM_FIELDS = [
-      {key:'wb_article',label:'Артикул',hints:['артикул','article','код','sku','wb','art','код товара'],required:true},
-      {key:'label_barcode',label:'ШК на этикетку',hints:['шк','barcode','штрихкод','ean','код','код товара','шк товара'],required:true},
+      {key:'wb_article',label:'Артикул',hints:['Озон ID','артикул','article','код','sku','wb','art','код товара'],required:true},
+      {key:'label_barcode',label:'ШК на этикетку',hints:['шк на этикетку','шк','barcode','штрихкод','ean','код','код товара','шк товара'],required:true},
       {key:'chestny_znak',label:'Честный знак (DataMatrix)',hints:['честный','знак','datamatrix','data.matrix','честный знак','маркировка','марк','код маркировки','киз','data matrix'],required:false},
       {key:'origin_barcode',label:'ШК исходный',hints:['шк','barcode','штрихкод','ean','исход','исходный'],required:false},
-      {key:'product_name',label:'Наименование',hints:['наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
-      {key:'expiry',label:'Годен до',hints:['годен','срок','expiry','сг','годность','срок годности','годен до'],required:false},
+      {key:'product_name',label:'Наименование',hints:['наименование составляющего','наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
+      {key:'expiry',label:'Годен до',hints:['ГОДЕН ДО','годен','срок','expiry','сг','годность','срок годности','годен до'],required:false},
       {key:'packing_instructions',label:'Инструкция / ТЗ',hints:['тз','инструкция','instruction','примечание','упаковка','паковать','комментарий'],required:false},
-      {key:'quantity',label:'Квант / Кол-во',hints:['квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'],required:true},
-      {key:'total_quantity',label:'Итого к отгрузке',hints:['итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'],required:false}
+      {key:'quantity',label:'Квант / Кол-во',hints:['кол-во в упаковку','квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'],required:true},
+      {key:'total_quantity',label:'Итого к отгрузке',hints:['ИТОГО К ОТГРУЗКЕ','итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'],required:false}
     ];
 
     function findBestMatch(headers, hints) {
@@ -729,10 +751,10 @@
       SYSTEM_FIELDS.forEach(function(f){ var sel=document.getElementById('map_'+f.key); var v=sel?sel.value:''; if(v){mapping[f.key]=v;filled++;} else if(f.required) missing.push(f.label); });
       if(missing.length){showToast('Не заполнены: '+missing.join(', '),'error');return;}
       if(filled<3){showToast('Сопоставьте минимум 3 поля!','error');return;}
-      printedSet.clear();selectedIndices.clear();labelCounterMap={};printCopies={};
+      selectedIndices.clear();labelCounterMap={};printCopies={};printLog={};
       excelData.forEach(function(item,idx){ if(mapping.total_quantity&&mapping.total_quantity!=='') printCopies[idx]=parseQuantityValue(item[mapping.total_quantity]); else printCopies[idx]=1; });
       calculateCounters();boxes={1:{items:[],fixed:false}};currentBox=1;pallets={};boxPalletMap={};nextPalletId=1;
-      savePrintedState(); // Сохраняем начальное состояние
+      savePrintState();
       switchTab('labels');showToast('Маппинг сохранён!','success');speak('Маппинг сохранен.');
     }
 
@@ -794,7 +816,7 @@
     function updatePrintSummary(){
       var sd=document.getElementById('printSummary');if(!excelData.length){sd.classList.add('hidden');return;}
       var tl=0;for(var i=0;i<excelData.length;i++)tl+=(printCopies[i]||1);
-      var pl=0;printedSet.forEach(function(idx){pl+=(printCopies[idx]||1);});
+      var pl=0;Object.keys(printLog).forEach(function(k){pl+=printLog[k].actual;});
       sd.classList.remove('hidden');sd.innerHTML='📊 Позиций: <b>'+excelData.length+'</b> · Этикеток: <b>'+tl+'</b> · Напечатано: <b>'+pl+'</b> · Осталось: <b>'+(tl-pl)+'</b>';
       document.getElementById('statLabels').textContent=tl;
     }
@@ -803,21 +825,25 @@
       var st=(document.getElementById('labelSearch').value||'').toLowerCase();var cnt=0;
       excelData.forEach(function(item,idx){
         var art=getItemArticle(idx),bc=getItemBarcode(idx),desc=getItemDescription(idx);
-        if(currentFilter==='printed'&&!printedSet.has(idx))return;
-        if(currentFilter==='pending'&&printedSet.has(idx))return;
+        var status=getPrintStatus(idx);
+        var isPrinted=status.remaining===0;
+        if(currentFilter==='printed'&&!isPrinted)return;
+        if(currentFilter==='pending'&&isPrinted)return;
         if(st&&!art.toLowerCase().includes(st)&&!bc.toLowerCase().includes(st)&&!desc.toLowerCase().includes(st))return;
         cnt++;
-        var card=document.createElement('div');card.className='label-card'+(printedSet.has(idx)?' printed':'');
+        var card=document.createElement('div');card.className='label-card'+(isPrinted?' printed':'');
         card.onclick=function(e){if(e.ctrlKey||e.metaKey){if(selectedIndices.has(idx))selectedIndices.delete(idx);else selectedIndices.add(idx);updateSelectionUI();}else{if(e.target.tagName!=='INPUT')printSingleLabel(idx);}};
         var copies=printCopies[idx]||1;
         card.innerHTML=createLabelHTML(idx,false,1,copies)+'<div class="copies-input"><label>Копий:</label><input type="number" value="'+copies+'" min="1" onchange="updateCopies('+idx+',this.value)" onclick="event.stopPropagation()"></div>';
         
-        var toggleBtn = document.createElement('div');
-        toggleBtn.style.cssText = 'position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
-        toggleBtn.textContent = printedSet.has(idx) ? '✅' : '⏳';
-        toggleBtn.title = printedSet.has(idx) ? 'Нажмите для снятия статуса печати' : 'Нажмите для подтверждения печати вручную';
-        toggleBtn.onclick = function(e){ e.stopPropagation(); togglePrintStatusManually(idx); };
-        card.appendChild(toggleBtn);
+        var statusIcon = document.createElement('div');
+        statusIcon.style.cssText = 'position:absolute;top:10px;right:42px;padding:4px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;z-index:2;border:1px solid var(--border);background:var(--surface3);';
+        if(isPrinted) { statusIcon.style.background='var(--success-bg)'; statusIcon.style.color='var(--success-light)'; statusIcon.textContent='✅ '+status.actual+'/'+status.total; }
+        else if(status.actual>0) { statusIcon.style.background='var(--warning-bg)'; statusIcon.style.color='var(--warning)'; statusIcon.textContent='⚠️ '+status.actual+'/'+status.total; }
+        else { statusIcon.style.color='var(--text-muted)'; statusIcon.textContent='⏳ 0/'+status.total; }
+        statusIcon.title = 'Нажмите для ручного сброса/подтверждения';
+        statusIcon.onclick = function(e){ e.stopPropagation(); togglePrintStatusManually(idx); };
+        card.appendChild(statusIcon);
 
         grid.appendChild(card);
         setTimeout(function(){
@@ -829,13 +855,13 @@
       if(!cnt) grid.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>Ничего не найдено</p></div>';
       updateLabelStats();updateSelectionUI();updatePrintSummary();
     }
-    function updateCopies(idx,val){var n=parseInt(val);if(isNaN(n)||n<1)n=1;printCopies[idx]=n;labelCounterMap[idx]={current:1,total:n};savePrintedState();updatePrintSummary();renderLabelGrid();}
+    function updateCopies(idx,val){var n=parseInt(val);if(isNaN(n)||n<1)n=1;printCopies[idx]=n;labelCounterMap[idx]={current:1,total:n};savePrintState();updatePrintSummary();renderLabelGrid();}
     function updateSelectionUI(){
       document.querySelectorAll('.label-card').forEach(function(card){var s=card.querySelector('.label-preview');var idx=s?parseInt(s.dataset.idx):-1;if(selectedIndices.has(idx)){card.style.outline='2px solid var(--primary)';card.style.outlineOffset='-2px';}else{card.style.outline='';}});
       var btn=document.getElementById('printSingleBtn');
       if(selectedIndices.size>0){btn.textContent='🖨️ Выбранных ('+selectedIndices.size+'/'+calcTotalLabels(Array.from(selectedIndices))+')';btn.classList.add('purple');}else{btn.textContent='🖨️ Выбранных';btn.classList.remove('purple');}
     }
-    function updateLabelStats(){document.getElementById('statTotal').textContent=excelData.length;document.getElementById('statPrinted').textContent=printedSet.size;document.getElementById('printStat').textContent=printedSet.size+' / '+excelData.length;}
+    function updateLabelStats(){document.getElementById('statTotal').textContent=excelData.length;var printed=0;Object.keys(printLog).forEach(function(k){if(printLog[k].actual>=printLog[k].total)printed++;});document.getElementById('statPrinted').textContent=printed;document.getElementById('printStat').textContent=printed+' / '+excelData.length;}
     function filterLabels(f,el){currentFilter=f;document.querySelectorAll('.filter-chips .chip').forEach(function(c){c.classList.remove('active');});if(el)el.classList.add('active');renderLabelGrid();}
     function searchLabels(){renderLabelGrid();}
 
@@ -844,38 +870,53 @@
       if (czCode && czCode !== '') { try { generateDataMatrix('bp_cz_'+idx+'_'+cNum, czCode); } catch(e){} }
     }
 
-    // ✅ ОБНОВЛЁННЫЕ ФУНКЦИИ ПЕЧАТИ С ПОДТВЕРЖДЕНИЕМ
+    // ✅ ФУНКЦИИ ПЕЧАТИ С ЛОГИРОВАНИЕМ
     function printSingleLabel(idx){
-      var copies=printCopies[idx]||1;if(copies>1){printMultipleLabels([idx]);return;}
-      var pa=document.getElementById('bulkPrintArea');pa.innerHTML=createLabelHTML(idx,true,1,copies);pa.classList.remove('hidden');
-      var czCode=getItemChestnyZnak(idx);
+      var status = getPrintStatus(idx);
+      if(status.remaining <= 0) { showToast('Уже напечатано полностью', 'info'); return; }
+      var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = '';
+      for(var i=0; i<status.remaining; i++) { pa.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, status.actual + i + 1, status.total)); }
+      pa.classList.remove('hidden');
+      var czCode = getItemChestnyZnak(idx);
       setTimeout(function(){
-        renderBulkDataMatrix(idx, getItemBarcode(idx), 1, czCode);
-        window.print(); 
-        askPrintConfirmation([idx]);
-        setTimeout(function(){pa.classList.add('hidden');},200);
-      },200);
+        for(var i=0; i<status.remaining; i++) renderBulkDataMatrix(idx, getItemBarcode(idx), status.actual + i + 1, czCode);
+        window.print();
+        showPrintConfirmationModal([{ idx: idx, requested: status.remaining }]);
+        setTimeout(function(){ pa.classList.add('hidden'); }, 200);
+      }, 200);
     }
 
     function printMultipleLabels(indices){
-      var pa=document.getElementById('bulkPrintArea');pa.innerHTML='';
-      indices.forEach(function(idx){var c=printCopies[idx]||1;for(var i=1;i<=c;i++){pa.insertAdjacentHTML('beforeend',createLabelHTML(idx,true,i,c));}});
+      var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = '';
+      var jobs = [];
+      indices.forEach(function(idx){
+        var status = getPrintStatus(idx);
+        if(status.remaining > 0) {
+          for(var i=0; i<status.remaining; i++) { pa.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, status.actual + i + 1, status.total)); }
+          jobs.push({ idx: idx, requested: status.remaining });
+        }
+      });
+      if(jobs.length === 0) { showToast('Все выбранные этикетки уже напечатаны', 'success'); return; }
       pa.classList.remove('hidden');
       setTimeout(function(){
-        indices.forEach(function(idx){var c=printCopies[idx]||1;var bc=getItemBarcode(idx);var czCode=getItemChestnyZnak(idx);for(var i=1;i<=c;i++){renderBulkDataMatrix(idx,bc,i,czCode);}});
-        showToast('Печать '+indices.length+' позиций...','info');
+        jobs.forEach(function(job){
+          var status = getPrintStatus(job.idx);
+          var czCode = getItemChestnyZnak(job.idx);
+          for(var i=0; i<job.requested; i++) renderBulkDataMatrix(job.idx, getItemBarcode(job.idx), status.actual + i + 1, czCode);
+        });
+        showToast('Печать '+jobs.length+' позиций...','info');
         window.print();
-        askPrintConfirmation(indices);
-        setTimeout(function(){pa.classList.add('hidden');},1500);
-      },500);
+        showPrintConfirmationModal(jobs);
+        setTimeout(function(){ pa.classList.add('hidden'); }, 1500);
+      }, 500);
     }
 
     function printSelectedLabels(){if(!selectedIndices.size){showToast('Выберите этикетки','warning');return;}printMultipleLabels(Array.from(selectedIndices).sort(function(a,b){return a-b;}));}
     function printSingleFromGrid(){if(selectedIndices.size>0)printSelectedLabels();else showToast('Ctrl+клик для выбора','info');}
     function printAllLabels(){if(!excelData.length){showToast('Нет данных','warning');return;}var idx=[];for(var j=0;j<excelData.length;j++)idx.push(j);printMultipleLabels(idx);}
-    function printRemainingLabels(){var r=[];excelData.forEach(function(_,j){if(!printedSet.has(j))r.push(j);});if(!r.length){showToast('Все напечатаны','success');return;}printMultipleLabels(r);}
-    function markAllPrinted(){if(!confirm('Отметить все?'))return;for(var i=0;i<excelData.length;i++)printedSet.add(i);savePrintedState();renderLabelGrid();showToast('Все отмечены','success');}
-    function resetPrintStatus(){if(!confirm('Сбросить?'))return;printedSet.clear();selectedIndices.clear();savePrintedState();renderLabelGrid();showToast('Статус сброшен','info');}
+    function printRemainingLabels(){var r=[];excelData.forEach(function(_,j){if(getPrintStatus(j).remaining>0)r.push(j);});if(!r.length){showToast('Все напечатаны','success');return;}printMultipleLabels(r);}
+    function markAllPrinted(){if(!confirm('Отметить все как полностью напечатанные?'))return;excelData.forEach(function(_,idx){printLog[idx]={total:printCopies[idx]||1,actual:printCopies[idx]||1};});savePrintState();renderLabelGrid();updatePrintSummary();showToast('✅ Все отмечены как напечатанные','success');}
+    function resetPrintStatus(){if(!confirm('Сбросить весь прогресс печати?'))return;printLog={};savePrintState();renderLabelGrid();updatePrintSummary();showToast('🔄 Статус сброшен','info');}
 
     function renderBoxChips(){
       var c=document.getElementById('boxList');c.innerHTML='';
@@ -1138,7 +1179,7 @@
       showToast('Отчёт отправлен на печать А4...','info');
     }
 
-    // ✅ ЭКСПОРТ ТЗ ПО ГОРОДАМ (Исправленный)
+    // ✅ ЭКСПОРТ ТЗ ПО ГОРОДАМ
     function exportTZByCities() {
       if(!excelData.length) { showToast('Загрузите файл сначала!', 'error'); return; }
       var required = ['wb_article','label_barcode','product_name','quantity'];
@@ -1150,7 +1191,6 @@
       var progressText = document.getElementById('cityProgressText');
       var exported = 0;
       
-      // Находим реальные названия колонок городов в файле
       var matchedCities = [];
       allHeaders.forEach(function(h) {
         CITY_PATTERNS.forEach(function(p) {
@@ -1233,7 +1273,7 @@
 
     window.onload = function() {
       document.getElementById('scannerInput').focus();
-      loadPrintedState();
+      loadPrintState();
       speak('Система готова.');
     };
   </script>
