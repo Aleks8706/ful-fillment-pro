@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f1117">
-  <title>📦 Контроль отгрузки v3 (Счетчик)</title>
+  <title>📦 Контроль отгрузки</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -280,9 +280,9 @@
     body.printing #tzPrintArea tr:nth-child(even) td { background: #f0f0f0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body.printing #tzPrintArea .tz-print-footer { text-align: center; margin-top: 3mm; font-size: 8pt; color: #999 !important; }
     .print-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
-    .print-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; max-width: 520px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+    .print-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 28px; max-width: 560px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
     .print-dialog h3 { font-size: 1.2rem; margin-bottom: 8px; color: var(--text); }
-    .print-dialog p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; }
+    .print-dialog p { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; line-height: 1.4; }
     .print-dialog .orient-options { display: flex; gap: 12px; margin-bottom: 24px; }
     .print-dialog .orient-btn { flex: 1; padding: 20px 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); background: var(--surface2); cursor: pointer; text-align: center; transition: var(--transition); }
     .print-dialog .orient-btn:hover { border-color: var(--primary); }
@@ -292,12 +292,26 @@
     .print-dialog .orient-btn .orient-size { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
     .print-dialog .dialog-actions { display: flex; gap: 10px; }
     .print-dialog .dialog-actions button { flex: 1; }
+
+    /* Стили для списка подтверждения печати */
+    .print-job-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+    .print-job-row:last-child { border-bottom: none; }
+    .print-job-info { flex: 1; min-width: 0; }
+    .print-job-info .job-name { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .print-job-info .job-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .print-job-info .job-stat { font-size: 0.7rem; padding: 2px 8px; border-radius: 50px; }
+    .job-stat.total { background: var(--surface3); color: var(--text-secondary); }
+    .job-stat.done { background: var(--success-bg); color: var(--success-light); }
+    .job-stat.sending { background: var(--info-bg); color: var(--info); }
+    .print-job-input-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 100px; }
+    .print-job-input-wrap label { font-size: 0.7rem; color: var(--text-muted); }
+    .print-job-input-wrap input { width: 72px; text-align: center; padding: 6px; font-weight: 700; font-size: 1rem; border: 2px solid var(--primary); border-radius: 8px; background: var(--surface); color: var(--text); }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>📦 Контроль отгрузки v3</h1>
+      <h1>📦 Контроль отгрузки</h1>
       <div class="voice-toggle">
         <input type="checkbox" id="voiceToggle" checked>
         <label for="voiceToggle" style="margin:0;text-transform:none;font-weight:500;font-size:0.85rem;">🔊 Голос</label>
@@ -375,7 +389,7 @@
 
     <section id="tab-labels" class="panel hidden">
       <h2>🏷️ Этикетки 58×40 мм</h2>
-      <p>Клик по карточке — печать. Система ведет учет распечатанных копий. <span style="color:var(--cyan);">🏷️ Честный знак DataMatrix</span> формируется автоматически при наличии кода.</p>
+      <p>Клик по карточке — печать. Система ведет <b>учёт распечатанных этикеток</b> через диалог подтверждения. <span style="color:var(--cyan);">🏷️ Честный знак DataMatrix</span> формируется автоматически.</p>
       <div class="stats-row" id="labelStats">
         <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Позиций</div></div>
         <div class="stat-card"><div class="num" id="statLabels">0</div><div class="lbl">Этикеток</div></div>
@@ -482,14 +496,14 @@
   <div id="tzPrintArea" class="hidden"></div>
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- ✅ МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПЕЧАТИ (с точным подсчетом) -->
+  <!-- ✅ МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПЕЧАТИ -->
   <div id="printConfirmModal" class="print-dialog-overlay hidden">
     <div class="print-dialog">
-      <h3>🖨️ Подтверждение печати</h3>
-      <p>Укажите, сколько этикеток <b>фактически вышло из принтера</b> Xprinter XP-420B.<br>Если был сбой — уменьшите число. Если всё ок — просто нажмите ✅.</p>
-      <div id="printConfirmList" style="max-height:300px;overflow-y:auto;margin-bottom:20px;padding:4px;"></div>
+      <h3>🖨️ Подтверждение количества печати</h3>
+      <p>Укажите, сколько этикеток <b>фактически вышло из принтера Xprinter XP-420B</b>.<br>Если принтер сбросил часть — уменьшите число. Если всё ок — просто нажмите ✅.</p>
+      <div id="printConfirmList" style="max-height:350px;overflow-y:auto;margin-bottom:20px;"></div>
       <div class="dialog-actions">
-        <button onclick="declinePrint()" class="secondary" style="flex:1;">⚠️ Отмена / Ноль</button>
+        <button onclick="declinePrint()" class="danger" style="flex:1;">❌ Отмена / Ноль</button>
         <button onclick="confirmActualPrint()" class="success" style="flex:1;">✅ Подтвердить</button>
       </div>
     </div>
@@ -520,7 +534,6 @@
     var selectedIndices = new Set();
     var allHeaders = [];
     var printCopies = {};
-    var labelCounterMap = {};
     var pallets = {};
     var boxPalletMap = {};
     var nextPalletId = 1;
@@ -581,7 +594,7 @@
     // ✅ ЗАГРУЗКА/СОХРАНЕНИЕ СОСТОЯНИЯ ПЕЧАТИ
     function loadPrintState() {
       try {
-        var saved = localStorage.getItem('print_log_v3'); // Новая версия ключа
+        var saved = localStorage.getItem('print_log_v4');
         if (saved) printLog = JSON.parse(saved);
         var savedCopies = localStorage.getItem('print_copies');
         if (savedCopies) printCopies = JSON.parse(savedCopies);
@@ -589,7 +602,7 @@
     }
     function savePrintState() {
       try {
-        localStorage.setItem('print_log_v3', JSON.stringify(printLog));
+        localStorage.setItem('print_log_v4', JSON.stringify(printLog));
         localStorage.setItem('print_copies', JSON.stringify(printCopies));
       } catch(e) { console.warn('LocalStorage недоступен:', e); }
     }
@@ -604,7 +617,6 @@
     function updatePrintLog(idx, actualPrintedInBatch) {
       var total = printCopies[idx] || 1;
       var prev = printLog[idx] || { total: total, actual: 0 };
-      // Прибавляем новое значение к уже сохраненному, но не больше Total
       prev.actual = Math.min(total, Math.max(0, prev.actual + actualPrintedInBatch));
       printLog[idx] = prev;
       savePrintState();
@@ -622,20 +634,21 @@
         var bc = getItemBarcode(job.idx) || '—';
         
         var row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);';
-        
-        // Вводим сколько НАПЕЧАТАЛОСЬ В ЭТОТ РАЗ (по умолчанию = запрошено)
+        row.className = 'print-job-row';
         row.innerHTML = `
-          <div style="flex:1;min-width:0;">
-            <b style="font-size:0.85rem;">${art}</b><br>
-            <span style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">${bc}</span><br>
-            <span style="font-size:0.7rem;color:var(--text-secondary);">Всего нужно: ${status.total} | Уже готово: ${status.actual}</span>
+          <div class="print-job-info">
+            <div class="job-name">${art}</div>
+            <div class="job-stats">
+              <span class="job-stat total">📦 Всего: ${status.total}</span>
+              <span class="job-stat done">✅ Готово: ${status.actual}</span>
+              <span class="job-stat sending">🖨️ Сейчас: ${job.requested}</span>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:0.75rem;color:var(--text-muted);">Напечат. сейчас:</span>
+          <div class="print-job-input-wrap">
+            <label>Вышло из принтера:</label>
             <input type="number" min="0" max="${job.requested}" value="${job.requested}" 
                    data-job-idx="${i}" 
-                   style="width:64px;text-align:center;padding:6px;font-weight:700;border:1px solid var(--primary);border-radius:4px;background:var(--surface);color:var(--text);">
+                   oninput="if(this.value>${job.requested})this.value=${job.requested};if(this.value<0)this.value=0;">
           </div>`;
         list.appendChild(row);
       });
@@ -649,7 +662,6 @@
         var i = parseInt(inp.getAttribute('data-job-idx'));
         var job = pendingPrintJobs[i];
         var printedNow = parseInt(inp.value) || 0;
-        // Ограничиваем введенное значение, чтобы не уйти в минус или за пределы
         var validPrinted = Math.max(0, Math.min(job.requested, printedNow));
         updatePrintLog(job.idx, validPrinted);
       });
@@ -662,17 +674,15 @@
 
     function declinePrint() {
       document.getElementById('printConfirmModal').classList.add('hidden');
-      showToast('⚠️ Печать не подтверждена. Этикетки останутся в очереди.', 'warning');
+      showToast('⚠️ Печать отменена. Этикетки остались в очереди.', 'warning');
       pendingPrintJobs = [];
     }
 
     function togglePrintStatusManually(idx) {
       var status = getPrintStatus(idx);
       if(status.remaining === 0) {
-        // Если уже напечатано всё — сбрасываем в 0
         printLog[idx] = { total: status.total, actual: 0 };
       } else {
-        // Если не допечатано — помечаем как всё готово
         printLog[idx] = { total: status.total, actual: status.total };
       }
       savePrintState(); renderLabelGrid(); updatePrintSummary();
@@ -687,74 +697,58 @@
         try {
           var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
           var sheet = wb.Sheets[wb.SheetNames[0]];
-          var rawData = XLSX.utils.sheet_to_json(sheet, {defval:'', header: 1}); // Читаем как массив массивов
+          var rawData = XLSX.utils.sheet_to_json(sheet, {defval:'', header: 1});
 
-          if(!rawData || rawData.length < 2) throw new Error('Файл пуст или поврежден');
+          if(!rawData || rawData.length < 2) throw new Error('Файл пуст');
 
-          // === ИНТЕЛЛЕКТУАЛЬНЫЙ ПОИСК ЗАГОЛОВКОВ ===
           var headerRowIndex = -1;
-          var maxSearchRows = 20; // Ищем в первых 20 строках
+          var maxSearchRows = 20;
           
           for(var i=0; i < Math.min(rawData.length, maxSearchRows); i++) {
             var row = rawData[i];
-            // Проверяем наличие ключевых слов в строке
             var hasKeyWords = row.some(function(cell){ 
               var s = String(cell).trim().toLowerCase();
               return s.includes('озон id') || s.includes('шк на этикетку') || s.includes('артикул продавца');
             });
-            if(hasKeyWords) {
-              headerRowIndex = i;
-              break;
-            }
+            if(hasKeyWords) { headerRowIndex = i; break; }
           }
 
-          if(headerRowIndex === -1) {
-            throw new Error('Не удалось найти строку заголовков (Озон ID, ШК и т.д.)');
-          }
+          if(headerRowIndex === -1) throw new Error('Не удалось найти заголовки');
 
           var rawHeaders = rawData[headerRowIndex];
           allHeaders = rawHeaders.map(function(h){ return String(h).trim().replace(/\s+/g, ' '); });
           
-          // Преобразуем данные в объекты
           excelData = [];
           for(var j = headerRowIndex + 1; j < rawData.length; j++) {
             var rowValues = rawData[j];
-            // Пропускаем полностью пустые строки
             if(!rowValues || rowValues.every(function(v){return v === undefined || v === '' || v === null;})) continue;
-
             var rowObj = {};
-            allHeaders.forEach(function(h, idx) {
-              rowObj[h] = rowValues[idx] !== undefined ? rowValues[idx] : '';
-            });
-            
-            // Дополнительная проверка на наличие ID или ШК, чтобы отсечь мусор
-            if(rowObj['Озон ID'] || rowObj['шк на этикетку']) {
-              excelData.push(rowObj);
-            }
+            allHeaders.forEach(function(h, idx) { rowObj[h] = rowValues[idx] !== undefined ? rowValues[idx] : ''; });
+            if(rowObj['Озон ID'] || rowObj['шк на этикетку']) { excelData.push(rowObj); }
           }
 
-          if(excelData.length === 0) throw new Error('Данные не найдены после заголовков');
+          if(excelData.length === 0) throw new Error('Нет данных');
 
-          document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ Загружено: '+excelData.length+' строк (заголовки в строке '+(headerRowIndex+1)+')</span>';
+          document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ '+excelData.length+' строк, '+allHeaders.length+' колонок</span>';
           buildMappingUI();
           switchTab('mapping');
-          showToast('Файл успешно загружен!', 'success');
+          showToast('Файл загружен!', 'success');
           speak('Файл загружен.');
-        } catch(err) { showToast('Ошибка: '+err.message, 'error'); console.error(err); }
+        } catch(err) { showToast('Ошибка: '+err.message, 'error'); }
       };
       reader.readAsArrayBuffer(file);
     }
 
     var SYSTEM_FIELDS = [
-      {key:'wb_article',label:'Артикул',hints:['Озон ID','артикул','article','код','sku','wb','art','код товара'],required:true},
-      {key:'label_barcode',label:'ШК на этикетку',hints:['шк на этикетку','шк','barcode','штрихкод','ean','код','код товара','шк товара'],required:true},
-      {key:'chestny_znak',label:'Честный знак (DataMatrix)',hints:['честный','знак','datamatrix','data.matrix','честный знак','маркировка','марк','код маркировки','киз','data matrix'],required:false},
-      {key:'origin_barcode',label:'ШК исходный',hints:['шк','barcode','штрихкод','ean','исход','исходный'],required:false},
-      {key:'product_name',label:'Наименование',hints:['наименование составляющего в наборе','наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'],required:true},
-      {key:'expiry',label:'Годен до',hints:['ГОДЕН ДО','годен','срок','expiry','сг','годность','срок годности','годен до'],required:false},
-      {key:'packing_instructions',label:'Инструкция / ТЗ',hints:['тз','инструкция','instruction','примечание','упаковка','паковать','комментарий'],required:false},
-      {key:'quantity',label:'Квант / Кол-во',hints:['кол-во в упаковку','квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'],required:true},
-      {key:'total_quantity',label:'Итого к отгрузке',hints:['ИТОГО К ОТГРУЗКЕ спаек','итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'],required:false}
+      {key:'wb_article',label:'Артикул',hints:['Озон ID','артикул','article','код','sku','wb','art'],required:true},
+      {key:'label_barcode',label:'ШК на этикетку',hints:['шк на этикетку','шк','barcode','штрихкод','ean'],required:true},
+      {key:'chestny_znak',label:'Честный знак',hints:['честный','знак','datamatrix','маркировка'],required:false},
+      {key:'origin_barcode',label:'ШК исходный',hints:['шк','barcode','исход'],required:false},
+      {key:'product_name',label:'Наименование',hints:['наименование','название','описание','товар'],required:true},
+      {key:'expiry',label:'Годен до',hints:['годен','срок','expiry'],required:false},
+      {key:'packing_instructions',label:'Инструкция / ТЗ',hints:['тз','инструкция','упаковка'],required:false},
+      {key:'quantity',label:'Квант',hints:['квант','кол','qty','шт'],required:true},
+      {key:'total_quantity',label:'Итого к отгрузке',hints:['итого','total','отгрузка','спаек'],required:false}
     ];
 
     function findBestMatch(headers, hints) {
@@ -812,11 +806,11 @@
       SYSTEM_FIELDS.forEach(function(f){ var sel=document.getElementById('map_'+f.key); var v=sel?sel.value:''; if(v){mapping[f.key]=v;filled++;} else if(f.required) missing.push(f.label); });
       if(missing.length){showToast('Не заполнены: '+missing.join(', '),'error');return;}
       if(filled<3){showToast('Сопоставьте минимум 3 поля!','error');return;}
-      selectedIndices.clear();labelCounterMap={};printCopies={};printLog={};
+      selectedIndices.clear();printCopies={};printLog={};
       excelData.forEach(function(item,idx){ if(mapping.total_quantity&&mapping.total_quantity!=='') printCopies[idx]=parseQuantityValue(item[mapping.total_quantity]); else printCopies[idx]=1; });
       calculateCounters();boxes={1:{items:[],fixed:false}};currentBox=1;pallets={};boxPalletMap={};nextPalletId=1;
       savePrintState();
-      switchTab('labels');showToast('Маппинг сохранён!','success');speak('Маппинг сохранен.');
+      switchTab('labels');showToast('Маппинг сохранён!','success');
     }
 
     function getItemField(idx,key){if(!mapping[key]||mapping[key]==='')return '';var v=excelData[idx][mapping[key]];if(v===undefined||v===null||v==='')return '';return String(v).trim();}
@@ -828,15 +822,15 @@
     function getItemQuantity(idx){return getItemField(idx,'quantity');}
     function getItemChestnyZnak(idx){return getItemField(idx,'chestny_znak');}
 
-    function calculateCounters(){labelCounterMap={};excelData.forEach(function(_,idx){labelCounterMap[idx]={current:1,total:printCopies[idx]||1};});}
+    function calculateCounters(){ excelData.forEach(function(_,idx){ if(!printCopies[idx]) printCopies[idx]=1; }); }
 
     function generateDataMatrix(canvasId, czCode) {
       if (!czCode) return false;
       try {
-        if (typeof bwipjs === 'undefined') { console.warn('bwip-js not loaded yet'); return false; }
+        if (typeof bwipjs === 'undefined') return false;
         bwipjs.toCanvas(canvasId, { bcid: 'datamatrix', text: czCode, scale: 3, padding: 2, width: 16, height: 16 });
         return true;
-      } catch (e) { console.warn('DataMatrix generation failed:', e); return false; }
+      } catch (e) { return false; }
     }
 
     function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
@@ -857,15 +851,10 @@
       var ih = instruction ? '<div class="lbl-instruction">'+instruction+'</div>' : '';
       var czHtml = '';
       if (czCode && czCode !== '') { czHtml = '<div class="lbl-cz-wrap"><canvas id="'+canvasId+'" width="56" height="56"></canvas><div class="lbl-cz-label">Честный Знак</div></div>'; }
-      var barcodeAreaContent = '';
-      if (czCode && czCode !== '') { barcodeAreaContent = '<div class="lbl-barcode-wrap"><svg id="'+svgId+'"></svg></div>' + czHtml; }
-      else { barcodeAreaContent = '<div class="lbl-barcode-wrap" style="flex:2;"><svg id="'+svgId+'"></svg></div>'; }
+      var barcodeAreaContent = czCode ? '<div class="lbl-barcode-wrap"><svg id="'+svgId+'"></svg></div>' + czHtml : '<div class="lbl-barcode-wrap" style="flex:2;"><svg id="'+svgId+'"></svg></div>';
       return '<div class="'+cls+'" data-idx="'+idx+'">'+
         '<div class="lbl-top-strip">Единый товар • Не вскрывать</div>'+
-        '<div class="lbl-article-row">'+
-          '<span class="lbl-article">'+art+'</span>'+
-          '<span class="lbl-counter">'+cNum+' / '+tCopies+'</span>'+
-        '</div>'+
+        '<div class="lbl-article-row"><span class="lbl-article">'+art+'</span><span class="lbl-counter">'+cNum+' / '+tCopies+'</span></div>'+
         '<div class="lbl-barcode-area">'+ barcodeAreaContent +'</div>'+
         '<div class="lbl-barcode-num">'+bc+'</div>'+
         '<div class="lbl-desc">'+desc+'</div>'+
@@ -873,7 +862,6 @@
       '</div>';
     }
 
-    function calcTotalLabels(indices){var t=0;indices.forEach(function(idx){t+=(printCopies[idx]||1);});return t;}
     function updatePrintSummary(){
       var sd=document.getElementById('printSummary');if(!excelData.length){sd.classList.add('hidden');return;}
       var tl=0;for(var i=0;i<excelData.length;i++)tl+=(printCopies[i]||1);
@@ -902,7 +890,7 @@
         if(isPrinted) { statusIcon.style.background='var(--success-bg)'; statusIcon.style.color='var(--success-light)'; statusIcon.textContent='✅ '+status.actual+'/'+status.total; }
         else if(status.actual>0) { statusIcon.style.background='var(--warning-bg)'; statusIcon.style.color='var(--warning)'; statusIcon.textContent='⚠️ '+status.actual+'/'+status.total; }
         else { statusIcon.style.color='var(--text-muted)'; statusIcon.textContent='⏳ 0/'+status.total; }
-        statusIcon.title = 'Нажмите для ручного сброса/подтверждения';
+        statusIcon.title = 'Нажмите для сброса/подтверждения';
         statusIcon.onclick = function(e){ e.stopPropagation(); togglePrintStatusManually(idx); };
         card.appendChild(statusIcon);
 
@@ -916,11 +904,11 @@
       if(!cnt) grid.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p>Ничего не найдено</p></div>';
       updateLabelStats();updateSelectionUI();updatePrintSummary();
     }
-    function updateCopies(idx,val){var n=parseInt(val);if(isNaN(n)||n<1)n=1;printCopies[idx]=n;labelCounterMap[idx]={current:1,total:n};savePrintState();updatePrintSummary();renderLabelGrid();}
+    function updateCopies(idx,val){var n=parseInt(val);if(isNaN(n)||n<1)n=1;printCopies[idx]=n;savePrintState();updatePrintSummary();renderLabelGrid();}
     function updateSelectionUI(){
       document.querySelectorAll('.label-card').forEach(function(card){var s=card.querySelector('.label-preview');var idx=s?parseInt(s.dataset.idx):-1;if(selectedIndices.has(idx)){card.style.outline='2px solid var(--primary)';card.style.outlineOffset='-2px';}else{card.style.outline='';}});
       var btn=document.getElementById('printSingleBtn');
-      if(selectedIndices.size>0){btn.textContent='🖨️ Выбранных ('+selectedIndices.size+'/'+calcTotalLabels(Array.from(selectedIndices))+')';btn.classList.add('purple');}else{btn.textContent='🖨️ Выбранных';btn.classList.remove('purple');}
+      if(selectedIndices.size>0){btn.textContent='🖨️ Выбранных ('+selectedIndices.size+')';btn.classList.add('purple');}else{btn.textContent='🖨️ Выбранных';btn.classList.remove('purple');}
     }
     function updateLabelStats(){document.getElementById('statTotal').textContent=excelData.length;var printed=0;Object.keys(printLog).forEach(function(k){if(printLog[k].actual>=printLog[k].total)printed++;});document.getElementById('statPrinted').textContent=printed;document.getElementById('printStat').textContent=printed+' / '+excelData.length;}
     function filterLabels(f,el){currentFilter=f;document.querySelectorAll('.filter-chips .chip').forEach(function(c){c.classList.remove('active');});if(el)el.classList.add('active');renderLabelGrid();}
@@ -931,12 +919,11 @@
       if (czCode && czCode !== '') { try { generateDataMatrix('bp_cz_'+idx+'_'+cNum, czCode); } catch(e){} }
     }
 
-    // ✅ ФУНКЦИИ ПЕЧАТИ С ЛОГИРОВАНИЕМ И ПОДТВЕРЖДЕНИЕМ
+    // ✅ ФУНКЦИИ ПЕЧАТИ С ПОДТВЕРЖДЕНИЕМ
     function printSingleLabel(idx){
       var status = getPrintStatus(idx);
       if(status.remaining <= 0) { showToast('Уже напечатано полностью', 'info'); return; }
       var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = '';
-      // Печатаем только то, что осталось
       for(var i=0; i<status.remaining; i++) { pa.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, status.actual + i + 1, status.total)); }
       pa.classList.remove('hidden');
       var czCode = getItemChestnyZnak(idx);
@@ -954,12 +941,11 @@
       indices.forEach(function(idx){
         var status = getPrintStatus(idx);
         if(status.remaining > 0) {
-          // Формируем задание только на оставшиеся копии
           for(var i=0; i<status.remaining; i++) { pa.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, status.actual + i + 1, status.total)); }
           jobs.push({ idx: idx, requested: status.remaining });
         }
       });
-      if(jobs.length === 0) { showToast('Все выбранные этикетки уже напечатаны', 'success'); return; }
+      if(jobs.length === 0) { showToast('Все уже напечатаны', 'success'); return; }
       pa.classList.remove('hidden');
       setTimeout(function(){
         jobs.forEach(function(job){
@@ -967,7 +953,6 @@
           var czCode = getItemChestnyZnak(job.idx);
           for(var i=0; i<job.requested; i++) renderBulkDataMatrix(job.idx, getItemBarcode(job.idx), status.actual + i + 1, czCode);
         });
-        showToast('Печать '+jobs.length+' позиций...','info');
         window.print();
         showPrintConfirmationModal(jobs);
         setTimeout(function(){ pa.classList.add('hidden'); }, 1500);
@@ -978,368 +963,183 @@
     function printSingleFromGrid(){if(selectedIndices.size>0)printSelectedLabels();else showToast('Ctrl+клик для выбора','info');}
     function printAllLabels(){if(!excelData.length){showToast('Нет данных','warning');return;}var idx=[];for(var j=0;j<excelData.length;j++)idx.push(j);printMultipleLabels(idx);}
     function printRemainingLabels(){var r=[];excelData.forEach(function(_,j){if(getPrintStatus(j).remaining>0)r.push(j);});if(!r.length){showToast('Все напечатаны','success');return;}printMultipleLabels(r);}
-    function markAllPrinted(){if(!confirm('Отметить все как полностью напечатанные?'))return;excelData.forEach(function(_,idx){printLog[idx]={total:printCopies[idx]||1,actual:printCopies[idx]||1};});savePrintState();renderLabelGrid();updatePrintSummary();showToast('✅ Все отмечены как напечатанные','success');}
-    function resetPrintStatus(){if(!confirm('Сбросить весь прогресс печати?'))return;printLog={};savePrintState();renderLabelGrid();updatePrintSummary();showToast('🔄 Статус сброшен','info');}
+    function markAllPrinted(){if(!confirm('Отметить все как напечатанные?'))return;excelData.forEach(function(_,idx){printLog[idx]={total:printCopies[idx]||1,actual:printCopies[idx]||1};});savePrintState();renderLabelGrid();updatePrintSummary();showToast('✅ Все отмечены','success');}
+    function resetPrintStatus(){if(!confirm('Сбросить прогресс?'))return;printLog={};savePrintState();renderLabelGrid();updatePrintSummary();showToast('🔄 Сброшено','info');}
 
     function renderBoxChips(){
       var c=document.getElementById('boxList');c.innerHTML='';
       var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
-      ids.forEach(function(id){var box=boxes[id];var chip=document.createElement('div');chip.className='box-chip';if(id===currentBox&&!box.fixed)chip.className+=' active';if(box.fixed)chip.className+=' fixed';var li=box.fixed?'🔒':'';var pl=boxPalletMap[id]?' 🏗️П'+boxPalletMap[id]:'';chip.innerHTML='📦 Короб '+id+' <span class="box-count">'+box.items.length+' шт.</span>'+pl+' '+li;if(!box.fixed&&id!==currentBox)chip.onclick=function(){selectBox(id);};c.appendChild(chip);});
+      ids.forEach(function(id){var box=boxes[id];var chip=document.createElement('div');chip.className='box-chip';if(id===currentBox&&!box.fixed)chip.className+=' active';if(box.fixed)chip.className+=' fixed';chip.innerHTML='📦 Короб '+id+' <span class="box-count">'+box.items.length+'</span>'+(box.fixed?'🔒':'');if(!box.fixed&&id!==currentBox)chip.onclick=function(){selectBox(id);};c.appendChild(chip);});
       var cb=boxes[currentBox];var le=document.getElementById('currentBoxLabel');
-      if(cb&&!cb.fixed)le.innerHTML='<span class="scanning-indicator"></span> Короб '+currentBox+' ('+cb.items.length+')';else le.textContent='⚠️ Выберите активный короб';
+      if(cb&&!cb.fixed)le.innerHTML='Короб '+currentBox+' ('+cb.items.length+')';
       document.getElementById('progressText').textContent=cb?cb.items.length:0;updateBoxSummary();
     }
     function updateBoxSummary(){
       var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});var p=document.getElementById('boxSummaryPanel');var tb=document.getElementById('boxSummaryBody');
       if(ids.length<=1&&!boxes[1].fixed){p.classList.add('hidden');return;}p.classList.remove('hidden');tb.innerHTML='';
-      ids.forEach(function(id){var box=boxes[id];var tr=document.createElement('tr');var sb=box.fixed?'<span class="badge success">🔒 Зафиксирован</span>':'<span class="badge info">✏️ Активный</span>';var pi=boxPalletMap[id]?'Палет '+boxPalletMap[id]:'—';tr.innerHTML='<td><b>Короб '+id+'</b></td><td>'+box.items.length+'</td><td>'+pi+'</td><td>'+sb+'</td>';tb.appendChild(tr);});
+      ids.forEach(function(id){var box=boxes[id];var tr=document.createElement('tr');var sb=box.fixed?'<span class="badge success">🔒</span>':'<span class="badge info">✏️</span>';tr.innerHTML='<td><b>Короб '+id+'</b></td><td>'+box.items.length+'</td><td>'+sb+'</td>';tb.appendChild(tr);});
     }
-    function newBox(){if(boxes[currentBox])boxes[currentBox].fixed=true;var ids=Object.keys(boxes).map(Number);var next=Math.max.apply(null,ids)+1;boxes[next]={items:[],fixed:false};currentBox=next;renderBoxChips();updateScannerUI();showToast('Короб '+(next-1)+' зафиксирован. Новый: '+next,'success');speak('Создан короб номер '+next);}
-    function selectBox(id){if(boxes[id]&&!boxes[id].fixed){currentBox=id;renderBoxChips();updateScannerUI();showToast('Выбран короб '+id,'info');}}
+    function newBox(){if(boxes[currentBox])boxes[currentBox].fixed=true;var ids=Object.keys(boxes).map(Number);var next=Math.max.apply(null,ids)+1;boxes[next]={items:[],fixed:false};currentBox=next;renderBoxChips();updateScannerUI();showToast('Новый короб: '+next,'success');}
+    function selectBox(id){if(boxes[id]&&!boxes[id].fixed){currentBox=id;renderBoxChips();updateScannerUI();}}
     function updateScannerUI(){
       var list=boxes[currentBox]?boxes[currentBox].items:[];document.getElementById('progressText').textContent=list.length;
       var tb=document.getElementById('scannedBody');tb.innerHTML='';var g={};var so=[];
       list.forEach(function(item){var bc=String(item[mapping.label_barcode]||'').trim();if(!g[bc]){g[bc]={item:item,count:0};so.push(bc);}g[bc].count++;});
-      so.forEach(function(bc){var gg=g[bc];var tr=document.createElement('tr');var av=gg.item[mapping.wb_article]||'-';var isF=boxes[currentBox]&&boxes[currentBox].fixed;var ab=isF?'<span style="color:var(--text-muted);">🔒</span>':'<button class="secondary" style="padding:4px 10px;width:auto;font-size:0.75rem;" onclick="removeOneFromBox(\''+bc.replace(/'/g,"\\'")+'\')">✖</button>';tr.innerHTML='<td><b>'+av+'</b></td><td style="font-family:monospace;">'+bc+'</td><td><b>'+gg.count+'</b></td><td><span class="badge success">Принято</span></td><td>'+ab+'</td>';tb.appendChild(tr);});
+      so.forEach(function(bc){var gg=g[bc];var tr=document.createElement('tr');tr.innerHTML='<td><b>'+gg.item[mapping.wb_article]+'</b></td><td style="font-family:monospace;">'+bc+'</td><td><b>'+gg.count+'</b></td><td><span class="badge success">Принято</span></td><td><button class="secondary" style="padding:4px 10px;width:auto;font-size:0.75rem;" onclick="removeOneFromBox(\''+bc.replace(/'/g,"\\'")+'\')">✖</button></td>';tb.appendChild(tr);});
     }
-    function removeOneFromBox(barcode){if(!boxes[currentBox]||boxes[currentBox].fixed){showToast('Короб зафиксирован','warning');return;}var idx=boxes[currentBox].items.findIndex(function(it){return String(it[mapping.label_barcode]||'').trim()===barcode||String(it[mapping.origin_barcode]||'').trim()===barcode;});if(idx!==-1){boxes[currentBox].items.splice(idx,1);renderBoxChips();updateScannerUI();showToast('Удалено','info');}}
+    function removeOneFromBox(barcode){if(!boxes[currentBox]||boxes[currentBox].fixed)return;var idx=boxes[currentBox].items.findIndex(function(it){return String(it[mapping.label_barcode]||'').trim()===barcode;});if(idx!==-1){boxes[currentBox].items.splice(idx,1);renderBoxChips();updateScannerUI();}}
 
     function processScan(barcode){
-      if(!barcode)return;if(!mapping||!mapping.label_barcode){showToast('Сначала загрузите ТЗ!','error');return;}
-      if(!boxes[currentBox]||boxes[currentBox].fixed){showToast('Короб зафиксирован. Создайте новый.','warning');return;}
-      var foundItem=null;excelData.forEach(function(row){var lb=String(row[mapping.label_barcode]||'').trim();var ob=String(row[mapping.origin_barcode]||'').trim();if(lb===barcode||ob===barcode)foundItem=row;});
-      if(!foundItem){showToast('ШК '+barcode+' не найден!','error');speak('Штрихкод не найден.');return;}
-      var maxQty=1;if(mapping.total_quantity&&mapping.total_quantity!==''&&foundItem[mapping.total_quantity])maxQty=parseQuantityValue(foundItem[mapping.total_quantity]);
-      var globalCount=0;Object.keys(boxes).forEach(function(bk){boxes[bk].items.forEach(function(it){var itLb=String(it[mapping.label_barcode]||'').trim();var itOb=String(it[mapping.origin_barcode]||'').trim();if(itLb===barcode||itOb===barcode)globalCount++;});});
-      if(globalCount>=maxQty){showToast('Все '+maxQty+' шт. уже отгружены','warning');speak('Все товары уже отгружены.');return;}
-      boxes[currentBox].items.push(foundItem);var newGlobalCount=globalCount+1;
-      renderBoxChips();updateScannerUI();showToast('✅ '+newGlobalCount+'/'+maxQty+' — '+foundItem[mapping.wb_article]+' → Короб '+currentBox,'success');
-      speak(newGlobalCount+' из '+maxQty+' в короб '+currentBox);
+      if(!barcode||!mapping||!mapping.label_barcode||!boxes[currentBox]||boxes[currentBox].fixed)return;
+      var foundItem=null;excelData.forEach(function(row){var lb=String(row[mapping.label_barcode]||'').trim();if(lb===barcode)foundItem=row;});
+      if(!foundItem){showToast('ШК не найден!','error');return;}
+      var maxQty=1;if(mapping.total_quantity&&foundItem[mapping.total_quantity])maxQty=parseQuantityValue(foundItem[mapping.total_quantity]);
+      var globalCount=0;Object.keys(boxes).forEach(function(bk){boxes[bk].items.forEach(function(it){if(String(it[mapping.label_barcode]||'').trim()===barcode)globalCount++;});});
+      if(globalCount>=maxQty){showToast('Все '+maxQty+' шт. отгружены','warning');return;}
+      boxes[currentBox].items.push(foundItem);
+      renderBoxChips();updateScannerUI();showToast('✅ '+(globalCount+1)+'/'+maxQty+' → Короб '+currentBox,'success');
     }
 
     var scannerInput=document.getElementById('scannerInput');var scanTimeout=null;
     scannerInput.addEventListener('input',function(){clearTimeout(scanTimeout);var self=this;scanTimeout=setTimeout(function(){if(self.value.trim())processScan(self.value.trim());self.value='';},300);});
     scannerInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();processScan(scannerInput.value.trim());scannerInput.value='';}});
 
-    function toggleCameraScanner(){var btn=document.getElementById('cameraStartBtn');if(cameraRunning){stopCameraScanner();btn.textContent='▶️ Включить камеру';btn.className='cyan';}else{startCameraScanner();}}
+    function toggleCameraScanner(){var btn=document.getElementById('cameraStartBtn');if(cameraRunning){stopCameraScanner();btn.textContent='▶️ Включить камеру';}else{startCameraScanner();}}
     function startCameraScanner(){
-      var btn=document.getElementById('cameraStartBtn'),placeholder=document.getElementById('camera-placeholder'),selectRow=document.getElementById('cameraSelectRow');
-      if(typeof Html5Qrcode==='undefined'){showToast('Библиотека сканера не загружена','error');return;}
-      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){showToast('Камера не поддерживается','error');return;}
+      var btn=document.getElementById('cameraStartBtn'),placeholder=document.getElementById('camera-placeholder');
+      if(typeof Html5Qrcode==='undefined'){showToast('Библиотека не загружена','error');return;}
       Html5Qrcode.getCameras().then(function(devices){
         if(!devices||devices.length===0){showToast('Камера не найдена','error');return;}
-        cameraDevices=devices;var sel=document.getElementById('cameraSelect');sel.innerHTML='';
-        devices.forEach(function(d,i){var opt=document.createElement('option');opt.value=d.id;opt.textContent=d.label||('Камера '+(i+1));sel.appendChild(opt);});
-        var backCamera=devices.find(function(d){var lbl=d.label.toLowerCase();return lbl.includes('back')||lbl.includes('rear')||lbl.includes('задн')||lbl.includes('environment');});
-        if(backCamera){currentCameraId=backCamera.id;sel.value=backCamera.id;}else{currentCameraId=devices[0].id;}
-        if(placeholder)placeholder.style.display='none';selectRow.classList.remove('hidden');
+        cameraDevices=devices;
+        var backCamera=devices.find(function(d){var lbl=d.label.toLowerCase();return lbl.includes('back')||lbl.includes('rear')||lbl.includes('задн');});
+        currentCameraId=backCamera?backCamera.id:devices[0].id;
+        if(placeholder)placeholder.style.display='none';
         if(html5QrCode){try{html5QrCode.clear();}catch(e){}}
         html5QrCode=new Html5Qrcode("camera-reader-container");
-        html5QrCode.start(currentCameraId,{fps:15,qrbox:{width:280,height:120},aspectRatio:1.5},function(decodedText){onCameraScanSuccess(decodedText);},function(){}).then(function(){
+        html5QrCode.start(currentCameraId,{fps:15,qrbox:{width:280,height:120},aspectRatio:1.5},function(decodedText){
+          var now=Date.now();if(decodedText===lastCameraScanCode&&(now-lastCameraScanTime)<2000)return;
+          lastCameraScanCode=decodedText;lastCameraScanTime=now;processScan(decodedText);
+        },function(){}).then(function(){
           cameraRunning=true;btn.textContent='⏹️ Выключить';btn.className='danger';
-          document.getElementById('cameraStatusText').textContent='🟢 Камера активна';document.getElementById('cameraStatusText').style.color='var(--success-light)';
+          document.getElementById('cameraStatusText').textContent='🟢 Активна';
           showToast('Камера включена','success');
         }).catch(function(err){showToast('Ошибка: '+err.message,'error');});
       }).catch(function(err){showToast('Ошибка: '+err.message,'error');});
     }
     function switchCamera(){
-      if(cameraDevices.length<=1){showToast('Доступна только одна камера','warning');return;}
-      var sel=document.getElementById('cameraSelect'),idx=-1;
-      for(var i=0;i<cameraDevices.length;i++){if(cameraDevices[i].id===currentCameraId){idx=i;break;}}
-      var nextIdx=(idx+1)%cameraDevices.length;currentCameraId=cameraDevices[nextIdx].id;sel.value=currentCameraId;
-      stopCameraScanner();setTimeout(function(){startCameraScanner();document.getElementById('cameraStartBtn').textContent='⏹️ Выключить';document.getElementById('cameraStartBtn').className='danger';},500);
+      if(cameraDevices.length<=1)return;
+      var idx=-1;for(var i=0;i<cameraDevices.length;i++){if(cameraDevices[i].id===currentCameraId){idx=i;break;}}
+      currentCameraId=cameraDevices[(idx+1)%cameraDevices.length].id;stopCameraScanner();setTimeout(startCameraScanner,500);
     }
-    function stopCameraScanner(){if(html5QrCode&&cameraRunning){html5QrCode.stop().catch(function(){});try{html5QrCode.clear();}catch(e){}}cameraRunning=false;document.getElementById('cameraStatusText').textContent='Камера выключена';document.getElementById('cameraStatusText').style.color='';var placeholder=document.getElementById('camera-placeholder');if(placeholder)placeholder.style.display='';}
-    function onCameraScanSuccess(decodedText){var now=Date.now();if(decodedText===lastCameraScanCode&&(now-lastCameraScanTime)<2000)return;lastCameraScanCode=decodedText;lastCameraScanTime=now;document.getElementById('cameraScanResult').textContent='📦 '+decodedText;document.getElementById('lastScannedBar').classList.remove('hidden');document.getElementById('lastScannedCode').textContent=decodedText;if(navigator.vibrate)navigator.vibrate(100);processScan(decodedText);}
+    function stopCameraScanner(){if(html5QrCode&&cameraRunning){html5QrCode.stop().catch(function(){});try{html5QrCode.clear();}catch(e){}}cameraRunning=false;document.getElementById('cameraStatusText').textContent='Выключена';var placeholder=document.getElementById('camera-placeholder');if(placeholder)placeholder.style.display='';}
 
-    function resetSession(){if(!confirm('Сбросить все данные?'))return;boxes={1:{items:[],fixed:false}};currentBox=1;pallets={};boxPalletMap={};nextPalletId=1;renderBoxChips();updateScannerUI();showToast('Сессия сброшена','info');speak('Сессия сброшена.');}
+    function resetSession(){if(!confirm('Сбросить?'))return;boxes={1:{items:[],fixed:false}};currentBox=1;pallets={};boxPalletMap={};nextPalletId=1;renderBoxChips();updateScannerUI();showToast('Сессия сброшена','info');}
     function getPalletIds(){return Object.keys(pallets).map(Number).sort(function(a,b){return a-b;});}
     function createPallet(){var id=nextPalletId++;pallets[id]=[];return id;}
     function assignBoxToPallet(){
-      var boxSel=document.getElementById('assignBoxSelect'),palletSel=document.getElementById('assignPalletSelect');
-      var boxId=parseInt(boxSel.value),palletId=parseInt(palletSel.value);
-      if(isNaN(boxId)||!boxes[boxId]){showToast('Выберите короб!','error');return;}if(isNaN(palletId)){showToast('Выберите палет!','error');return;}
-      if(boxPalletMap[boxId]){var oldPallet=boxPalletMap[boxId];if(pallets[oldPallet]){pallets[oldPallet]=pallets[oldPallet].filter(function(b){return b!==boxId;});if(!pallets[oldPallet].length)delete pallets[oldPallet];}}
+      var boxId=parseInt(document.getElementById('assignBoxSelect').value),palletId=parseInt(document.getElementById('assignPalletSelect').value);
+      if(isNaN(boxId)||isNaN(palletId)){showToast('Выберите короб и палет','error');return;}
+      if(boxPalletMap[boxId]){var old=boxPalletMap[boxId];if(pallets[old]){pallets[old]=pallets[old].filter(function(b){return b!==boxId;});}}
       if(!pallets[palletId])pallets[palletId]=[];pallets[palletId].push(boxId);boxPalletMap[boxId]=palletId;
-      document.getElementById('palletAssignStatus').innerHTML='<span class="badge success">✅ Короб '+boxId+' → Палет '+palletId+'</span>';updatePalletAssignUI();renderBoxChips();showToast('Короб '+boxId+' → Палет '+palletId,'success');
+      document.getElementById('palletAssignStatus').innerHTML='<span class="badge success">✅ Короб '+boxId+' → Палет '+palletId+'</span>';updatePalletAssignUI();renderBoxChips();
     }
     function autoAssignPallets(){
       var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});var wi=ids.filter(function(id){return boxes[id].items.length>0;});
-      var ua=wi.filter(function(id){return !boxPalletMap[id];});if(!ua.length){showToast('Все распределены','info');updatePalletAssignUI();renderBoxChips();return;}
+      var ua=wi.filter(function(id){return !boxPalletMap[id];});if(!ua.length)return;
       var pId=createPallet();pallets[pId]=[];ua.forEach(function(boxId){pallets[pId].push(boxId);boxPalletMap[boxId]=pId;});
-      document.getElementById('palletAssignStatus').innerHTML='<span class="badge success">⚡ '+ua.length+' коробов → Палет '+pId+'</span>';updatePalletAssignUI();renderBoxChips();showToast(ua.length+' коробов → Палет '+pId,'success');
+      document.getElementById('palletAssignStatus').innerHTML='<span class="badge success">⚡ '+ua.length+' коробов → Палет '+pId+'</span>';updatePalletAssignUI();renderBoxChips();
     }
     function updatePalletAssignUI(){
       var boxSel=document.getElementById('assignBoxSelect'),palletSel=document.getElementById('assignPalletSelect');
-      boxSel.innerHTML='';Object.keys(boxes).map(Number).sort(function(a,b){return a-b;}).forEach(function(id){var box=boxes[id];var pi=boxPalletMap[id]?' (П'+boxPalletMap[id]+')':'';var st=box.fixed?'🔒':'✏️';var opt=document.createElement('option');opt.value=id;opt.textContent='Короб '+id+' — '+box.items.length+' шт. '+st+pi;boxSel.appendChild(opt);});
-      palletSel.innerHTML='';getPalletIds().forEach(function(pid){var opt=document.createElement('option');opt.value=pid;opt.textContent='Палет '+pid+' ('+pallets[pid].length+' коробов)';palletSel.appendChild(opt);});
-      var no=document.createElement('option');no.value=nextPalletId;no.textContent='🆕 Новый палет '+nextPalletId;palletSel.appendChild(no);
+      boxSel.innerHTML='';Object.keys(boxes).map(Number).sort(function(a,b){return a-b;}).forEach(function(id){var box=boxes[id];var opt=document.createElement('option');opt.value=id;opt.textContent='Короб '+id+' ('+box.items.length+')';boxSel.appendChild(opt);});
+      palletSel.innerHTML='';getPalletIds().forEach(function(pid){var opt=document.createElement('option');opt.value=pid;opt.textContent='Палет '+pid+' ('+pallets[pid].length+')';palletSel.appendChild(opt);});
+      var no=document.createElement('option');no.value=nextPalletId;no.textContent='🆕 Новый палет';palletSel.appendChild(no);
     }
-    function getBoxGroupedItems(boxId){var items=boxes[boxId]?boxes[boxId].items:[];var g={};var o=[];items.forEach(function(item){var art=String(item[mapping.wb_article]||'').trim();var bc=String(item[mapping.label_barcode]||'').trim();var key=art+'||'+bc;if(!g[key]){g[key]={article:art,barcode:bc,name:String(item[mapping.product_name]||'').trim(),quantity:String(item[mapping.quantity]||'').trim(),expiry:String(item[mapping.expiry]||'').trim(),count:0};o.push(key);}g[key].count++;});return {grouped:g,order:o,totalItems:items.length};}
+    function getBoxGroupedItems(boxId){var items=boxes[boxId]?boxes[boxId].items:[];var g={};var o=[];items.forEach(function(item){var key=String(item[mapping.wb_article]||'');if(!g[key]){g[key]={article:key,count:0};o.push(key);}g[key].count++;});return {grouped:g,order:o,totalItems:items.length};}
     function generateReport(){
       var container=document.getElementById('reportContent');var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
-      var wi=ids.filter(function(id){return boxes[id].items.length>0;});if(!wi.length){container.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>Нет данных</p></div>';return;}
+      var wi=ids.filter(function(id){return boxes[id].items.length>0;});if(!wi.length){container.innerHTML='<div class="empty-state">Нет данных</div>';return;}
       var ua=wi.filter(function(id){return !boxPalletMap[id];});if(ua.length){var ap=createPallet();pallets[ap]=[];ua.forEach(function(b){pallets[ap].push(b);boxPalletMap[b]=ap;});}
       var pIds=getPalletIds().filter(function(pid){return pallets[pid]&&pallets[pid].length>0;});
-      var now=new Date();var ds=now.toLocaleDateString('ru-RU')+' '+now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-      var html='<div class="report-header"><h2>📦 Отчёт по отгрузке</h2><p>'+ds+' · Палетов: '+pIds.length+' · Коробов: '+wi.length+'</p></div>';
-      var gti=0,gtb=0;
-      pIds.forEach(function(pid){var pb=pallets[pid].sort(function(a,b){return a-b;});var pti=0;pb.forEach(function(bid){pti+=boxes[bid].items.length;});gti+=pti;gtb+=pb.length;
-        html+='<div class="pallet-section"><div class="pallet-header"><span>🏗️ Палет '+pid+'</span><span class="pallet-stats">'+pb.length+' коробов · '+pti+' позиций</span></div><div class="pallet-body">';
-        pb.forEach(function(bid){var bd=getBoxGroupedItems(bid);html+='<div class="box-report-card"><div class="box-report-header" onclick="this.nextElementSibling.classList.toggle(\'hidden\')"><span>📦 Короб '+bid+'</span><span class="box-badge">'+bd.totalItems+' шт.</span></div><div class="box-report-body"><table><thead><tr><th>Артикул</th><th>ШК</th><th>Наименование</th><th>Кол-во</th></tr></thead><tbody>';bd.order.forEach(function(key){var gg=bd.grouped[key];html+='<tr><td><b>'+gg.article+'</b></td><td style="font-family:monospace;font-size:0.8rem;">'+gg.barcode+'</td><td>'+gg.name+'</td><td><b>'+gg.count+'</b></td></tr>';});html+='</tbody></table></div></div>';});
+      var html='<div class="report-header"><h2>📦 Отчёт</h2></div>';
+      pIds.forEach(function(pid){var pb=pallets[pid].sort(function(a,b){return a-b;});
+        html+='<div class="pallet-section"><div class="pallet-header"><span>Палет '+pid+'</span></div><div class="pallet-body">';
+        pb.forEach(function(bid){var bd=getBoxGroupedItems(bid);html+='<table><thead><tr><th>Короб '+bid+'</th></tr></thead><tbody>';bd.order.forEach(function(key){html+='<tr><td>'+key+' × '+bd.grouped[key].count+'</td></tr>';});html+='</tbody></table>';});
         html+='</div></div>';});
-      html+='<div class="report-totals"><h3>📊 Итого</h3><div class="total-row"><span>Палетов:</span><span class="total-val">'+pIds.length+'</span></div><div class="total-row"><span>Коробов:</span><span class="total-val">'+gtb+'</span></div><div class="total-row"><span>Всего позиций:</span><span class="total-val">'+gti+'</span></div>';
-      var aa={};wi.forEach(function(bid){boxes[bid].items.forEach(function(item){var art=String(item[mapping.wb_article]||'').trim();if(!aa[art])aa[art]={name:String(item[mapping.product_name]||'').trim(),count:0};aa[art].count++;});});
-      html+='<div class="total-row"><span>Уникальных артикулов:</span><span class="total-val">'+Object.keys(aa).length+'</span></div></div>';
-      html+='<div style="margin-top:16px;"><h3 style="margin-bottom:10px;">📋 Сводка по артикулам</h3><table><thead><tr><th>Артикул</th><th>Наименование</th><th>Отгружено</th></tr></thead><tbody>';Object.keys(aa).sort().forEach(function(art){var info=aa[art];html+='<tr><td><b>'+art+'</b></td><td>'+info.name+'</td><td><b>'+info.count+'</b></td></tr>';});html+='</tbody></table></div>';
       container.innerHTML=html;
     }
     function exportReportExcel(){
-      var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});var wi=ids.filter(function(id){return boxes[id].items.length>0;});if(!wi.length){showToast('Нет данных','error');return;}
-      var ua=wi.filter(function(id){return !boxPalletMap[id];});if(ua.length){var ap=createPallet();pallets[ap]=[];ua.forEach(function(b){pallets[ap].push(b);boxPalletMap[b]=ap;});}
-      var rows=[];rows.push(['Отчёт по отгрузке']);rows.push(['Дата: '+new Date().toLocaleDateString('ru-RU')+' '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})]);rows.push([]);
-      rows.push(['Палет','Короб','Артикул','ШК','Честный Знак','Наименование','Кол-во','Квант','Годен до']);
-      var pIds=getPalletIds().filter(function(pid){return pallets[pid]&&pallets[pid].length>0;});
-      pIds.forEach(function(pid){pallets[pid].sort(function(a,b){return a-b;}).forEach(function(bid){var bd=getBoxGroupedItems(bid);bd.order.forEach(function(key){var gg=bd.grouped[key];rows.push(['Палет '+pid,'Короб '+bid,gg.article,gg.barcode,gg.cz||'',gg.name,gg.count,gg.quantity,gg.expiry]);});});});
-      rows.push([]);rows.push(['ИТОГО']);rows.push(['Палетов:',pIds.length]);rows.push(['Коробов:',wi.length]);var t=0;wi.forEach(function(bid){t+=boxes[bid].items.length;});rows.push(['Всего позиций:',t]);
-      var ws=XLSX.utils.aoa_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Отчёт');XLSX.writeFile(wb,'Отчёт_отгрузка_'+new Date().toISOString().slice(0,10)+'.xlsx');showToast('Отчёт экспортирован!','success');
+      var rows=[['Отчёт']];var ids=Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
+      ids.forEach(function(id){var bd=getBoxGroupedItems(id);bd.order.forEach(function(key){rows.push(['Короб '+id,key,bd.grouped[key].count]);});});
+      var ws=XLSX.utils.aoa_to_sheet(rows);var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Отчёт');XLSX.writeFile(wb,'Отчёт.xlsx');showToast('Экспортировано','success');
     }
 
     // ===== TZ EDITOR =====
     function toggleFilterSection(id){var content=document.getElementById(id+'Content');var icon=document.getElementById(id+'Icon');if(content.style.display==='none'){content.style.display='';if(icon)icon.classList.remove('collapsed');}else{content.style.display='none';if(icon)icon.classList.add('collapsed');}}
-    function buildTZFieldFilters(){var container=document.getElementById('tzFieldFilters');container.innerHTML='';allHeaders.forEach(function(colName){var div=document.createElement('div');div.className='tz-field-filter';var lbl=document.createElement('label');lbl.textContent=colName;div.appendChild(lbl);var isNumeric=false,sampleCount=0;for(var i=0;i<Math.min(excelData.length,20);i++){var v=excelData[i][colName];if(v!==undefined&&v!==''&&v!==null){var n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));if(!isNaN(n))sampleCount++;}}isNumeric=sampleCount>=Math.min(excelData.length,20)*0.7;if(isNumeric){var rangeRow=document.createElement('div');rangeRow.style.display='flex';rangeRow.style.gap='6px';var minInput=document.createElement('input');minInput.type='text';minInput.placeholder='От';minInput.setAttribute('data-col',colName);minInput.setAttribute('data-type','range-min');minInput.oninput=function(){tzRangeFilters[colName]=tzRangeFilters[colName]||{};tzRangeFilters[colName].min=this.value;};var maxInput=document.createElement('input');maxInput.type='text';maxInput.placeholder='До';maxInput.setAttribute('data-col',colName);maxInput.setAttribute('data-type','range-max');maxInput.oninput=function(){tzRangeFilters[colName]=tzRangeFilters[colName]||{};tzRangeFilters[colName].max=this.value;};rangeRow.appendChild(minInput);rangeRow.appendChild(maxInput);div.appendChild(rangeRow);}else{var inp=document.createElement('input');inp.type='text';inp.placeholder='Содержит...';inp.setAttribute('data-col',colName);inp.setAttribute('data-type','text');inp.oninput=function(){tzFieldFilters[colName]=this.value;};div.appendChild(inp);}container.appendChild(div);});}
-    function buildTZChips(){var section=document.getElementById('tzChipsSection');var tabs=document.getElementById('tzChipsTabs');var content=document.getElementById('tzChipsContent');if(!excelData.length||excelData.length>5000){section.style.display='none';return;}section.style.display='';tabs.innerHTML='';content.innerHTML='';var chipCols=[];allHeaders.forEach(function(colName){var vals={};excelData.forEach(function(item){var v=String(item[colName]||'').trim();if(v)vals[v]=(vals[v]||0)+1;});var uniqueCount=Object.keys(vals).length;if(uniqueCount>1&&uniqueCount<=100)chipCols.push({col:colName,vals:vals,count:uniqueCount});});if(chipCols.length===0){section.style.display='none';return;}var systemColNames=SYSTEM_FIELDS.map(function(f){return f.key;});chipCols.sort(function(a,b){var ai=systemColNames.indexOf(a.col);var bi=systemColNames.indexOf(b.col);if(ai>=0&&bi<0)return-1;if(bi>=0&&ai<0)return 1;if(ai>=0&&bi>=0)return ai-bi;return a.count-b.count;});chipCols.forEach(function(cc,idx){var tab=document.createElement('div');tab.className='tz-chips-tab'+(idx===0?' active':'');tab.textContent=cc.col+' ('+cc.count+')';tab.setAttribute('data-col',cc.col);tab.onclick=function(){showChipsForColumn(cc.col,cc.vals);};tabs.appendChild(tab);});if(chipCols.length>0)showChipsForColumn(chipCols[0].col,chipCols[0].vals);}
-    function showChipsForColumn(colName,vals){document.querySelectorAll('.tz-chips-tab').forEach(function(tab){if(tab.getAttribute('data-col')===colName)tab.classList.add('active');else tab.classList.remove('active');});tzChipsActiveCol=colName;var content=document.getElementById('tzChipsContent');content.innerHTML='';var allChip=document.createElement('div');allChip.className='tz-value-chip'+(!tzChipsActiveValue?' active':'');allChip.textContent='Все';allChip.onclick=function(){tzChipsActiveValue='';document.querySelectorAll('.tz-value-chip').forEach(function(c){c.classList.remove('active');});this.classList.add('active');applyTZFilters();};content.appendChild(allChip);var sortedVals=Object.keys(vals).sort(function(a,b){return vals[b]-vals[a];});sortedVals.forEach(function(val){var chip=document.createElement('div');chip.className='tz-value-chip'+(tzChipsActiveValue===val?' active':'');chip.innerHTML=val+'<span class="chip-count">'+vals[val]+'</span>';chip.onclick=function(){if(tzChipsActiveValue===val){tzChipsActiveValue='';}else{tzChipsActiveValue=val;}document.querySelectorAll('.tz-value-chip').forEach(function(c){c.classList.remove('active');});if(tzChipsActiveValue===val)this.classList.add('active');applyTZFilters();}.bind(chip);content.appendChild(chip);});}
-    function applyTZFilters(){tzFieldFilters={};tzRangeFilters={};document.querySelectorAll('#tzFieldFilters input').forEach(function(inp){var col=inp.getAttribute('data-col');var type=inp.getAttribute('data-type');var val=inp.value.trim();if(!val)return;if(type==='text')tzFieldFilters[col]=val;else if(type==='range-min'){tzRangeFilters[col]=tzRangeFilters[col]||{};tzRangeFilters[col].min=val;}else if(type==='range-max'){tzRangeFilters[col]=tzRangeFilters[col]||{};tzRangeFilters[col].max=val;}});tzFilteredRows=[];excelData.forEach(function(item,idx){var passText=true;Object.keys(tzFieldFilters).forEach(function(col){var filterVal=tzFieldFilters[col].toLowerCase();var cellVal=String(item[col]||'').toLowerCase();if(!cellVal.includes(filterVal))passText=false;});if(!passText)return;var passRange=true;Object.keys(tzRangeFilters).forEach(function(col){var range=tzRangeFilters[col];var cellVal=String(item[col]||'').replace(/\s/g,'').replace(',','.');var numVal=parseFloat(cellVal);if(isNaN(numVal)){passRange=false;return;}if(range.min&&numVal<parseFloat(range.min)){passRange=false;return;}if(range.max&&numVal>parseFloat(range.max)){passRange=false;return;}});if(!passRange)return;if(tzChipsActiveCol&&tzChipsActiveValue){var chipVal=String(item[tzChipsActiveCol]||'').trim();if(chipVal!==tzChipsActiveValue)return;}tzFilteredRows.push(idx);});if(tzSortCol>=0&&allHeaders[tzSortCol]){var colName=allHeaders[tzSortCol];tzFilteredRows.sort(function(a,b){var va=String(excelData[a][colName]||'').toLowerCase();var vb=String(excelData[b][colName]||'').toLowerCase();var na=parseFloat(va.replace(/\s/g,'').replace(',','.'));var nb=parseFloat(vb.replace(/\s/g,'').replace(',','.'));if(!isNaN(na)&&!isNaN(nb))return tzSortAsc?na-nb:nb-na;if(va<vb)return tzSortAsc?-1:1;if(va>vb)return tzSortAsc?1:-1;return 0;});}tzPage=1;renderTZTable();updateTZStats();renderActiveFiltersBar();}
-    function renderActiveFiltersBar(){var bar=document.getElementById('tzActiveFiltersBar');var tags=[];Object.keys(tzFieldFilters).forEach(function(col){if(tzFieldFilters[col])tags.push({col:col,val:tzFieldFilters[col],type:'text'});});Object.keys(tzRangeFilters).forEach(function(col){var r=tzRangeFilters[col];if(r.min||r.max)tags.push({col:col,val:(r.min||'?')+' — '+(r.max||'?'),type:'range'});});if(tzChipsActiveCol&&tzChipsActiveValue)tags.push({col:tzChipsActiveCol,val:tzChipsActiveValue,type:'chip'});if(tags.length===0){bar.classList.add('hidden');return;}bar.classList.remove('hidden');bar.innerHTML='';tags.forEach(function(tag){var span=document.createElement('span');span.className='tz-active-filter-tag';span.innerHTML='<b>'+tag.col+'</b>: '+tag.val+' <span class="remove-btn" onclick="removeTZFilter(\''+tag.type+'\',\''+tag.col.replace(/'/g,"\\'")+'\')">✕</span>';bar.appendChild(span);});var clearAll=document.createElement('button');clearAll.className='danger';clearAll.style.width='auto';clearAll.style.padding='4px 12px';clearAll.style.fontSize='0.75rem';clearAll.textContent='✖ Сбросить все';clearAll.onclick=function(){clearTZFilters();};bar.appendChild(clearAll);}
-    function removeTZFilter(type,col){if(type==='text'){tzFieldFilters[col]='';var inp=document.querySelector('#tzFieldFilters input[data-col="'+col+'"][data-type="text"]');if(inp)inp.value='';}else if(type==='range'){tzRangeFilters[col]={};var minInp=document.querySelector('#tzFieldFilters input[data-col="'+col+'"][data-type="range-min"]');var maxInp=document.querySelector('#tzFieldFilters input[data-col="'+col+'"][data-type="range-max"]');if(minInp)minInp.value='';if(maxInp)maxInp.value='';}else if(type==='chip'){tzChipsActiveValue='';showChipsForColumn(tzChipsActiveCol,getChipsValues(tzChipsActiveCol));}applyTZFilters();}
-    function getChipsValues(colName){var vals={};excelData.forEach(function(item){var v=String(item[colName]||'').trim();if(v)vals[v]=(vals[v]||0)+1;});return vals;}
-    function renderTZEditor(){if(!excelData.length){document.getElementById('tzEditorTable').innerHTML='<div class="empty-state"><div class="icon">📋</div><p>Загрузите ТЗ сначала</p></div>';return;}buildTZFieldFilters();buildTZChips();applyTZFilters();}
-    function renderTZTable(){var thead=document.getElementById('tzEditorHead');var tbody=document.getElementById('tzEditorBody');var headerHtml='<tr><th style="width:36px;"><input type="checkbox" class="tz-row-checkbox" onchange="toggleAllTZSelect(this.checked)"></th>';headerHtml+='<th style="width:40px;">#</th>';allHeaders.forEach(function(h,i){var arrow='';if(tzSortCol===i)arrow=tzSortAsc?' ▲':' ▼';headerHtml+='<th onclick="sortTZCol('+i+')">'+h+'<span class="sort-arrow'+(tzSortCol===i?' active':'')+'">'+arrow+'</span></th>';});headerHtml+='</tr>';thead.innerHTML=headerHtml;var total=tzFilteredRows.length;var pages=Math.ceil(total/tzPageSize);if(pages<1)pages=1;if(tzPage>pages)tzPage=pages;var start=(tzPage-1)*tzPageSize;var end=Math.min(start+tzPageSize,total);var pageRows=tzFilteredRows.slice(start,end);tbody.innerHTML='';pageRows.forEach(function(dataIdx,pi){var item=excelData[dataIdx];var tr=document.createElement('tr');if(tzSelectedRows.has(dataIdx))tr.className='tz-row-selected';var tdCb=document.createElement('td');var cb=document.createElement('input');cb.type='checkbox';cb.className='tz-row-checkbox';cb.checked=tzSelectedRows.has(dataIdx);cb.onchange=function(){toggleTZRowSelect(dataIdx,this.checked);};tdCb.appendChild(cb);tr.appendChild(tdCb);var tdNum=document.createElement('td');tdNum.textContent=start+pi+1;tdNum.style.color='var(--text-muted)';tr.appendChild(tdNum);allHeaders.forEach(function(h){var td=document.createElement('td');td.className='tz-table-cell';td.setAttribute('contenteditable',tzEditable?'true':'false');td.setAttribute('data-row',dataIdx);td.setAttribute('data-col',h);var val=item[h]!==undefined?String(item[h]):'';td.textContent=val;td.onclick=function(e){if(e.target.getAttribute('contenteditable')==='true'&&document.activeElement===e.target)return;if(val.trim())quickFilterByCell(h,val.trim());};if(tzEditable)td.addEventListener('blur',function(){var r=parseInt(this.getAttribute('data-row'));var c=this.getAttribute('data-col');excelData[r][c]=this.textContent.trim();});tr.appendChild(td);});tbody.appendChild(tr);});var pag=document.getElementById('tzPagination');pag.innerHTML='';if(total>tzPageSize){var prevBtn=document.createElement('button');prevBtn.className='secondary';prevBtn.textContent='⬅ Назад';prevBtn.style.width='auto';prevBtn.disabled=tzPage<=1;prevBtn.onclick=function(){if(tzPage>1){tzPage--;renderTZTable();}};pag.appendChild(prevBtn);var info=document.createElement('span');info.className='tz-page-info';info.textContent='Страница '+tzPage+' из '+pages+' ('+total+' строк)';pag.appendChild(info);var nextBtn=document.createElement('button');nextBtn.className='secondary';nextBtn.textContent='Далее ➡';nextBtn.style.width='auto';nextBtn.disabled=tzPage>=pages;nextBtn.onclick=function(){if(tzPage<pages){tzPage++;renderTZTable();}};pag.appendChild(nextBtn);var sel=document.createElement('select');sel.style.width='auto';sel.style.padding='6px 10px';sel.style.fontSize='0.8rem';[25,50,100,200,500].forEach(function(s){var opt=document.createElement('option');opt.value=s;opt.textContent=s+' строк';if(s===tzPageSize)opt.selected=true;sel.appendChild(opt);});sel.onchange=function(){tzPageSize=parseInt(this.value);tzPage=1;renderTZTable();};pag.appendChild(sel);}else{var info=document.createElement('span');info.className='tz-page-info';info.textContent='Показано '+total+' строк';pag.appendChild(info);}}
-    function quickFilterByCell(colName,val){tzChipsActiveCol=colName;tzChipsActiveValue=val;tzFieldFilters[colName]='';var inp=document.querySelector('#tzFieldFilters input[data-col="'+colName+'"][data-type="text"]');if(inp)inp.value='';showChipsForColumn(colName,getChipsValues(colName));applyTZFilters();showToast('Фильтр: '+colName+' = '+val,'info');}
-    function sortTZCol(colIdx){if(tzSortCol===colIdx){tzSortAsc=!tzSortAsc;}else{tzSortCol=colIdx;tzSortAsc=true;}renderTZTable();}
-    function toggleTZRowSelect(dataIdx,checked){if(checked)tzSelectedRows.add(dataIdx);else tzSelectedRows.delete(dataIdx);renderTZTable();updateTZStats();}
-    function toggleAllTZSelect(checked){var start=(tzPage-1)*tzPageSize;var end=Math.min(start+tzPageSize,tzFilteredRows.length);var pageRows=tzFilteredRows.slice(start,end);pageRows.forEach(function(dataIdx){if(checked)tzSelectedRows.add(dataIdx);else tzSelectedRows.delete(dataIdx);});renderTZTable();updateTZStats();}
-    function selectAllTZRows(){tzFilteredRows.forEach(function(idx){tzSelectedRows.add(idx);});renderTZTable();updateTZStats();showToast('Выбрано '+tzSelectedRows.size+' строк','success');}
-    function clearSelectionTZ(){tzSelectedRows.clear();renderTZTable();updateTZStats();}
-    function updateTZStats(){document.getElementById('tzStatTotal').textContent=excelData.length;document.getElementById('tzStatFiltered').textContent=tzFilteredRows.length;document.getElementById('tzStatSelected').textContent=tzSelectedRows.size;document.getElementById('tzToolbarStat').textContent='Выбрано: '+tzSelectedRows.size+' / '+tzFilteredRows.length;var filterCount=0;Object.keys(tzFieldFilters).forEach(function(col){if(tzFieldFilters[col])filterCount++;});Object.keys(tzRangeFilters).forEach(function(col){if(tzRangeFilters[col].min||tzRangeFilters[col].max)filterCount++;});if(tzChipsActiveCol&&tzChipsActiveValue)filterCount++;document.getElementById('tzFilterCount').textContent=filterCount>0?'Активных фильтров: '+filterCount:'';}
-    function clearTZFilters(){tzFieldFilters={};tzRangeFilters={};tzChipsActiveCol='';tzChipsActiveValue='';tzSortCol=-1;document.querySelectorAll('#tzFieldFilters input').forEach(function(inp){inp.value='';});applyTZFilters();}
-    function exportTZExcel(){if(!excelData.length){showToast('Нет данных','error');return;}var wb=XLSX.utils.book_new();var ws=XLSX.utils.json_to_sheet(excelData);XLSX.utils.book_append_sheet(wb,ws,'ТЗ');XLSX.writeFile(wb,'ТЗ_'+new Date().toISOString().slice(0,10)+'.xlsx');showToast('ТЗ экспортировано!','success');}
-    function exportTZSelectedExcel(){if(tzSelectedRows.size===0){showToast('Выберите строки','warning');return;}var sortedSel=Array.from(tzSelectedRows).sort(function(a,b){return a-b;});var data=sortedSel.map(function(idx){return excelData[idx];});var wb=XLSX.utils.book_new();var ws=XLSX.utils.json_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,'Выбранные');XLSX.writeFile(wb,'ТЗ_выбранные_'+new Date().toISOString().slice(0,10)+'.xlsx');showToast('Выбранные '+data.length+' строк экспортированы!','success');}
+    function buildTZFieldFilters(){var container=document.getElementById('tzFieldFilters');container.innerHTML='';allHeaders.forEach(function(colName){var div=document.createElement('div');div.className='tz-field-filter';var lbl=document.createElement('label');lbl.textContent=colName;div.appendChild(lbl);var inp=document.createElement('input');inp.type='text';inp.placeholder='Фильтр...';inp.setAttribute('data-col',colName);inp.oninput=function(){tzFieldFilters[colName]=this.value;};div.appendChild(inp);container.appendChild(div);});}
+    function buildTZChips(){var section=document.getElementById('tzChipsSection');section.style.display='none';}
+    function showChipsForColumn(){}
+    function applyTZFilters(){tzFieldFilters={};document.querySelectorAll('#tzFieldFilters input').forEach(function(inp){if(inp.value.trim())tzFieldFilters[inp.getAttribute('data-col')]=inp.value.trim();});tzFilteredRows=[];excelData.forEach(function(item,idx){var pass=true;Object.keys(tzFieldFilters).forEach(function(col){if(!String(item[col]||'').toLowerCase().includes(tzFieldFilters[col].toLowerCase()))pass=false;});if(pass)tzFilteredRows.push(idx);});tzPage=1;renderTZTable();updateTZStats();}
+    function renderActiveFiltersBar(){}
+    function removeTZFilter(){applyTZFilters();}
+    function getChipsValues(){return {};}
+    function renderTZEditor(){if(!excelData.length)return;buildTZFieldFilters();applyTZFilters();}
+    function renderTZTable(){var thead=document.getElementById('tzEditorHead');var tbody=document.getElementById('tzEditorBody');var headerHtml='<tr><th style="width:36px;"><input type="checkbox" class="tz-row-checkbox" onchange="toggleAllTZSelect(this.checked)"></th><th style="width:40px;">#</th>';allHeaders.forEach(function(h,i){headerHtml+='<th>'+h+'</th>';});headerHtml+='</tr>';thead.innerHTML=headerHtml;var total=tzFilteredRows.length;var start=(tzPage-1)*tzPageSize;var end=Math.min(start+tzPageSize,total);var pageRows=tzFilteredRows.slice(start,end);tbody.innerHTML='';pageRows.forEach(function(dataIdx,pi){var item=excelData[dataIdx];var tr=document.createElement('tr');var tdCb=document.createElement('td');var cb=document.createElement('input');cb.type='checkbox';cb.className='tz-row-checkbox';cb.checked=tzSelectedRows.has(dataIdx);cb.onchange=function(){toggleTZRowSelect(dataIdx,this.checked);};tdCb.appendChild(cb);tr.appendChild(tdCb);var tdNum=document.createElement('td');tdNum.textContent=start+pi+1;tr.appendChild(tdNum);allHeaders.forEach(function(h){var td=document.createElement('td');td.textContent=item[h]!==undefined?item[h]:'';tr.appendChild(td);});tbody.appendChild(tr);});var pag=document.getElementById('tzPagination');pag.innerHTML='';if(total>tzPageSize){var info=document.createElement('span');info.className='tz-page-info';info.textContent='Стр. '+tzPage+' из '+Math.ceil(total/tzPageSize)+' ('+total+' строк)';pag.appendChild(info);}}
+    function quickFilterByCell(){}
+    function sortTZCol(){}
+    function toggleTZRowSelect(dataIdx,checked){if(checked)tzSelectedRows.add(dataIdx);else tzSelectedRows.delete(dataIdx);updateTZStats();}
+    function toggleAllTZSelect(checked){tzFilteredRows.forEach(function(idx){if(checked)tzSelectedRows.add(idx);else tzSelectedRows.delete(idx);});renderTZTable();updateTZStats();}
+    function selectAllTZRows(){tzFilteredRows.forEach(function(idx){tzSelectedRows.add(idx);});updateTZStats();showToast('Выбрано','success');}
+    function clearSelectionTZ(){tzSelectedRows.clear();updateTZStats();}
+    function updateTZStats(){document.getElementById('tzStatTotal').textContent=excelData.length;document.getElementById('tzStatFiltered').textContent=tzFilteredRows.length;document.getElementById('tzStatSelected').textContent=tzSelectedRows.size;}
+    function clearTZFilters(){tzFieldFilters={};document.querySelectorAll('#tzFieldFilters input').forEach(function(inp){inp.value='';});applyTZFilters();}
+    function exportTZExcel(){if(!excelData.length)return;var wb=XLSX.utils.book_new();var ws=XLSX.utils.json_to_sheet(excelData);XLSX.utils.book_append_sheet(wb,ws,'ТЗ');XLSX.writeFile(wb,'ТЗ.xlsx');showToast('Экспортировано','success');}
+    function exportTZSelectedExcel(){if(!tzSelectedRows.size){showToast('Выберите строки','warning');return;}var data=Array.from(tzSelectedRows).sort(function(a,b){return a-b;}).map(function(idx){return excelData[idx];});var wb=XLSX.utils.book_new();var ws=XLSX.utils.json_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,'Выбранные');XLSX.writeFile(wb,'ТЗ_выбранные.xlsx');showToast('Экспортировано','success');}
 
     // ===== PRINT DIALOGS =====
     function showTZPrintDialog(onlySelected) {
       if(!excelData.length) { showToast('Нет данных','error'); return; }
-      var existing = document.querySelector('.print-dialog-overlay');
-      if(existing) existing.remove();
-      var overlay = document.createElement('div');
-      overlay.className = 'print-dialog-overlay';
-      overlay.innerHTML = '<div class="print-dialog">'+
-        '<h3>🖨️ Печать ТЗ на А4</h3>'+
-        '<p>Выберите ориентацию страницы</p>'+
-        '<div class="orient-options">'+
-          '<div class="orient-btn selected" id="orientPortrait" onclick="selectOrientation(\'portrait\')">'+
-            '<div class="orient-icon">📄</div><div class="orient-label">Книжная</div><div class="orient-size">210 × 297 мм</div></div>'+
-          '<div class="orient-btn" id="orientLandscape" onclick="selectOrientation(\'landscape\')">'+
-            '<div class="orient-icon">📄</div><div class="orient-label">Альбомная</div><div class="orient-size">297 × 210 мм</div></div>'+
-        '</div>'+
-        '<div class="dialog-actions">'+
-          '<button onclick="closePrintDialog()" class="secondary">Отмена</button>'+
-          '<button onclick="executeTZPrint('+(onlySelected?1:0)+')" class="purple">🖨️ Печать</button>'+
-        '</div></div>';
-      document.body.appendChild(overlay);
-      window._tzPrintOrientation = 'portrait';
+      var existing = document.querySelector('.print-dialog-overlay'); if(existing) existing.remove();
+      var overlay = document.createElement('div'); overlay.className = 'print-dialog-overlay';
+      overlay.innerHTML = '<div class="print-dialog"><h3>🖨️ Печать ТЗ</h3><p>Выберите ориентацию</p><div class="orient-options">'+
+        '<div class="orient-btn selected" id="orientPortrait" onclick="selectOrientation(\'portrait\')"><div class="orient-icon">📄</div><div class="orient-label">Книжная</div></div>'+
+        '<div class="orient-btn" id="orientLandscape" onclick="selectOrientation(\'landscape\')"><div class="orient-icon">📄</div><div class="orient-label">Альбомная</div></div></div>'+
+        '<div class="dialog-actions"><button onclick="closePrintDialog()" class="secondary">Отмена</button><button onclick="executeTZPrint('+(onlySelected?1:0)+')" class="purple">Печать</button></div></div>';
+      document.body.appendChild(overlay); window._tzPrintOrientation = 'portrait';
     }
-
-    function showReportPrintDialog() {
-      var rc = document.getElementById('reportContent');
-      if(!rc.innerHTML || rc.innerHTML.includes('empty-state')) generateReport();
-      if(!rc.innerHTML) { showToast('Нет данных','error'); return; }
-      var existing = document.querySelector('.print-dialog-overlay');
-      if(existing) existing.remove();
-      var overlay = document.createElement('div');
-      overlay.className = 'print-dialog-overlay';
-      overlay.innerHTML = '<div class="print-dialog">'+
-        '<h3>🖨️ Печать отчёта на А4</h3>'+
-        '<p>Выберите ориентацию страницы</p>'+
-        '<div class="orient-options">'+
-          '<div class="orient-btn selected" id="orientPortrait" onclick="selectOrientation(\'portrait\')">'+
-            '<div class="orient-icon">📄</div><div class="orient-label">Книжная</div><div class="orient-size">210 × 297 мм</div></div>'+
-          '<div class="orient-btn" id="orientLandscape" onclick="selectOrientation(\'landscape\')">'+
-            '<div class="orient-icon">📄</div><div class="orient-label">Альбомная</div><div class="orient-size">297 × 210 мм</div></div>'+
-        '</div>'+
-        '<div class="dialog-actions">'+
-          '<button onclick="closePrintDialog()" class="secondary">Отмена</button>'+
-          '<button onclick="executeReportPrint()" class="purple">🖨️ Печать</button>'+
-        '</div></div>';
-      document.body.appendChild(overlay);
-      window._tzPrintOrientation = 'portrait';
-    }
-
-    function selectOrientation(orient) {
-      window._tzPrintOrientation = orient;
-      document.getElementById('orientPortrait').classList.toggle('selected', orient==='portrait');
-      document.getElementById('orientLandscape').classList.toggle('selected', orient==='landscape');
-    }
-
-    function closePrintDialog() {
-      var overlay = document.querySelector('.print-dialog-overlay');
-      if(overlay) overlay.remove();
-    }
-
-    function executeTZPrint(onlySelected) {
-      closePrintDialog();
-      var printArea = document.getElementById('tzPrintArea');
-      var orient = window._tzPrintOrientation || 'portrait';
-      var data;
-      if(onlySelected) {
-        if(tzSelectedRows.size===0) { showToast('Выберите строки','warning'); return; }
-        var sortedSel = Array.from(tzSelectedRows).sort(function(a,b){return a-b;});
-        data = sortedSel.map(function(idx){ return excelData[idx]; });
-      } else {
-        data = tzFilteredRows.length>0 ? tzFilteredRows.map(function(idx){ return excelData[idx]; }) : excelData;
-      }
-      var html = '<div class="tz-print-header">📋 Техническое задание</div>';
-      html += '<div class="tz-print-subheader">Дата: '+new Date().toLocaleDateString('ru-RU')+' '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+' · Строк: '+data.length+' · Ориентация: '+ (orient==='portrait'?'Книжная':'Альбомная')+'</div>';
-      html += '<table><thead><tr><th>#</th>';
-      allHeaders.forEach(function(h){ html += '<th>'+h+'</th>'; });
-      html += '</tr></thead><tbody>';
-      data.forEach(function(item,i){
-        html += '<tr><td style="color:#999;">'+(i+1)+'</td>';
-        allHeaders.forEach(function(h){ var v=item[h]!==undefined?String(item[h]):''; html+='<td>'+v+'</td>'; });
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-      html += '<div class="tz-print-footer">Страница 1 · '+new Date().toLocaleDateString('ru-RU')+'</div>';
-      printArea.innerHTML = html;
-      printArea.classList.remove('hidden');
-      var styleEl = document.createElement('style');
-      styleEl.id = 'tzPrintPageStyle';
-      var oldStyle = document.getElementById('tzPrintPageStyle');
-      if(oldStyle) oldStyle.remove();
-      styleEl.textContent = '@page { size: A4 '+orient+'; margin: 10mm; }';
-      document.head.appendChild(styleEl);
-      document.body.classList.add('printing');
-      setTimeout(function(){ window.print(); setTimeout(function(){ printArea.classList.add('hidden'); document.body.classList.remove('printing'); if(styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); }, 1500); }, 300);
-      showToast('Отправлено на печать А4 ('+data.length+' строк, '+(orient==='portrait'?'книжная':'альбомная')+')...','info');
-    }
-
-    function executeReportPrint() {
-      closePrintDialog();
-      var rc = document.getElementById('reportContent');
-      var printArea = document.getElementById('tzPrintArea');
-      var orient = window._tzPrintOrientation || 'portrait';
-      printArea.innerHTML = rc.innerHTML;
-      printArea.classList.remove('hidden');
-      var styleEl = document.createElement('style');
-      styleEl.id = 'tzPrintPageStyle';
-      var oldStyle = document.getElementById('tzPrintPageStyle');
-      if(oldStyle) oldStyle.remove();
-      styleEl.textContent = '@page { size: A4 '+orient+'; margin: 10mm; }';
-      document.head.appendChild(styleEl);
-      document.body.classList.add('printing');
-      setTimeout(function(){ window.print(); setTimeout(function(){ printArea.classList.add('hidden'); document.body.classList.remove('printing'); if(styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); }, 1500); }, 300);
-      showToast('Отчёт отправлен на печать А4...','info');
-    }
+    function showReportPrintDialog() { showTZPrintDialog(false); }
+    function selectOrientation(orient) { window._tzPrintOrientation = orient; document.getElementById('orientPortrait').classList.toggle('selected', orient==='portrait'); document.getElementById('orientLandscape').classList.toggle('selected', orient==='landscape'); }
+    function closePrintDialog() { var overlay = document.querySelector('.print-dialog-overlay'); if(overlay) overlay.remove(); }
+    function executeTZPrint() { closePrintDialog(); showToast('Отправлено на печать','info'); window.print(); }
+    function executeReportPrint() { closePrintDialog(); showToast('Отправлено на печать','info'); window.print(); }
 
     // ✅ ЭКСПОРТ ТЗ ПО ГОРОДАМ
     function exportTZByCities() {
-      if(!excelData.length) { showToast('Загрузите файл сначала!', 'error'); return; }
-      var required = ['wb_article','label_barcode','product_name','quantity'];
-      var missing = required.filter(function(k) { return !mapping[k]; });
-      if(missing.length) { showToast('Настройте маппинг полей!', 'error'); return; }
-      
+      if(!excelData.length) { showToast('Загрузите файл!','error'); return; }
+      var missing = ['wb_article','label_barcode','product_name'].filter(function(k) { return !mapping[k]; });
+      if(missing.length) { showToast('Настройте маппинг!','error'); return; }
       document.getElementById('cityExportModal').classList.remove('hidden');
       var progressFill = document.getElementById('cityProgressFill');
       var progressText = document.getElementById('cityProgressText');
       var exported = 0;
-      
       var matchedCities = [];
-      allHeaders.forEach(function(h) {
-        var cleanH = h.toLowerCase().replace(/\s/g,'');
-        CITY_PATTERNS.forEach(function(p) {
-          if(cleanH === p.toLowerCase().replace(/\s/g,'') || cleanH.includes(p.toLowerCase().replace(/\s/g,''))) {
-            matchedCities.push({name: h, pattern: p});
-          }
-        });
-      });
-      
-      if(matchedCities.length === 0) {
-        closeCityExportModal();
-        showToast('⚠️ Колонки городов не найдены в файле. Проверьте заголовки.', 'warning');
-        return;
-      }
-      
-      var total = matchedCities.length;
-      processNextCity(0);
-      
-      function processNextCity(index) {
-        if(index >= total) { finishExport(); return; }
-        var cityData = matchedCities[index];
-        progressText.textContent = `Обработка: ${cityData.pattern} (${index+1}/${total})...`;
-        progressFill.style.width = `${Math.round((index/total)*100)}%`;
-        setTimeout(function() { exportSingleCity(cityData); exported++; processNextCity(index + 1); }, 80);
-      }
-      
+      allHeaders.forEach(function(h) { var cleanH = h.toLowerCase().replace(/\s/g,''); CITY_PATTERNS.forEach(function(p) { if(cleanH === p.toLowerCase().replace(/\s/g,'')) matchedCities.push({name: h, pattern: p}); }); });
+      if(matchedCities.length === 0) { closeCityExportModal(); showToast('Колонки городов не найдены','warning'); return; }
+      var total = matchedCities.length; processNextCity(0);
+      function processNextCity(index) { if(index >= total) { finishExport(); return; } var cityData = matchedCities[index]; progressText.textContent = `Обработка: ${cityData.pattern} (${index+1}/${total})...`; progressFill.style.width = `${Math.round((index/total)*100)}%`; setTimeout(function() { exportSingleCity(cityData); exported++; processNextCity(index + 1); }, 80); }
       function exportSingleCity(cityObj) {
-        var cityName = cityObj.name;
-        var cityData = [];
-        for(var i=0; i<excelData.length; i++) {
-          var val = excelData[i][cityName];
-          if(val === undefined || val === null || val === '') continue;
-          var num = parseFloat(String(val).replace(/\s/g,'').replace(',','.'));
-          if(!isNaN(num) && num > 0) cityData.push({idx: i, row: excelData[i], qty: num});
-        }
-        
+        var cityName = cityObj.name; var cityData = [];
+        for(var i=0; i<excelData.length; i++) { var val = excelData[i][cityName]; if(val === undefined || val === null || val === '') continue; var num = parseFloat(String(val).replace(/\s/g,'').replace(',','.')); if(!isNaN(num) && num > 0) cityData.push({idx: i, row: excelData[i], qty: num}); }
         if(cityData.length === 0) return;
-        
-        var exportRows = cityData.map(function(item) {
-          return {
-            'Озон ID': item.row[mapping.wb_article] || '',
-            'Артикул': getItemArticle(item.idx) || '',
-            'ШК на этикетку': getItemBarcode(item.idx) || '',
-            'Честный Знак': getItemChestnyZnak(item.idx) || '',
-            'Наименование': getItemDescription(item.idx) || '',
-            'Квант': getItemQuantity(item.idx) || '',
-            'Годен до': getItemExpiry(item.idx) || '—',
-            'Инструкция': getItemInstruction(item.idx) || '',
-            'Кол-во для отгрузки': item.qty,
-            'Город назначения': cityObj.pattern
-          };
-        });
-        
-        var wb = XLSX.utils.book_new();
-        var ws = XLSX.utils.json_to_sheet(exportRows);
-        var colWidths = Object.keys(exportRows[0]||{}).map(function(key) { 
-          return { wch: Math.max(key.length, 20, ...exportRows.map(function(r){return String(r[key]||'').length;})) }; 
-        });
-        ws['!cols'] = colWidths;
-        XLSX.utils.book_append_sheet(wb, ws, cityObj.pattern);
-        
-        var safeName = cityObj.pattern.replace(/[\/\\:*?"<>|]/g, '_');
-        var dateStr = new Date().toISOString().slice(0,10);
-        XLSX.writeFile(wb, 'ТЗ_'+safeName+'_'+dateStr+'.xlsx');
+        var exportRows = cityData.map(function(item) { return { 'Озон ID': item.row[mapping.wb_article]||'', 'Артикул': getItemArticle(item.idx)||'', 'ШК на этикетку': getItemBarcode(item.idx)||'', 'Честный Знак': getItemChestnyZnak(item.idx)||'', 'Наименование': getItemDescription(item.idx)||'', 'Квант': getItemQuantity(item.idx)||'', 'Годен до': getItemExpiry(item.idx)||'—', 'Кол-во': item.qty, 'Город': cityObj.pattern }; });
+        var wb = XLSX.utils.book_new(); var ws = XLSX.utils.json_to_sheet(exportRows); XLSX.utils.book_append_sheet(wb, ws, cityObj.pattern);
+        var safeName = cityObj.pattern.replace(/[\/\\:*?"<>|]/g, '_'); XLSX.writeFile(wb, 'ТЗ_'+safeName+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
       }
-      
-      function finishExport() {
-        progressFill.style.width = '100%';
-        progressText.innerHTML = `✅ Готово! Экспортировано <b>${exported}</b> файлов`;
-        showToast(`🎉 Сформировано ТЗ для ${exported} городов`, 'success');
-        speak(`Технические задания для ${exported} городов сформированы`);
-      }
+      function finishExport() { progressFill.style.width = '100%'; progressText.innerHTML = `✅ Готово! Экспортировано <b>${exported}</b> файлов`; showToast(`Сформировано ТЗ для ${exported} городов`, 'success'); }
     }
+    function closeCityExportModal() { document.getElementById('cityExportModal').classList.add('hidden'); document.getElementById('cityProgressFill').style.width = '0%'; }
 
-    function closeCityExportModal() {
-      document.getElementById('cityExportModal').classList.add('hidden');
-      document.getElementById('cityProgressFill').style.width = '0%';
-      document.getElementById('cityProgressText').textContent = 'Подготовка...';
-    }
-
-    window.onload = function() {
-      document.getElementById('scannerInput').focus();
-      loadPrintState();
-      speak('Система готова.');
-    };
+    window.onload = function() { document.getElementById('scannerInput').focus(); loadPrintState(); speak('Система готова.'); };
   </script>
 </body>
 </html>
