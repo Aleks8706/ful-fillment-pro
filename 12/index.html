@@ -3,27 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Label System Pro - Fixed</title>
+  <title>WMS Fulfillment Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     :root{
-      --bg1:#0f172a; --bg2:#111827; --card:#ffffff; --text:#0f172a;
-      --muted:#64748b; --line:#e5e7eb; --ozon:#005bff; --wb:#cb11ab;
-      --green:#16a34a; --red:#dc2626; --amber:#d97706; --cyan:#0891b2;
+      --bg:#0f172a;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --ozon:#005bff;
+      --wb:#cb11ab;
+      --green:#16a34a;
+      --red:#dc2626;
+      --amber:#d97706;
+      --cyan:#0891b2;
       --shadow:0 12px 30px rgba(0,0,0,.12);
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#0f172a,#1e293b 45%,#312e81);min-height:100vh;color:var(--text)}
-    .wrap{max-width:1600px;margin:0 auto;padding:18px}
+    body{
+      margin:0;
+      font-family:Segoe UI,Arial,sans-serif;
+      background:linear-gradient(135deg,#0f172a,#1e293b 45%,#312e81);
+      min-height:100vh;
+      color:var(--text);
+    }
+    .wrap{max-width:1800px;margin:0 auto;padding:18px}
     .hero{
-      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);
-      color:#fff;border-radius:22px;padding:24px;box-shadow:var(--shadow);margin-bottom:14px
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:22px;
+      padding:24px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px
     }
     .hero h1{margin:0 0 8px;font-size:28px}
     .hero p{margin:0;color:#dbeafe}
     .grid-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
     .stat,.panel,.box{background:rgba(255,255,255,.96);border-radius:18px;box-shadow:var(--shadow)}
-    .stat{padding:16px;border:1px solid rgba(255,255,255,.7)}
+    .stat{padding:16px}
     .stat .v{font-size:30px;font-weight:900}
     .stat .t{color:var(--muted);font-size:13px}
     .panel{padding:16px;margin-bottom:14px}
@@ -31,19 +51,18 @@
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
     .tab{border:none;padding:11px 14px;border-radius:12px;background:#eef2ff;font-weight:800;cursor:pointer}
     .tab.active{outline:2px solid rgba(59,130,246,.18)}
-    .tab.general.active{color:#0369a1;background:#e0f2fe}
     .tab.catalog.active{color:#005bff;background:rgba(0,91,255,.12)}
     .tab.print.active{color:#cb11ab;background:rgba(203,17,171,.12)}
+    .tab.wms.active{color:#16a34a;background:rgba(22,163,74,.12)}
     .tab.api.active{color:#0f766e;background:#ccfbf1}
     .tab.reports.active{color:#b45309;background:#ffedd5}
     .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-    .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+    .col-2{grid-column:span 2}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
     label{display:block;font-size:13px;font-weight:800;color:#334155;margin-bottom:6px}
     input,select,textarea{
       width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px;outline:none;background:#fff
     }
     textarea{min-height:92px;resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(59,130,246,.08)}
     .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .action{border:none;color:#fff;font-weight:800;padding:12px 14px;border-radius:12px;cursor:pointer}
     .oz{background:linear-gradient(135deg,#005bff,#0040bf)}
@@ -57,45 +76,72 @@
     table{width:100%;border-collapse:collapse;background:#fff}
     th,td{padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:13px;text-align:left;vertical-align:top}
     th{background:#f8fafc;position:sticky;top:0;z-index:1}
+    td[contenteditable="true"]{background:#fffef2;outline:none}
+    td[contenteditable="true"]:focus{box-shadow:inset 0 0 0 2px rgba(59,130,246,.2)}
     .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}
     .b-oz{background:rgba(0,91,255,.12);color:var(--ozon)}
     .b-wb{background:rgba(203,17,171,.12);color:var(--wb)}
-    .small{font-size:12px}.muted{color:var(--muted)}
-    .split{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
-    .box{border:1px solid var(--line);padding:14px;background:#fff}
-    .section-title{font-weight:900;font-size:16px;margin:0 0 10px}
+    .b-new{background:#e2e8f0;color:#334155}
+    .b-al{background:#dbeafe;color:#1d4ed8}
+    .b-pi{background:#fef3c7;color:#b45309}
+    .b-pa{background:#dcfce7;color:#166534}
+    .b-sh{background:#e0f2fe;color:#0369a1}
+    .b-ca{background:#fee2e2;color:#991b1b}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .box{padding:14px;border:1px solid var(--line)}
+    .section-title{font-size:16px;font-weight:900;margin:0 0 10px}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+    .pill{display:inline-block;padding:5px 10px;border-radius:999px;background:#f1f5f9;font-size:12px;font-weight:800}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .toolbar .right{margin-left:auto}
-    .kpi{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .kpi .val{font-size:20px;font-weight:900}
-    .label-preview{width:100%;max-width:420px;margin:0 auto;border:1px solid #dbe3ee;border-radius:14px;padding:14px;background:#fff}
-    .barcode{display:block;margin:10px auto 0;max-width:100%}
-    .toast{position:fixed;right:18px;top:18px;z-index:9999;padding:12px 16px;border-radius:12px;color:#fff;font-weight:800;box-shadow:var(--shadow)}
-    .t-ok{background:linear-gradient(135deg,#16a34a,#15803d)} .t-er{background:linear-gradient(135deg,#ef4444,#b91c1c)} .t-in{background:linear-gradient(135deg,#0ea5e9,#0369a1)}
+    .toast{position:fixed;right:16px;top:16px;z-index:9999;padding:12px 14px;border-radius:12px;color:#fff;font-weight:800;box-shadow:var(--shadow)}
+    .ok{background:linear-gradient(135deg,#16a34a,#15803d)}
+    .er{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+    .in{background:linear-gradient(135deg,#0ea5e9,#0369a1)}
     .login-overlay{
       position:fixed;inset:0;background:linear-gradient(135deg,rgba(2,6,23,.95),rgba(15,23,42,.95));
       display:flex;align-items:center;justify-content:center;z-index:10000;padding:16px
     }
-    .login-card{
-      width:min(480px,100%);background:rgba(255,255,255,.98);border-radius:22px;padding:22px;box-shadow:var(--shadow)
-    }
-    .login-card h2{margin:0 0 8px}
-    .login-card p{margin:0 0 14px;color:var(--muted)}
-    .rolebar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .pill{display:inline-block;padding:5px 10px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:12px;font-weight:800}
+    .login-card{width:min(480px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+    .preview-wrap{display:flex;justify-content:center;align-items:flex-start}
+    .label-preview{width:100%;max-width:420px;background:#fff;border:1px solid #dbe3ee;border-radius:14px;padding:12px}
+    .label-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .label-title{font-size:18px;font-weight:900}
+    .label-meta{font-size:13px;margin:3px 0}
+    .barcode{display:block;width:100%;height:auto;margin-top:8px}
+    .edit-tip{font-size:12px;color:#64748b;margin-top:8px}
+    .file-info{margin-top:8px;font-size:12px;color:#64748b}
+    .wms-kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:12px}
+    .wms-kpi .box{padding:12px}
+    .task-item{padding:10px;border-bottom:1px solid #eef2f7}
+    .task-item:last-child{border-bottom:none}
     @media print{
       body{background:#fff}
       .no-print,.login-overlay{display:none !important}
       .print-sheet{display:block !important}
-      @page{size:auto;margin:10mm}
+      @page{margin:0}
     }
+    .print-sheet{display:none}
+    .print-label{
+      width:58mm;height:40mm;padding:2mm;box-sizing:border-box;overflow:hidden;
+      page-break-after:always;break-after:page;font-family:Arial,sans-serif
+    }
+    .print-label.inner{width:100%;height:100%;border:1px solid #000;padding:2mm;box-sizing:border-box;overflow:hidden}
+    .print-label .title{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm;font-size:11px;font-weight:900}
+    .print-label .line{font-size:9px;line-height:1.2;margin-bottom:1mm;word-break:break-word}
+    .print-label svg{width:100%;height:auto;display:block;margin-top:1mm}
+    .print-label .footer{margin-top:1mm;font-size:8px;text-align:center}
+    .row-actions button{margin-right:6px}
+    .scan-box{display:flex;gap:8px;flex-wrap:wrap}
+    .scan-box input{flex:1;min-width:220px}
   </style>
 </head>
 <body>
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
-    <h2>Вход сотрудника</h2>
-    <p>Автоматически создаёт пользователей, если localStorage пуст.</p>
+    <h2 style="margin:0 0 8px">Вход сотрудника</h2>
+    <p style="margin:0 0 12px;color:#64748b">Пользователи создаются автоматически при первом запуске.</p>
     <label>Логин</label>
     <input id="loginUser" placeholder="admin">
     <label style="margin-top:10px">Пароль</label>
@@ -105,19 +151,13 @@
       <button class="action sec" id="btnDemoLogin">Демо-вход</button>
       <button class="action amb" id="btnRestoreEmployees">Восстановить пользователей</button>
     </div>
-    <div class="rolebar">
-      <span class="pill">admin / 1234</span>
-      <span class="pill">manager / 1234</span>
-      <span class="pill">operator / 1234</span>
-      <span class="pill">viewer / 1234</span>
-    </div>
   </div>
 </div>
 
 <div class="wrap">
   <div class="hero no-print">
-    <h1>Label System Pro</h1>
-    <p>Ozon / Wildberries: печать, API, история, сотрудники, роли, отчёты, CSV, штрихкоды, локальное хранение.</p>
+    <h1>WMS Fulfillment Pro</h1>
+    <p>Полноценный складской контур: адресное хранение, фулфилмент, сборка, упаковка, отгрузка, инвентаризация и печать.</p>
   </div>
 
   <div class="grid-stats no-print">
@@ -131,48 +171,64 @@
     <div class="toolbar" style="margin-bottom:12px">
       <div class="pill" id="currentUserPill">Не авторизован</div>
       <div class="pill" id="currentRolePill">роль: -</div>
-      <div class="right muted small">Подключение API выполняется через fetch с заголовками Ozon/WB.</div>
+      <div class="right muted small">Все данные хранятся локально</div>
     </div>
+
     <div class="tabs">
-      <button class="tab general active" data-tab="general">Общие</button>
-      <button class="tab catalog" data-tab="catalog">Каталог</button>
+      <button class="tab catalog active" data-tab="catalog">Товары</button>
       <button class="tab print" data-tab="print">Печать</button>
+      <button class="tab wms" data-tab="wms">WMS</button>
       <button class="tab api" data-tab="api">API</button>
       <button class="tab reports" data-tab="reports">Отчёты</button>
     </div>
 
-    <div id="tab-general" class="tab-body">
-      <div class="row">
-        <div class="col-4"><label>Сотрудники</label><select id="employeeSelect"></select></div>
-        <div class="col-4"><label>Принтер / профиль</label><input id="printerName" placeholder="TSC TE200"></div>
-        <div class="col-4"><label>Шаблон</label><select id="labelTemplate"><option value="58x40">58×40</option><option value="50x30">50×30</option><option value="100x100">100×100</option><option value="A4">A4</option></select></div>
-        <div class="col-6"><label>Компания</label><input id="companyName" placeholder="ООО ..."></div>
-        <div class="col-6"><label>Склад</label><input id="warehouseAddress" placeholder="Москва, ..."></div>
-        <div class="col-6"><label>Автосохранение</label><select id="autoSave"><option value="yes">Включено</option><option value="no">Выключено</option></select></div>
-        <div class="col-6"><label>Действие</label><button class="action red" id="btnResetToday">Сбросить счётчик за сегодня</button></div>
-      </div>
-    </div>
-
-    <div id="tab-catalog" class="tab-body hidden">
+    <div id="tab-catalog" class="tab-body">
       <div class="row">
         <div class="col-12">
           <div class="toolbar">
             <input type="file" id="csvFile" accept=".csv" class="pill">
+            <input type="file" id="anyFileInput" style="display:none">
+            <button class="action sec" id="btnImportAnyFile">Импорт любого файла</button>
             <button class="action sec" id="btnLoadDemo">Демо-данные</button>
+            <button class="action gre" id="btnAddRow">Добавить строку</button>
             <button class="action gre" id="btnExportCatalog">Экспорт каталога</button>
-            <div class="right muted small">CSV: marketplace,sku,name,article,barcode,price,qty</div>
+            <div class="right muted small">XLSX/XLS читаются через SheetJS</div>
           </div>
+          <div id="fileInfo" class="file-info"></div>
         </div>
+
         <div class="col-3"><label>Поиск</label><input id="searchCatalog" placeholder="SKU / название / артикул"></div>
-        <div class="col-3"><label>Маркетплейс</label><select id="filterMarketplace"><option value="">Все</option><option value="ozon">Ozon</option><option value="wildberries">Wildberries</option></select></div>
-        <div class="col-3"><label>Печать</label><select id="filterPrinted"><option value="">Все</option><option value="printed">Распечатанные</option><option value="notprinted">Не распечатанные</option></select></div>
-        <div class="col-3"><label>Сортировка</label><select id="sortCatalog"><option value="time_desc">Новые сверху</option><option value="time_asc">Старые сверху</option><option value="name_asc">По имени</option><option value="qty_desc">По количеству</option></select></div>
+        <div class="col-3">
+          <label>Маркетплейс</label>
+          <select id="filterMarketplace">
+            <option value="">Все</option>
+            <option value="ozon">Ozon</option>
+            <option value="wildberries">Wildberries</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <label>Печать</label>
+          <select id="filterPrinted">
+            <option value="">Все</option>
+            <option value="printed">Распечатанные</option>
+            <option value="notprinted">Не распечатанные</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <label>Сортировка</label>
+          <select id="sortCatalog">
+            <option value="time_desc">Новые сверху</option>
+            <option value="time_asc">Старые сверху</option>
+            <option value="name_asc">По имени</option>
+            <option value="qty_desc">По количеству</option>
+          </select>
+        </div>
       </div>
 
       <div class="btns">
         <button class="action oz" id="btnPrintSelected">Печать выбранных</button>
-        <button class="action wb" id="btnCreateSelectedWB">WB выбранные</button>
-        <button class="action oz" id="btnCreateSelectedOzon">Ozon выбранные</button>
+        <button class="action wb" id="btnSelectWB">Выбрать WB</button>
+        <button class="action oz" id="btnSelectOzon">Выбрать Ozon</button>
         <button class="action pri" id="btnMarkPrinted">Отметить распечатанными</button>
         <button class="action red" id="btnDeleteSelected">Удалить</button>
       </div>
@@ -189,12 +245,15 @@
               <th>ШК</th>
               <th>Цена</th>
               <th>Кол-во</th>
+              <th>Ячейка</th>
               <th>Распечатано</th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody id="catalogBody"></tbody>
         </table>
       </div>
+      <div class="edit-tip">XLSX/CSV импортируются в товары, а ячейки используются WMS-модулем для адресного хранения.</div>
     </div>
 
     <div id="tab-print" class="tab-body hidden">
@@ -214,7 +273,7 @@
               <div class="btns">
                 <button class="action oz" id="btnPreviewSingle">Предпросмотр</button>
                 <button class="action pri" id="btnPrintSingle">Печать</button>
-                <button class="action gre" id="btnAddToCatalog">Добавить в каталог</button>
+                <button class="action gre" id="btnAddToCatalog2">Добавить в таблицу</button>
               </div>
             </div>
           </div>
@@ -222,7 +281,137 @@
 
         <div class="box">
           <div class="section-title">Предпросмотр</div>
-          <div id="previewArea" class="label-preview"><div class="muted">Тут будет предпросмотр этикетки</div></div>
+          <div class="preview-wrap">
+            <div id="previewArea" class="label-preview">
+              <div class="muted">Тут будет предпросмотр этикетки</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-wms" class="tab-body hidden">
+      <div class="row">
+        <div class="col-4 box">
+          <div class="section-title">Приёмка</div>
+          <label>SKU / штрихкод</label>
+          <input id="wmsReceiveInput" placeholder="Отсканируйте SKU или ШК">
+          <label style="margin-top:10px">Количество</label>
+          <input id="wmsReceiveQty" type="number" value="1" min="1">
+          <div class="btns">
+            <button class="action gre" id="btnWmsReceive">Принять</button>
+          </div>
+        </div>
+
+        <div class="col-4 box">
+          <div class="section-title">Размещение</div>
+          <label>SKU / штрихкод</label>
+          <input id="wmsPutawayInput" placeholder="Товар для размещения">
+          <label style="margin-top:10px">Ячейка</label>
+          <input id="wmsPutawayCell" placeholder="A-01-01-01">
+          <div class="btns">
+            <button class="action pri" id="btnWmsPutaway">Разместить</button>
+            <button class="action sec" id="btnSuggestCell">Подобрать ячейку</button>
+          </div>
+        </div>
+
+        <div class="col-4 box">
+          <div class="section-title">Сканирование</div>
+          <label>Штрихкод</label>
+          <input id="wmsScanBarcode" placeholder="Сканируйте товар">
+          <div class="btns">
+            <button class="action sec" id="btnWmsScan">Проверить</button>
+          </div>
+          <div id="wmsScanResult" class="small muted" style="margin-top:10px">Нет данных</div>
+        </div>
+
+        <div class="col-12 box">
+          <div class="section-title">KPI WMS</div>
+          <div class="wms-kpi">
+            <div class="box"><div class="small muted">Товары</div><div class="v" id="kpiItems">0</div></div>
+            <div class="box"><div class="small muted">Остаток</div><div class="v" id="kpiStock">0</div></div>
+            <div class="box"><div class="small muted">Заказы</div><div class="v" id="kpiOrders">0</div></div>
+            <div class="box"><div class="small muted">Задания</div><div class="v" id="kpiTasks">0</div></div>
+            <div class="box"><div class="small muted">Ячейки</div><div class="v" id="kpiCells">0</div></div>
+            <div class="box"><div class="small muted">Возвраты</div><div class="v" id="kpiReturns">0</div></div>
+          </div>
+        </div>
+
+        <div class="col-6 box">
+          <div class="section-title">Адресное хранение</div>
+          <div class="row">
+            <div class="col-3"><label>Зона</label><input id="locZone" placeholder="A"></div>
+            <div class="col-3"><label>Ряд</label><input id="locAisle" placeholder="01"></div>
+            <div class="col-3"><label>Стеллаж</label><input id="locRack" placeholder="01"></div>
+            <div class="col-3"><label>Полка</label><input id="locShelf" placeholder="01"></div>
+            <div class="col-12"><label>Ячейка</label><input id="locBin" placeholder="A-01-01-01"></div>
+            <div class="col-12">
+              <div class="btns">
+                <button class="action gre" id="btnCreateLocation">Создать ячейку</button>
+                <button class="action amb" id="btnBuildLocations">Сгенерировать сетку</button>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead><tr><th>Ячейка</th><th>Тип</th><th>SKU</th><th>Остаток</th></tr></thead>
+              <tbody id="locationsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-6 box">
+          <div class="section-title">Заказы</div>
+          <div class="row">
+            <div class="col-12">
+              <label>Создать заказ</label>
+              <textarea id="wmsOrderInput" placeholder="Один заказ на строку: marketplace,sku,qty"></textarea>
+            </div>
+            <div class="col-12">
+              <div class="btns">
+                <button class="action gre" id="btnWmsCreateOrders">Создать заказы</button>
+                <button class="action amb" id="btnWmsAllocate">Распределить</button>
+                <button class="action sec" id="btnCreatePickWave">Создать волну отбора</button>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Мп</th><th>SKU</th><th>Qty</th><th>Статус</th><th>Ячейки</th>
+                </tr>
+              </thead>
+              <tbody id="wmsOrdersBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-6 box">
+          <div class="section-title">Отбор / упаковка</div>
+          <div class="btns">
+            <button class="action sec" id="btnCreateTasks">Сформировать задания</button>
+            <button class="action pri" id="btnRefreshTasks">Обновить</button>
+            <button class="action oz" id="btnStartPicking">Начать отбор</button>
+            <button class="action gre" id="btnPackOrders">Упаковать</button>
+            <button class="action amb" id="btnShipOrders">Отгрузить</button>
+          </div>
+          <div id="wmsTasksBody" style="margin-top:10px"></div>
+        </div>
+
+        <div class="col-6 box">
+          <div class="section-title">Возвраты и инвентаризация</div>
+          <div class="row">
+            <div class="col-12"><label>Возврат: SKU,qty,reason</label><textarea id="returnInput" placeholder="SKU-001,1,поврежден"></textarea></div>
+            <div class="col-12">
+              <div class="btns">
+                <button class="action red" id="btnProcessReturn">Обработать возврат</button>
+                <button class="action sec" id="btnCycleCount">Cycle count</button>
+                <button class="action amb" id="btnReplenish">Пополнение ячеек</button>
+              </div>
+            </div>
+          </div>
+          <div id="returnsBody" style="margin-top:10px"></div>
         </div>
       </div>
     </div>
@@ -243,32 +432,19 @@
               </div>
             </div>
           </div>
-          <div class="small muted">Локально хранится список сотрудников и роли. Для production перенесите в серверную БД.</div>
         </div>
 
         <div class="col-6 box">
-          <div class="section-title">Ozon API</div>
-          <label>Client ID</label><input id="ozonClientId">
-          <label style="margin-top:10px">API Key</label><input id="ozonApiKey">
-          <label style="margin-top:10px">Posting numbers</label><textarea id="ozonPostingNumbers" placeholder="по одному в строке или через запятую"></textarea>
+          <div class="section-title">Интеграции</div>
+          <label>Ozon Client ID</label><input id="ozonClientId">
+          <label style="margin-top:10px">Ozon API Key</label><input id="ozonApiKey">
+          <label style="margin-top:10px">WB token</label><input id="wbToken">
+          <label style="margin-top:10px">Webhook / Telegram / API notes</label><textarea id="apiNotes"></textarea>
           <div class="btns">
-            <button class="action oz" id="btnSaveOzon">Сохранить</button>
-            <button class="action sec" id="btnTestOzon">Тест</button>
-            <button class="action pri" id="btnCreateOzonReq">Сформировать запрос</button>
+            <button class="action pri" id="btnSaveIntegrations">Сохранить</button>
+            <button class="action sec" id="btnCreateOzonReq">Показать Ozon request</button>
+            <button class="action sec" id="btnCreateWBReq">Показать WB request</button>
           </div>
-          <div class="small muted">Ozon использует Client-Id и Api-Key в заголовках; для печати FBS-этикеток применяется метод создания package label. [web:39][web:42][web:53]</div>
-
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0">
-
-          <div class="section-title">Wildberries API</div>
-          <label>Bearer token</label><input id="wbToken">
-          <label style="margin-top:10px">Список SKU / barcode / order ids</label><textarea id="wbInput"></textarea>
-          <div class="btns">
-            <button class="action wb" id="btnSaveWB">Сохранить</button>
-            <button class="action sec" id="btnTestWB">Тест</button>
-            <button class="action pri" id="btnCreateWBReq">Сформировать запрос</button>
-          </div>
-          <div class="small muted">WB API использует заголовок Authorization: Bearer token. [web:54][web:57][web:59]</div>
         </div>
       </div>
     </div>
@@ -278,7 +454,13 @@
         <div class="col-3"><label>От</label><input type="date" id="dateFrom"></div>
         <div class="col-3"><label>До</label><input type="date" id="dateTo"></div>
         <div class="col-3"><label>Группировка</label><select id="reportGroup"><option value="day">День</option><option value="marketplace">Маркетплейс</option><option value="sku">SKU</option></select></div>
-        <div class="col-3"><label>Действия</label><div class="btns" style="margin-top:0"><button class="action gre" id="btnBuildReport">Построить</button><button class="action amb" id="btnExportHistory">Экспорт истории</button></div></div>
+        <div class="col-3">
+          <label>Действия</label>
+          <div class="btns" style="margin-top:0">
+            <button class="action gre" id="btnBuildReport">Построить</button>
+            <button class="action amb" id="btnExportHistory">Экспорт истории</button>
+          </div>
+        </div>
         <div class="col-12"><div id="reportOutput" class="box"><div class="muted">Отчёт пока не построен</div></div></div>
       </div>
     </div>
@@ -286,138 +468,93 @@
 
   <div class="panel no-print">
     <div class="toolbar" style="margin-bottom:12px">
-      <div class="kpi box" style="min-width:220px"><span>В каталоге</span><span class="val" id="kCatalog">0</span></div>
-      <div class="kpi box" style="min-width:220px"><span>Выбрано</span><span class="val" id="kSelected">0</span></div>
-      <div class="kpi box" style="min-width:220px"><span>Профиль сотрудника</span><span class="val" id="kEmployee">-</span></div>
-      <div class="right muted small">Хранение — localStorage, авторизация — локальная.</div>
+      <div class="box" style="padding:12px 14px"><b>В таблице:</b> <span id="kCatalog">0</span></div>
+      <div class="box" style="padding:12px 14px"><b>Выбрано:</b> <span id="kSelected">0</span></div>
+      <div class="box" style="padding:12px 14px"><b>Пользователь:</b> <span id="kEmployee">-</span></div>
+      <div class="right muted small">localStorage + browser-only workflow</div>
     </div>
 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Дата</th><th>Маркетплейс</th><th>SKU</th><th>Название</th><th>Артикул</th><th>ШК</th><th>Копий</th><th>Сотрудник</th>
+            <th>Дата</th><th>Мп</th><th>SKU</th><th>Название</th><th>Артикул</th><th>ШК</th><th>Копий</th><th>Сотрудник</th><th>Событие</th>
           </tr>
         </thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div>
   </div>
-
-  <div id="printSheet" class="print-sheet hidden"></div>
 </div>
+
+<div id="printSheet" class="print-sheet"></div>
 
 <script>
 const LS = {
-  employees:'mp_employees', current:'mp_current_employee', catalog:'mp_catalog', history:'mp_history',
-  stats:'mp_stats', settings:'mp_settings', creds:'mp_credentials'
+  employees:'mp_employees',
+  current:'mp_current_employee',
+  catalog:'mp_catalog',
+  history:'mp_history',
+  stats:'mp_stats',
+  settings:'mp_settings',
+  creds:'mp_credentials',
+  wms:'mp_wms'
 };
+
 const S = {
-  employees: JSON.parse(localStorage.getItem(LS.employees) || '[]'),
-  current: JSON.parse(localStorage.getItem(LS.current) || 'null'),
+  employees: [],
+  current: null,
   catalog: JSON.parse(localStorage.getItem(LS.catalog) || '[]'),
   history: JSON.parse(localStorage.getItem(LS.history) || '[]'),
   stats: JSON.parse(localStorage.getItem(LS.stats) || '{"ozon":0,"wildberries":0,"total":0,"today":0,"todayDate":""}'),
   settings: JSON.parse(localStorage.getItem(LS.settings) || '{}'),
   creds: JSON.parse(localStorage.getItem(LS.creds) || '{}'),
-  selection:new Set()
+  wms: JSON.parse(localStorage.getItem(LS.wms) || '{"stock":{},"locations":{},"orders":[],"tasks":[],"receipts":[],"movements":[],"allocations":[],"returns":[],"waves":[],"counts":[] }'),
+  selection: new Set()
 };
 
-function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
-function save(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
-function val(id){ return document.getElementById(id)?.value ?? ''; }
-function setVal(id,v){ const e=document.getElementById(id); if(e) e.value = v ?? ''; }
-function today(){ return new Date().toISOString().slice(0,10); }
-function fmt(d){ return new Date(d).toLocaleString('ru-RU'); }
-function esc(s){ return (s ?? '').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36) }
+function save(key,val){ localStorage.setItem(key, JSON.stringify(val)) }
+function val(id){ return document.getElementById(id)?.value ?? '' }
+function setVal(id,v){ const e=document.getElementById(id); if(e) e.value = v ?? '' }
+function esc(s){ return (s ?? '').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;") }
+function today(){ return new Date().toISOString().slice(0,10) }
+function fmt(d){ return new Date(d).toLocaleString('ru-RU') }
+function toast(msg, type='ok'){ const t=document.createElement('div'); t.className=`toast ${type}`; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200) }
+function defaultBarcode(item){ return item.barcode || item.sku || item.article || item.name || '123456789012' }
+function barcodeForPrint(text){ const t=(text||'').toString().replace(/[^0-9A-Za-z]/g,'').toUpperCase(); return t || '123456789012' }
 
-function toast(msg, type='ok'){
-  const t=document.createElement('div'); t.className=`toast t-${type}`; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
-}
+function defaultEmployees(){ return [
+  { id: uid(), login:'admin', pass:'1234', role:'admin', name:'Администратор' },
+  { id: uid(), login:'manager', pass:'1234', role:'manager', name:'Менеджер' },
+  { id: uid(), login:'operator', pass:'1234', role:'operator', name:'Оператор' },
+  { id: uid(), login:'viewer', pass:'1234', role:'viewer', name:'Просмотр' }
+]}
 
-function defaultEmployees(){
-  return [
-    { id: uid(), login:'admin', pass:'1234', role:'admin', name:'Администратор' },
-    { id: uid(), login:'manager', pass:'1234', role:'manager', name:'Менеджер' },
-    { id: uid(), login:'operator', pass:'1234', role:'operator', name:'Оператор' },
-    { id: uid(), login:'viewer', pass:'1234', role:'viewer', name:'Просмотр' }
-  ];
-}
+function loadEmployees(){ try{
+  const raw = localStorage.getItem(LS.employees);
+  if(!raw){ const defs = defaultEmployees(); save(LS.employees, defs); return defs; }
+  const data = JSON.parse(raw);
+  if(!Array.isArray(data) || data.length === 0){ const defs = defaultEmployees(); save(LS.employees, defs); return defs; }
+  return data;
+}catch(e){ const defs = defaultEmployees(); save(LS.employees, defs); return defs; } }
 
-function loadEmployees(){
-  try{
-    const raw = localStorage.getItem(LS.employees);
-    if(!raw){
-      const defs = defaultEmployees();
-      save(LS.employees, defs);
-      return defs;
-    }
-    const data = JSON.parse(raw);
-    if(!Array.isArray(data) || data.length === 0){
-      const defs = defaultEmployees();
-      save(LS.employees, defs);
-      return defs;
-    }
-    return data;
-  }catch(e){
-    const defs = defaultEmployees();
-    save(LS.employees, defs);
-    return defs;
-  }
-}
-
-function restoreEmployees(){
-  S.employees = defaultEmployees();
-  save(LS.employees, S.employees);
-  fillEmployeeSelect();
-  toast('Пользователи восстановлены', 'ok');
-}
-
-function getCurrentEmployee(){
-  try{ return JSON.parse(localStorage.getItem(LS.current) || 'null'); }catch(e){ return null; }
-}
-function setCurrentEmployee(emp){
-  S.current = emp;
-  save(LS.current, emp);
-  updateCurrentUserUI(emp);
-}
-function clearCurrentEmployee(){
-  localStorage.removeItem(LS.current);
-  S.current = null;
-}
+function restoreEmployees(){ S.employees = defaultEmployees(); save(LS.employees, S.employees); toast('Пользователи восстановлены', 'ok') }
+function getCurrentEmployee(){ try{ return JSON.parse(localStorage.getItem(LS.current) || 'null') }catch(e){ return null } }
+function setCurrentEmployee(emp){ S.current = emp; save(LS.current, emp); document.getElementById('loginOverlay').classList.add('hidden'); updateCurrentUserUI(emp) }
+function clearCurrentEmployee(){ localStorage.removeItem(LS.current); S.current = null }
 function updateCurrentUserUI(emp){
-  const u = document.getElementById('currentUserPill');
-  const r = document.getElementById('currentRolePill');
-  const k = document.getElementById('kEmployee');
-  if(emp){
-    u.textContent = `${emp.name} (${emp.login})`;
-    r.textContent = `роль: ${emp.role}`;
-    if(k) k.textContent = emp.name;
-  }else{
-    u.textContent = 'Не авторизован';
-    r.textContent = 'роль: -';
-    if(k) k.textContent = '-';
-  }
+  const u=document.getElementById('currentUserPill'), r=document.getElementById('currentRolePill'), k=document.getElementById('kEmployee');
+  if(emp){ u.textContent = `${emp.name} (${emp.login})`; r.textContent = `роль: ${emp.role}`; k.textContent = emp.name; }
+  else{ u.textContent='Не авторизован'; r.textContent='роль: -'; k.textContent='-'; }
 }
-
 function can(action){
-  const role = (getCurrentEmployee() || {}).role || 'viewer';
-  const matrix = {
-    admin:['all'],
-    manager:['print','edit','api','report','employee'],
-    operator:['print','report'],
-    viewer:[]
-  };
-  const allowed = matrix[role] || [];
+  const role=(getCurrentEmployee() || {}).role || 'viewer';
+  const matrix={ admin:['all'], manager:['print','edit','api','report','employee','wms'], operator:['print','report','wms'], viewer:[] };
+  const allowed=matrix[role] || [];
   return allowed.includes('all') || allowed.includes(action);
 }
-
-function ensureTodayReset(){
-  if(S.stats.todayDate !== today()){
-    S.stats.today = 0;
-    S.stats.todayDate = today();
-  }
-}
+function ensureTodayReset(){ if(S.stats.todayDate !== today()){ S.stats.today = 0; S.stats.todayDate = today(); } }
 function refreshStats(){
   ensureTodayReset();
   document.getElementById('stTotal').textContent = S.stats.total || 0;
@@ -426,303 +563,433 @@ function refreshStats(){
   document.getElementById('stToday').textContent = S.stats.today || 0;
   document.getElementById('kCatalog').textContent = S.catalog.length;
   document.getElementById('kSelected').textContent = S.selection.size;
+  document.getElementById('kpiItems').textContent = S.catalog.length;
+  document.getElementById('kpiStock').textContent = Object.values(S.wms.stock || {}).reduce((a,b)=>a+b,0);
+  document.getElementById('kpiOrders').textContent = (S.wms.orders || []).length;
+  document.getElementById('kpiTasks').textContent = (S.wms.tasks || []).length;
+  document.getElementById('kpiCells').textContent = Object.keys(S.wms.locations || {}).length;
+  document.getElementById('kpiReturns').textContent = (S.wms.returns || []).length;
 }
-function readSettings(){
-  return {
-    printerName: val('printerName'),
-    companyName: val('companyName'),
-    warehouseAddress: val('warehouseAddress'),
-    labelTemplate: val('labelTemplate'),
-    barcodeFormat: val('barcodeFormat'),
-    autoSave: val('autoSave')
-  };
+function readSettings(){ return { printerName: val('printerName'), labelTemplate: val('labelTemplate') } }
+function saveAll(){ save(LS.catalog, S.catalog); save(LS.history, S.history); save(LS.stats, S.stats); save(LS.settings, readSettings()); save(LS.creds, S.creds); save(LS.employees, S.employees); save(LS.current, S.current); save(LS.wms, S.wms) }
+
+function locateKey(zone, aisle, rack, shelf, bin){
+  return [zone, aisle, rack, shelf, bin].map(x=>(x||'').toString().trim()).filter(Boolean).join('-').toUpperCase()
 }
-function saveAll(){
-  if(val('autoSave') !== 'no'){
-    save(LS.catalog, S.catalog);
-    save(LS.history, S.history);
-    save(LS.stats, S.stats);
-    save(LS.settings, readSettings());
-    save(LS.creds, S.creds);
-    save(LS.employees, S.employees);
-    save(LS.current, S.current);
-  }
+function suggestedCell(item){
+  const letters = 'ABCDEFGH';
+  const idx = Math.min(letters.length-1, Math.floor((item.sku || item.name || '').length % letters.length));
+  return `${letters[idx]}-01-01-01`
 }
 
-function genBarcodeValue(input, format){
-  let v=(input||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
-  if(!v) v='123456789012';
-  if(format==='EAN13'){
-    let digits=v.replace(/\D/g,'').slice(0,12);
-    while(digits.length<12) digits += String((digits.length*7)%10);
-    const sum=digits.split('').reduce((a,c,i)=>a+(i%2===0?+c:+c*3),0);
-    const cd=(10-(sum%10))%10;
-    return digits+cd;
-  }
-  return v.slice(0,48);
-}
-
-function buildPreview(item){
-  const color=item.marketplace==='ozon' ? '#005bff' : '#cb11ab';
-  document.getElementById('previewArea').innerHTML = `
-    <div class="label-preview">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:18px;font-weight:900;color:${color}">${item.marketplace.toUpperCase()}</div>
-        <span class="badge ${item.marketplace==='ozon' ? 'b-oz' : 'b-wb'}">${item.marketplace}</span>
-      </div>
-      <div><b>SKU:</b> ${esc(item.sku || '')}</div>
-      <div><b>Название:</b> ${esc(item.name || '')}</div>
-      <div><b>Артикул:</b> ${esc(item.article || '')}</div>
-      <div><b>Цена:</b> ${esc(String(item.price ?? ''))}</div>
-      <div><b>Размер:</b> ${esc(val('singleSize'))}</div>
-      <svg class="barcode" id="barcodeSvg"></svg>
-      <div class="small muted" style="text-align:center;margin-top:6px">${esc(item.barcode || '')}</div>
-      <div class="small muted" style="text-align:center;margin-top:8px">${esc(val('companyName'))}</div>
-      <div class="small muted" style="text-align:center">${esc(val('warehouseAddress'))}</div>
-    </div>`;
-  const svg=document.getElementById('barcodeSvg');
-  if(window.JsBarcode && svg) JsBarcode(svg, genBarcodeValue(item.barcode || item.sku || item.article || item.name, val('barcodeFormat')), { format:val('barcodeFormat'), displayValue:true, fontSize:14, height:48, margin:0 });
-}
-
-function printItems(items){
-  if(!can('print')){ toast('Нет прав на печать', 'er'); return; }
-  if(!items.length){ toast('Нет данных для печати', 'er'); return; }
-  ensureTodayReset();
-  const sheet=document.getElementById('printSheet');
-  sheet.innerHTML = items.map(item => Array.from({length:Number(item.copies||1)}).map(()=>`
-    <div style="page-break-after:always;padding:8mm">
-      <div style="font-family:Arial,sans-serif;border:1px solid #dbe3ee;border-radius:12px;padding:10mm">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8mm">
-          <div style="font-size:20px;font-weight:900;color:${item.marketplace==='ozon' ? '#005bff' : '#cb11ab'}">${item.marketplace.toUpperCase()}</div>
-          <div style="font-size:12px;font-weight:800;background:${item.marketplace==='ozon' ? 'rgba(0,91,255,.12)' : 'rgba(203,17,171,.12)'};color:${item.marketplace==='ozon' ? '#005bff' : '#cb11ab'};padding:4px 8px;border-radius:999px">${item.marketplace}</div>
-        </div>
-        <div style="font-size:14px;margin-bottom:4px"><b>SKU:</b> ${esc(item.sku || '')}</div>
-        <div style="font-size:14px;margin-bottom:4px"><b>Название:</b> ${esc(item.name || '')}</div>
-        <div style="font-size:14px;margin-bottom:4px"><b>Артикул:</b> ${esc(item.article || '')}</div>
-        <svg id="p_${uid()}" style="width:100%"></svg>
-      </div>
-    </div>
-  `).join('')).join('');
-  document.body.appendChild(sheet);
-  sheet.classList.remove('hidden');
-  setTimeout(()=>{
-    const svgs = sheet.querySelectorAll('svg[id^="p_"]');
-    let i=0;
-    items.forEach(item=>{
-      for(let c=0;c<Number(item.copies||1);c++){
-        const svg=svgs[i++];
-        if(svg) JsBarcode(svg, genBarcodeValue(item.barcode || item.sku || item.article || item.name, val('barcodeFormat')), { format:val('barcodeFormat'), displayValue:true, fontSize:14, height:50, margin:0 });
-      }
-    });
-    window.print();
-    setTimeout(()=>{ sheet.classList.add('hidden'); sheet.innerHTML=''; }, 500);
-  }, 50);
-  items.forEach(item=>{
-    const copies=Number(item.copies||1);
-    S.stats.total=(S.stats.total||0)+copies;
-    S.stats.today=(S.stats.today||0)+copies;
-    if(item.marketplace==='ozon') S.stats.ozon=(S.stats.ozon||0)+copies;
-    if(item.marketplace==='wildberries') S.stats.wildberries=(S.stats.wildberries||0)+copies;
-    S.history.unshift({ createdAt:new Date().toISOString(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:item.barcode, copies, user: (getCurrentEmployee() || {}).login || 'local' });
-    const m = S.catalog.find(x=>x.id===item.id) || S.catalog.find(x=>x.sku===item.sku && x.article===item.article && x.marketplace===item.marketplace);
-    if(m) m.printed = (m.printed||0) + copies;
-  });
-  saveAll(); renderCatalog(); renderHistory(); refreshStats(); toast('Печать отправлена', 'ok');
-}
-
-function addToCatalog(item){
-  S.catalog.unshift({ id:uid(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:item.barcode, price:item.price||'', qty:Number(item.qty||1), printed:Number(item.printed||0), createdAt:new Date().toISOString() });
-  saveAll(); renderCatalog();
-}
-function selectedItems(){ return S.catalog.filter(x=>S.selection.has(x.id)).map(x=>({...x, copies:Number(x.qty||1), id:x.id})); }
-
-function renderCatalog(){
-  const q=(val('searchCatalog')||'').toLowerCase().trim();
-  const mp=val('filterMarketplace'), printed=val('filterPrinted'), sort=val('sortCatalog');
-  let arr=[...S.catalog];
-  if(q) arr=arr.filter(x=>[x.sku,x.name,x.article,x.barcode].some(v=>(v||'').toLowerCase().includes(q)));
-  if(mp) arr=arr.filter(x=>x.marketplace===mp);
-  if(printed==='printed') arr=arr.filter(x=>(x.printed||0)>0);
-  if(printed==='notprinted') arr=arr.filter(x=>!(x.printed||0));
-  arr.sort((a,b)=>sort==='time_asc'?new Date(a.createdAt)-new Date(b.createdAt):sort==='name_asc'?(a.name||'').localeCompare(b.name||'','ru'):sort==='qty_desc'?(b.qty||0)-(a.qty||0):new Date(b.createdAt)-new Date(a.createdAt));
-  document.getElementById('catalogBody').innerHTML = arr.map(x=>`
-    <tr>
-      <td><input type="checkbox" class="rowCheck" data-id="${x.id}" ${S.selection.has(x.id)?'checked':''}></td>
-      <td><span class="badge ${x.marketplace==='ozon' ? 'b-oz':'b-wb'}">${x.marketplace}</span></td>
-      <td>${esc(x.sku||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.article||'')}</td><td>${esc(x.barcode||'')}</td>
-      <td>${esc(String(x.price ?? ''))}</td><td>${esc(String(x.qty ?? 1))}</td><td>${esc(String(x.printed||0))}</td>
-    </tr>`).join('');
-  document.querySelectorAll('.rowCheck').forEach(ch=>ch.addEventListener('change',e=>{ const id=e.target.dataset.id; e.target.checked ? S.selection.add(id) : S.selection.delete(id); refreshStats(); }));
-  document.getElementById('checkAll').checked = arr.length > 0 && arr.every(x=>S.selection.has(x.id));
-  refreshStats();
-}
-function renderHistory(){
-  document.getElementById('historyBody').innerHTML = S.history.slice(0,200).map(x=>`
-    <tr>
-      <td>${fmt(x.createdAt)}</td><td><span class="badge ${x.marketplace==='ozon' ? 'b-oz':'b-wb'}">${x.marketplace}</span></td>
-      <td>${esc(x.sku||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.article||'')}</td><td>${esc(x.barcode||'')}</td><td>${x.copies||1}</td><td>${esc(x.user||'')}</td>
-    </tr>`).join('');
+function fillEmployeeSelect(){ const sel=document.getElementById('employeeSelect'); if(!sel) return; sel.innerHTML = S.employees.map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.role)})</option>`).join(''); if(S.current) sel.value = S.current.id }
+function loginByCreds(login, pass){ S.employees = loadEmployees(); const emp = S.employees.find(x=>x.login===login && x.pass===pass); if(!emp){ toast('Неверный логин или пароль', 'er'); return false } setCurrentEmployee(emp); saveAll(); toast('Вход выполнен', 'ok'); return true }
+function saveEmployee(){
+  const login=val('empLogin').trim(), pass=val('empPass'), role=val('empRole'), name=val('empName').trim();
+  if(!login || !pass || !name) return toast('Заполните логин, пароль и имя', 'er');
+  const exists = S.employees.find(x=>x.login===login);
+  const emp = { id: exists ? exists.id : uid(), login, pass, role, name };
+  if(exists) Object.assign(exists, emp); else S.employees.push(emp);
+  saveAll(); toast('Сотрудник сохранён', 'ok');
 }
 
 function parseCSV(text){
-  const lines = text.split(/\r?\n/).filter(Boolean); if(!lines.length) return [];
-  const delim = lines[0].includes(';') ? ';' : ',';
-  const headers = lines[0].split(delim).map(h=>h.trim().toLowerCase());
+  const clean=text.replace(/^\uFEFF/, '');
+  const lines=clean.split(/\r?\n/).filter(line=>line.trim()!=='');
+  if(!lines.length) return [];
+  const delim=lines[0].includes(';') ? ';' : ',';
+  const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
   return lines.slice(1).map(line=>{
-    const cells=[]; let cur='',q=false;
-    for(const ch of line){ if(ch==='"'){ q=!q; continue; } if(ch===delim && !q){ cells.push(cur); cur=''; continue; } cur+=ch; }
+    const cells=[]; let cur=''; let q=false;
+    for(const ch of line){ if(ch==='"'){ q=!q; continue } if(ch===delim && !q){ cells.push(cur); cur=''; continue } cur+=ch }
     cells.push(cur);
     const o={}; headers.forEach((h,i)=>o[h]=(cells[i]||'').trim());
-    return { marketplace:(o.marketplace||'ozon').toLowerCase().includes('wb') ? 'wildberries' : 'ozon', sku:o.sku||o.article||'', name:o.name||'', article:o.article||'', barcode:o.barcode||'', price:o.price||'', qty:Number(o.qty||1) };
+    return {
+      marketplace:(o.marketplace||'ozon').toLowerCase().includes('wb') ? 'wildberries' : 'ozon',
+      sku:o.sku || o.article || '',
+      name:o.name || '',
+      article:o.article || '',
+      barcode:o.barcode || '',
+      price:o.price || '',
+      qty:Number(o.qty || 1),
+      printed:Number(o.printed || 0),
+      location:o.location || ''
+    };
   }).filter(x=>x.sku || x.name || x.article);
 }
-function importCSV(file){
-  const fr=new FileReader();
-  fr.onload=e=>{ const arr=parseCSV(String(e.target.result||'')); arr.forEach(addToCatalog); toast(`Импортировано ${arr.length}`, 'ok'); };
-  fr.readAsText(file,'utf-8');
+
+function xlsxToRows(arrayBuffer){
+  const wb = XLSX.read(arrayBuffer, { type:'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+  return rows.map(o=>({
+    marketplace:(o.marketplace || o.marketplace_name || 'ozon').toString().toLowerCase().includes('wb') ? 'wildberries' : 'ozon',
+    sku:String(o.sku || o.article || o.offer_id || ''),
+    name:String(o.name || o.title || ''),
+    article:String(o.article || o.vendor_code || ''),
+    barcode:String(o.barcode || o.bar_code || o.ean || ''),
+    price:String(o.price || o.cost || ''),
+    qty:Number(o.qty || o.quantity || 1),
+    printed:Number(o.printed || 0),
+    location:String(o.location || '')
+  })).filter(x=>x.sku || x.name || x.article);
 }
 
-function fillEmployeeSelect(){
-  const sel=document.getElementById('employeeSelect');
-  sel.innerHTML = S.employees.map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.role)})</option>`).join('');
-  if(S.current) sel.value = S.current.id;
+function importCSV(file){ const reader=new FileReader(); reader.onload=e=>{ const arr=parseCSV(String(e.target.result || '')); arr.forEach(addToCatalog); document.getElementById('fileInfo').textContent = `Импорт CSV: ${file.name}, строк: ${arr.length}`; toast(`Импортировано CSV: ${arr.length}`, 'ok') }; reader.readAsText(file, 'utf-8') }
+
+function importAnyFile(file){
+  const name=file.name || 'unknown'; const ext=(name.split('.').pop() || '').toLowerCase();
+  document.getElementById('fileInfo').textContent = `Файл: ${name} | тип: ${file.type || 'unknown'} | размер: ${file.size} bytes`;
+  const readText=()=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result || '')); r.onerror=()=>rej(r.error); r.readAsText(file, 'utf-8') });
+  const readBuf=()=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsArrayBuffer(file) });
+  (async()=>{
+    try{
+      if(ext==='csv' || ext==='tsv'){ const text=await readText(); const arr=parseCSV(text.replace(/\t/g, ',')); arr.forEach(addToCatalog); toast(`Импорт CSV/TSV: ${arr.length}`, 'ok'); return }
+      if(ext==='xlsx' || ext==='xls'){ const buf=await readBuf(); const arr=xlsxToRows(buf); arr.forEach(addToCatalog); toast(`Импорт XLSX/XLS: ${arr.length}`, 'ok'); return }
+      if(ext==='json' || file.type.includes('json')){ const data=JSON.parse(await readText()); if(Array.isArray(data)){ data.forEach(x=>addToCatalog({ marketplace:x.marketplace||'ozon', sku:x.sku||x.article||'', name:x.name||'', article:x.article||'', barcode:x.barcode||'', price:x.price||'', qty:Number(x.qty||1), printed:Number(x.printed||0), location:x.location||'' })); toast(`Импорт JSON: ${data.length}`, 'ok'); return } toast('JSON загружен, но не массив', 'er'); return }
+      if(ext==='txt' || ext==='log' || file.type.startsWith('text/')){ window.lastImportedText = await readText(); toast('Текстовый файл загружен', 'ok'); return }
+      window.lastImportedBinary = await readBuf(); toast('Файл загружен как бинарный', 'ok')
+    }catch(err){ console.error(err); toast('Ошибка чтения файла', 'er') }
+  })();
 }
-function loginByCreds(login, pass){
-  S.employees = loadEmployees();
-  const emp = S.employees.find(x=>x.login===login && x.pass===pass);
-  if(!emp){ toast('Неверный логин или пароль', 'er'); return false; }
-  setCurrentEmployee(emp);
-  document.getElementById('loginOverlay').classList.add('hidden');
+
+function addToCatalog(item){
+  const cell = item.location || suggestedCell(item);
+  S.catalog.unshift({
+    id:uid(),
+    marketplace:item.marketplace,
+    sku:item.sku || '',
+    name:item.name || '',
+    article:item.article || '',
+    barcode:defaultBarcode(item),
+    price:item.price || '',
+    qty:Number(item.qty || 1),
+    printed:Number(item.printed || 0),
+    createdAt:new Date().toISOString(),
+    location:cell,
+    reserved:Number(item.reserved || 0),
+    stock:Number(item.qty || 1)
+  });
+  S.wms.locations[cell] = S.wms.locations[cell] || { sku:item.sku || '', type:'storage' };
+  S.wms.stock[item.sku || cell] = Number(S.wms.stock[item.sku || cell] || 0) + Number(item.qty || 1);
+  saveAll(); renderCatalog(); refreshStats();
+}
+
+function selectedItems(){ return S.catalog.filter(x=>S.selection.has(x.id)).map(x=>({...x, copies:Number(x.qty || 1)})) }
+function syncRowToCatalog(tr){
+  const id=tr.dataset.id; const item=S.catalog.find(x=>x.id===id); if(!item) return;
+  item.marketplace=tr.querySelector('[data-f="marketplace"]').textContent.trim().toLowerCase().includes('wb')?'wildberries':'ozon';
+  item.sku=tr.querySelector('[data-f="sku"]').textContent.trim();
+  item.name=tr.querySelector('[data-f="name"]').textContent.trim();
+  item.article=tr.querySelector('[data-f="article"]').textContent.trim();
+  item.barcode=tr.querySelector('[data-f="barcode"]').textContent.trim();
+  item.price=tr.querySelector('[data-f="price"]').textContent.trim();
+  item.qty=Number(tr.querySelector('[data-f="qty"]').textContent.trim()||1);
+  item.location=tr.querySelector('[data-f="location"]').textContent.trim();
   saveAll();
-  toast('Вход выполнен', 'ok');
-  return true;
 }
 
-async function ozonFetch(path, body){
-  const cid = val('ozonClientId') || S.creds.ozonClientId;
-  const key = val('ozonApiKey') || S.creds.ozonApiKey;
-  const res = await fetch('https://api-seller.ozon.ru' + path, {
-    method:'POST',
-    headers:{ 'Client-Id': cid, 'Api-Key': key, 'Content-Type':'application/json', 'Accept':'application/json' },
-    body: JSON.stringify(body)
+function renderCatalog(){
+  const q=(val('searchCatalog')||'').toLowerCase().trim(); const mp=val('filterMarketplace'); const printed=val('filterPrinted'); const sort=val('sortCatalog');
+  let arr=[...S.catalog];
+  if(q) arr=arr.filter(x=>[x.sku,x.name,x.article,x.barcode,x.location].some(v=>(v||'').toLowerCase().includes(q)));
+  if(mp) arr=arr.filter(x=>x.marketplace===mp);
+  if(printed==='printed') arr=arr.filter(x=>(x.printed||0)>0);
+  if(printed==='notprinted') arr=arr.filter(x=>!(x.printed||0));
+  arr.sort((a,b)=>{ if(sort==='time_asc') return new Date(a.createdAt)-new Date(b.createdAt); if(sort==='name_asc') return (a.name||'').localeCompare(b.name||'','ru'); if(sort==='qty_desc') return (b.qty||0)-(a.qty||0); return new Date(b.createdAt)-new Date(a.createdAt) });
+  document.getElementById('catalogBody').innerHTML = arr.map(x=>`
+    <tr data-id="${x.id}">
+      <td><input type="checkbox" class="rowCheck" data-id="${x.id}" ${S.selection.has(x.id)?'checked':''}></td>
+      <td contenteditable="true" data-f="marketplace"><span class="badge ${x.marketplace==='ozon' ? 'b-oz' : 'b-wb'}">${x.marketplace}</span></td>
+      <td contenteditable="true" data-f="sku">${esc(x.sku || '')}</td>
+      <td contenteditable="true" data-f="name">${esc(x.name || '')}</td>
+      <td contenteditable="true" data-f="article">${esc(x.article || '')}</td>
+      <td contenteditable="true" data-f="barcode">${esc(x.barcode || '')}</td>
+      <td contenteditable="true" data-f="price">${esc(String(x.price ?? ''))}</td>
+      <td contenteditable="true" data-f="qty">${esc(String(x.qty ?? 1))}</td>
+      <td contenteditable="true" data-f="location">${esc(x.location || '')}</td>
+      <td>${esc(String(x.printed || 0))}</td>
+      <td class="row-actions">
+        <button class="action sec btn-save-row" data-id="${x.id}" style="padding:8px 10px;font-size:12px">Сохранить</button>
+        <button class="action red btn-del-row" data-id="${x.id}" style="padding:8px 10px;font-size:12px">Удалить</button>
+      </td>
+    </tr>`).join('');
+  document.querySelectorAll('.rowCheck').forEach(ch=>ch.addEventListener('change', e=>{ const id=e.target.dataset.id; if(e.target.checked) S.selection.add(id); else S.selection.delete(id); refreshStats() }));
+  document.querySelectorAll('.btn-save-row').forEach(btn=>btn.addEventListener('click', ()=>{ syncRowToCatalog(btn.closest('tr')); renderCatalog(); toast('Строка сохранена', 'ok') }));
+  document.querySelectorAll('.btn-del-row').forEach(btn=>btn.addEventListener('click', ()=>{ const id=btn.dataset.id; S.catalog=S.catalog.filter(x=>x.id!==id); S.selection.delete(id); saveAll(); renderCatalog(); toast('Строка удалена', 'ok') }));
+  document.getElementById('checkAll').checked = arr.length > 0 && arr.every(x=>S.selection.has(x.id));
+  refreshStats();
+}
+
+function renderHistory(){ document.getElementById('historyBody').innerHTML = S.history.slice(0,250).map(x=>`<tr><td>${fmt(x.createdAt)}</td><td><span class="badge ${x.marketplace==='ozon' ? 'b-oz' : 'b-wb'}">${x.marketplace}</span></td><td>${esc(x.sku || '')}</td><td>${esc(x.name || '')}</td><td>${esc(x.article || '')}</td><td>${esc(x.barcode || '')}</td><td>${x.copies || 1}</td><td>${esc(x.user || '')}</td><td>${esc(x.event || 'print')}</td></tr>`).join('') }
+
+function renderPreviewFromForm(){
+  const item={ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode') || val('singleSku') || val('singleArticle') || val('singleName'), price:val('singlePrice') };
+  const color=item.marketplace==='ozon'?'var(--ozon)':'var(--wb)';
+  document.getElementById('previewArea').innerHTML = `<div class="label-preview"><div class="label-head"><div class="label-title" style="color:${color}">${item.marketplace.toUpperCase()}</div><span class="badge ${item.marketplace==='ozon' ? 'b-oz' : 'b-wb'}">${item.marketplace}</span></div><div class="label-meta"><b>SKU:</b> ${esc(item.sku)}</div><div class="label-meta"><b>Название:</b> ${esc(item.name)}</div><div class="label-meta"><b>Артикул:</b> ${esc(item.article)}</div><div class="label-meta"><b>Цена:</b> ${esc(String(item.price || ''))}</div><svg id="barcodeSvg" class="barcode"></svg><div class="small muted" style="text-align:center;margin-top:4px">${esc(defaultBarcode(item))}</div></div>`;
+  if(window.JsBarcode) JsBarcode(document.getElementById('barcodeSvg'), barcodeForPrint(defaultBarcode(item)), { format:'CODE128', displayValue:true, fontSize:14, height:46, margin:0 });
+}
+
+function printItems(items){
+  if(!can('print')) return toast('Нет прав на печать', 'er');
+  if(!items.length) return toast('Нет данных для печати', 'er');
+  const sheet=document.getElementById('printSheet'); sheet.innerHTML='';
+  const size=val('singleSize') || '58x40'; let width='58mm', height='40mm';
+  if(size==='50x30'){ width='50mm'; height='30mm' } if(size==='100x100'){ width='100mm'; height='100mm' } if(size==='A4'){ width='210mm'; height='297mm' }
+  const labels=[];
+  items.forEach(item=>{
+    const copies=Number(item.copies || 1);
+    for(let i=0;i<copies;i++) labels.push(`<div class="print-label" style="width:${width};height:${height}"><div class="inner"><div class="title"><span style="color:${item.marketplace==='ozon' ? '#005bff' : '#cb11ab'}">${item.marketplace.toUpperCase()}</span><span>${esc(item.sku || '')}</span></div><div class="line"><b>Название:</b> ${esc(item.name || '')}</div><div class="line"><b>Артикул:</b> ${esc(item.article || '')}</div><div class="line"><b>Цена:</b> ${esc(String(item.price ?? ''))}</div><svg class="print-barcode"></svg><div class="footer">${esc(defaultBarcode(item))}</div></div></div>`);
+    const count=Number(item.copies || 1);
+    S.stats.total=(S.stats.total||0)+count; S.stats.today=(S.stats.today||0)+count;
+    if(item.marketplace==='ozon') S.stats.ozon=(S.stats.ozon||0)+count;
+    if(item.marketplace==='wildberries') S.stats.wildberries=(S.stats.wildberries||0)+count;
+    S.history.unshift({ createdAt:new Date().toISOString(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:defaultBarcode(item), copies:count, user:(S.current || {}).login || 'local', event:'print' });
+    const found=S.catalog.find(x=>x.id===item.id); if(found) found.printed=(found.printed||0)+count;
   });
-  return res.json();
+  sheet.innerHTML = labels.join(''); sheet.classList.remove('hidden');
+  const svgs=sheet.querySelectorAll('.print-barcode');
+  svgs.forEach((svg, idx)=>{ const sourceItem = items[Math.min(idx, items.length - 1)]; JsBarcode(svg, barcodeForPrint(defaultBarcode(sourceItem)), { format:'CODE128', displayValue:true, fontSize:12, height:36, margin:0 }) });
+  saveAll(); renderCatalog(); renderHistory(); refreshStats(); window.print();
+  setTimeout(()=>{ sheet.classList.add('hidden'); sheet.innerHTML='' }, 500);
 }
-async function wbFetch(path, body){
-  const token = val('wbToken') || S.creds.wbToken;
-  const res = await fetch('https://suppliers-api.wildberries.ru' + path, {
-    method:'POST',
-    headers:{ 'Authorization':'Bearer ' + token, 'Content-Type':'application/json', 'Accept':'application/json' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-function createOzonRequest(){
-  const list = val('ozonPostingNumbers').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
-  return { path:'/v2/posting/fbs/package-label/create', body:{ posting_number:list } };
-}
-function createWBRequest(){
-  const list = val('wbInput').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
-  return { path:'/content/v2/cards/upload', body:{ items:list } };
-}
-function saveEmployee(){
-  const login=val('empLogin').trim(), pass=val('empPass'), role=val('empRole'), name=val('empName').trim();
-  if(!login || !pass || !name){ toast('Заполните логин, пароль и имя', 'er'); return; }
-  const exists=S.employees.find(x=>x.login===login);
-  const emp={ id: exists ? exists.id : uid(), login, pass, role, name };
-  if(exists) Object.assign(exists, emp); else S.employees.push(emp);
-  saveAll(); fillEmployeeSelect(); toast('Сотрудник сохранён', 'ok');
-}
+
 function buildReport(){
-  if(!can('report')){ toast('Нет прав на отчёты', 'er'); return; }
-  let arr=[...S.history];
-  const f=val('dateFrom'), t=val('dateTo'), g=val('reportGroup');
-  if(f) arr=arr.filter(x=>x.createdAt.slice(0,10)>=f);
-  if(t) arr=arr.filter(x=>x.createdAt.slice(0,10)<=t);
-  const m=new Map();
-  arr.forEach(x=>{
-    const key = g==='day' ? x.createdAt.slice(0,10) : g==='marketplace' ? x.marketplace : (x.sku || 'N/A');
-    m.set(key, (m.get(key)||0) + Number(x.copies||1));
-  });
+  if(!can('report')) return toast('Нет прав на отчёты', 'er');
+  let arr=[...S.history]; const f=val('dateFrom'), t=val('dateTo'), g=val('reportGroup');
+  if(f) arr=arr.filter(x=>x.createdAt.slice(0,10)>=f); if(t) arr=arr.filter(x=>x.createdAt.slice(0,10)<=t);
+  const map=new Map(); arr.forEach(x=>{ const key=g==='day'?x.createdAt.slice(0,10):g==='marketplace'?x.marketplace:(x.sku||'N/A'); map.set(key, (map.get(key)||0)+Number(x.copies||1)) });
   const total=arr.reduce((s,x)=>s+Number(x.copies||1),0);
-  document.getElementById('reportOutput').innerHTML = `
-    <div class="kpi" style="margin-bottom:12px"><div><b>Период:</b> ${esc(f||'...')} — ${esc(t||'...')}</div><div><b>Всего:</b> ${total}</div></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Ключ</th><th>Количество</th></tr></thead><tbody>${[...m.entries()].map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</tbody></table>
-    </div>`;
+  document.getElementById('reportOutput').innerHTML = `<div class="kpi" style="margin-bottom:12px"><div><b>Период:</b> ${esc(f||'...')} — ${esc(t||'...')}</div><div><b>Всего:</b> ${total}</div></div><div class="table-wrap"><table><thead><tr><th>Ключ</th><th>Количество</th></tr></thead><tbody>${[...map.entries()].map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function createOzonRequest(){ const list=val('ozonPostingNumbers').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean); return { path:'/v2/posting/fbs/package-label/create', body:{ posting_number:list } } }
+function createWBRequest(){ const list=val('wbInput').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean); return { path:'/content/v2/cards/upload', body:{ items:list } } }
+
+function receiveStock(skuOrBarcode, qty){
+  const item=S.catalog.find(x=>[x.sku,x.barcode,x.article].includes(skuOrBarcode));
+  if(!item) return toast('Товар не найден', 'er');
+  item.qty = Number(item.qty || 0) + Number(qty || 1);
+  item.stock = Number(item.stock || 0) + Number(qty || 1);
+  item.location = item.location || suggestedCell(item);
+  S.wms.receipts = S.wms.receipts || [];
+  S.wms.receipts.unshift({ id:uid(), sku:item.sku, qty:Number(qty||1), createdAt:new Date().toISOString(), user:(S.current || {}).login || 'local' });
+  S.wms.stock[item.sku] = Number(S.wms.stock[item.sku] || 0) + Number(qty || 1);
+  saveAll(); renderCatalog(); refreshStats(); renderWmsOrders(); renderWmsTasks(); renderLocations(); toast('Товар принят на склад', 'ok');
+}
+
+function putawayStock(skuOrBarcode, cell){
+  const item=S.catalog.find(x=>[x.sku,x.barcode,x.article].includes(skuOrBarcode));
+  if(!item) return toast('Товар не найден', 'er');
+  S.wms.locations[cell] = { sku:item.sku, type:'storage' };
+  item.location=cell;
+  S.wms.movements = S.wms.movements || [];
+  S.wms.movements.unshift({ id:uid(), sku:item.sku, cell, createdAt:new Date().toISOString(), user:(S.current || {}).login || 'local', event:'putaway' });
+  saveAll(); renderCatalog(); refreshStats(); renderLocations(); toast('Товар размещён', 'ok');
+}
+
+function scanBarcode(barcode){
+  const item=S.catalog.find(x=>[x.barcode,x.sku,x.article].includes(barcode));
+  const out=document.getElementById('wmsScanResult');
+  if(!item){ out.textContent='Товар не найден'; return toast('Скан не найден', 'er') }
+  out.innerHTML = `<b>Найден:</b> ${esc(item.name)} | SKU: ${esc(item.sku)} | Ячейка: ${esc(item.location || 'не назначена')} | Остаток: ${esc(String(item.qty || 0))}`;
+}
+
+function createOrdersFromText(){
+  const text=val('wmsOrderInput').trim(); if(!text) return toast('Введите заказы', 'er');
+  const lines=text.split(/\r?\n/).filter(Boolean);
+  lines.forEach(line=>{ const parts=line.split(',').map(s=>s.trim()); if(parts.length < 3) return; const [marketplace, sku, qty] = parts; S.wms.orders.unshift({ id:uid(), marketplace, sku, qty:Number(qty||1), status:'new', createdAt:new Date().toISOString(), reserved:0, packed:0, shipped:0, picks:[], wave:'' }) });
+  saveAll(); renderWmsOrders(); refreshStats(); toast('Заказы созданы', 'ok');
+}
+
+function allocateOrders(){
+  (S.wms.orders || []).forEach(o=>{
+    const item = S.catalog.find(x=>x.sku === o.sku);
+    if(!item) return;
+    const avail = Number(item.qty || 0);
+    if(avail >= o.qty){
+      item.qty = avail - o.qty;
+      o.status = 'allocated';
+      o.reserved = o.qty;
+      o.picks = [{ location:item.location || suggestedCell(item), qty:o.qty, sku:o.sku }];
+      S.wms.allocations = S.wms.allocations || [];
+      S.wms.allocations.unshift({ id:uid(), orderId:o.id, sku:o.sku, qty:o.qty, createdAt:new Date().toISOString() });
+    }
+  });
+  saveAll(); renderCatalog(); renderWmsOrders(); renderWmsTasks(); refreshStats(); toast('Распределение выполнено', 'ok');
+}
+
+function createPickWave(){
+  const open = (S.wms.orders || []).filter(o=>o.status==='allocated' || o.status==='new');
+  const waveId = 'W-' + Date.now().toString().slice(-6);
+  open.forEach(o=>o.wave = waveId);
+  S.wms.waves.unshift({ id:waveId, createdAt:new Date().toISOString(), orders:open.map(o=>o.id) });
+  saveAll(); renderWmsOrders(); toast(`Волна отбора ${waveId} создана`, 'ok');
+}
+
+function renderWmsOrders(){
+  document.getElementById('wmsOrdersBody').innerHTML = (S.wms.orders || []).slice(0,200).map(o=>`
+    <tr>
+      <td>${esc(o.id.slice(-6))}</td>
+      <td>${esc(o.marketplace)}</td>
+      <td>${esc(o.sku)}</td>
+      <td>${esc(String(o.qty))}</td>
+      <td><span class="badge ${o.status==='new' ? 'b-new' : o.status==='allocated' ? 'b-al' : o.status==='picking' ? 'b-pi' : o.status==='packed' ? 'b-pa' : o.status==='shipped' ? 'b-sh' : 'b-ca'}">${esc(o.status)}</span></td>
+      <td>${esc((o.picks || []).map(p=>p.location).join(', '))}</td>
+    </tr>
+  `).join('');
+}
+
+function createTasks(){
+  S.wms.tasks = (S.wms.orders || []).filter(o=>o.status==='allocated' || o.status==='new').map(o=>({ id:uid(), orderId:o.id, sku:o.sku, qty:o.qty, assignee:'operator', status:'open', createdAt:new Date().toISOString(), wave:o.wave || '' }));
+  saveAll(); renderWmsTasks(); refreshStats(); toast('Задания сформированы', 'ok');
+}
+function renderWmsTasks(){ document.getElementById('wmsTasksBody').innerHTML = (S.wms.tasks || []).slice(0,200).map(t=>`<div class="task-item"><b>${esc(t.sku)}</b> · qty ${esc(String(t.qty))} · ${esc(t.assignee)} · ${esc(t.status)} ${t.wave ? '· ' + esc(t.wave) : ''}</div>`).join('') || '<div class="muted">Заданий нет</div>' }
+
+function renderLocations(){
+  const rows = Object.entries(S.wms.locations || {}).slice(0,200).map(([cell,info])=>`<tr><td>${esc(cell)}</td><td>${esc(info.type || 'storage')}</td><td>${esc(info.sku || '')}</td><td>${esc(String((S.catalog.find(x=>x.sku===info.sku) || {}).qty || 0))}</td></tr>`).join('');
+  document.getElementById('locationsBody').innerHTML = rows || '<tr><td colspan="4" class="muted">Ячейки не созданы</td></tr>';
+}
+
+function renderReturns(){
+  document.getElementById('returnsBody').innerHTML = (S.wms.returns || []).slice(0,100).map(r=>`<div class="task-item"><b>${esc(r.sku)}</b> · qty ${esc(String(r.qty))} · ${esc(r.reason)} · ${fmt(r.createdAt)}</div>`).join('') || '<div class="muted">Возвратов нет</div>';
 }
 
 function initDefaults(){
   S.employees = loadEmployees();
-  if(!S.employees.length){
-    S.employees = defaultEmployees();
-    save(LS.employees, S.employees);
-  }
+  if(!S.employees.length){ S.employees = defaultEmployees(); save(LS.employees, S.employees) }
   fillEmployeeSelect();
-  const current = getCurrentEmployee();
-  if(current){
-    setCurrentEmployee(current);
-    document.getElementById('loginOverlay').classList.add('hidden');
-  }else{
-    document.getElementById('loginOverlay').classList.remove('hidden');
-    updateCurrentUserUI(null);
-  }
-  const s=S.settings||{};
-  setVal('printerName',s.printerName||''); setVal('companyName',s.companyName||''); setVal('warehouseAddress',s.warehouseAddress||'');
-  setVal('labelTemplate',s.labelTemplate||'58x40'); setVal('barcodeFormat',s.barcodeFormat||'CODE128'); setVal('autoSave',s.autoSave||'yes');
-  setVal('ozonClientId', S.creds.ozonClientId || ''); setVal('ozonApiKey', S.creds.ozonApiKey || ''); setVal('wbToken', S.creds.wbToken || '');
-  refreshStats(); renderCatalog(); renderHistory();
+  const current=getCurrentEmployee();
+  if(current){ S.current=current; document.getElementById('loginOverlay').classList.add('hidden'); updateCurrentUserUI(current) } else { document.getElementById('loginOverlay').classList.remove('hidden'); updateCurrentUserUI(null) }
+  setVal('ozonClientId', S.creds.ozonClientId || '');
+  setVal('ozonApiKey', S.creds.ozonApiKey || '');
+  setVal('wbToken', S.creds.wbToken || '');
+  setVal('apiNotes', S.settings.apiNotes || '');
+  refreshStats(); renderCatalog(); renderHistory(); renderWmsOrders(); renderWmsTasks(); renderLocations(); renderReturns();
 }
 
-document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click', ()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   btn.classList.add('active');
-  ['general','catalog','print','api','reports'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==btn.dataset.tab));
+  ['catalog','print','wms','api','reports'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t !== btn.dataset.tab));
 }));
 
-document.getElementById('btnLogin').addEventListener('click',()=>loginByCreds(val('loginUser').trim(), val('loginPass')));
-document.getElementById('btnDemoLogin').addEventListener('click',()=>{ setVal('loginUser','admin'); setVal('loginPass','1234'); loginByCreds('admin','1234'); });
-document.getElementById('btnRestoreEmployees').addEventListener('click',()=>{ restoreEmployees(); fillEmployeeSelect(); });
+document.getElementById('btnLogin').addEventListener('click', ()=>loginByCreds(val('loginUser').trim(), val('loginPass')));
+document.getElementById('btnDemoLogin').addEventListener('click', ()=>{ setVal('loginUser','admin'); setVal('loginPass','1234'); loginByCreds('admin','1234') });
+document.getElementById('btnRestoreEmployees').addEventListener('click', ()=>restoreEmployees());
+document.getElementById('btnLogout').addEventListener('click', ()=>{ clearCurrentEmployee(); document.getElementById('loginOverlay').classList.remove('hidden'); updateCurrentUserUI(null); toast('Выход выполнен', 'ok') });
+document.getElementById('btnAddEmployee').addEventListener('click', ()=>{ if(!can('employee')) return toast('Нет прав', 'er'); saveEmployee() });
 
-document.getElementById('btnLogout').addEventListener('click',()=>{ clearCurrentEmployee(); updateCurrentUserUI(null); document.getElementById('loginOverlay').classList.remove('hidden'); toast('Выход выполнен', 'ok'); });
-document.getElementById('btnAddEmployee').addEventListener('click',()=>{ if(!can('employee')) return toast('Нет прав', 'er'); saveEmployee(); });
-document.getElementById('employeeSelect').addEventListener('change',()=>{ const emp=S.employees.find(x=>x.id===val('employeeSelect')); if(emp){ setCurrentEmployee(emp); saveAll(); } });
+document.getElementById('csvFile').addEventListener('change', e=>{ if(e.target.files && e.target.files[0]) importCSV(e.target.files[0]) });
+document.getElementById('btnImportAnyFile').addEventListener('click', ()=>document.getElementById('anyFileInput').click());
+document.getElementById('anyFileInput').addEventListener('change', e=>{ if(e.target.files && e.target.files[0]) importAnyFile(e.target.files[0]) });
 
-document.getElementById('csvFile').addEventListener('change', e=> e.target.files[0] && importCSV(e.target.files[0]));
-document.getElementById('btnLoadDemo').addEventListener('click',()=>{ [{marketplace:'ozon',sku:'OZ-1001',name:'Футболка',article:'TS-01',barcode:'4601234567890',price:990,qty:1},{marketplace:'wildberries',sku:'WB-2001',name:'Худи',article:'HD-02',barcode:'123456789012',price:2490,qty:2}].forEach(addToCatalog); toast('Демо загружено', 'ok'); });
-document.getElementById('btnExportCatalog').addEventListener('click',()=>{
-  const rows=['marketplace,sku,name,article,barcode,price,qty,printed,createdAt'];
-  S.catalog.forEach(x=>rows.push([x.marketplace,x.sku,x.name,x.article,x.barcode,x.price,x.qty,x.printed,x.createdAt].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='catalog.csv'; a.click();
+document.getElementById('btnLoadDemo').addEventListener('click', ()=>{
+  [
+    { marketplace:'ozon', sku:'OZ-1001', name:'Футболка', article:'TS-01', barcode:'4601234567890', price:990, qty:10, location:'A-01-01-01' },
+    { marketplace:'wildberries', sku:'WB-2001', name:'Худи', article:'HD-02', barcode:'123456789012', price:2490, qty:5, location:'B-01-01-01' }
+  ].forEach(addToCatalog);
+  toast('Демо загружено', 'ok');
 });
-document.getElementById('btnExportHistory').addEventListener('click',()=>{
-  const rows=['createdAt,marketplace,sku,name,article,barcode,copies,user'];
-  S.history.forEach(x=>rows.push([x.createdAt,x.marketplace,x.sku,x.name,x.article,x.barcode,x.copies,x.user].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='history.csv'; a.click();
+document.getElementById('btnAddRow').addEventListener('click', ()=>{ addToCatalog({ marketplace:'ozon', sku:'', name:'', article:'', barcode:'', price:'', qty:1, location:'' }); toast('Пустая строка добавлена', 'ok') });
+document.getElementById('btnExportCatalog').addEventListener('click', ()=>{
+  const rows=['marketplace,sku,name,article,barcode,price,qty,printed,createdAt,location'];
+  S.catalog.forEach(x=>rows.push([x.marketplace,x.sku,x.name,x.article,x.barcode,x.price,x.qty,x.printed,x.createdAt,x.location].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'})); a.download='catalog.csv'; a.click();
 });
-document.getElementById('btnResetToday').addEventListener('click',()=>{ if(confirm('Сбросить счётчик за сегодня?')){ S.stats.today=0; S.stats.todayDate=today(); saveAll(); refreshStats(); toast('Сброшено', 'ok'); } });
+document.getElementById('btnExportHistory').addEventListener('click', ()=>{
+  const rows=['createdAt,marketplace,sku,name,article,barcode,copies,user,event'];
+  S.history.forEach(x=>rows.push([x.createdAt,x.marketplace,x.sku,x.name,x.article,x.barcode,x.copies,x.user,x.event].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'})); a.download='history.csv'; a.click();
+});
 
-document.getElementById('btnPreviewSingle').addEventListener('click',()=>buildPreview({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice') }));
-document.getElementById('btnAddToCatalog').addEventListener('click',()=>{ if(!val('singleSku') && !val('singleName')) return toast('Заполните SKU или название', 'er'); addToCatalog({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), qty:Number(val('singleQty')||1) }); toast('Добавлено', 'ok'); });
-document.getElementById('btnPrintSingle').addEventListener('click',()=>{ const item={ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), copies:Number(val('singleQty')||1) }; if(!item.sku && !item.name) return toast('Заполните SKU или название', 'er'); printItems([item]); });
+document.getElementById('btnPreviewSingle').addEventListener('click', renderPreviewFromForm);
+document.getElementById('btnPrintSingle').addEventListener('click', ()=>{
+  const item={ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode') || val('singleSku') || val('singleArticle') || val('singleName'), price:val('singlePrice'), copies:Number(val('singleQty')||1) };
+  printItems([item]);
+});
+document.getElementById('btnAddToCatalog2').addEventListener('click', ()=>{
+  addToCatalog({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode') || val('singleSku') || val('singleArticle') || val('singleName'), price:val('singlePrice'), qty:Number(val('singleQty')||1), location:val('locBin') || '' });
+  toast('Добавлено в таблицу', 'ok');
+});
 
-document.getElementById('btnPrintSelected').addEventListener('click',()=>printItems(selectedItems()));
-document.getElementById('btnCreateSelectedWB').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='wildberries')));
-document.getElementById('btnCreateSelectedOzon').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='ozon')));
-document.getElementById('btnMarkPrinted').addEventListener('click',()=>{ if(!can('edit')) return toast('Нет прав', 'er'); selectedItems().forEach(x=>{ const m=S.catalog.find(i=>i.id===x.id); if(m) m.printed=(m.printed||0)+Number(m.qty||1); }); saveAll(); renderCatalog(); toast('Отмечено', 'ok'); });
-document.getElementById('btnDeleteSelected').addEventListener('click',()=>{ if(!can('edit')) return toast('Нет прав', 'er'); if(!confirm('Удалить выбранные?')) return; S.catalog=S.catalog.filter(x=>!S.selection.has(x.id)); S.selection.clear(); saveAll(); renderCatalog(); toast('Удалено', 'ok'); });
+document.getElementById('btnPrintSelected').addEventListener('click', ()=>printItems(selectedItems()));
+document.getElementById('btnSelectWB').addEventListener('click', ()=>{ S.selection=new Set(S.catalog.filter(x=>x.marketplace==='wildberries').map(x=>x.id)); renderCatalog() });
+document.getElementById('btnSelectOzon').addEventListener('click', ()=>{ S.selection=new Set(S.catalog.filter(x=>x.marketplace==='ozon').map(x=>x.id)); renderCatalog() });
+document.getElementById('btnMarkPrinted').addEventListener('click', ()=>{ if(!can('edit')) return toast('Нет прав', 'er'); selectedItems().forEach(x=>{ const m=S.catalog.find(i=>i.id===x.id); if(m) m.printed=(m.printed||0)+Number(m.qty||1) }); saveAll(); renderCatalog(); toast('Отмечено', 'ok') });
+document.getElementById('btnDeleteSelected').addEventListener('click', ()=>{ if(!can('edit')) return toast('Нет прав', 'er'); if(!confirm('Удалить выбранные?')) return; S.catalog=S.catalog.filter(x=>!S.selection.has(x.id)); S.selection.clear(); saveAll(); renderCatalog(); toast('Удалено', 'ok') });
 
-document.getElementById('btnSaveOzon').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.ozonClientId=val('ozonClientId'); S.creds.ozonApiKey=val('ozonApiKey'); saveAll(); toast('Ozon сохранён', 'ok'); });
-document.getElementById('btnSaveWB').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.wbToken=val('wbToken'); saveAll(); toast('WB сохранён', 'ok'); });
-document.getElementById('btnTestOzon').addEventListener('click',()=>toast('Тест Ozon: добавьте реальные ключи и проверьте backend/CORS', 'in'));
-document.getElementById('btnTestWB').addEventListener('click',()=>toast('Тест WB: добавьте токен и проверьте backend/CORS', 'in'));
-document.getElementById('btnCreateOzonReq').addEventListener('click',()=>{ const req = createOzonRequest(); alert(`Ozon request\\nPOST https://api-seller.ozon.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`); });
-document.getElementById('btnCreateWBReq').addEventListener('click',()=>{ const req = createWBRequest(); alert(`WB request\\nPOST https://suppliers-api.wildberries.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`); });
+document.getElementById('btnSaveIntegrations').addEventListener('click', ()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.ozonClientId=val('ozonClientId'); S.creds.ozonApiKey=val('ozonApiKey'); S.creds.wbToken=val('wbToken'); S.settings.apiNotes=val('apiNotes'); saveAll(); toast('Интеграции сохранены', 'ok') });
+document.getElementById('btnCreateOzonReq').addEventListener('click', ()=>{ const list=val('ozonPostingNumbers').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean); alert(`POST https://api-seller.ozon.ru/v2/posting/fbs/package-label/create\n${JSON.stringify({posting_number:list}, null, 2)}`) });
+document.getElementById('btnCreateWBReq').addEventListener('click', ()=>{ const list=val('wbInput').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean); alert(`POST https://suppliers-api.wildberries.ru/content/v2/cards/upload\n${JSON.stringify({items:list}, null, 2)}`) });
+document.getElementById('btnBuildReport').addEventListener('click', buildReport);
+document.getElementById('checkAll').addEventListener('change', e=>{ document.querySelectorAll('.rowCheck').forEach(ch=>{ ch.checked=e.target.checked; const id=ch.dataset.id; if(e.target.checked) S.selection.add(id); else S.selection.delete(id) }); refreshStats() });
+['searchCatalog','filterMarketplace','filterPrinted','sortCatalog'].forEach(id=>{ document.getElementById(id).addEventListener('input', renderCatalog); document.getElementById(id).addEventListener('change', renderCatalog) });
 
-document.getElementById('btnBuildReport').addEventListener('click',buildReport);
-document.getElementById('checkAll').addEventListener('change', e=>{ document.querySelectorAll('.rowCheck').forEach(ch=>{ ch.checked=e.target.checked; const id=ch.dataset.id; e.target.checked ? S.selection.add(id) : S.selection.delete(id); }); refreshStats(); });
-['searchCatalog','filterMarketplace','filterPrinted','sortCatalog'].forEach(id=>{ document.getElementById(id).addEventListener('input', renderCatalog); document.getElementById(id).addEventListener('change', renderCatalog); });
-['printerName','companyName','warehouseAddress','labelTemplate','barcodeFormat','autoSave'].forEach(id=>document.getElementById(id).addEventListener('change',()=>saveAll()));
+document.getElementById('btnWmsReceive').addEventListener('click', ()=>receiveStock(val('wmsReceiveInput').trim(), Number(val('wmsReceiveQty') || 1)));
+document.getElementById('btnWmsPutaway').addEventListener('click', ()=>putawayStock(val('wmsPutawayInput').trim(), val('wmsPutawayCell').trim()));
+document.getElementById('btnSuggestCell').addEventListener('click', ()=>{ const item=S.catalog.find(x=>[x.sku,x.barcode,x.article].includes(val('wmsPutawayInput').trim())); setVal('wmsPutawayCell', item ? suggestedCell(item) : 'A-01-01-01') });
+document.getElementById('btnWmsScan').addEventListener('click', ()=>scanBarcode(val('wmsScanBarcode').trim()));
+document.getElementById('btnWmsCreateOrders').addEventListener('click', ()=>{ createOrdersFromText(); renderWmsOrders() });
+document.getElementById('btnWmsAllocate').addEventListener('click', allocateOrders);
+document.getElementById('btnCreatePickWave').addEventListener('click', createPickWave);
+document.getElementById('btnCreateTasks').addEventListener('click', createTasks);
+document.getElementById('btnRefreshTasks').addEventListener('click', ()=>{ renderWmsTasks(); renderLocations(); renderReturns() });
+document.getElementById('btnStartPicking').addEventListener('click', ()=>{
+  (S.wms.orders || []).forEach(o=>{ if(o.status==='allocated' || o.status==='new') o.status='picking' });
+  saveAll(); renderWmsOrders(); toast('Отбор начат', 'ok');
+});
+document.getElementById('btnPackOrders').addEventListener('click', ()=>{
+  (S.wms.orders || []).forEach(o=>{ if(o.status==='picking') o.status='packed' });
+  saveAll(); renderWmsOrders(); toast('Заказы упакованы', 'ok');
+});
+document.getElementById('btnShipOrders').addEventListener('click', ()=>{
+  (S.wms.orders || []).forEach(o=>{ if(o.status==='packed') o.status='shipped' });
+  saveAll(); renderWmsOrders(); toast('Заказы отгружены', 'ok');
+});
+document.getElementById('btnProcessReturn').addEventListener('click', ()=>{
+  const lines = val('returnInput').split(/\r?\n/).filter(Boolean);
+  lines.forEach(line=>{
+    const [sku, qty, reason] = line.split(',').map(s=>s.trim());
+    if(!sku) return;
+    S.wms.returns.unshift({ id:uid(), sku, qty:Number(qty||1), reason:reason || 'n/a', createdAt:new Date().toISOString() });
+    const item = S.catalog.find(x=>x.sku===sku || x.barcode===sku || x.article===sku);
+    if(item) item.qty = Number(item.qty || 0) + Number(qty || 1);
+  });
+  saveAll(); renderCatalog(); renderReturns(); refreshStats(); toast('Возвраты обработаны', 'ok');
+});
+document.getElementById('btnCycleCount').addEventListener('click', ()=>{
+  const sample = S.catalog.slice(0, Math.min(10, S.catalog.length)).map(x=>({ sku:x.sku, expected:x.qty, counted:x.qty, diff:0 }));
+  S.wms.counts.unshift({ id:uid(), createdAt:new Date().toISOString(), items:sample });
+  saveAll(); toast('Cycle count создан', 'ok');
+});
+document.getElementById('btnReplenish').addEventListener('click', ()=>{
+  S.catalog.forEach(item=>{
+    if((item.qty || 0) < 3){
+      item.qty = (item.qty || 0) + 10;
+      S.wms.stock[item.sku] = Number(S.wms.stock[item.sku] || 0) + 10;
+    }
+  });
+  saveAll(); renderCatalog(); refreshStats(); toast('Пополнение выполнено', 'ok');
+});
+
+function createLocation(){
+  const cell = locateKey(val('locZone'), val('locAisle'), val('locRack'), val('locShelf'), val('locBin'));
+  if(!cell) return toast('Заполните адрес', 'er');
+  S.wms.locations[cell] = { sku:'', type:'storage' };
+  saveAll(); renderLocations(); refreshStats(); toast('Ячейка создана', 'ok');
+}
+function buildLocationsGrid(){
+  ['A','B','C'].forEach(z=>{
+    for(let a=1;a<=2;a++) for(let r=1;r<=2;r++) for(let s=1;s<=2;s++){
+      const cell = locateKey(z, String(a).padStart(2,'0'), String(r).padStart(2,'0'), String(s).padStart(2,'0'));
+      S.wms.locations[cell] = S.wms.locations[cell] || { sku:'', type:'storage' };
+    }
+  });
+  saveAll(); renderLocations(); refreshStats(); toast('Сетка ячеек создана', 'ok');
+}
+document.getElementById('btnCreateLocation').addEventListener('click', createLocation);
+document.getElementById('btnBuildLocations').addEventListener('click', buildLocationsGrid);
 
 initDefaults();
 </script>
