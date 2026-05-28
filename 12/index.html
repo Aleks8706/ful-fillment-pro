@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Label System Pro</title>
+  <title>Label System Pro - Fixed</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <style>
     :root{
@@ -95,7 +95,7 @@
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
     <h2>Вход сотрудника</h2>
-    <p>Локальная авторизация для работы с системой печати и API.</p>
+    <p>Автоматически создаёт пользователей, если localStorage пуст.</p>
     <label>Логин</label>
     <input id="loginUser" placeholder="admin">
     <label style="margin-top:10px">Пароль</label>
@@ -103,14 +103,14 @@
     <div class="btns">
       <button class="action pri" id="btnLogin">Войти</button>
       <button class="action sec" id="btnDemoLogin">Демо-вход</button>
+      <button class="action amb" id="btnRestoreEmployees">Восстановить пользователей</button>
     </div>
     <div class="rolebar">
-      <span class="pill">admin</span>
-      <span class="pill">manager</span>
-      <span class="pill">operator</span>
-      <span class="pill">viewer</span>
+      <span class="pill">admin / 1234</span>
+      <span class="pill">manager / 1234</span>
+      <span class="pill">operator / 1234</span>
+      <span class="pill">viewer / 1234</span>
     </div>
-    <div class="small muted" style="margin-top:10px">Роли и сотрудники хранятся локально в browser storage. Для боевого режима лучше перенести авторизацию на сервер.</div>
   </div>
 </div>
 
@@ -323,10 +323,10 @@ const S = {
   selection:new Set()
 };
 
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
 function save(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function val(id){ return document.getElementById(id)?.value ?? ''; }
 function setVal(id,v){ const e=document.getElementById(id); if(e) e.value = v ?? ''; }
-function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
 function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(d){ return new Date(d).toLocaleString('ru-RU'); }
 function esc(s){ return (s ?? '').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
@@ -334,20 +334,74 @@ function esc(s){ return (s ?? '').toString().replaceAll('&','&amp;').replaceAll(
 function toast(msg, type='ok'){
   const t=document.createElement('div'); t.className=`toast t-${type}`; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
 }
-function ensureTodayReset(){ if(S.stats.todayDate !== today()){ S.stats.today = 0; S.stats.todayDate = today(); } }
 
-function currentEmployee(){
-  return S.current || { login:'guest', name:'Гость', role:'viewer' };
+function defaultEmployees(){
+  return [
+    { id: uid(), login:'admin', pass:'1234', role:'admin', name:'Администратор' },
+    { id: uid(), login:'manager', pass:'1234', role:'manager', name:'Менеджер' },
+    { id: uid(), login:'operator', pass:'1234', role:'operator', name:'Оператор' },
+    { id: uid(), login:'viewer', pass:'1234', role:'viewer', name:'Просмотр' }
+  ];
+}
+
+function loadEmployees(){
+  try{
+    const raw = localStorage.getItem(LS.employees);
+    if(!raw){
+      const defs = defaultEmployees();
+      save(LS.employees, defs);
+      return defs;
+    }
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data) || data.length === 0){
+      const defs = defaultEmployees();
+      save(LS.employees, defs);
+      return defs;
+    }
+    return data;
+  }catch(e){
+    const defs = defaultEmployees();
+    save(LS.employees, defs);
+    return defs;
+  }
+}
+
+function restoreEmployees(){
+  S.employees = defaultEmployees();
+  save(LS.employees, S.employees);
+  fillEmployeeSelect();
+  toast('Пользователи восстановлены', 'ok');
+}
+
+function getCurrentEmployee(){
+  try{ return JSON.parse(localStorage.getItem(LS.current) || 'null'); }catch(e){ return null; }
 }
 function setCurrentEmployee(emp){
-  S.current = emp; save(LS.current, emp);
-  document.getElementById('currentUserPill').textContent = emp ? `${emp.name} (${emp.login})` : 'Не авторизован';
-  document.getElementById('currentRolePill').textContent = `роль: ${emp ? emp.role : '-'}`;
-  document.getElementById('kEmployee').textContent = emp ? emp.name : '-';
+  S.current = emp;
+  save(LS.current, emp);
+  updateCurrentUserUI(emp);
+}
+function clearCurrentEmployee(){
+  localStorage.removeItem(LS.current);
+  S.current = null;
+}
+function updateCurrentUserUI(emp){
+  const u = document.getElementById('currentUserPill');
+  const r = document.getElementById('currentRolePill');
+  const k = document.getElementById('kEmployee');
+  if(emp){
+    u.textContent = `${emp.name} (${emp.login})`;
+    r.textContent = `роль: ${emp.role}`;
+    if(k) k.textContent = emp.name;
+  }else{
+    u.textContent = 'Не авторизован';
+    r.textContent = 'роль: -';
+    if(k) k.textContent = '-';
+  }
 }
 
 function can(action){
-  const role = currentEmployee().role || 'viewer';
+  const role = (getCurrentEmployee() || {}).role || 'viewer';
   const matrix = {
     admin:['all'],
     manager:['print','edit','api','report','employee'],
@@ -358,6 +412,12 @@ function can(action){
   return allowed.includes('all') || allowed.includes(action);
 }
 
+function ensureTodayReset(){
+  if(S.stats.todayDate !== today()){
+    S.stats.today = 0;
+    S.stats.todayDate = today();
+  }
+}
 function refreshStats(){
   ensureTodayReset();
   document.getElementById('stTotal').textContent = S.stats.total || 0;
@@ -367,19 +427,36 @@ function refreshStats(){
   document.getElementById('kCatalog').textContent = S.catalog.length;
   document.getElementById('kSelected').textContent = S.selection.size;
 }
+function readSettings(){
+  return {
+    printerName: val('printerName'),
+    companyName: val('companyName'),
+    warehouseAddress: val('warehouseAddress'),
+    labelTemplate: val('labelTemplate'),
+    barcodeFormat: val('barcodeFormat'),
+    autoSave: val('autoSave')
+  };
+}
 function saveAll(){
   if(val('autoSave') !== 'no'){
-    save(LS.catalog, S.catalog); save(LS.history, S.history); save(LS.stats, S.stats); save(LS.settings, readSettings()); save(LS.creds, S.creds); save(LS.employees, S.employees); save(LS.current, S.current);
+    save(LS.catalog, S.catalog);
+    save(LS.history, S.history);
+    save(LS.stats, S.stats);
+    save(LS.settings, readSettings());
+    save(LS.creds, S.creds);
+    save(LS.employees, S.employees);
+    save(LS.current, S.current);
   }
 }
-function readSettings(){ return { printerName:val('printerName'), companyName:val('companyName'), warehouseAddress:val('warehouseAddress'), labelTemplate:val('labelTemplate'), barcodeFormat:val('barcodeFormat'), autoSave:val('autoSave') }; }
 
 function genBarcodeValue(input, format){
   let v=(input||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
   if(!v) v='123456789012';
   if(format==='EAN13'){
-    let digits=v.replace(/\D/g,'').slice(0,12); while(digits.length<12) digits += String((digits.length*7)%10);
-    const sum=digits.split('').reduce((a,c,i)=>a+(i%2===0?+c:+c*3),0); const cd=(10-(sum%10))%10;
+    let digits=v.replace(/\D/g,'').slice(0,12);
+    while(digits.length<12) digits += String((digits.length*7)%10);
+    const sum=digits.split('').reduce((a,c,i)=>a+(i%2===0?+c:+c*3),0);
+    const cd=(10-(sum%10))%10;
     return digits+cd;
   }
   return v.slice(0,48);
@@ -426,7 +503,8 @@ function printItems(items){
       </div>
     </div>
   `).join('')).join('');
-  document.body.appendChild(sheet); sheet.classList.remove('hidden');
+  document.body.appendChild(sheet);
+  sheet.classList.remove('hidden');
   setTimeout(()=>{
     const svgs = sheet.querySelectorAll('svg[id^="p_"]');
     let i=0;
@@ -445,7 +523,7 @@ function printItems(items){
     S.stats.today=(S.stats.today||0)+copies;
     if(item.marketplace==='ozon') S.stats.ozon=(S.stats.ozon||0)+copies;
     if(item.marketplace==='wildberries') S.stats.wildberries=(S.stats.wildberries||0)+copies;
-    S.history.unshift({ createdAt:new Date().toISOString(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:item.barcode, copies, user: currentEmployee().login });
+    S.history.unshift({ createdAt:new Date().toISOString(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:item.barcode, copies, user: (getCurrentEmployee() || {}).login || 'local' });
     const m = S.catalog.find(x=>x.id===item.id) || S.catalog.find(x=>x.sku===item.sku && x.article===item.article && x.marketplace===item.marketplace);
     if(m) m.printed = (m.printed||0) + copies;
   });
@@ -456,270 +534,7 @@ function addToCatalog(item){
   S.catalog.unshift({ id:uid(), marketplace:item.marketplace, sku:item.sku, name:item.name, article:item.article, barcode:item.barcode, price:item.price||'', qty:Number(item.qty||1), printed:Number(item.printed||0), createdAt:new Date().toISOString() });
   saveAll(); renderCatalog();
 }
-
-function selectedItems(){
-  return S.catalog.filter(x=>S.selection.has(x.id)).map(x=>({...x, copies:Number(x.qty||1), id:x.id}));
-}
-
-function renderCatalog(){
-  const q=(val('searchCatalog')||'').toLowerCase().trim();
-  const mp=val('filterMarketplace'); const printed=val('filterPrinted'); const sort=val('sortCatalog');
-  let arr=[...S.catalog];
-  if(q) arr=arr.filter(x=>[x.sku,x.name,x.article,x.barcode].some(v=>(v||'').toLowerCase().includes(q)));
-  if(mp) arr=arr.filter(x=>x.marketplace===mp);
-  if(printed==='printed') arr=arr.filter(x=>(x.printed||0)>0);
-  if(printed==='notprinted') arr=arr.filter(x=>!(x.printed||0));
-  arr.sort((a,b)=>sort==='time_asc'?new Date(a.createdAt)-new Date(b.createdAt):sort==='name_asc'?(a.name||'').localeCompare(b.name||'','ru'):sort==='qty_desc'?(b.qty||0)-(a.qty||0):new Date(b.createdAt)-new Date(a.createdAt));
-  document.getElementById('catalogBody').innerHTML = arr.map(x=>`
-    <tr>
-      <td><input type="checkbox" class="rowCheck" data-id="${x.id}" ${S.selection.has(x.id)?'checked':''}></td>
-      <td><span class="badge ${x.marketplace==='ozon' ? 'b-oz':'b-wb'}">${x.marketplace}</span></td>
-      <td>${esc(x.sku||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.article||'')}</td><td>${esc(x.barcode||'')}</td>
-      <td>${esc(String(x.price ?? ''))}</td><td>${esc(String(x.qty ?? 1))}</td><td>${esc(String(x.printed || 0))}</td>
-    </tr>
-  `).join('');
-  document.querySelectorAll('.rowCheck').forEach(ch=>ch.addEventListener('change', e=>{
-    const id=e.target.dataset.id; if(e.target.checked) S.selection.add(id); else S.selection.delete(id);
-    refreshStats();
-  }));
-  document.getElementById('checkAll').checked = arr.length > 0 && arr.every(x=>S.selection.has(x.id));
-  refreshStats();
-}
-function renderHistory(){
-  document.getElementById('historyBody').innerHTML = S.history.slice(0,200).map(x=>`
-    <tr>
-      <td>${fmt(x.createdAt)}</td><td><span class="badge ${x.marketplace==='ozon' ? 'b-oz':'b-wb'}">${x.marketplace}</span></td>
-      <td>${esc(x.sku||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.article||'')}</td><td>${esc(x.barcode||'')}</td><td>${x.copies||1}</td><td>${esc(x.user||'')}</td>
-    </tr>
-  `).join('');
-}
-
-function parseCSV(text){
-  const lines = text.split(/\r?\n/).filter(Boolean); if(!lines.length) return [];
-  const delim = lines[0].includes(';') ? ';' : ',';
-  const headers = lines[0].split(delim).map(h=>h.trim().toLowerCase());
-  return lines.slice(1).map(line=>{
-    const cells=[]; let cur='',q=false;
-    for(const ch of line){ if(ch==='"'){ q=!q; continue; } if(ch===delim && !q){ cells.push(cur); cur=''; continue; } cur+=ch; }
-    cells.push(cur);
-    const o={}; headers.forEach((h,i)=>o[h]=(cells[i]||'').trim());
-    return { marketplace:(o.marketplace||'ozon').toLowerCase().includes('wb') ? 'wildberries' : 'ozon', sku:o.sku||o.article||'', name:o.name||'', article:o.article||'', barcode:o.barcode||'', price:o.price||'', qty:Number(o.qty||1) };
-  }).filter(x=>x.sku || x.name || x.article);
-}
-function importCSV(file){
-  const fr=new FileReader();
-  fr.onload=e=>{ const arr=parseCSV(String(e.target.result||'')); arr.forEach(addToCatalog); toast(`Импортировано ${arr.length}`, 'ok'); };
-  fr.readAsText(file,'utf-8');
-}
-
-async function ozonFetch(path, body){
-  const cid = val('ozonClientId') || S.creds.ozonClientId;
-  const key = val('ozonApiKey') || S.creds.ozonApiKey;
-  const res = await fetch('https://api-seller.ozon.ru' + path, {
-    method:'POST',
-    headers:{
-      'Client-Id': cid,
-      'Api-Key': key,
-      'Content-Type':'application/json',
-      'Accept':'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-async function wbFetch(path, body){
-  const token = val('wbToken') || S.creds.wbToken;
-  const res = await fetch('https://suppliers-api.wildberries.ru' + path, {
-    method:'POST',
-    headers:{ 'Authorization':'Bearer ' + token, 'Content-Type':'application/json', 'Accept':'application/json' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-
-function createOzonRequest(){
-  const list = val('ozonPostingNumbers').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
-  return {
-    path:'/v2/posting/fbs/package-label/create',
-    body:{ posting_number:list }
-  };
-}
-function createWBRequest(){
-  const list = val('wbInput').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
-  return { path:'/content/v2/cards/upload', body:{ items:list } };
-}
-
-function saveEmployee(){
-  const login=val('empLogin').trim(), pass=val('empPass'), role=val('empRole'), name=val('empName').trim();
-  if(!login || !pass || !name){ toast('Заполните логин, пароль и имя', 'er'); return; }
-  const exists=S.employees.find(x=>x.login===login);
-  const emp={ id: exists ? exists.id : uid(), login, pass, role, name };
-  if(exists){ Object.assign(exists, emp); } else { S.employees.push(emp); }
-  saveAll(); fillEmployeeSelect(); toast('Сотрудник сохранён', 'ok');
-}
-function fillEmployeeSelect(){
-  const sel=document.getElementById('employeeSelect');
-  sel.innerHTML = S.employees.map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.role)})</option>`).join('');
-  if(S.current) sel.value = S.current.id;
-}
-function loginByCreds(login, pass){
-  const emp=S.employees.find(x=>x.login===login && x.pass===pass);
-  if(!emp){ toast('Неверный логин или пароль', 'er'); return false; }
-  setCurrentEmployee(emp); document.getElementById('loginOverlay').classList.add('hidden'); saveAll(); toast('Вход выполнен', 'ok'); return true;
-}
-
-function buildReport(){
-  if(!can('report')){ toast('Нет прав на отчёты', 'er'); return; }
-  let arr=[...S.history];
-  const f=val('dateFrom'), t=val('dateTo'), g=val('reportGroup');
-  if(f) arr=arr.filter(x=>x.createdAt.slice(0,10)>=f);
-  if(t) arr=arr.filter(x=>x.createdAt.slice(0,10)<=t);
-  const m=new Map();
-  arr.forEach(x=>{
-    const key = g==='day' ? x.createdAt.slice(0,10) : g==='marketplace' ? x.marketplace : (x.sku || 'N/A');
-    m.set(key, (m.get(key)||0) + Number(x.copies||1));
-  });
-  const total=arr.reduce((s,x)=>s+Number(x.copies||1),0);
-  document.getElementById('reportOutput').innerHTML = `
-    <div class="kpi" style="margin-bottom:12px"><div><b>Период:</b> ${esc(f||'...')} — ${esc(t||'...')}</div><div><b>Всего:</b> ${total}</div></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Ключ</th><th>Количество</th></tr></thead><tbody>${[...m.entries()].map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</tbody></table>
-    </div>`;
-}
-
-function initDemoEmployees(){
-  if(S.employees.length===0){
-    S.employees = [
-      {id:uid(),login:'admin',pass:'1234',role:'admin',name:'Администратор'},
-      {id:uid(),login:'manager',pass:'1234',role:'manager',name:'Менеджер'},
-      {id:uid(),login:'operator',pass:'1234',role:'operator',name:'Оператор'},
-      {id:uid(),login:'viewer',pass:'1234',role:'viewer',name:'Просмотр'}
-    ];
-    save(LS.employees,S.employees);
-  }
-}
-
-document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  btn.classList.add('active');
-  ['general','catalog','print','api','reports'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==btn.dataset.tab));
-}));
-
-document.getElementById('btnLogin').addEventListener('click',()=>loginByCreds(val('loginUser').trim(), val('loginPass')));
-document.getElementById('btnDemoLogin').addEventListener('click',()=>{ setVal('loginUser','admin'); setVal('loginPass','1234'); loginByCreds('admin','1234'); });
-document.getElementById('btnLogout').addEventListener('click',()=>{ S.current=null; save(LS.current,null); setCurrentEmployee(null); document.getElementById('loginOverlay').classList.remove('hidden'); toast('Выход выполнен', 'ok'); });
-
-document.getElementById('btnAddEmployee').addEventListener('click',()=>{ if(!can('employee')){ toast('Нет прав', 'er'); return; } saveEmployee(); });
-document.getElementById('employeeSelect').addEventListener('change',()=>{
-  const emp=S.employees.find(x=>x.id===val('employeeSelect')); if(emp){ setCurrentEmployee(emp); saveAll(); }
-});
-
-document.getElementById('csvFile').addEventListener('change', e=> e.target.files[0] && importCSV(e.target.files[0]));
-document.getElementById('btnLoadDemo').addEventListener('click',()=>{
-  [{marketplace:'ozon',sku:'OZ-1001',name:'Футболка',article:'TS-01',barcode:'4601234567890',price:990,qty:1},{marketplace:'wildberries',sku:'WB-2001',name:'Худи',article:'HD-02',barcode:'123456789012',price:2490,qty:2}].forEach(addToCatalog);
-  toast('Демо загружено', 'ok');
-});
-document.getElementById('btnExportCatalog').addEventListener('click',()=>{
-  const rows=['marketplace,sku,name,article,barcode,price,qty,printed,createdAt'];
-  S.catalog.forEach(x=>rows.push([x.marketplace,x.sku,x.name,x.article,x.barcode,x.price,x.qty,x.printed,x.createdAt].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='catalog.csv'; a.click();
-});
-document.getElementById('btnExportHistory').addEventListener('click',()=>{
-  const rows=['createdAt,marketplace,sku,name,article,barcode,copies,user'];
-  S.history.forEach(x=>rows.push([x.createdAt,x.marketplace,x.sku,x.name,x.article,x.barcode,x.copies,x.user].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='history.csv'; a.click();
-});
-document.getElementById('btnResetToday').addEventListener('click',()=>{ if(confirm('Сбросить счётчик за сегодня?')){ S.stats.today=0; S.stats.todayDate=today(); saveAll(); refreshStats(); toast('Сброшено', 'ok'); } });
-
-document.getElementById('btnPreviewSingle').addEventListener('click',()=>{
-  buildPreview({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice') });
-});
-document.getElementById('btnAddToCatalog').addEventListener('click',()=>{
-  if(!val('singleSku') && !val('singleName')){ toast('Заполните SKU или название', 'er'); return; }
-  addToCatalog({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), qty: Number(val('singleQty') || 1) });
-  toast('Добавлено', 'ok');
-});
-document.getElementById('btnPrintSingle').addEventListener('click',()=>{
-  const item = { marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), copies:Number(val('singleQty')||1) };
-  if(!item.sku && !item.name){ toast('Заполните SKU или название', 'er'); return; }
-  printItems([item]);
-});
-
-document.getElementById('btnPrintSelected').addEventListener('click',()=>printItems(selectedItems()));
-document.getElementById('btnCreateSelectedWB').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='wildberries')));
-document.getElementById('btnCreateSelectedOzon').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='ozon')));
-document.getElementById('btnMarkPrinted').addEventListener('click',()=>{
-  if(!can('edit')){ toast('Нет прав', 'er'); return; }
-  selectedItems().forEach(x=>{ const m=S.catalog.find(i=>i.id===x.id); if(m) m.printed=(m.printed||0)+Number(m.qty||1); });
-  saveAll(); renderCatalog(); toast('Отмечено', 'ok');
-});
-document.getElementById('btnDeleteSelected').addEventListener('click',()=>{
-  if(!can('edit')){ toast('Нет прав', 'er'); return; }
-  if(!confirm('Удалить выбранные?')) return;
-  S.catalog=S.catalog.filter(x=>!S.selection.has(x.id)); S.selection.clear(); saveAll(); renderCatalog(); toast('Удалено', 'ok');
-});
-
-document.getElementById('btnSaveOzon').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.ozonClientId=val('ozonClientId'); S.creds.ozonApiKey=val('ozonApiKey'); saveAll(); toast('Ozon сохранён', 'ok'); });
-document.getElementById('btnSaveWB').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.wbToken=val('wbToken'); saveAll(); toast('WB сохранён', 'ok'); });
-document.getElementById('btnTestOzon').addEventListener('click',async()=>{
-  if(!can('api')) return toast('Нет прав на API', 'er');
-  try{
-    const r = await fetch('https://api-seller.ozon.ru/v1/ping',{method:'POST',headers:{'Client-Id':val('ozonClientId')||S.creds.ozonClientId,'Api-Key':val('ozonApiKey')||S.creds.ozonApiKey,'Content-Type':'application/json'}});
-    toast(`Ozon HTTP ${r.status}`, r.ok ? 'ok' : 'er');
-  }catch(e){ toast('Ozon тест недоступен в браузере без CORS/ключей', 'in'); }
-});
-document.getElementById('btnTestWB').addEventListener('click',async()=>{
-  if(!can('api')) return toast('Нет прав на API', 'er');
-  try{
-    const r = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/characteristics', {method:'POST',headers:{'Authorization':'Bearer '+(val('wbToken')||S.creds.wbToken),'Content-Type':'application/json'},body:'{}'});
-    toast(`WB HTTP ${r.status}`, r.ok ? 'ok' : 'er');
-  }catch(e){ toast('WB тест недоступен в браузере без CORS/токена', 'in'); }
-});
-document.getElementById('btnCreateOzonReq').addEventListener('click',()=>{
-  const req = createOzonRequest();
-  alert(`Ozon request\\nPOST https://api-seller.ozon.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`);
-});
-document.getElementById('btnCreateWBReq').addEventListener('click',()=>{
-  const req = createWBRequest();
-  alert(`WB request\\nPOST https://suppliers-api.wildberries.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`);
-});
-
-document.getElementById('btnBuildReport').addEventListener('click',buildReport);
-document.getElementById('checkAll').addEventListener('change', e=>{
-  const arr=document.querySelectorAll('.rowCheck'); arr.forEach(ch=>{ ch.checked=e.target.checked; const id=ch.dataset.id; if(e.target.checked) S.selection.add(id); else S.selection.delete(id); }); refreshStats();
-});
-['searchCatalog','filterMarketplace','filterPrinted','sortCatalog'].forEach(id=>{ document.getElementById(id).addEventListener('input', renderCatalog); document.getElementById(id).addEventListener('change', renderCatalog); });
-['printerName','companyName','warehouseAddress','labelTemplate','barcodeFormat','autoSave'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ saveAll(); }));
-
-initDemoEmployees();
-fillEmployeeSelect();
-restoreUI();
-function restoreUI(){
-  const s=S.settings||{};
-  setVal('printerName',s.printerName||''); setVal('companyName',s.companyName||''); setVal('warehouseAddress',s.warehouseAddress||''); setVal('labelTemplate',s.labelTemplate||'58x40'); setVal('barcodeFormat',s.barcodeFormat||'CODE128'); setVal('autoSave',s.autoSave||'yes');
-  setVal('ozonClientId', S.creds.ozonClientId || ''); setVal('ozonApiKey', S.creds.ozonApiKey || ''); setVal('wbToken', S.creds.wbToken || '');
-  if(S.current) setCurrentEmployee(S.current); else document.getElementById('loginOverlay').classList.remove('hidden');
-  refreshStats(); renderCatalog(); renderHistory();
-}
-function loginByCreds(login, pass){
-  const emp = S.employees.find(x=>x.login===login && x.pass===pass);
-  if(!emp) return toast('Неверный логин или пароль', 'er');
-  setCurrentEmployee(emp); document.getElementById('loginOverlay').classList.add('hidden'); saveAll(); toast('Вход выполнен', 'ok');
-}
-document.getElementById('btnLogin').addEventListener('click',()=>loginByCreds(val('loginUser').trim(), val('loginPass')));
-document.getElementById('btnDemoLogin').addEventListener('click',()=>{ setVal('loginUser','admin'); setVal('loginPass','1234'); loginByCreds('admin','1234'); });
-document.getElementById('employeeSelect').addEventListener('change',()=>{ const emp=S.employees.find(x=>x.id===val('employeeSelect')); if(emp){ setCurrentEmployee(emp); saveAll(); } });
-document.getElementById('btnAddEmployee').addEventListener('click',()=>{
-  if(!can('employee')) return toast('Нет прав', 'er');
-  const login=val('empLogin').trim(), pass=val('empPass'), role=val('empRole'), name=val('empName').trim();
-  if(!login || !pass || !name) return toast('Заполните поля', 'er');
-  const ex=S.employees.find(x=>x.login===login);
-  if(ex) Object.assign(ex,{login,pass,role,name}); else S.employees.push({id:uid(),login,pass,role,name});
-  saveAll(); fillEmployeeSelect(); toast('Сотрудник сохранён', 'ok');
-});
-
-function renderCatalog(){ /* already defined below but kept for flow */ }
-function renderHistory(){ /* already defined below but kept for flow */ }
+function selectedItems(){ return S.catalog.filter(x=>S.selection.has(x.id)).map(x=>({...x, copies:Number(x.qty||1), id:x.id})); }
 
 function renderCatalog(){
   const q=(val('searchCatalog')||'').toLowerCase().trim();
@@ -748,6 +563,168 @@ function renderHistory(){
       <td>${esc(x.sku||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.article||'')}</td><td>${esc(x.barcode||'')}</td><td>${x.copies||1}</td><td>${esc(x.user||'')}</td>
     </tr>`).join('');
 }
+
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(Boolean); if(!lines.length) return [];
+  const delim = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(delim).map(h=>h.trim().toLowerCase());
+  return lines.slice(1).map(line=>{
+    const cells=[]; let cur='',q=false;
+    for(const ch of line){ if(ch==='"'){ q=!q; continue; } if(ch===delim && !q){ cells.push(cur); cur=''; continue; } cur+=ch; }
+    cells.push(cur);
+    const o={}; headers.forEach((h,i)=>o[h]=(cells[i]||'').trim());
+    return { marketplace:(o.marketplace||'ozon').toLowerCase().includes('wb') ? 'wildberries' : 'ozon', sku:o.sku||o.article||'', name:o.name||'', article:o.article||'', barcode:o.barcode||'', price:o.price||'', qty:Number(o.qty||1) };
+  }).filter(x=>x.sku || x.name || x.article);
+}
+function importCSV(file){
+  const fr=new FileReader();
+  fr.onload=e=>{ const arr=parseCSV(String(e.target.result||'')); arr.forEach(addToCatalog); toast(`Импортировано ${arr.length}`, 'ok'); };
+  fr.readAsText(file,'utf-8');
+}
+
+function fillEmployeeSelect(){
+  const sel=document.getElementById('employeeSelect');
+  sel.innerHTML = S.employees.map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.role)})</option>`).join('');
+  if(S.current) sel.value = S.current.id;
+}
+function loginByCreds(login, pass){
+  S.employees = loadEmployees();
+  const emp = S.employees.find(x=>x.login===login && x.pass===pass);
+  if(!emp){ toast('Неверный логин или пароль', 'er'); return false; }
+  setCurrentEmployee(emp);
+  document.getElementById('loginOverlay').classList.add('hidden');
+  saveAll();
+  toast('Вход выполнен', 'ok');
+  return true;
+}
+
+async function ozonFetch(path, body){
+  const cid = val('ozonClientId') || S.creds.ozonClientId;
+  const key = val('ozonApiKey') || S.creds.ozonApiKey;
+  const res = await fetch('https://api-seller.ozon.ru' + path, {
+    method:'POST',
+    headers:{ 'Client-Id': cid, 'Api-Key': key, 'Content-Type':'application/json', 'Accept':'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+async function wbFetch(path, body){
+  const token = val('wbToken') || S.creds.wbToken;
+  const res = await fetch('https://suppliers-api.wildberries.ru' + path, {
+    method:'POST',
+    headers:{ 'Authorization':'Bearer ' + token, 'Content-Type':'application/json', 'Accept':'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+function createOzonRequest(){
+  const list = val('ozonPostingNumbers').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  return { path:'/v2/posting/fbs/package-label/create', body:{ posting_number:list } };
+}
+function createWBRequest(){
+  const list = val('wbInput').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  return { path:'/content/v2/cards/upload', body:{ items:list } };
+}
+function saveEmployee(){
+  const login=val('empLogin').trim(), pass=val('empPass'), role=val('empRole'), name=val('empName').trim();
+  if(!login || !pass || !name){ toast('Заполните логин, пароль и имя', 'er'); return; }
+  const exists=S.employees.find(x=>x.login===login);
+  const emp={ id: exists ? exists.id : uid(), login, pass, role, name };
+  if(exists) Object.assign(exists, emp); else S.employees.push(emp);
+  saveAll(); fillEmployeeSelect(); toast('Сотрудник сохранён', 'ok');
+}
+function buildReport(){
+  if(!can('report')){ toast('Нет прав на отчёты', 'er'); return; }
+  let arr=[...S.history];
+  const f=val('dateFrom'), t=val('dateTo'), g=val('reportGroup');
+  if(f) arr=arr.filter(x=>x.createdAt.slice(0,10)>=f);
+  if(t) arr=arr.filter(x=>x.createdAt.slice(0,10)<=t);
+  const m=new Map();
+  arr.forEach(x=>{
+    const key = g==='day' ? x.createdAt.slice(0,10) : g==='marketplace' ? x.marketplace : (x.sku || 'N/A');
+    m.set(key, (m.get(key)||0) + Number(x.copies||1));
+  });
+  const total=arr.reduce((s,x)=>s+Number(x.copies||1),0);
+  document.getElementById('reportOutput').innerHTML = `
+    <div class="kpi" style="margin-bottom:12px"><div><b>Период:</b> ${esc(f||'...')} — ${esc(t||'...')}</div><div><b>Всего:</b> ${total}</div></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Ключ</th><th>Количество</th></tr></thead><tbody>${[...m.entries()].map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</tbody></table>
+    </div>`;
+}
+
+function initDefaults(){
+  S.employees = loadEmployees();
+  if(!S.employees.length){
+    S.employees = defaultEmployees();
+    save(LS.employees, S.employees);
+  }
+  fillEmployeeSelect();
+  const current = getCurrentEmployee();
+  if(current){
+    setCurrentEmployee(current);
+    document.getElementById('loginOverlay').classList.add('hidden');
+  }else{
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    updateCurrentUserUI(null);
+  }
+  const s=S.settings||{};
+  setVal('printerName',s.printerName||''); setVal('companyName',s.companyName||''); setVal('warehouseAddress',s.warehouseAddress||'');
+  setVal('labelTemplate',s.labelTemplate||'58x40'); setVal('barcodeFormat',s.barcodeFormat||'CODE128'); setVal('autoSave',s.autoSave||'yes');
+  setVal('ozonClientId', S.creds.ozonClientId || ''); setVal('ozonApiKey', S.creds.ozonApiKey || ''); setVal('wbToken', S.creds.wbToken || '');
+  refreshStats(); renderCatalog(); renderHistory();
+}
+
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  ['general','catalog','print','api','reports'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==btn.dataset.tab));
+}));
+
+document.getElementById('btnLogin').addEventListener('click',()=>loginByCreds(val('loginUser').trim(), val('loginPass')));
+document.getElementById('btnDemoLogin').addEventListener('click',()=>{ setVal('loginUser','admin'); setVal('loginPass','1234'); loginByCreds('admin','1234'); });
+document.getElementById('btnRestoreEmployees').addEventListener('click',()=>{ restoreEmployees(); fillEmployeeSelect(); });
+
+document.getElementById('btnLogout').addEventListener('click',()=>{ clearCurrentEmployee(); updateCurrentUserUI(null); document.getElementById('loginOverlay').classList.remove('hidden'); toast('Выход выполнен', 'ok'); });
+document.getElementById('btnAddEmployee').addEventListener('click',()=>{ if(!can('employee')) return toast('Нет прав', 'er'); saveEmployee(); });
+document.getElementById('employeeSelect').addEventListener('change',()=>{ const emp=S.employees.find(x=>x.id===val('employeeSelect')); if(emp){ setCurrentEmployee(emp); saveAll(); } });
+
+document.getElementById('csvFile').addEventListener('change', e=> e.target.files[0] && importCSV(e.target.files[0]));
+document.getElementById('btnLoadDemo').addEventListener('click',()=>{ [{marketplace:'ozon',sku:'OZ-1001',name:'Футболка',article:'TS-01',barcode:'4601234567890',price:990,qty:1},{marketplace:'wildberries',sku:'WB-2001',name:'Худи',article:'HD-02',barcode:'123456789012',price:2490,qty:2}].forEach(addToCatalog); toast('Демо загружено', 'ok'); });
+document.getElementById('btnExportCatalog').addEventListener('click',()=>{
+  const rows=['marketplace,sku,name,article,barcode,price,qty,printed,createdAt'];
+  S.catalog.forEach(x=>rows.push([x.marketplace,x.sku,x.name,x.article,x.barcode,x.price,x.qty,x.printed,x.createdAt].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='catalog.csv'; a.click();
+});
+document.getElementById('btnExportHistory').addEventListener('click',()=>{
+  const rows=['createdAt,marketplace,sku,name,article,barcode,copies,user'];
+  S.history.forEach(x=>rows.push([x.createdAt,x.marketplace,x.sku,x.name,x.article,x.barcode,x.copies,x.user].map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='history.csv'; a.click();
+});
+document.getElementById('btnResetToday').addEventListener('click',()=>{ if(confirm('Сбросить счётчик за сегодня?')){ S.stats.today=0; S.stats.todayDate=today(); saveAll(); refreshStats(); toast('Сброшено', 'ok'); } });
+
+document.getElementById('btnPreviewSingle').addEventListener('click',()=>buildPreview({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice') }));
+document.getElementById('btnAddToCatalog').addEventListener('click',()=>{ if(!val('singleSku') && !val('singleName')) return toast('Заполните SKU или название', 'er'); addToCatalog({ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), qty:Number(val('singleQty')||1) }); toast('Добавлено', 'ok'); });
+document.getElementById('btnPrintSingle').addEventListener('click',()=>{ const item={ marketplace:val('singleMarketplace'), sku:val('singleSku'), name:val('singleName'), article:val('singleArticle'), barcode:val('singleBarcode')||val('singleSku')||val('singleArticle')||val('singleName'), price:val('singlePrice'), copies:Number(val('singleQty')||1) }; if(!item.sku && !item.name) return toast('Заполните SKU или название', 'er'); printItems([item]); });
+
+document.getElementById('btnPrintSelected').addEventListener('click',()=>printItems(selectedItems()));
+document.getElementById('btnCreateSelectedWB').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='wildberries')));
+document.getElementById('btnCreateSelectedOzon').addEventListener('click',()=>printItems(selectedItems().filter(x=>x.marketplace==='ozon')));
+document.getElementById('btnMarkPrinted').addEventListener('click',()=>{ if(!can('edit')) return toast('Нет прав', 'er'); selectedItems().forEach(x=>{ const m=S.catalog.find(i=>i.id===x.id); if(m) m.printed=(m.printed||0)+Number(m.qty||1); }); saveAll(); renderCatalog(); toast('Отмечено', 'ok'); });
+document.getElementById('btnDeleteSelected').addEventListener('click',()=>{ if(!can('edit')) return toast('Нет прав', 'er'); if(!confirm('Удалить выбранные?')) return; S.catalog=S.catalog.filter(x=>!S.selection.has(x.id)); S.selection.clear(); saveAll(); renderCatalog(); toast('Удалено', 'ok'); });
+
+document.getElementById('btnSaveOzon').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.ozonClientId=val('ozonClientId'); S.creds.ozonApiKey=val('ozonApiKey'); saveAll(); toast('Ozon сохранён', 'ok'); });
+document.getElementById('btnSaveWB').addEventListener('click',()=>{ if(!can('api')) return toast('Нет прав на API', 'er'); S.creds.wbToken=val('wbToken'); saveAll(); toast('WB сохранён', 'ok'); });
+document.getElementById('btnTestOzon').addEventListener('click',()=>toast('Тест Ozon: добавьте реальные ключи и проверьте backend/CORS', 'in'));
+document.getElementById('btnTestWB').addEventListener('click',()=>toast('Тест WB: добавьте токен и проверьте backend/CORS', 'in'));
+document.getElementById('btnCreateOzonReq').addEventListener('click',()=>{ const req = createOzonRequest(); alert(`Ozon request\\nPOST https://api-seller.ozon.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`); });
+document.getElementById('btnCreateWBReq').addEventListener('click',()=>{ const req = createWBRequest(); alert(`WB request\\nPOST https://suppliers-api.wildberries.ru${req.path}\\nBody: ${JSON.stringify(req.body, null, 2)}`); });
+
+document.getElementById('btnBuildReport').addEventListener('click',buildReport);
+document.getElementById('checkAll').addEventListener('change', e=>{ document.querySelectorAll('.rowCheck').forEach(ch=>{ ch.checked=e.target.checked; const id=ch.dataset.id; e.target.checked ? S.selection.add(id) : S.selection.delete(id); }); refreshStats(); });
+['searchCatalog','filterMarketplace','filterPrinted','sortCatalog'].forEach(id=>{ document.getElementById(id).addEventListener('input', renderCatalog); document.getElementById(id).addEventListener('change', renderCatalog); });
+['printerName','companyName','warehouseAddress','labelTemplate','barcodeFormat','autoSave'].forEach(id=>document.getElementById(id).addEventListener('change',()=>saveAll()));
+
+initDefaults();
 </script>
 </body>
 </html>
