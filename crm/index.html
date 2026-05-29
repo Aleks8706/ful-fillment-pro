@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBO Отгрузка | Ручной маппинг полей</title>
+    <title>FBO Отгрузка | Кванты + Голос + Авто-минус</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; }
+        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 15px; }
         
@@ -20,6 +20,7 @@
         button:hover { opacity: 0.9; }
         button.secondary { background: #6c757d; }
         button.danger { background: var(--danger); }
+        button.warning { background: var(--warning); color: #333; }
         button:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
         .row { display: flex; gap: 8px; } .row > * { flex: 1; }
         
@@ -44,7 +45,7 @@
         .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
         .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
         
-        /* ПЛАН ОТГРУЗКИ */
+        /* ПЛАН ОТГРУЗКИ С КВАНТАМИ */
         .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
         .target-item.done { border-left-color: var(--success); opacity: 0.7; }
         .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
@@ -52,6 +53,7 @@
         .progress-bar { height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
         .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
         .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
+        .quant-badge { display: inline-block; background: #e6f0ff; color: var(--ozon); padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-left: 5px; }
 
         /* МОДАЛЬНОЕ ОКНО МАППИНГА */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; }
@@ -60,7 +62,6 @@
         .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
         .mapping-label { width: 180px; font-weight: 600; font-size: 13px; }
         .mapping-select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-        .mapping-hint { font-size: 11px; color: #888; margin-left: 190px; margin-top: -6px; margin-bottom: 8px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
         /* ЭТИКЕТКИ 120x75 ММ */
@@ -91,12 +92,10 @@
     <div class="modal-overlay" id="mapping-modal">
         <div class="modal">
             <h3>📋 Настройка колонок Excel</h3>
-            <p style="font-size:12px; color:#666; margin-bottom:15px;">Укажите, какие колонки из вашего файла соответствуют полям системы. Поля помеченные * обязательны.</p>
-            
+            <p style="font-size:12px; color:#666; margin-bottom:15px;">Укажите соответствие колонок. Поля со * обязательны.</p>
             <div id="mapping-fields"></div>
-            
             <div class="modal-actions">
-                <button onclick="applyMapping()">✅ Применить и загрузить</button>
+                <button onclick="applyMapping()">✅ Применить</button>
                 <button class="secondary" onclick="closeMappingModal()">❌ Отмена</button>
             </div>
         </div>
@@ -143,7 +142,7 @@
             <div class="card">
                 <h2>📡 Сканирование</h2>
                 <input type="text" id="scanner" class="scanner-input" placeholder="Кликните → сканируйте ШК" autocomplete="off">
-                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Строгая проверка по загруженному ТЗ.</p>
+                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Голос озвучит квант и остаток. Enter = добавить.</p>
             </div>
             <div class="card">
                 <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
@@ -151,8 +150,11 @@
                     <span>📦 Поз.: <span id="items-count">0</span></span>
                     <span>⚖️ Вес: <span id="total-weight">0.00</span> кг</span>
                 </div>
-                <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть & печатать</button>
-                <button class="secondary danger" onclick="clearBox()" style="margin-top: 6px;">🗑 Очистить</button>
+                <div class="row">
+                    <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть & Печать</button>
+                    <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️ Открыть последний</button>
+                </div>
+                <button class="secondary danger" onclick="clearBox()" style="margin-top: 6px;">🗑 Очистить текущий</button>
             </div>
             <div class="card">
                 <h2>📋 Состав коробки</h2>
@@ -207,19 +209,20 @@
     <script>
         // === КОНФИГУРАЦИЯ ПОЛЕЙ ДЛЯ МАППИНГА ===
         const MAPPING_CONFIG = [
-            { key: 'sku', label: 'Артикул / Код товара *', required: true, hint: 'Уникальный идентификатор товара (напр. Артикул ВБ)' },
-            { key: 'name', label: 'Название товара *', required: true, hint: 'Полное наименование для отображения и голоса' },
-            { key: 'barcode_orig', label: 'ШК исходный (заводской)', required: false, hint: 'Может содержать несколько ШК через ; или запятую' },
-            { key: 'barcode_wb', label: 'ШК на этикетку WB/FBO', required: false, hint: 'Штрихкод, который клеится на товар/короб' },
-            { key: 'qty_total', label: 'ИТОГО к отгрузке (шт.) *', required: true, hint: 'Общее количество штук в заказе' },
-            { key: 'tz_note', label: 'ТЗ / Требования к упаковке', required: false, hint: 'Текст про ВВП, термоусадку, стикеры' },
-            { key: 'boxes_plan', label: 'Количество коробов', required: false, hint: 'План по заводским коробам' },
-            { key: 'pcs_per_box', label: 'Штук в одном коробе', required: false, hint: 'Вместимость заводского короба' },
-            { key: 'expiry', label: 'Годен до', required: false, hint: 'Срок годности (для информации)' }
+            { key: 'sku', label: 'Артикул / Код товара *', required: true },
+            { key: 'name', label: 'Название товара *', required: true },
+            { key: 'barcode_orig', label: 'ШК исходный (заводской)', required: false },
+            { key: 'barcode_wb', label: 'ШК на этикетку WB/FBO', required: false },
+            { key: 'qty_total', label: 'ИТОГО к отгрузке (шт.) *', required: true },
+            { key: 'quant', label: 'Квант спайки (шт. в наборе)', required: false },
+            { key: 'tz_note', label: 'ТЗ / Требования к упаковке', required: false },
+            { key: 'boxes_plan', label: 'Количество коробов', required: false },
+            { key: 'pcs_per_box', label: 'Штук в одном коробе', required: false },
+            { key: 'expiry', label: 'Годен до', required: false }
         ];
 
         let state = { db: {}, targets: [], currentBox: { items: {}, weight: 0 }, history: [], boxCounter: 1, orderMeta: {}, pallets: {}, activePallet: null };
-        let tempExcelData = null; // Временное хранение данных до применения маппинга
+        let tempExcelData = null;
         let tempHeaders = [];
 
         // === ГОЛОС ===
@@ -261,7 +264,7 @@
             inp.addEventListener('focus', () => inp.select());
         }
 
-        // === ЗАГРУЗКА ФАЙЛА И ОТКРЫТИЕ МАППИНГА ===
+        // === ЗАГРУЗКА ФАЙЛА И МАППИНГ ===
         function handleFileSelect(e) {
             const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
@@ -271,12 +274,10 @@
                     const ws = wb.Sheets[wb.SheetNames[0]];
                     const data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
                     
-                    // Поиск маршрута в шапке
                     let route = '';
                     for(let i=0; i<10; i++) if(data[i]?.join(' ').match(/Екатеринбург|Москва|Чехов|Новоселки|Перспективная/i)) { route = data[i].join(' '); break; }
                     state.orderMeta = { route };
 
-                    // Поиск строки с заголовками (ищем первую непустую строку с текстом)
                     let headerRowIdx = -1;
                     for(let i=0; i<Math.min(20, data.length); i++) {
                         const rowStr = data[i]?.join(' ').toLowerCase() || '';
@@ -284,51 +285,36 @@
                             headerRowIdx = i; break;
                         }
                     }
-                    if(headerRowIdx === -1) throw new Error('Не удалось найти строку с заголовками колонок');
+                    if(headerRowIdx === -1) throw new Error('Не удалось найти строку с заголовками');
 
                     tempHeaders = data[headerRowIdx].map(h => String(h).trim()).filter(h => h);
-                    tempExcelData = data.slice(headerRowIdx + 1); // Данные без заголовка
-                    
+                    tempExcelData = data.slice(headerRowIdx + 1);
                     openMappingModal();
                 } catch(err) { showError('❌ Ошибка чтения: ' + err.message); speak('Ошибка файла'); }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // === МОДАЛЬНОЕ ОКНО МАППИНГА ===
         function openMappingModal() {
             const container = document.getElementById('mapping-fields');
             container.innerHTML = '';
-            
             MAPPING_CONFIG.forEach(field => {
-                const row = document.createElement('div');
-                row.className = 'mapping-row';
+                const row = document.createElement('div'); row.className = 'mapping-row';
+                const label = document.createElement('div'); label.className = 'mapping-label'; label.textContent = field.label;
+                const select = document.createElement('select'); select.className = 'mapping-select'; select.dataset.key = field.key; select.dataset.required = field.required;
                 
-                const label = document.createElement('div');
-                label.className = 'mapping-label';
-                label.textContent = field.label;
-                
-                const select = document.createElement('select');
-                select.className = 'mapping-select';
-                select.dataset.key = field.key;
-                select.dataset.required = field.required;
-                
-                const emptyOpt = document.createElement('option');
-                emptyOpt.value = '';
-                emptyOpt.textContent = field.required ? '-- Выберите колонку * --' : '-- Не выбрано --';
+                const emptyOpt = document.createElement('option'); emptyOpt.value = ''; emptyOpt.textContent = field.required ? '-- Выберите * --' : '-- Не выбрано --';
                 select.appendChild(emptyOpt);
                 
                 tempHeaders.forEach((h, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = h;
-                    // Автоподбор по совпадению названий
+                    const opt = document.createElement('option'); opt.value = idx; opt.textContent = h;
                     const hl = h.toLowerCase();
                     if(field.key === 'sku' && (hl.includes('артикул вб') || hl.includes('код товара'))) opt.selected = true;
                     if(field.key === 'name' && (hl.includes('наименование') || hl.includes('название'))) opt.selected = true;
                     if(field.key === 'barcode_orig' && hl.includes('шк исход')) opt.selected = true;
                     if(field.key === 'barcode_wb' && hl.includes('шк на этикетку')) opt.selected = true;
                     if(field.key === 'qty_total' && (hl.includes('итого, шт') || hl.includes('к отгрузке'))) opt.selected = true;
+                    if(field.key === 'quant' && hl.includes('квант')) opt.selected = true;
                     if(field.key === 'tz_note' && hl.includes('тз')) opt.selected = true;
                     if(field.key === 'boxes_plan' && hl.includes('коробов')) opt.selected = true;
                     if(field.key === 'pcs_per_box' && hl.includes('штук в коробе')) opt.selected = true;
@@ -336,130 +322,97 @@
                     select.appendChild(opt);
                 });
                 
-                row.appendChild(label);
-                row.appendChild(select);
-                container.appendChild(row);
-                
-                if(field.hint) {
-                    const hint = document.createElement('div');
-                    hint.className = 'mapping-hint';
-                    hint.textContent = field.hint;
-                    container.appendChild(hint);
-                }
+                row.appendChild(label); row.appendChild(select); container.appendChild(row);
             });
-            
             document.getElementById('mapping-modal').style.display = 'flex';
         }
 
-        function closeMappingModal() {
-            document.getElementById('mapping-modal').style.display = 'none';
-            document.getElementById('excel-upload').value = '';
-        }
+        function closeMappingModal() { document.getElementById('mapping-modal').style.display = 'none'; document.getElementById('excel-upload').value = ''; }
 
         function applyMapping() {
             const selects = document.querySelectorAll('.mapping-select');
-            const mapping = {};
-            let valid = true;
-            
+            const mapping = {}; let valid = true;
             selects.forEach(sel => {
-                const key = sel.dataset.key;
-                const req = sel.dataset.required === 'true';
-                const val = sel.value;
-                
-                if(req && val === '') {
-                    sel.style.borderColor = 'red';
-                    valid = false;
-                } else {
-                    sel.style.borderColor = '';
-                    if(val !== '') mapping[key] = parseInt(val);
-                }
+                if(sel.dataset.required === 'true' && sel.value === '') { sel.style.borderColor = 'red'; valid = false; }
+                else { sel.style.borderColor = ''; if(sel.value !== '') mapping[sel.dataset.key] = parseInt(sel.value); }
             });
-            
-            if(!valid) { showError('⚠️ Заполните все обязательные поля (*)'); speak('Заполните обязательные поля'); return; }
-            
+            if(!valid) { showError('⚠️ Заполните обязательные поля'); speak('Заполните обязательные поля'); return; }
             processDataWithMapping(mapping);
             closeMappingModal();
         }
 
-        // === ОБРАБОТКА ДАННЫХ ПО МАППИНГУ ===
         function processDataWithMapping(mapping) {
             try {
-                state.db = {}; state.targets = [];
-                let total = 0;
-                
-                document.getElementById('excel-route-display').textContent = state.orderMeta.route || 'Не определён';
+                state.db = {}; state.targets = []; let total = 0;
+                document.getElementById('excel-route-display').textContent = state.orderMeta.route || '-';
                 document.getElementById('city').value = '';
 
                 for(let i=0; i<tempExcelData.length; i++) {
                     const r = tempExcelData[i];
                     const sku = String(r[mapping.sku] || '').trim();
-                    
-                    // Пропуск пустых и ошибочных строк
                     if(!sku || sku.includes('ERROR') || isNaN(sku.replace(/\D/g,''))) continue;
 
                     const targetPcs = parseInt(String(r[mapping.qty_total]).replace(/[,\s]/g,'')) || 0;
                     if(targetPcs <= 0) continue;
 
                     const product = {
-                        sku,
-                        name: String(r[mapping.name] || 'Товар').trim(),
-                        targetPcs,
+                        sku, 
+                        name: String(r[mapping.name] || 'Товар').trim(), 
+                        targetPcs, 
                         packedPcs: 0,
+                        quant: mapping.quant !== undefined ? (parseInt(String(r[mapping.quant]).replace(/[,\s]/g,'')) || 1) : 1,
                         boxesPlan: mapping.boxes_plan !== undefined ? (parseInt(String(r[mapping.boxes_plan]).replace(/[,\s]/g,'')) || 0) : 0,
                         pcsPerBox: mapping.pcs_per_box !== undefined ? (parseInt(String(r[mapping.pcs_per_box]).replace(/[,\s]/g,'')) || 0) : 0,
                         tz: mapping.tz_note !== undefined ? String(r[mapping.tz_note] || '').trim() : '',
                         expiry: mapping.expiry !== undefined ? String(r[mapping.expiry] || '').trim() : ''
                     };
-                    
-                    total += targetPcs;
-                    state.targets.push(product);
+                    total += targetPcs; state.targets.push(product);
 
-                    // Маппинг штрихкодов
                     const bcs = new Set();
-                    if(mapping.barcode_orig !== undefined) {
-                        String(r[mapping.barcode_orig] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
-                    }
-                    if(mapping.barcode_wb !== undefined) {
-                        String(r[mapping.barcode_wb] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
-                    }
-                    // Если нет отдельных ШК, используем артикул как ШК
+                    if(mapping.barcode_orig !== undefined) String(r[mapping.barcode_orig] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
+                    if(mapping.barcode_wb !== undefined) String(r[mapping.barcode_wb] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
                     if(bcs.size === 0) bcs.add(sku);
-                    
                     bcs.forEach(b => { state.db[b] = product; });
                 }
 
                 document.getElementById('order-info').style.display = 'block';
                 document.getElementById('loaded-count').textContent = state.targets.length;
                 document.getElementById('total-plan').textContent = total.toLocaleString('ru');
-                renderTargets(); 
-                showSuccess(`✅ Загружено ${state.targets.length} позиций. Введите город.`); 
-                saveState();
-                speak('Файл загружен. Проверка штрихкодов активна');
-            } catch(err) { showError('❌ Ошибка обработки: ' + err.message); speak('Ошибка обработки данных'); }
+                renderTargets(); showSuccess(`✅ Загружено ${state.targets.length} позиций`); saveState();
+                speak('Файл загружен. Проверка активна');
+            } catch(err) { showError('❌ Ошибка: ' + err.message); speak('Ошибка обработки'); }
         }
 
-        // === СКАНИРОВАНИЕ ===
+        // === СКАНИРОВАНИЕ С ГОЛОСОМ ПО КВАНТУ ===
         function handleScan(bc) {
-            hideError();
-            const inp = document.getElementById('scanner');
+            hideError(); const inp = document.getElementById('scanner');
             if(Object.keys(state.db).length === 0) { showError('⚠️ Загрузите ТЗ'); inp.classList.add('error'); speak('Загрузите файл'); return; }
             if(!state.activePallet) { showError('⚠️ Выберите палет'); inp.classList.add('error'); speak('Выберите палет'); return; }
-
             const p = state.db[bc];
-            if(!p) { showError(`❌ ШК ${bc} не найден в заказе`); inp.classList.add('error'); speak('Не найдено в заказе'); return; }
+            if(!p) { showError(`❌ ШК ${bc} не найден`); inp.classList.add('error'); speak('Не найдено'); return; }
 
             state.currentBox.items[bc] = (state.currentBox.items[bc]||0)+1;
             state.currentBox.weight += 0.12;
-            renderBox();
+            
+            // АВТОМАТИЧЕСКИЙ ПЕРЕСЧЕТ ПРОГРЕССА
+            p.packedPcs++;
+            renderBox(); 
+            renderTargets(); // Мгновенное обновление плана
             inp.classList.add('success');
-            speak(`Добавлено. ${p.name.substring(0,30)}`);
+            
+            // ГОЛОСОВОЕ ОПОВЕЩЕНИЕ С КВАНТОМ И ОСТАТКОМ
+            const remaining = p.targetPcs - p.packedPcs;
+            const quantText = p.quant > 1 ? `Квант ${p.quant} штуки. ` : '';
+            const remainText = remaining > 0 ? `Осталось собрать ${remaining}` : 'План выполнен';
+            speak(`Добавлено. ${p.name.substring(0,25)}. ${quantText}${remainText}`);
         }
 
-        // === КОРОБКА ===
+        // === ЗАКРЫТИЕ КОРОБА ===
         function closeBox() {
             const city = document.getElementById('city').value.trim();
             if(!city) return showError('⚠️ Введите город');
-            if(!state.activePallet || Object.keys(state.currentBox.items).length===0) return showError('⚠️ Проверьте состав');
+            if(!state.activePallet) return showError('⚠️ Выберите палет');
+            if(Object.keys(state.currentBox.items).length===0) return showError('⚠️ Короб пуст');
             
             const now = new Date();
             const boxId = `BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
@@ -470,14 +423,49 @@
             state.pallets[palId].weight += boxData.weight;
             state.history.unshift(boxData); state.boxCounter++;
             
-            for(const [bc, q] of Object.entries(boxData.items)) if(state.db[bc]) state.db[bc].packedPcs += q;
-
+            // Прогресс уже обновлен при сканировании, здесь ничего менять не нужно
+            
             saveState(); generateBoxLabel(boxData); clearBoxUI(); renderTargets(); renderPallets();
             speak('Короб закрыт. Печатаю');
             setTimeout(() => window.print(), 100);
         }
 
-        function clearBox() { state.currentBox = { items: {}, weight: 0 }; updateUI(); renderBox(); speak('Очищено'); }
+        // === ПЕРЕОТКРЫТИЕ С АВТО-МИНУСОМ ===
+        function reopenLastBox() {
+            if(state.history.length === 0) return showError('Нет закрытых коробов');
+            const lastBox = state.history[0];
+            if(!confirm(`Переоткрыть короб ${lastBox.id}?\nЭтикетка будет аннулирована.`)) return;
+
+            // Возвращаем товары и МИНУСУЕМ из прогресса
+            for(const [bc, q] of Object.entries(lastBox.items)) {
+                state.currentBox.items[bc] = (state.currentBox.items[bc] || 0) + q;
+                if(state.db[bc]) state.db[bc].packedPcs -= q; // АВТО-МИНУС
+            }
+            state.currentBox.weight += lastBox.weight;
+
+            state.history.shift();
+            if(state.pallets[lastBox.pallet]) {
+                const p = state.pallets[lastBox.pallet];
+                p.boxes = p.boxes.filter(b => b !== lastBox.id);
+                p.weight -= lastBox.weight;
+            }
+
+            saveState(); renderBox(); renderTargets(); renderPallets(); updateUI();
+            speak(`Короб ${lastBox.id} переоткрыт. Количество возвращено в план`);
+            showSuccess(`↩️ Короб ${lastBox.id} возвращён в работу`);
+            document.getElementById('scanner').focus();
+        }
+
+        function clearBox() { 
+            if(Object.keys(state.currentBox.items).length > 0 && !confirm('Очистить текущий короб?')) return;
+            // Минусуем из прогресса перед очисткой
+            for(const [bc, q] of Object.entries(state.currentBox.items)) {
+                if(state.db[bc]) state.db[bc].packedPcs -= q;
+            }
+            state.currentBox = { items: {}, weight: 0 }; 
+            updateUI(); renderBox(); renderTargets(); speak('Очищено'); 
+        }
+
         function renderBox() {
             const tbody = document.getElementById('box-tbody'); tbody.innerHTML='';
             const items = Object.entries(state.currentBox.items);
@@ -488,13 +476,38 @@
             });
             updateUI();
         }
-        function changeQty(bc,d) { state.currentBox.items[bc]=Math.max(0,(state.currentBox.items[bc]||0)+d); if(!state.currentBox.items[bc]) delete state.currentBox.items[bc]; updWeight(); renderBox(); }
-        function removeItem(bc) { delete state.currentBox.items[bc]; updWeight(); renderBox(); }
+        
+        function changeQty(bc,d) { 
+            const oldQty = state.currentBox.items[bc] || 0;
+            const newQty = Math.max(0, oldQty + d);
+            if(newQty === 0) delete state.currentBox.items[bc]; 
+            else state.currentBox.items[bc] = newQty;
+            
+            // Обновляем прогресс на разницу
+            if(state.db[bc]) state.db[bc].packedPcs += (newQty - oldQty);
+            
+            updWeight(); renderBox(); renderTargets(); 
+        }
+        
+        function removeItem(bc) { 
+            const q = state.currentBox.items[bc] || 0;
+            delete state.currentBox.items[bc]; 
+            if(state.db[bc]) state.db[bc].packedPcs -= q; // АВТО-МИНУС
+            updWeight(); renderBox(); renderTargets(); 
+        }
+        
         function updWeight() { let w=0; for(const q of Object.values(state.currentBox.items)) w+=0.12*q; state.currentBox.weight=w; }
+        
         function updateUI() { 
             document.getElementById('items-count').textContent = Object.keys(state.currentBox.items).length; 
             document.getElementById('total-weight').textContent = state.currentBox.weight.toFixed(2);
-            document.getElementById('btn-close').disabled = !(document.getElementById('city').value.trim() && state.activePallet && Object.keys(state.currentBox.items).length > 0);
+            const hasItems = Object.keys(state.currentBox.items).length > 0;
+            const hasCity = document.getElementById('city').value.trim().length > 0;
+            const hasPallet = !!state.activePallet;
+            document.getElementById('btn-close').disabled = !(hasCity && hasPallet && hasItems);
+            const canReopen = state.history.length > 0 && !hasItems;
+            document.getElementById('btn-reopen').disabled = !canReopen;
+            document.getElementById('box-id-display').textContent = hasItems ? '# ТЕКУЩИЙ' : '# НОВАЯ';
         }
 
         // === ПАЛЕТЫ ===
@@ -522,20 +535,20 @@
             });
         }
 
-        // === ПЛАН ОТГРУЗКИ ===
+        // === ПЛАН ОТГРУЗКИ С КВАНТАМИ ===
         function renderTargets() {
             const list = document.getElementById('targets-list');
-            if(!state.targets.length) { list.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel для плана</p>'; return; }
-            
+            if(!state.targets.length) { list.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>'; return; }
             list.innerHTML = state.targets.map(p => {
                 const pct = p.targetPcs > 0 ? Math.min(100, Math.round((p.packedPcs/p.targetPcs)*100)) : 0;
                 const done = p.packedPcs >= p.targetPcs && p.targetPcs > 0;
                 const boxesInfo = p.boxesPlan > 0 ? `📦 ${p.boxesPlan} кор. × ${p.pcsPerBox} шт.` : '';
+                const quantBadge = p.quant > 1 ? `<span class="quant-badge">Квант: ${p.quant} шт.</span>` : '';
                 
                 return `<div class="target-item ${done?'done':''}">
-                    <b>${p.sku} | ${p.name.substring(0,35)}</b>
+                    <b>${p.sku} | ${p.name.substring(0,30)} ${quantBadge}</b>
                     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-                    <div class="progress-text"><span>${p.packedPcs} / ${p.targetPcs} шт.</span><span>${boxesInfo}</span></div>
+                    <div class="progress-text"><span>✅ ${p.packedPcs} / ${p.targetPcs} шт.</span><span>${boxesInfo}</span></div>
                     ${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 120)}${p.tz.length>120?'...':''}</div>` : ''}
                 </div>`;
             }).join('');
@@ -590,9 +603,9 @@
         function showError(m) { const e=document.getElementById('error-msg'); e.textContent=m; e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
         function hideError() { document.getElementById('error-msg').style.display='none'; }
         function showSuccess(m) { const s=document.getElementById('upload-status'); s.textContent=m; s.style.display='block'; setTimeout(()=>s.style.display='none',3000); }
-        function saveState() { localStorage.setItem('fbo_mapping_v1', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
-        function loadState() { const s=localStorage.getItem('fbo_mapping_v1'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); } }
-        function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_mapping_v1'); location.reload(); } }
+        function saveState() { localStorage.setItem('fbo_quant_v2', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
+        function loadState() { const s=localStorage.getItem('fbo_quant_v2'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); updateUI(); } }
+        function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_quant_v2'); location.reload(); } }
     </script>
 </body>
 </html>
