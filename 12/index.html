@@ -1,177 +1,450 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cosmetic WMS Pro</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBO Отгрузка | WB-Ozon</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 15px; }
+        
+        .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 15px; max-width: 1500px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: 10px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+        button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #6c757d; }
+        button.danger { background: var(--danger); }
+        button:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
+        .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+        
+        .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; transition: 0.2s; }
+        .scanner-input:focus { outline: none; border-color: var(--success); background: #fff; }
+        .scanner-input.success { border-color: var(--success); background: #e6ffe6; }
+        .scanner-input.error { border-color: var(--danger); background: #ffe6e6; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+        th { background: #f8f9fa; }
+        .qty-btn { width: auto; padding: 4px 8px; margin: 0 2px; background: #e9ecef; color: #333; font-size: 12px; }
+        
+        .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px; border-radius: 6px; margin: 8px 0; font-size: 13px; font-weight: 600; }
+        .alert { padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; }
+        .alert-error { background: #ffe6e6; color: #a00; }
+        .alert-success { background: #e6ffe6; color: #060; }
+        .info-box { background: #fff3cd; color: #856404; padding: 8px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; border-left: 4px solid #ffc107; }
+
+        .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .pallet-item:hover { background: #e9ecef; }
+        .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
+        .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
+        
+        /* ПЛАН ОТГРУЗКИ С ТЗ */
+        .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
+        .target-item.done { border-left-color: var(--success); opacity: 0.7; }
+        .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
+        .tz-note { font-size: 10px; color: #666; margin-top: 4px; font-style: italic; line-height: 1.3; background: #fff; padding: 4px; border-radius: 4px; }
+        .progress-bar { height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+        .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
+
+        /* ЭТИКЕТКИ 120x75 ММ */
+        .label-area { display: none; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 2mm; font-family: 'Arial', monospace; position: relative; overflow: hidden; }
+        .label-header { border-bottom: 1px dashed #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
+        .label-title { font-size: 11pt; font-weight: bold; }
+        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 4mm; }
+        .label-info-row div { flex: 1; }
+        .label-content { font-size: 7pt; border-top: 1px solid #ccc; padding-top: 1.5mm; height: 28mm; overflow: hidden; }
+        .label-content ul { column-count: 2; column-gap: 4mm; margin: 0; padding-left: 12px; }
+        .label-content li { margin-bottom: 0.5mm; break-inside: avoid; }
+        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; }
+        .barcode-wrap { flex: 1; text-align: center; }
+        .barcode-wrap svg { height: 10mm; }
+        .weight-box { font-size: 9pt; font-weight: bold; background: #eee; padding: 1mm 3mm; border-radius: 2mm; }
+
+        @media print {
+            body * { visibility: hidden; }
+            .grid, .no-print { display: none !important; }
+            .print-target, .print-target * { visibility: visible; display: block; }
+            .print-target { position: absolute; left: 0; top: 0; margin: 0; padding: 2mm; width: 120mm; height: 75mm; border: none; }
+            @page { size: 120mm 75mm; margin: 0; }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Cosmetic WMS Pro</h1>
-    <div class="badge">Косметика · FEFO · Партии · Срок годности · Роли</div>
-  </header>
-
-  <main>
-    <section class="card">
-      <h2>Панель управления</h2>
-      <div class="stat-grid">
-        <div class="stat"><div>Товаров</div><div class="num" id="statProducts">0</div></div>
-        <div class="stat"><div>Локаций</div><div class="num" id="statLocations">0</div></div>
-        <div class="stat"><div>Партии</div><div class="num" id="statBatches">0</div></div>
-        <div class="stat"><div>Остаток</div><div class="num" id="statStock">0</div></div>
-      </div>
-      <div class="actions">
-        <button onclick="loadDemo()">Демо</button>
-        <button class="secondary" onclick="saveToLocal()">Сохранить</button>
-        <button class="secondary" onclick="loadFromLocal()">Загрузить</button>
-        <button class="secondary" onclick="exportJSON()">JSON</button>
-        <button class="danger" onclick="resetAll()">Сброс</button>
-      </div>
-      <div class="small">FEFO = first-expire-first-out: в косметике первым отбирается товар с ближайшим сроком годности.</div>
-    </section>
-
-    <section class="card">
-      <h2>Пользователь</h2>
-      <div class="row">
+    <div class="grid no-print">
+        <!-- ЛЕВАЯ КОЛОНКА -->
         <div>
-          <label>Логин</label>
-          <input id="loginUser" placeholder="admin" />
+            <div class="card">
+                <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto; font-size:12px; padding:4px 8px;">🔊 Голос: ВКЛ</button></h2>
+                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
+                <div id="upload-status" class="alert alert-success"></div>
+            </div>
+            
+            <div class="card" id="order-info" style="display:none;">
+                <h2>📋 Заказ №47</h2>
+                <div class="info-box">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
+                <div class="stats">
+                    <span>📦 SKU: <span id="loaded-count">0</span></span>
+                    <span>📊 План: <span id="total-plan">0</span> шт.</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🎛️ Параметры</h2>
+                <select id="marketplace"><option value="WB" selected>Wildberries FBO</option><option value="OZON">Ozon FBO</option></select>
+                <input type="text" id="city" placeholder="⚠️ Введите город вручную (напр. Екатеринбург)">
+                <input type="text" id="pallet-input" placeholder="📦 Выберите палет" readonly>
+                <div class="alert alert-error" id="error-msg"></div>
+            </div>
+
+            <div class="card">
+                <h2>🏗 Палеты</h2>
+                <div class="row" style="margin-bottom: 8px;">
+                    <button onclick="createPallet()" style="flex:2;">+ Создать палет</button>
+                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨 Ярлык</button>
+                </div>
+                <div id="pallets-list" style="max-height: 180px; overflow-y: auto;"></div>
+            </div>
         </div>
+
+        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА -->
         <div>
-          <label>Пароль</label>
-          <input id="loginPass" type="password" placeholder="1234" />
+            <div class="card">
+                <h2>📡 Сканирование</h2>
+                <input type="text" id="scanner" class="scanner-input" placeholder="Кликните → сканируйте ШК" autocomplete="off">
+                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Строгая проверка по загруженному ТЗ. Enter = добавить.</p>
+            </div>
+            <div class="card">
+                <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
+                <div class="stats">
+                    <span>📦 Поз.: <span id="items-count">0</span></span>
+                    <span>⚖️ Вес: <span id="total-weight">0.00</span> кг</span>
+                </div>
+                <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть & печатать этикетку</button>
+                <button class="secondary danger" onclick="clearBox()" style="margin-top: 6px;">🗑 Очистить</button>
+            </div>
+            <div class="card">
+                <h2>📋 Состав коробки</h2>
+                <table id="box-table"><thead><tr><th>Штрихкод</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
+                <p id="empty-msg" style="text-align: center; color: #888; margin-top: 15px;">Коробка пуста.</p>
+            </div>
         </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: ПЛАН С ТЗ -->
         <div>
-          <label>Роль</label>
-          <select id="loginRole">
-            <option value="admin">admin</option>
-            <option value="manager">manager</option>
-            <option value="picker">picker</option>
-            <option value="viewer">viewer</option>
-          </select>
+            <div class="card">
+                <h2>🎯 План отгрузки (по ТЗ)</h2>
+                <div id="targets-list" style="max-height: 600px; overflow-y: auto;"></div>
+            </div>
+            <div class="card">
+                <h2>📜 Экспорт</h2>
+                <button class="secondary" onclick="exportCSV()">📤 CSV Отчёт</button>
+                <button class="secondary danger" onclick="resetAllData()" style="margin-top: 6px;">🔄 Сброс</button>
+            </div>
         </div>
-        <div>
-          <label>Текущий</label>
-          <input id="currentUser" value="Не авторизован" disabled />
+    </div>
+
+    <!-- ЭТИКЕТКИ -->
+    <div class="label-area print-target" id="label-box">
+        <div class="label-header"><span class="label-title" id="lbl-mp-box">FBO</span><span style="font-size:6pt" id="lbl-date-box"></span></div>
+        <div class="label-info-row">
+            <div>📍 <b>Город:</b> <span id="lbl-city-box"></span></div>
+            <div>📦 <b>Палет:</b> <span id="lbl-pallet-box"></span></div>
+            <div>🆔 <b>Короб:</b> <span id="lbl-box-id-box"></span></div>
         </div>
-      </div>
-      <div class="actions">
-        <button onclick="login()">Войти</button>
-        <button class="secondary" onclick="logout()">Выйти</button>
-      </div>
-      <div class="small">Для реальной безопасности нужен backend, а не только localStorage.</div>
-    </section>
-
-    <section class="card">
-      <h2>Добавить товар</h2>
-      <div class="row">
-        <div><label>Название</label><input id="pName" placeholder="Крем для лица"></div>
-        <div><label>SKU</label><input id="pSku" placeholder="CRM-FACE-001"></div>
-        <div><label>Категория</label><input id="pCat" placeholder="Уход"></div>
-        <div><label>Ед. изм.</label><input id="pUnit" placeholder="шт"></div>
-        <div><label>Min stock</label><input id="pMin" type="number" value="10"></div>
-        <div><label>Max stock</label><input id="pMax" type="number" value="100"></div>
-        <div><label>Срок годности (дней)</label><input id="pShelfLife" type="number" value="730"></div>
-        <div><label>PAO (дней после вскрытия)</label><input id="pPao" type="number" value="365"></div>
-      </div>
-      <div class="actions"><button onclick="addProduct()">Добавить товар</button></div>
-    </section>
-
-    <section class="card">
-      <h2>Добавить локацию</h2>
-      <div class="row">
-        <div><label>Зона</label><input id="lZone" placeholder="A"></div>
-        <div><label>Проход</label><input id="lAisle" placeholder="1"></div>
-        <div><label>Стеллаж</label><input id="lShelf" placeholder="1"></div>
-        <div><label>Позиция</label><input id="lPos" placeholder="1"></div>
-        <div><label>Тип</label>
-          <select id="lType">
-            <option value="receiving">receiving</option>
-            <option value="storage">storage</option>
-            <option value="picking">picking</option>
-            <option value="packing">packing</option>
-            <option value="shipping">shipping</option>
-          </select>
+        <div class="label-content"><strong>Состав:</strong><ul id="lbl-items-list-box"></ul></div>
+        <div class="label-footer">
+            <div class="barcode-wrap"><svg id="barcode-svg-box"></svg><div style="font-size:5pt" id="lbl-barcode-text-box"></div></div>
+            <div class="weight-box">⚖️ <span id="lbl-weight-box"></span></div>
         </div>
-        <div><label>Ёмкость</label><input id="lCap" type="number" value="100"></div>
-      </div>
-      <div class="actions"><button onclick="addLocation()">Добавить локацию</button></div>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>Приёмка партии</h2>
-      <div class="row">
-        <div><label>Товар</label><select id="moveProduct"></select></div>
-        <div><label>Локация</label><select id="moveLocation"></select></div>
-        <div><label>Партия / Lot</label><input id="batchLot" placeholder="LOT-2026-001"></div>
-        <div><label>Кол-во</label><input id="moveQty" type="number" value="1"></div>
-        <div><label>Срок годности</label><input id="expiryDate" type="date"></div>
-        <div><label>Пользователь</label><input id="moveUser" value="admin"></div>
-      </div>
-      <div class="actions">
-        <button onclick="receiveBatch()">Приёмка</button>
-        <button class="secondary" onclick="shipFromFEFO()">Отгрузка FEFO</button>
-        <button class="secondary" onclick="transferBatch()">Трансфер</button>
-      </div>
-      <div class="small">Приёмка косметики сохраняет партию, дату годности и остаток. Отбор идёт по FEFO.</div>
-    </section>
-
-    <section class="card">
-      <h2>Создать заказ</h2>
-      <div class="row">
-        <div><label>Клиент</label><input id="oCustomer" placeholder='ООО "Техно"'></div>
-        <div><label>Товары (JSON)</label><input id="oItems" placeholder='{"productId": 2, "qty": 5}'></div>
-      </div>
-      <div style="margin-top:12px"><label>Order ID</label><input id="orderId" placeholder="ID заказа"></div>
-      <div class="actions">
-        <button onclick="createOrder()">Создать</button>
-        <button class="secondary" onclick="pickOrder()">Собрать</button>
-        <button class="secondary" onclick="shipOrder()">Отгрузить</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Поиск и отчёты</h2>
-      <div class="row">
-        <div><label>Поиск товара</label><input id="searchText" placeholder="крем, sku, категория"></div>
-        <div><label>Порог срока годности, дней</label><input id="expiryThreshold" type="number" value="90"></div>
-      </div>
-      <div class="actions">
-        <button onclick="searchProducts()">Найти</button>
-        <button class="secondary" onclick="showLowStock()">Низкий остаток</button>
-        <button class="secondary" onclick="showExpiring()">Скоро истекает</button>
-      </div>
-      <div id="reportBox" class="small"></div>
-    </section>
-
-    <section class="card split" style="grid-column:1/-1">
-      <div>
-        <h2>Инвентарь по партиям</h2>
-        <div style="overflow:auto;max-height:460px">
-          <table id="inventoryTable">
-            <thead>
-              <tr>
-                <th>Товар</th>
-                <th>SKU</th>
-                <th>Партия</th>
-                <th>Локация</th>
-                <th>Кол-во</th>
-                <th>Срок годности</th>
-                <th>Статус</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+    <div class="label-area print-target" id="label-pallet">
+        <div class="label-header"><span class="label-title" id="lbl-mp-pal">FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
+        <div class="label-info-row">
+            <div>📍 <b>Город:</b> <span id="lbl-city-pal"></span></div>
+            <div>🆔 <b>Палет:</b> <span id="lbl-pal-id"></span></div>
+            <div>📦 <b>Коробов:</b> <span id="lbl-pal-count"></span></div>
         </div>
-      </div>
-      <div>
-        <h2>Журнал</h2>
-        <div class="log" id="log"></div>
-      </div>
-    </section>
-  </main>
+        <div class="label-content"><strong>Состав палета:</strong><ul id="lbl-pal-boxes-list"></ul></div>
+        <div class="label-footer">
+            <div class="barcode-wrap"><svg id="barcode-svg-pal"></svg><div style="font-size:5pt" id="lbl-barcode-text-pal"></div></div>
+            <div class="weight-box">⚖️ <span id="lbl-pal-weight"></span></div>
+        </div>
+    </div>
 
-  <script src="app.js"></script>
+    <script>
+        let state = { db: {}, targets: [], currentBox: { items: {}, weight: 0 }, history: [], boxCounter: 1, orderMeta: {}, pallets: {}, activePallet: null };
+        
+        // === ГОЛОС ===
+        let voiceEnabled = true, maleVoice = null;
+        const synth = window.speechSynthesis;
+        function initVoices() {
+            const v = synth.getVoices().filter(x => x.lang.startsWith('ru'));
+            maleVoice = v.find(x => /male|pavel|yuri|dmitry/i.test(x.name)) || v[0];
+        }
+        function speak(t) {
+            if (!voiceEnabled || !synth || synth.pending) return;
+            synth.cancel();
+            const u = new SpeechSynthesisUtterance(t);
+            u.lang = 'ru-RU'; u.rate = 1.05; u.pitch = 0.85;
+            if (maleVoice) u.voice = maleVoice;
+            synth.speak(u);
+        }
+        document.getElementById('voice-toggle').onclick = function() {
+            voiceEnabled = !voiceEnabled;
+            this.textContent = voiceEnabled ? '🔊 Голос: ВКЛ' : '🔇 Голос: ВЫКЛ';
+            this.style.background = voiceEnabled ? '#6c757d' : '#dc3545';
+            if(voiceEnabled) speak('Голос включен');
+        };
+        if(synth) { synth.onvoiceschanged = initVoices; initVoices(); }
+
+        // === ИНИЦИАЛИЗАЦИЯ ===
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState(); setupScanner(); renderPallets(); renderTargets(); updateUI();
+            document.getElementById('excel-upload').addEventListener('change', handleExcelUpload);
+            document.getElementById('city').addEventListener('input', updateUI);
+            document.getElementById('scanner').focus();
+        });
+
+        function setupScanner() {
+            const inp = document.getElementById('scanner');
+            inp.addEventListener('keypress', e => { 
+                if(e.key==='Enter'){ e.preventDefault(); handleScan(inp.value.trim()); inp.value=''; setTimeout(()=>inp.classList.remove('success','error'), 300); } 
+            });
+            inp.addEventListener('focus', () => inp.select());
+        }
+
+        // === ПАРСИНГ EXCEL (АДАПТИРОВАН ПОД ВАШ ФАЙЛ) ===
+        function handleExcelUpload(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const wb = XLSX.read(ev.target.result, {type: 'array'});
+                    const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ''});
+                    
+                    // Маршрут из шапки
+                    let route = '';
+                    for(let i=0; i<8; i++) if(data[i]?.join(' ').match(/Екатеринбург|Чехов|Новоселки/i)) { route = data[i].join(' '); break; }
+                    state.orderMeta = { route };
+                    document.getElementById('excel-route-display').textContent = route || 'Не определён';
+                    document.getElementById('city').value = ''; 
+
+                    // Поиск заголовков
+                    let hIdx = -1;
+                    for(let i=0; i<data.length; i++) if(String(data[i]?.[0]).includes('Артикул ВБ')) { hIdx = i; break; }
+                    if(hIdx===-1) throw new Error('Заголовок "Артикул ВБ" не найден');
+
+                    const cols = {};
+                    data[hIdx].forEach((c, i) => { if(c) cols[String(c).trim()] = i; });
+
+                    state.db = {}; state.targets = [];
+                    let total = 0;
+
+                    for(let i=hIdx+1; i<data.length; i++) {
+                        const r = data[i];
+                        const sku = String(r[cols['Артикул ВБ']] || '').trim();
+                        // Пропускаем пустые строки и итоги
+                        if(!sku || isNaN(sku)) continue;
+
+                        const targetPcs = parseInt(String(r[cols['ИТОГО, шт.']]).replace(/,/g,'')) || 0;
+                        const tzNote = String(r[cols['ТЗ']] || '').trim();
+                        
+                        const product = {
+                            sku,
+                            name: String(r[cols['наименование составляющего в наборе']] || 'Товар').trim(),
+                            targetPcs,
+                            packedPcs: 0,
+                            boxesPlan: parseInt(String(r[cols['коробов']]).replace(/,/g,'')) || 0,
+                            pcsPerBox: parseInt(String(r[cols['штук в коробе']]).replace(/,/g,'')) || 0,
+                            tz: tzNote
+                        };
+                        
+                        total += targetPcs;
+                        state.targets.push(product);
+
+                        // Маппинг всех ШК на продукт
+                        const bcs = new Set();
+                        const origBC = String(r[cols['ШК исход. штуки']] || '');
+                        const wbBC = String(r[cols['ШК на этикетку ВБ']] || '');
+                        [origBC, wbBC].forEach(s => s.split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); }));
+                        bcs.forEach(b => { state.db[b] = product; });
+                    }
+
+                    document.getElementById('order-info').style.display = 'block';
+                    document.getElementById('loaded-count').textContent = state.targets.length;
+                    document.getElementById('total-plan').textContent = total.toLocaleString('ru');
+                    renderTargets(); 
+                    showSuccess(`✅ Загружено ${state.targets.length} позиций. Введите город.`); 
+                    saveState();
+                    speak('Файл загружен. Проверка штрихкодов активна');
+                } catch(err) { showError('❌ Ошибка: ' + err.message); speak('Ошибка загрузки'); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // === СКАНИРОВАНИЕ С ВАЛИДАЦИЕЙ ===
+        function handleScan(bc) {
+            hideError();
+            const inp = document.getElementById('scanner');
+            if(Object.keys(state.db).length === 0) { showError('⚠️ Загрузите ТЗ'); inp.classList.add('error'); speak('Загрузите файл'); return; }
+            if(!state.activePallet) { showError('⚠️ Выберите палет'); inp.classList.add('error'); speak('Выберите палет'); return; }
+
+            const p = state.db[bc];
+            if(!p) { showError(`❌ ШК ${bc} не найден в заказе`); inp.classList.add('error'); speak('Не найдено в заказе'); return; }
+
+            state.currentBox.items[bc] = (state.currentBox.items[bc]||0)+1;
+            state.currentBox.weight += 0.12; // Средний вес, т.к. в Excel нет колонки веса
+            renderBox();
+            inp.classList.add('success');
+            speak(`Добавлено. ${p.name.substring(0,30)}`);
+        }
+
+        // === КОРОБКА ===
+        function closeBox() {
+            const city = document.getElementById('city').value.trim();
+            if(!city) return showError('⚠️ Введите город');
+            if(!state.activePallet || Object.keys(state.currentBox.items).length===0) return showError('⚠️ Проверьте состав');
+            
+            const now = new Date();
+            const boxId = `BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
+            const palId = state.activePallet;
+            
+            const boxData = { id: boxId, city, pallet: palId, items: {...state.currentBox.items}, weight: state.currentBox.weight, date: now.toISOString() };
+            state.pallets[palId].boxes.push(boxId);
+            state.pallets[palId].weight += boxData.weight;
+            state.history.unshift(boxData); state.boxCounter++;
+            
+            for(const [bc, q] of Object.entries(boxData.items)) if(state.db[bc]) state.db[bc].packedPcs += q;
+
+            saveState(); generateBoxLabel(boxData); clearBoxUI(); renderTargets(); renderPallets();
+            speak('Короб закрыт. Печатаю');
+            setTimeout(() => window.print(), 100);
+        }
+
+        function clearBox() { state.currentBox = { items: {}, weight: 0 }; updateUI(); renderBox(); speak('Очищено'); }
+        function renderBox() {
+            const tbody = document.getElementById('box-tbody'); tbody.innerHTML='';
+            const items = Object.entries(state.currentBox.items);
+            document.getElementById('empty-msg').style.display = items.length?'none':'block';
+            items.forEach(([bc, q]) => {
+                const p = state.db[bc]||{sku:'?',name:'?'};
+                tbody.innerHTML += `<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,25)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;
+            });
+            updateUI();
+        }
+        function changeQty(bc,d) { state.currentBox.items[bc]=Math.max(0,(state.currentBox.items[bc]||0)+d); if(!state.currentBox.items[bc]) delete state.currentBox.items[bc]; updWeight(); renderBox(); }
+        function removeItem(bc) { delete state.currentBox.items[bc]; updWeight(); renderBox(); }
+        function updWeight() { let w=0; for(const q of Object.values(state.currentBox.items)) w+=0.12*q; state.currentBox.weight=w; }
+        function updateUI() { 
+            document.getElementById('items-count').textContent = Object.keys(state.currentBox.items).length; 
+            document.getElementById('total-weight').textContent = state.currentBox.weight.toFixed(2);
+            document.getElementById('btn-close').disabled = !(document.getElementById('city').value.trim() && state.activePallet && Object.keys(state.currentBox.items).length > 0);
+        }
+
+        // === ПАЛЕТЫ ===
+        function createPallet() {
+            const id = prompt('ID палета:') || `PAL-${Date.now().toString().slice(-5)}`;
+            if(state.pallets[id]) return showError('❌ Существует');
+            state.pallets[id] = { id, boxes:[], weight:0 };
+            state.activePallet = id;
+            document.getElementById('pallet-input').value = id;
+            document.getElementById('btn-print-pallet').disabled = false;
+            renderPallets(); updateUI(); speak('Палет создан'); saveState();
+        }
+        function selectPallet(id) {
+            state.activePallet = id; document.getElementById('pallet-input').value = id;
+            document.getElementById('btn-print-pallet').disabled = false; renderPallets(); updateUI();
+        }
+        function renderPallets() {
+            const l = document.getElementById('pallets-list'); l.innerHTML='';
+            if(!Object.keys(state.pallets).length) { l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>'; return; }
+            Object.values(state.pallets).forEach(p => {
+                const d = document.createElement('div');
+                d.className = `pallet-item ${p.id===state.activePallet?'active':''}`;
+                d.innerHTML = `<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;
+                d.onclick = () => selectPallet(p.id); l.appendChild(d);
+            });
+        }
+
+        // === ПЛАН ОТГРУЗКИ С ТЗ ===
+        function renderTargets() {
+            const list = document.getElementById('targets-list');
+            if(!state.targets.length) { list.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel для плана</p>'; return; }
+            
+            list.innerHTML = state.targets.map(p => {
+                const pct = p.targetPcs > 0 ? Math.min(100, Math.round((p.packedPcs/p.targetPcs)*100)) : 0;
+                const done = p.packedPcs >= p.targetPcs && p.targetPcs > 0;
+                const boxesInfo = p.boxesPlan > 0 ? `📦 ${p.boxesPlan} кор. × ${p.pcsPerBox} шт.` : '';
+                
+                return `<div class="target-item ${done?'done':''}">
+                    <b>${p.sku} | ${p.name.substring(0,35)}</b>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    <div class="progress-text"><span>${p.packedPcs} / ${p.targetPcs} шт.</span><span>${boxesInfo}</span></div>
+                    ${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 120)}${p.tz.length>120?'...':''}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        // === ЭТИКЕТКИ ===
+        function generateBoxLabel(b) {
+            document.getElementById('label-box').style.display='block';
+            document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
+            document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
+            document.getElementById('lbl-city-box').textContent=b.city;
+            document.getElementById('lbl-pallet-box').textContent=b.pallet;
+            document.getElementById('lbl-box-id-box').textContent=b.id;
+            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';
+            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
+            Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]; ul.innerHTML+=`<li>${p?.name?.substring(0,25)||bc} ×${q}</li>`;});
+            document.getElementById('lbl-barcode-text-box').textContent=b.id;
+            JsBarcode("#barcode-svg-box", b.id, {format:"CODE128", width:1.5, height:10, displayValue:false});
+            setTimeout(()=>{document.getElementById('label-box').style.display='none';}, 200);
+        }
+
+        function printPalletLabel() {
+            if(!state.activePallet) return showError('⚠️ Выберите палет');
+            const p = state.pallets[state.activePallet];
+            const city = document.getElementById('city').value.trim() || 'ЕКБ';
+            document.getElementById('label-pallet').style.display='block';
+            document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';
+            document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
+            document.getElementById('lbl-city-pal').textContent=city;
+            document.getElementById('lbl-pal-id').textContent=p.id;
+            document.getElementById('lbl-pal-count').textContent=p.boxes.length;
+            document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(2)+' кг';
+            const ul=document.getElementById('lbl-pal-boxes-list'); ul.innerHTML='';
+            p.boxes.forEach(b=>ul.innerHTML+=`<li>${b}</li>`);
+            document.getElementById('lbl-barcode-text-pal').textContent=p.id;
+            JsBarcode("#barcode-svg-pal", p.id, {format:"CODE128", width:2, height:12, displayValue:false});
+            setTimeout(()=>{document.getElementById('label-pallet').style.display='none';}, 200);
+            speak('Печать палета'); window.print();
+        }
+
+        // === УТИЛИТЫ ===
+        function exportCSV() {
+            if(!state.history.length) return showError('Нет данных');
+            let csv = '\uFEFFКороб;Палет;Город;Штрихкод;Артикул;Название;Кол-во;Вес;Дата\n';
+            state.history.forEach(b => Object.entries(b.items).forEach(([bc,q])=>{
+                const p=state.db[bc]||{}; csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${p.name||''}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;
+            }));
+            const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+            const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`fbo_report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+            speak('Отчёт скачан');
+        }
+        function showError(m) { const e=document.getElementById('error-msg'); e.textContent=m; e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
+        function hideError() { document.getElementById('error-msg').style.display='none'; }
+        function showSuccess(m) { const s=document.getElementById('upload-status'); s.textContent=m; s.style.display='block'; setTimeout(()=>s.style.display='none',3000); }
+        function saveState() { localStorage.setItem('fbo_v4_final', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
+        function loadState() { const s=localStorage.getItem('fbo_v4_final'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); } }
+        function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_v4_final'); location.reload(); } }
+    </script>
 </body>
 </html>
