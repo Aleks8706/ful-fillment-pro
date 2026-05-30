@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FBO Отгрузка | Сканирование</title>
-    <!-- Библиотеки -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
@@ -12,46 +11,36 @@
         :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.4; }
-        
         .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 12px; max-width: 1400px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; }
         h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-        
         input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
         input:focus, select:focus { outline: 2px solid var(--ozon); border-color: transparent; }
         button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; transition: 0.15s; }
-        button:hover { opacity: 0.95; }
-        button:active { transform: scale(0.98); }
-        button.secondary { background: #6c757d; }
-        button.danger { background: var(--danger); }
+        button:hover { opacity: 0.95; } button:active { transform: scale(0.98); }
+        button.secondary { background: #6c757d; } button.danger { background: var(--danger); }
         button.warning { background: var(--warning); color: #333; }
         button:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; transform: none !important; }
         .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
-        
         .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; transition: 0.2s; }
         .scanner-input:focus { outline: none; border-color: var(--success); background: #fff; }
         .scanner-input.success { border-color: var(--success); background: #e6ffe6; animation: pulse 0.3s; }
         .scanner-input.error { border-color: var(--danger); background: #ffe6e6; animation: shake 0.3s; }
-        
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
         th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
         th { background: #f8f9fa; font-weight: 600; }
         .qty-btn { width: auto; padding: 3px 10px; margin: 0 2px; background: #e9ecef; color: #333; font-size: 12px; border-radius: 4px; border: none; }
-        
         .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 13px; font-weight: 600; }
         .alert { padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; }
         .alert-error { background: #ffe6e6; color: #a00; border: 1px solid #ffcdd2; }
         .alert-success { background: #e6ffe6; color: #060; border: 1px solid #c8e6c9; }
         .info-box { background: #fff3cd; color: #856404; padding: 8px 10px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; border-left: 4px solid #ffc107; }
-
         .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .pallet-item:hover { background: #e9ecef; }
         .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
         .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
-        
         .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
         .target-item.done { border-left-color: var(--success); opacity: 0.75; }
         .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
@@ -60,7 +49,6 @@
         .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
         .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
         .quant-badge { display: inline-block; background: #e6f0ff; color: var(--ozon); padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-left: 5px; }
-
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 10px; }
         .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
         .modal h3 { margin-bottom: 15px; font-size: 17px; }
@@ -68,8 +56,6 @@
         .mapping-label { width: 100%; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
         .mapping-select { flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-
-        /* Печать */
         .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 2mm; font-family: 'Arial', monospace; overflow: hidden; z-index: -1; }
         .label-header { border-bottom: 1px dashed #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
         .label-title { font-size: 11pt; font-weight: bold; }
@@ -79,55 +65,26 @@
         .label-content ul { column-count: 2; column-gap: 4mm; margin: 0; padding-left: 12px; }
         .label-content li { margin-bottom: 0.5mm; break-inside: avoid; }
         .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; }
-        .barcode-wrap { flex: 1; text-align: center; }
-        .barcode-wrap svg { height: 10mm; }
+        .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; }
         .weight-box { font-size: 9pt; font-weight: bold; background: #eee; padding: 1mm 3mm; border-radius: 2mm; }
-
         #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
-
-        /* Камера */
         #camera-section { margin-top: 10px; }
         #interactive { width: 100%; border-radius: 8px; overflow: hidden; background: #000; display: none; position: relative; min-height: 180px; }
         #interactive video { width: 100%; height: 100%; object-fit: cover; display: block; }
         #interactive canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .camera-overlay { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; height: 25%; border: 3px solid var(--success); border-radius: 4px;
-            pointer-events: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
-            background: rgba(0, 91, 255, 0.08);
-        }
+        .camera-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 25%; border: 3px solid var(--success); border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); background: rgba(0, 91, 255, 0.08); }
         .scan-hint { font-size: 11px; color: #fff; background: rgba(0,0,0,0.75); padding: 5px 10px; border-radius: 4px; margin-top: 6px; text-align: center; }
         #camera-toggle { display: flex; gap: 8px; margin-top: 8px; }
         #camera-toggle button { flex: 1; padding: 9px; }
         .camera-permission { font-size: 11px; color: #666; margin-top: 5px; text-align: center; }
         .camera-active { border-color: var(--success) !important; background: #e6ffe6 !important; }
         .scan-status { font-size: 11px; text-align: center; margin-top: 5px; min-height: 18px; font-weight: 500; }
-        .scan-status.detecting { color: var(--warning); }
-        .scan-status.found { color: var(--success); font-weight: bold; }
-        .scan-status.error { color: var(--danger); }
-
-        /* Адаптив */
-        @media print {
-            body * { visibility: hidden !important; }
-            .grid, .no-print, .modal-overlay, #camera-section { display: none !important; }
-            .print-target { position: absolute !important; left: 0 !important; top: 0 !important; width: 120mm !important; height: 75mm !important; padding: 2mm !important; border: none !important; visibility: visible !important; display: block !important; z-index: 9999 !important; background: #fff !important; }
-            .print-target * { visibility: visible !important; display: block !important; }
-            .print-target ul { display: block !important; column-count: 2 !important; }
-            .print-target li { display: list-item !important; }
-            .print-target svg { display: inline-block !important; }
-            @page { size: 120mm 75mm; margin: 0; }
-        }
-        
-        @media (max-width: 1100px) {
-            .grid { grid-template-columns: 1fr; }
-            .mapping-row { flex-direction: column; align-items: stretch; }
-            .mapping-label { width: 100%; }
-            #interactive { max-height: 220px; }
-        }
+        .scan-status.detecting { color: var(--warning); } .scan-status.found { color: var(--success); font-weight: bold; } .scan-status.error { color: var(--danger); }
+        @media print { body * { visibility: hidden !important; } .grid, .no-print, .modal-overlay, #camera-section { display: none !important; } .print-target { position: absolute !important; left: 0 !important; top: 0 !important; width: 120mm !important; height: 75mm !important; padding: 2mm !important; border: none !important; visibility: visible !important; display: block !important; z-index: 9999 !important; background: #fff !important; } .print-target * { visibility: visible !important; display: block !important; } .print-target ul { display: block !important; column-count: 2 !important; } .print-target li { display: list-item !important; } .print-target svg { display: inline-block !important; } @page { size: 120mm 75mm; margin: 0; } }
+        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .mapping-row { flex-direction: column; align-items: stretch; } .mapping-label { width: 100%; } #interactive { max-height: 220px; } }
     </style>
 </head>
 <body>
-    <!-- Маппинг -->
     <div class="modal-overlay" id="mapping-modal">
         <div class="modal">
             <h3>📋 Настройка колонок Excel</h3>
@@ -168,12 +125,10 @@
                 <div id="pallets-list" style="max-height:160px;overflow-y:auto;"></div>
             </div>
         </div>
-
         <div>
             <div class="card">
                 <h2>📡 Сканирование</h2>
                 <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или отсканируйте ШК" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                
                 <div id="camera-section">
                     <div class="row" id="camera-toggle">
                         <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
@@ -184,9 +139,8 @@
                     <div id="scan-status" class="scan-status"></div>
                     <p class="camera-permission">💡 HTTPS + разрешение камеры • Работает на мобильных</p>
                 </div>
-                <p style="font-size:11px;color:#666;margin-top:6px;">💡 Голос озвучит остаток</p>
+                <p style="font-size:11px;color:#666;margin-top:6px;">🔊 Голос: <i>«Квант X. Осталось Y»</i></p>
             </div>
-            
             <div class="card">
                 <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
                 <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
@@ -197,14 +151,12 @@
                 <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати</button>
                 <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;">🗑 Очистить</button>
             </div>
-            
             <div class="card">
                 <h2>📋 Состав</h2>
                 <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
                 <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0;">Коробка пуста</p>
             </div>
         </div>
-
         <div>
             <div class="card">
                 <h2>🎯 План (ТЗ)</h2>
@@ -218,7 +170,6 @@
         </div>
     </div>
 
-    <!-- Этикетки -->
     <div class="label-area print-target" id="label-box">
         <div class="label-header"><span class="label-title" id="lbl-mp-box">FBO</span><span style="font-size:6pt" id="lbl-date-box"></span></div>
         <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-box"></span></div><div>📦<b>Палет:</b><span id="lbl-pallet-box"></span></div><div>🆔<b>Короб:</b><span id="lbl-box-id-box"></span></div></div>
@@ -233,7 +184,6 @@
     </div>
 
     <script>
-        // === КОНФИГ ===
         const MAPPING_CONFIG = [
             {key:'sku',label:'Артикул / Код товара *',required:true},
             {key:'name',label:'Название товара *',required:true},
@@ -247,44 +197,26 @@
             {key:'expiry',label:'Годен до',required:false}
         ];
 
-        // === STATE ===
         let state = {db:{},targets:[],currentBox:{items:{},weight:0},history:[],boxCounter:1,orderMeta:{},pallets:{},activePallet:null};
-        let tempExcelData=null,tempHeaders=[];
-        let lastPrintedLabelId=null;
-        
-        // === КАМЕРА ===
+        let tempExcelData=null,tempHeaders=[],lastPrintedLabelId=null;
         let quaggaActive=false,scanDebounce=false,scanTimeout=null;
 
         // === ГОЛОС ===
         let voiceEnabled=true,maleVoice=null;
         const synth=window.speechSynthesis;
         function initVoices(){const v=synth.getVoices().filter(x=>x.lang.startsWith('ru'));maleVoice=v.find(x=>/male|pavel|yuri|dmitry/i.test(x.name))||v[0];}
-        function speak(t){if(!voiceEnabled||!synth||synth.pending)return;synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=1.05;u.pitch=0.85;if(maleVoice)u.voice=maleVoice;synth.speak(u);}
+        function speak(t){if(!voiceEnabled||!synth||synth.pending)return;synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=1.1;u.pitch=0.9;if(maleVoice)u.voice=maleVoice;synth.speak(u);}
         document.getElementById('voice-toggle').onclick=function(){voiceEnabled=!voiceEnabled;this.textContent=voiceEnabled?'🔊 ВКЛ':'🔇 ВЫКЛ';this.style.background=voiceEnabled?'#6c757d':'#dc3545';if(voiceEnabled)speak('Голос включен');};
         if(synth){synth.onvoiceschanged=initVoices;initVoices();}
 
         // === INIT ===
-        document.addEventListener('DOMContentLoaded',()=>{
-            loadState();setupScanner();renderPallets();renderTargets();updateUI();
-            document.getElementById('excel-upload').addEventListener('change',handleFileSelect);
-            document.getElementById('city').addEventListener('input',updateUI);
-            document.getElementById('scanner').focus();
-            checkCameraSupport();
-        });
+        document.addEventListener('DOMContentLoaded',()=>{loadState();setupScanner();renderPallets();renderTargets();updateUI();document.getElementById('excel-upload').addEventListener('change',handleFileSelect);document.getElementById('city').addEventListener('input',updateUI);document.getElementById('scanner').focus();checkCameraSupport();});
 
-        // === КАМЕРА: ПРОВЕРКА ===
-        function checkCameraSupport(){
-            if(!navigator.mediaDevices?.getUserMedia){
-                document.getElementById('btn-camera-start').disabled=true;
-                document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';
-                document.querySelector('.camera-permission').textContent='❌ Камера недоступна';
-            }
-        }
+        function checkCameraSupport(){if(!navigator.mediaDevices?.getUserMedia){document.getElementById('btn-camera-start').disabled=true;document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';document.querySelector('.camera-permission').textContent='❌ Камера недоступна';}}
 
-        // === КАМЕРА: ЗАПУСК ===
+        // === КАМЕРА ===
         async function startCameraScan(){
             if(!navigator.mediaDevices?.getUserMedia){showError('❌ Камера не поддерживается');return;}
-            
             try{
                 document.getElementById('scanner').style.display='none';
                 document.getElementById('interactive').style.display='block';
@@ -293,195 +225,49 @@
                 document.getElementById('scanner').classList.add('camera-active');
                 setStatus('🔍 Запуск...', 'detecting');
                 scanDebounce=false;
-
-                // Очистка предыдущего экземпляра
                 if(window._quagga) Quagga.stop();
-                
                 await new Promise((resolve,reject)=>{
                     Quagga.init({
-                        inputStream:{
-                            name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),
-                            constraints:{facingMode:"environment",width:{min:640},height:{min:480}},
-                            area:{top:"37%",right:"8%",left:"8%",bottom:"37%"}
-                        },
+                        inputStream:{name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),constraints:{facingMode:"environment",width:{min:640},height:{min:480}},area:{top:"37%",right:"8%",left:"8%",bottom:"37%"}},
                         locator:{patchSize:"medium",halfSample:true},
                         numOfWorkers:navigator.hardwareConcurrency>1?2:1,
-                        decoder:{
-                            readers:[
-                                {format:"code_128_reader",config:{}},
-                                {format:"ean_reader",config:{}},
-                                {format:"ean_8_reader",config:{}},
-                                {format:"upc_reader",config:{}},
-                                {format:"code_39_reader",config:{}},
-                                {format:"codabar_reader",config:{}}
-                            ],
-                            multiple:false
-                        },
+                        decoder:{readers:[{format:"code_128_reader",config:{}},{format:"ean_reader",config:{}},{format:"ean_8_reader",config:{}},{format:"upc_reader",config:{}},{format:"code_39_reader",config:{}},{format:"codabar_reader",config:{}}],multiple:false},
                         locate:true
                     },err=>err?reject(err):resolve());
                 });
-                
-                Quagga.start();
-                quaggaActive=true;
-                window._quagga=true;
+                Quagga.start(); quaggaActive=true; window._quagga=true;
                 setStatus('📷 Наведите на штрихкод','detecting');
                 speak('Камера включена');
-
-                // Обработчик результата
                 Quagga.onDetected(result=>{
                     if(scanDebounce)return;
                     const code=result.codeResult?.code?.trim();
                     if(!code||code.length<3||code.length>50)return;
-                    
-                    // Обратная связь
                     setStatus(`✅ ${code}`,'found');
                     document.getElementById('scanner').classList.add('success');
                     if(navigator.vibrate)navigator.vibrate([40,30,40]);
-                    
-                    // Блокировка повторов
-                    scanDebounce=true;
-                    if(scanTimeout)clearTimeout(scanTimeout);
-                    scanTimeout=setTimeout(()=>{scanDebounce=false;},1800);
-                    
-                    // Обработка
+                    scanDebounce=true; if(scanTimeout)clearTimeout(scanTimeout); scanTimeout=setTimeout(()=>{scanDebounce=false;},1500);
                     handleScan(code);
-                    
-                    // Сброс визуала
-                    setTimeout(()=>{
-                        document.getElementById('scanner').classList.remove('success');
-                        if(quaggaActive)setStatus('📷 Наведите на штрихкод','detecting');
-                    },1200);
+                    setTimeout(()=>{document.getElementById('scanner').classList.remove('success');if(quaggaActive)setStatus('📷 Наведите на штрихкод','detecting');},1000);
                 });
-                
-            }catch(err){
-                console.error('Camera error:',err);
-                showError('❌ Ошибка камеры: '+(err.message||'Нет доступа'));
-                setStatus('❌ Ошибка','error');
-                stopCameraScan();
-            }
+            }catch(err){console.error('Camera error:',err);showError('❌ Ошибка камеры: '+(err.message||'Нет доступа'));setStatus('❌ Ошибка','error');stopCameraScan();}
         }
 
-        // === КАМЕРА: СТОП ===
-        function stopCameraScan(){
-            if(quaggaActive){Quagga.stop();quaggaActive=false;}
-            if(window._quagga)window._quagga=false;
-            if(scanTimeout)clearTimeout(scanTimeout);
-            
-            document.getElementById('scanner').style.display='block';
-            document.getElementById('interactive').style.display='none';
-            document.getElementById('btn-camera-start').style.display='block';
-            document.getElementById('btn-camera-stop').style.display='none';
-            document.getElementById('scanner').classList.remove('camera-active');
-            setStatus('','');
-            document.getElementById('scanner').focus();
-        }
+        function stopCameraScan(){if(quaggaActive){Quagga.stop();quaggaActive=false;}if(window._quagga)window._quagga=false;if(scanTimeout)clearTimeout(scanTimeout);document.getElementById('scanner').style.display='block';document.getElementById('interactive').style.display='none';document.getElementById('btn-camera-start').style.display='block';document.getElementById('btn-camera-stop').style.display='none';document.getElementById('scanner').classList.remove('camera-active');setStatus('','');document.getElementById('scanner').focus();}
+        function setStatus(text,cls){const el=document.getElementById('scan-status');el.textContent=text;el.className='scan-status'+(cls?' '+cls:'');}
 
-        function setStatus(text,cls){
-            const el=document.getElementById('scan-status');
-            el.textContent=text;
-            el.className='scan-status'+(cls?' '+cls:'');
-        }
+        // === СКАНЕР ===
+        function setupScanner(){const inp=document.getElementById('scanner');inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}});inp.addEventListener('focus',()=>inp.select());}
 
-        // === СКАНЕР: КЛАВИАТУРА ===
-        function setupScanner(){
-            const inp=document.getElementById('scanner');
-            inp.addEventListener('keypress',e=>{
-                if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}
-            });
-            inp.addEventListener('focus',()=>inp.select());
-        }
+        // === ФАЙЛ ===
+        function handleFileSelect(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});let route='';for(let i=0;i<10;i++)if(data[i]?.join(' ').match(/Екатеринбург|Москва|Чехов|Новоселки|Перспективная|Казань|Краснодар|СПб|Санкт-Петербург/i)){route=data[i].join(' ');break;}state.orderMeta={route};let headerRowIdx=-1;for(let i=0;i<Math.min(20,data.length);i++){const rs=data[i]?.join(' ').toLowerCase()||'';if(rs.includes('артикул')||rs.includes('шк')||rs.includes('наименование')||rs.includes('код товара')){headerRowIdx=i;break;}}if(headerRowIdx===-1)throw new Error('Не найдены заголовки');tempHeaders=data[headerRowIdx].map(h=>String(h).trim()).filter(h=>h);tempExcelData=data.slice(headerRowIdx+1);openMappingModal();}catch(err){showError('❌ '+err.message);speak('Ошибка файла');}};reader.readAsArrayBuffer(file);}
 
-        // === ФАЙЛ: ЗАГРУЗКА ===
-        function handleFileSelect(e){
-            const file=e.target.files[0];if(!file)return;
-            const reader=new FileReader();
-            reader.onload=ev=>{
-                try{
-                    const wb=XLSX.read(ev.target.result,{type:'array'});
-                    const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-                    let route='';
-                    for(let i=0;i<10;i++)if(data[i]?.join(' ').match(/Екатеринбург|Москва|Чехов|Новоселки|Перспективная|Казань|Краснодар|СПб|Санкт-Петербург/i)){route=data[i].join(' ');break;}
-                    state.orderMeta={route};
-                    let headerRowIdx=-1;
-                    for(let i=0;i<Math.min(20,data.length);i++){const rs=data[i]?.join(' ').toLowerCase()||'';if(rs.includes('артикул')||rs.includes('шк')||rs.includes('наименование')||rs.includes('код товара')){headerRowIdx=i;break;}}
-                    if(headerRowIdx===-1)throw new Error('Не найдены заголовки');
-                    tempHeaders=data[headerRowIdx].map(h=>String(h).trim()).filter(h=>h);
-                    tempExcelData=data.slice(headerRowIdx+1);
-                    openMappingModal();
-                }catch(err){showError('❌ '+err.message);speak('Ошибка файла');}
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // === МАППИНГ ===
-        function openMappingModal(){
-            const c=document.getElementById('mapping-fields');c.innerHTML='';
-            MAPPING_CONFIG.forEach(f=>{
-                const r=document.createElement('div');r.className='mapping-row';
-                const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;
-                const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;
-                const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);
-                tempHeaders.forEach((h,idx)=>{
-                    const o=document.createElement('option');o.value=idx;o.textContent=h;
-                    const hl=h.toLowerCase();
-                    if(f.key==='sku'&&(hl.includes('артикул')||hl.includes('код товара')))o.selected=true;
-                    if(f.key==='name'&&(hl.includes('наименование')||hl.includes('название')))o.selected=true;
-                    if(f.key==='barcode_orig'&&hl.includes('шк исход'))o.selected=true;
-                    if(f.key==='barcode_wb'&&hl.includes('шк на этикетку'))o.selected=true;
-                    if(f.key==='qty_total'&&(hl.includes('итого')||hl.includes('отгрузк')))o.selected=true;
-                    if(f.key==='quant'&&hl.includes('квант'))o.selected=true;
-                    if(f.key==='tz_note'&&hl.includes('тз'))o.selected=true;
-                    if(f.key==='boxes_plan'&&hl.includes('короб'))o.selected=true;
-                    if(f.key==='pcs_per_box'&&hl.includes('штук в'))o.selected=true;
-                    if(f.key==='expiry'&&hl.includes('годен'))o.selected=true;
-                    s.appendChild(o);
-                });
-                r.appendChild(l);r.appendChild(s);c.appendChild(r);
-            });
-            document.getElementById('mapping-modal').style.display='flex';
-        }
+        function openMappingModal(){const c=document.getElementById('mapping-fields');c.innerHTML='';MAPPING_CONFIG.forEach(f=>{const r=document.createElement('div');r.className='mapping-row';const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);tempHeaders.forEach((h,idx)=>{const o=document.createElement('option');o.value=idx;o.textContent=h;const hl=h.toLowerCase();if(f.key==='sku'&&(hl.includes('артикул')||hl.includes('код товара')))o.selected=true;if(f.key==='name'&&(hl.includes('наименование')||hl.includes('название')))o.selected=true;if(f.key==='barcode_orig'&&hl.includes('шк исход'))o.selected=true;if(f.key==='barcode_wb'&&hl.includes('шк на этикетку'))o.selected=true;if(f.key==='qty_total'&&(hl.includes('итого')||hl.includes('отгрузк')))o.selected=true;if(f.key==='quant'&&hl.includes('квант'))o.selected=true;if(f.key==='tz_note'&&hl.includes('тз'))o.selected=true;if(f.key==='boxes_plan'&&hl.includes('короб'))o.selected=true;if(f.key==='pcs_per_box'&&hl.includes('штук в'))o.selected=true;if(f.key==='expiry'&&hl.includes('годен'))o.selected=true;s.appendChild(o);});r.appendChild(l);r.appendChild(s);c.appendChild(r);});document.getElementById('mapping-modal').style.display='flex';}
         function closeMappingModal(){document.getElementById('mapping-modal').style.display='none';document.getElementById('excel-upload').value='';}
-        function applyMapping(){
-            const sels=document.querySelectorAll('.mapping-select');const map={};let ok=true;
-            sels.forEach(sel=>{if(sel.dataset.required==='true'&&sel.value===''){sel.style.borderColor='red';ok=false;}else{sel.style.borderColor='';if(sel.value!=='')map[sel.dataset.key]=parseInt(sel.value);}});
-            if(!ok){showError('⚠️ Заполните обязательные поля');speak('Заполните поля');return;}
-            processDataWithMapping(map);closeMappingModal();
-        }
+        function applyMapping(){const sels=document.querySelectorAll('.mapping-select');const map={};let ok=true;sels.forEach(sel=>{if(sel.dataset.required==='true'&&sel.value===''){sel.style.borderColor='red';ok=false;}else{sel.style.borderColor='';if(sel.value!=='')map[sel.dataset.key]=parseInt(sel.value);}});if(!ok){showError('⚠️ Заполните обязательные поля');speak('Заполните поля');return;}processDataWithMapping(map);closeMappingModal();}
 
-        // === ОБРАБОТКА ДАННЫХ ===
-        function processDataWithMapping(mapping){
-            try{
-                state.db={};state.targets=[];let total=0;
-                document.getElementById('excel-route-display').textContent=state.orderMeta.route||'-';
-                document.getElementById('city').value='';
-                for(let i=0;i<tempExcelData.length;i++){
-                    const r=tempExcelData[i];const sku=String(r[mapping.sku]||'').trim();
-                    if(!sku||sku.includes('ERROR')||isNaN(sku.replace(/\D/g,'')))continue;
-                    const tp=parseInt(String(r[mapping.qty_total]).replace(/[,\s]/g,''))||0;
-                    if(tp<=0)continue;
-                    const prod={
-                        sku,name:String(r[mapping.name]||'Товар').trim(),targetPcs:tp,packedPcs:0,
-                        quant:mapping.quant!==undefined?(parseInt(String(r[mapping.quant]).replace(/[,\s]/g,''))||1):1,
-                        boxesPlan:mapping.boxes_plan!==undefined?(parseInt(String(r[mapping.boxes_plan]).replace(/[,\s]/g,''))||0):0,
-                        pcsPerBox:mapping.pcs_per_box!==undefined?(parseInt(String(r[mapping.pcs_per_box]).replace(/[,\s]/g,''))||0):0,
-                        tz:mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',
-                        expiry:mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''
-                    };
-                    total+=tp;state.targets.push(prod);
-                    const bcs=new Set();
-                    if(mapping.barcode_orig!==undefined)String(r[mapping.barcode_orig]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
-                    if(mapping.barcode_wb!==undefined)String(r[mapping.barcode_wb]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
-                    if(bcs.size===0)bcs.add(sku);
-                    bcs.forEach(b=>{state.db[b]=prod;});
-                }
-                document.getElementById('order-info').style.display='block';
-                document.getElementById('loaded-count').textContent=state.targets.length;
-                document.getElementById('total-plan').textContent=total.toLocaleString('ru');
-                renderTargets();showSuccess(`✅ Загружено ${state.targets.length} поз.`);saveState();speak('Файл загружен');
-            }catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}
-        }
+        function processDataWithMapping(mapping){try{state.db={};state.targets=[];let total=0;document.getElementById('excel-route-display').textContent=state.orderMeta.route||'-';document.getElementById('city').value='';for(let i=0;i<tempExcelData.length;i++){const r=tempExcelData[i];const sku=String(r[mapping.sku]||'').trim();if(!sku||sku.includes('ERROR')||isNaN(sku.replace(/\D/g,'')))continue;const tp=parseInt(String(r[mapping.qty_total]).replace(/[,\s]/g,''))||0;if(tp<=0)continue;const prod={sku,name:String(r[mapping.name]||'Товар').trim(),targetPcs:tp,packedPcs:0,quant:mapping.quant!==undefined?(parseInt(String(r[mapping.quant]).replace(/[,\s]/g,''))||1):1,boxesPlan:mapping.boxes_plan!==undefined?(parseInt(String(r[mapping.boxes_plan]).replace(/[,\s]/g,''))||0):0,pcsPerBox:mapping.pcs_per_box!==undefined?(parseInt(String(r[mapping.pcs_per_box]).replace(/[,\s]/g,''))||0):0,tz:mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',expiry:mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''};total+=tp;state.targets.push(prod);const bcs=new Set();if(mapping.barcode_orig!==undefined)String(r[mapping.barcode_orig]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});if(mapping.barcode_wb!==undefined)String(r[mapping.barcode_wb]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});if(bcs.size===0)bcs.add(sku);bcs.forEach(b=>{state.db[b]=prod;});}document.getElementById('order-info').style.display='block';document.getElementById('loaded-count').textContent=state.targets.length;document.getElementById('total-plan').textContent=total.toLocaleString('ru');renderTargets();showSuccess(`✅ Загружено ${state.targets.length} поз.`);saveState();speak('Файл загружен');}catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}}
 
-        // === ОБРАБОТКА ШК ===
+        // 🔴 ИЗМЕНЕНО: Голос теперь говорит только квант и остаток
         function handleScan(bc){
             hideError();const inp=document.getElementById('scanner');
             if(!Object.keys(state.db).length){showError('⚠️ Загрузите ТЗ');inp.classList.add('error');speak('Загрузите файл');return;}
@@ -494,168 +280,34 @@
             renderBox();renderTargets();inp.classList.add('success');
             const rem=p.targetPcs-p.packedPcs;
             const qt=p.quant>1?`Квант ${p.quant}. `:'';
-            const rt=rem>0?`Осталось ${rem}`:'План выполнен';
-            speak(`Добавлено. ${p.name.substring(0,22)}. ${qt}${rt}`);
+            const rt=rem>0?`Осталось ${rem}`:'Готово';
+            speak(`${qt}${rt}`);
             setTimeout(()=>inp.classList.remove('success'),400);
         }
 
-        // === ЗАКРЫТИЕ КОРОБА ===
-        function closeBox(){
-            const city=document.getElementById('city').value.trim();
-            if(!city)return showError('⚠️ Введите город');
-            if(!state.activePallet)return showError('⚠️ Выберите палет');
-            if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');
-            
-            const now=new Date();
-            const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
-            const palId=state.activePallet;
-            const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};
-            
-            state.pallets[palId].boxes.push(boxId);
-            state.pallets[palId].weight+=boxData.weight;
-            state.history.unshift(boxData);state.boxCounter++;
-            
-            saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();
-            speak('Короб закрыт. Печать');
-            
-            lastPrintedLabelId='label-box';
-            document.getElementById('retry-print-btn').style.display='block';
-            
-            setTimeout(()=>{window.print();setTimeout(()=>{document.getElementById('retry-print-btn').style.display='none';},10000);},400);
-        }
-
+        function closeBox(){const city=document.getElementById('city').value.trim();if(!city)return showError('⚠️ Введите город');if(!state.activePallet)return showError('⚠️ Выберите палет');if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');const now=new Date();const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;const palId=state.activePallet;const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};state.pallets[palId].boxes.push(boxId);state.pallets[palId].weight+=boxData.weight;state.history.unshift(boxData);state.boxCounter++;saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();speak('Короб закрыт. Печать');lastPrintedLabelId='label-box';document.getElementById('retry-print-btn').style.display='block';setTimeout(()=>{window.print();setTimeout(()=>{document.getElementById('retry-print-btn').style.display='none';},10000);},400);}
         function retryPrint(){if(lastPrintedLabelId)window.print();else showError('Нет этикетки');}
-
-        // === ПЕРЕОТКРЫТИЕ ===
-        function reopenLastBox(){
-            if(!state.history.length)return showError('Нет закрытых коробов');
-            const lb=state.history[0];
-            if(!confirm(`Переоткрыть ${lb.id}?`))return;
-            for(const[bc,q]of Object.entries(lb.items)){
-                state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;
-                if(state.db[bc])state.db[bc].packedPcs-=q;
-            }
-            state.currentBox.weight+=lb.weight;
-            state.history.shift();
-            if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}
-            saveState();renderBox();renderTargets();renderPallets();updateUI();
-            speak(`Короб ${lb.id} переоткрыт`);
-            document.getElementById('retry-print-btn').style.display='none';
-            document.getElementById('scanner').focus();
-        }
-
-        function clearBox(){
-            if(Object.keys(state.currentBox.items).length&&!confirm('Очистить короб?'))return;
-            for(const[bc,q]of Object.entries(state.currentBox.items)){if(state.db[bc])state.db[bc].packedPcs-=q;}
-            state.currentBox={items:{},weight:0};updateUI();renderBox();renderTargets();speak('Очищено');
-        }
-
-        // === ОТРИСОВКА КОРОБА ===
-        function renderBox(){
-            const tb=document.getElementById('box-tbody');tb.innerHTML='';
-            const items=Object.entries(state.currentBox.items);
-            document.getElementById('empty-msg').style.display=items.length?'none':'block';
-            items.forEach(([bc,q])=>{
-                const p=state.db[bc]||{sku:'?',name:'?'};
-                tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,22)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;
-            });
-            updateUI();
-        }
+        function reopenLastBox(){if(!state.history.length)return showError('Нет закрытых коробов');const lb=state.history[0];if(!confirm(`Переоткрыть ${lb.id}?`))return;for(const[bc,q]of Object.entries(lb.items)){state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox.weight+=lb.weight;state.history.shift();if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}saveState();renderBox();renderTargets();renderPallets();updateUI();speak(`Короб ${lb.id} переоткрыт`);document.getElementById('retry-print-btn').style.display='none';document.getElementById('scanner').focus();}
+        function clearBox(){if(Object.keys(state.currentBox.items).length&&!confirm('Очистить короб?'))return;for(const[bc,q]of Object.entries(state.currentBox.items)){if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox={items:{},weight:0};updateUI();renderBox();renderTargets();speak('Очищено');}
+        function renderBox(){const tb=document.getElementById('box-tbody');tb.innerHTML='';const items=Object.entries(state.currentBox.items);document.getElementById('empty-msg').style.display=items.length?'none':'block';items.forEach(([bc,q])=>{const p=state.db[bc]||{sku:'?',name:'?'};tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,22)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;});updateUI();}
         function changeQty(bc,d){const o=state.currentBox.items[bc]||0;const n=Math.max(0,o+d);if(n===0)delete state.currentBox.items[bc];else state.currentBox.items[bc]=n;if(state.db[bc])state.db[bc].packedPcs+=(n-o);updWeight();renderBox();renderTargets();}
         function removeItem(bc){const q=state.currentBox.items[bc]||0;delete state.currentBox.items[bc];if(state.db[bc])state.db[bc].packedPcs-=q;updWeight();renderBox();renderTargets();}
         function updWeight(){let w=0;for(const q of Object.values(state.currentBox.items))w+=0.12*q;state.currentBox.weight=w;}
-        
-        function updateUI(){
-            document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;
-            document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);
-            const hi=Object.keys(state.currentBox.items).length>0;
-            document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);
-            document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);
-            document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';
-        }
+        function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';}
         function clearBoxUI(){state.currentBox={items:{},weight:0};renderBox();updateUI();}
-
-        // === ПАЛЕТЫ ===
-        function createPallet(){
-            const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;
-            if(state.pallets[id])return showError('❌ Существует');
-            state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;
-            document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;
-            renderPallets();updateUI();speak('Палет создан');saveState();
-        }
+        function createPallet(){const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;if(state.pallets[id])return showError('❌ Существует');state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();speak('Палет создан');saveState();}
         function selectPallet(id){state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();}
-        function renderPallets(){
-            const l=document.getElementById('pallets-list');l.innerHTML='';
-            if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}
-            Object.values(state.pallets).forEach(p=>{
-                const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;
-                d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;
-                d.onclick=()=>selectPallet(p.id);l.appendChild(d);
-            });
-        }
-
-        // === ПЛАН ===
-        function renderTargets(){
-            const l=document.getElementById('targets-list');
-            if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}
-            l.innerHTML=state.targets.map(p=>{
-                const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;
-                const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;
-                const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';
-                const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';
-                return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,28)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,100)}${p.tz.length>100?'...':''}</div>`:''}</div>`;
-            }).join('');
-        }
-
-        // === ЭТИКЕТКИ ===
-        function generateBoxLabel(b){
-            document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
-            document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
-            document.getElementById('lbl-city-box').textContent=b.city;
-            document.getElementById('lbl-pallet-box').textContent=b.pallet;
-            document.getElementById('lbl-box-id-box').textContent=b.id;
-            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';
-            const ul=document.getElementById('lbl-items-list-box');ul.innerHTML='';
-            Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc];ul.innerHTML+=`<li>${p?.name?.substring(0,22)||bc} ×${q}</li>`;});
-            document.getElementById('lbl-barcode-text-box').textContent=b.id;
-            JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
-        }
-
-        function printPalletLabel(){
-            if(!state.activePallet)return showError('⚠️ Выберите палет');
-            const p=state.pallets[state.activePallet];
-            const city=document.getElementById('city').value.trim()||'ЕКБ';
-            document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';
-            document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
-            document.getElementById('lbl-city-pal').textContent=city;
-            document.getElementById('lbl-pal-id').textContent=p.id;
-            document.getElementById('lbl-pal-count').textContent=p.boxes.length;
-            document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(2)+' кг';
-            const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';
-            p.boxes.forEach(b=>ul.innerHTML+=`<li>${b}</li>`);
-            document.getElementById('lbl-barcode-text-pal').textContent=p.id;
-            JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});
-            lastPrintedLabelId='label-pallet';
-            document.getElementById('retry-print-btn').style.display='block';
-            speak('Печать палета');
-            setTimeout(()=>window.print(),400);
-        }
-
-        // === ЭКСПОРТ И УТИЛИТЫ ===
-        function exportCSV(){
-            if(!state.history.length)return showError('Нет данных');
-            let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';
-            state.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]||{};csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${(p.name||'').replace(/"/g,'""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;}));
-            const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fbo_${new Date().toISOString().slice(0,10)}.csv`;a.click();speak('Отчёт скачан');
-        }
+        function renderPallets(){const l=document.getElementById('pallets-list');l.innerHTML='';if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}Object.values(state.pallets).forEach(p=>{const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;d.onclick=()=>selectPallet(p.id);l.appendChild(d);});}
+        function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,28)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,100)}${p.tz.length>100?'...':''}</div>`:''}</div>`;}).join('');}
+        function generateBoxLabel(b){document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');document.getElementById('lbl-city-box').textContent=b.city;document.getElementById('lbl-pallet-box').textContent=b.pallet;document.getElementById('lbl-box-id-box').textContent=b.id;document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';const ul=document.getElementById('lbl-items-list-box');ul.innerHTML='';Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc];ul.innerHTML+=`<li>${p?.name?.substring(0,22)||bc} ×${q}</li>`;});document.getElementById('lbl-barcode-text-box').textContent=b.id;JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});}
+        function printPalletLabel(){if(!state.activePallet)return showError('⚠️ Выберите палет');const p=state.pallets[state.activePallet];const city=document.getElementById('city').value.trim()||'ЕКБ';document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');document.getElementById('lbl-city-pal').textContent=city;document.getElementById('lbl-pal-id').textContent=p.id;document.getElementById('lbl-pal-count').textContent=p.boxes.length;document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(2)+' кг';const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';p.boxes.forEach(b=>ul.innerHTML+=`<li>${b}</li>`);document.getElementById('lbl-barcode-text-pal').textContent=p.id;JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});lastPrintedLabelId='label-pallet';document.getElementById('retry-print-btn').style.display='block';speak('Печать палета');setTimeout(()=>window.print(),400);}
+        function exportCSV(){if(!state.history.length)return showError('Нет данных');let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';state.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]||{};csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${(p.name||'').replace(/"/g,'""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;}));const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fbo_${new Date().toISOString().slice(0,10)}.csv`;a.click();speak('Отчёт скачан');}
         function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
         function hideError(){document.getElementById('error-msg').style.display='none';}
         function showSuccess(m){const s=document.getElementById('upload-status');s.textContent=m;s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
         function saveState(){localStorage.setItem('fbo_v2',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
         function loadState(){const s=localStorage.getItem('fbo_v2');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
         function resetAllData(){if(confirm('Сбросить ВСЕ данные?')){localStorage.removeItem('fbo_v2');location.reload();}}
-        
-        // === ОЧИСТКА ===
         window.addEventListener('beforeunload',()=>{if(quaggaActive)Quagga.stop();});
     </script>
 </body>
