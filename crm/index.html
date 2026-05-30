@@ -6,6 +6,8 @@
     <title>FBO Отгрузка | Исправленная печать</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 🔴 ДОБАВЛЕНО: Библиотека для сканирования через камеру -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,7 +67,7 @@
         /* === ИСПРАВЛЕННЫЕ СТИЛИ ПЕЧАТИ === */
         .label-area { 
             position: absolute; 
-            left: -9999px; /* Прячем за экраном, а не через display:none */
+            left: -9999px;
             top: 0;
             width: 120mm; 
             height: 75mm; 
@@ -91,9 +93,18 @@
         /* Кнопка повторной печати */
         #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
 
+        /* 🔴 ДОБАВЛЕНО: Стили для камеры */
+        #camera-section { margin-top: 10px; }
+        #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; display: none; }
+        #reader video { width: 100%; display: block; }
+        #camera-toggle { display: flex; gap: 8px; margin-top: 8px; }
+        #camera-toggle button { flex: 1; }
+        .camera-permission { font-size: 11px; color: #666; margin-top: 5px; text-align: center; }
+        .camera-active { border-color: var(--success) !important; background: #e6ffe6 !important; }
+
         @media print {
             body * { visibility: hidden !important; }
-            .grid, .no-print, .modal-overlay { display: none !important; }
+            .grid, .no-print, .modal-overlay, #camera-section { display: none !important; }
             
             .print-target { 
                 position: absolute !important; 
@@ -114,6 +125,12 @@
             .print-target svg { display: inline-block !important; }
             
             @page { size: 120mm 75mm; margin: 0; }
+        }
+        
+        /* 🔴 ДОБАВЛЕНО: Адаптив для мобильных */
+        @media (max-width: 1200px) {
+            .grid { grid-template-columns: 1fr; }
+            #reader { max-height: 300px; }
         }
     </style>
 </head>
@@ -164,7 +181,18 @@
             <div class="card">
                 <h2>📡 Сканирование</h2>
                 <input type="text" id="scanner" class="scanner-input" placeholder="Кликните → сканируйте ШК" autocomplete="off">
-                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Голос озвучит квант и остаток.</p>
+                
+                <!-- 🔴 ДОБАВЛЕНО: Секция камеры -->
+                <div id="camera-section">
+                    <div class="row" id="camera-toggle">
+                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
+                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none;">⏹ Стоп</button>
+                    </div>
+                    <div id="reader"></div>
+                    <p class="camera-permission">💡 Разрешите доступ к камере для сканирования</p>
+                </div>
+                
+                <p style="font-size: 11px; color: #666; margin-top: 8px;">💡 Голос озвучит квант и остаток.</p>
             </div>
             <div class="card">
                 <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
@@ -241,7 +269,11 @@
 
         let state = { db: {}, targets: [], currentBox: { items: {}, weight: 0 }, history: [], boxCounter: 1, orderMeta: {}, pallets: {}, activePallet: null };
         let tempExcelData = null, tempHeaders = [];
-        let lastPrintedLabelId = null; // Для кнопки повторной печати
+        let lastPrintedLabelId = null;
+        
+        // 🔴 ДОБАВЛЕНО: Переменные для камеры
+        let html5QrCode = null;
+        let cameraActive = false;
 
         // === ГОЛОС ===
         let voiceEnabled = true, maleVoice = null;
@@ -257,7 +289,110 @@
             document.getElementById('excel-upload').addEventListener('change', handleFileSelect);
             document.getElementById('city').addEventListener('input', updateUI);
             document.getElementById('scanner').focus();
+            
+            // 🔴 ДОБАВЛЕНО: Проверка поддержки камеры
+            checkCameraSupport();
         });
+
+        // 🔴 ДОБАВЛЕНО: Проверка поддержки камеры
+        function checkCameraSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('btn-camera-start').disabled = true;
+                document.getElementById('btn-camera-start').textContent = '📷 Камера не поддерживается';
+                document.querySelector('.camera-permission').textContent = '❌ Камера не доступна в этом браузере';
+            }
+        }
+
+        // 🔴 ДОБАВЛЕНО: Запуск сканирования через камеру
+        async function startCameraScan() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError('❌ Камера не поддерживается');
+                return;
+            }
+            
+            try {
+                // Скрываем поле ввода, показываем камеру
+                document.getElementById('scanner').style.display = 'none';
+                document.getElementById('reader').style.display = 'block';
+                document.getElementById('btn-camera-start').style.display = 'none';
+                document.getElementById('btn-camera-stop').style.display = 'block';
+                document.getElementById('scanner').classList.add('camera-active');
+                
+                // Инициализируем сканер
+                html5QrCode = new Html5Qrcode("reader");
+                
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 100 }, // Узкая область для линейных штрихкодов
+                    disableFlip: false,
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.ITF,
+                        Html5QrcodeSupportedFormats.QR_CODE
+                    ]
+                };
+                
+                // Запрашиваем камеру (предпочитаем заднюю на мобильных)
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+                
+                cameraActive = true;
+                speak('Камера включена');
+                
+            } catch (err) {
+                console.error('Ошибка камеры:', err);
+                showError('❌ Ошибка камеры: ' + (err.message || 'Нет доступа'));
+                stopCameraScan();
+                speak('Ошибка камеры');
+            }
+        }
+
+        // 🔴 ДОБАВЛЕНО: Обработка успешного сканирования
+        function onScanSuccess(decodedText, decodedResult) {
+            // Обработаем найденный штрихкод так же, как с клавиатуры
+            handleScan(decodedText.trim());
+            
+            // Вибрация на мобильных при успешном сканировании
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            // Небольшая пауза между сканированиями
+            return new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        // 🔴 ДОБАВЛЕНО: Обработка ошибок сканирования (игнорируем шум)
+        function onScanFailure(errorMessage) {
+            // Не показываем ошибки при каждом кадре - только лог для отладки
+            // console.log('Scan error:', errorMessage);
+        }
+
+        // 🔴 ДОБАВЛЕНО: Остановка сканирования через камеру
+        function stopCameraScan() {
+            if (html5QrCode && cameraActive) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                }).catch(err => console.error('Ошибка остановки камеры:', err));
+            }
+            
+            // Возвращаем интерфейс
+            document.getElementById('scanner').style.display = 'block';
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('btn-camera-start').style.display = 'block';
+            document.getElementById('btn-camera-stop').style.display = 'none';
+            document.getElementById('scanner').classList.remove('camera-active');
+            document.getElementById('scanner').focus();
+            
+            cameraActive = false;
+        }
 
         function setupScanner() {
             const inp = document.getElementById('scanner');
@@ -392,19 +527,15 @@
             clearBoxUI(); renderTargets(); renderPallets();
             speak('Короб закрыт. Печатаю');
             
-            // Запоминаем ID для повторной печати
             lastPrintedLabelId = 'label-box';
             document.getElementById('retry-print-btn').style.display = 'block';
             
-            // Увеличенная задержка для гарантии рендеринга штрихкода
             setTimeout(() => { 
                 window.print(); 
-                // Скрываем кнопку повтора через 10 сек если печать прошла
                 setTimeout(() => { document.getElementById('retry-print-btn').style.display = 'none'; }, 10000);
             }, 500);
         }
 
-        // Кнопка повторной печати
         function retryPrint() {
             if(lastPrintedLabelId) {
                 window.print();
@@ -540,6 +671,13 @@
         function saveState() { localStorage.setItem('fbo_print_fix_v1', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
         function loadState() { const s=localStorage.getItem('fbo_print_fix_v1'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); updateUI(); } }
         function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_print_fix_v1'); location.reload(); } }
+        
+        // 🔴 ДОБАВЛЕНО: Очистка камеры при выгрузке страницы
+        window.addEventListener('beforeunload', () => {
+            if (html5QrCode && cameraActive) {
+                html5QrCode.stop().catch(() => {});
+            }
+        });
     </script>
 </body>
 </html>
