@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FBO Отгрузка | Полный рабочий код</title>
-    <!-- Библиотеки -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
@@ -74,8 +73,9 @@
         .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 4mm; }
         .label-info-row div { flex: 1; }
         .label-content { font-size: 7pt; border-top: 1px solid #ccc; padding-top: 1.5mm; height: 28mm; overflow: hidden; }
-        .label-content ul { column-count: 2; column-gap: 4mm; margin: 0; padding-left: 12px; }
-        .label-content li { margin-bottom: 0.5mm; break-inside: avoid; }
+        .label-content ul { column-count: 2; column-gap: 3mm; margin: 0; padding-left: 10px; }
+        .label-content li { margin-bottom: 0.5mm; break-inside: avoid; font-size: 6.5pt; line-height: 1.2; }
+        .label-content li code { font-family: monospace; font-weight: bold; }
         .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; }
         .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; }
         .weight-box { font-size: 9pt; font-weight: bold; background: #eee; padding: 1mm 3mm; border-radius: 2mm; }
@@ -101,7 +101,6 @@
     </style>
 </head>
 <body>
-    <!-- Модалка маппинга -->
     <div class="modal-overlay" id="mapping-modal">
         <div class="modal">
             <h3>📋 Настройка колонок Excel</h3>
@@ -115,7 +114,6 @@
     </div>
 
     <div class="grid no-print">
-        <!-- ЛЕВАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto;font-size:12px;padding:4px 8px;">🔊 ВКЛ</button></h2>
@@ -143,13 +141,10 @@
                 <div id="pallets-list" style="max-height:160px;overflow-y:auto;"></div>
             </div>
         </div>
-
-        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>📡 Сканирование</h2>
                 <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или отсканируйте ШК" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                
                 <div id="camera-section">
                     <div class="row" id="camera-toggle">
                         <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
@@ -162,7 +157,6 @@
                 </div>
                 <p style="font-size:11px;color:#666;margin-top:6px;">🔊 Голос: <i>«Квант X. Осталось Y»</i></p>
             </div>
-            
             <div class="card">
                 <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
                 <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
@@ -173,15 +167,12 @@
                 <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати</button>
                 <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;">🗑 Очистить</button>
             </div>
-            
             <div class="card">
                 <h2>📋 Состав</h2>
                 <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
                 <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0;">Коробка пуста</p>
             </div>
         </div>
-
-        <!-- ПРАВАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>🎯 План (ТЗ)</h2>
@@ -195,7 +186,7 @@
         </div>
     </div>
 
-    <!-- Этикетки для печати -->
+    <!-- Этикетки -->
     <div class="label-area print-target" id="label-box">
         <div class="label-header"><span class="label-title" id="lbl-mp-box">FBO</span><span style="font-size:6pt" id="lbl-date-box"></span></div>
         <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-box"></span></div><div>📦<b>Палет:</b><span id="lbl-pallet-box"></span></div><div>🆔<b>Короб:</b><span id="lbl-box-id-box"></span></div></div>
@@ -210,7 +201,6 @@
     </div>
 
     <script>
-        // === КОНФИГ ===
         const MAPPING_CONFIG = [
             {key:'sku',label:'Артикул / Код товара *',required:true},
             {key:'name',label:'Название товара *',required:true},
@@ -224,12 +214,10 @@
             {key:'expiry',label:'Годен до',required:false}
         ];
 
-        // === STATE ===
         let state = {db:{},targets:[],currentBox:{items:{},weight:0},history:[],boxCounter:1,orderMeta:{},pallets:{},activePallet:null};
         let tempExcelData=null,tempHeaders=[],lastPrintedLabelId=null;
         let quaggaActive=false,scanDebounce=false,scanTimeout=null;
 
-        // === ГОЛОС ===
         let voiceEnabled=true,maleVoice=null;
         const synth=window.speechSynthesis;
         function initVoices(){const v=synth.getVoices().filter(x=>x.lang.startsWith('ru'));maleVoice=v.find(x=>/male|pavel|yuri|dmitry/i.test(x.name))||v[0];}
@@ -237,12 +225,10 @@
         document.getElementById('voice-toggle').onclick=function(){voiceEnabled=!voiceEnabled;this.textContent=voiceEnabled?'🔊 ВКЛ':'🔇 ВЫКЛ';this.style.background=voiceEnabled?'#6c757d':'#dc3545';if(voiceEnabled)speak('Голос включен');};
         if(synth){synth.onvoiceschanged=initVoices;initVoices();}
 
-        // === INIT ===
         document.addEventListener('DOMContentLoaded',()=>{loadState();setupScanner();renderPallets();renderTargets();updateUI();document.getElementById('excel-upload').addEventListener('change',handleFileSelect);document.getElementById('city').addEventListener('input',updateUI);document.getElementById('scanner').focus();checkCameraSupport();});
 
         function checkCameraSupport(){if(!navigator.mediaDevices?.getUserMedia){document.getElementById('btn-camera-start').disabled=true;document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';document.querySelector('.camera-permission').textContent='❌ Камера недоступна';}}
 
-        // === КАМЕРА: ЗАПУСК ===
         async function startCameraScan(){
             if(!navigator.mediaDevices?.getUserMedia){showError('❌ Камера не поддерживается');return;}
             try{
@@ -280,44 +266,32 @@
             }catch(err){console.error('Camera error:',err);showError('❌ Ошибка камеры: '+(err.message||'Нет доступа'));setStatus('❌ Ошибка','error');stopCameraScan();}
         }
 
-        // === КАМЕРА: СТОП ===
         function stopCameraScan(){if(quaggaActive){Quagga.stop();quaggaActive=false;}if(window._quagga)window._quagga=false;if(scanTimeout)clearTimeout(scanTimeout);document.getElementById('scanner').style.display='block';document.getElementById('interactive').style.display='none';document.getElementById('btn-camera-start').style.display='block';document.getElementById('btn-camera-stop').style.display='none';document.getElementById('scanner').classList.remove('camera-active');setStatus('','');document.getElementById('scanner').focus();}
         function setStatus(text,cls){const el=document.getElementById('scan-status');el.textContent=text;el.className='scan-status'+(cls?' '+cls:'');}
 
-        // === СКАНЕР: КЛАВИАТУРА ===
         function setupScanner(){const inp=document.getElementById('scanner');inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}});inp.addEventListener('focus',()=>inp.select());}
 
-        // === ФАЙЛ: ЗАГРУЗКА ===
         function handleFileSelect(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});let route='';for(let i=0;i<10;i++)if(data[i]?.join(' ').match(/Екатеринбург|Москва|Чехов|Новоселки|Перспективная|Казань|Краснодар|СПб|Санкт-Петербург/i)){route=data[i].join(' ');break;}state.orderMeta={route};let headerRowIdx=-1;for(let i=0;i<Math.min(20,data.length);i++){const rs=data[i]?.join(' ').toLowerCase()||'';if(rs.includes('артикул')||rs.includes('шк')||rs.includes('наименование')||rs.includes('код товара')){headerRowIdx=i;break;}}if(headerRowIdx===-1)throw new Error('Не найдены заголовки');tempHeaders=data[headerRowIdx].map(h=>String(h).trim()).filter(h=>h);tempExcelData=data.slice(headerRowIdx+1);openMappingModal();}catch(err){showError('❌ '+err.message);speak('Ошибка файла');}};reader.readAsArrayBuffer(file);}
 
-        // === МАППИНГ ===
         function openMappingModal(){const c=document.getElementById('mapping-fields');c.innerHTML='';MAPPING_CONFIG.forEach(f=>{const r=document.createElement('div');r.className='mapping-row';const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);tempHeaders.forEach((h,idx)=>{const o=document.createElement('option');o.value=idx;o.textContent=h;const hl=h.toLowerCase();if(f.key==='sku'&&(hl.includes('артикул')||hl.includes('код товара')))o.selected=true;if(f.key==='name'&&(hl.includes('наименование')||hl.includes('название')))o.selected=true;if(f.key==='barcode_orig'&&hl.includes('шк исход'))o.selected=true;if(f.key==='barcode_wb'&&hl.includes('шк на этикетку'))o.selected=true;if(f.key==='qty_total'&&(hl.includes('итого')||hl.includes('отгрузк')))o.selected=true;if(f.key==='quant'&&hl.includes('квант'))o.selected=true;if(f.key==='tz_note'&&hl.includes('тз'))o.selected=true;if(f.key==='boxes_plan'&&hl.includes('короб'))o.selected=true;if(f.key==='pcs_per_box'&&hl.includes('штук в'))o.selected=true;if(f.key==='expiry'&&hl.includes('годен'))o.selected=true;s.appendChild(o);});r.appendChild(l);r.appendChild(s);c.appendChild(r);});document.getElementById('mapping-modal').style.display='flex';}
         function closeMappingModal(){document.getElementById('mapping-modal').style.display='none';document.getElementById('excel-upload').value='';}
         function applyMapping(){const sels=document.querySelectorAll('.mapping-select');const map={};let ok=true;sels.forEach(sel=>{if(sel.dataset.required==='true'&&sel.value===''){sel.style.borderColor='red';ok=false;}else{sel.style.borderColor='';if(sel.value!=='')map[sel.dataset.key]=parseInt(sel.value);}});if(!ok){showError('⚠️ Заполните обязательные поля');speak('Заполните поля');return;}processDataWithMapping(map);closeMappingModal();}
 
-        // === ОБРАБОТКА ДАННЫХ ===
         function processDataWithMapping(mapping){try{state.db={};state.targets=[];let total=0;document.getElementById('excel-route-display').textContent=state.orderMeta.route||'-';document.getElementById('city').value='';for(let i=0;i<tempExcelData.length;i++){const r=tempExcelData[i];const sku=String(r[mapping.sku]||'').trim();if(!sku||sku.includes('ERROR')||isNaN(sku.replace(/\D/g,'')))continue;const tp=parseInt(String(r[mapping.qty_total]).replace(/[,\s]/g,''))||0;if(tp<=0)continue;const prod={sku,name:String(r[mapping.name]||'Товар').trim(),targetPcs:tp,packedPcs:0,quant:mapping.quant!==undefined?(parseInt(String(r[mapping.quant]).replace(/[,\s]/g,''))||1):1,boxesPlan:mapping.boxes_plan!==undefined?(parseInt(String(r[mapping.boxes_plan]).replace(/[,\s]/g,''))||0):0,pcsPerBox:mapping.pcs_per_box!==undefined?(parseInt(String(r[mapping.pcs_per_box]).replace(/[,\s]/g,''))||0):0,tz:mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',expiry:mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''};total+=tp;state.targets.push(prod);const bcs=new Set();if(mapping.barcode_orig!==undefined)String(r[mapping.barcode_orig]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});if(mapping.barcode_wb!==undefined)String(r[mapping.barcode_wb]||'').split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});if(bcs.size===0)bcs.add(sku);bcs.forEach(b=>{state.db[b]=prod;});}document.getElementById('order-info').style.display='block';document.getElementById('loaded-count').textContent=state.targets.length;document.getElementById('total-plan').textContent=total.toLocaleString('ru');renderTargets();showSuccess(`✅ Загружено ${state.targets.length} поз.`);saveState();speak('Файл загружен');}catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}}
 
-        // 🔴 ОБРАБОТКА ШК (с жестким лимитом)
         function handleScan(bc){
             hideError();const inp=document.getElementById('scanner');
             if(!Object.keys(state.db).length){showError('⚠️ Загрузите ТЗ');inp.classList.add('error');speak('Загрузите файл');return;}
             if(!state.activePallet){showError('⚠️ Выберите палет');inp.classList.add('error');speak('Выберите палет');return;}
             const p=state.db[bc];
             if(!p){showError(`❌ ШК ${bc} не найден`);inp.classList.add('error');speak('Не найдено');return;}
-            
-            // БЛОКИРОВКА ПРЕВЫШЕНИЯ ЛИМИТА
             if(p.packedPcs >= p.targetPcs) {
                 showError(`🚫 План выполнен! Лимит: ${p.targetPcs} шт.`);
-                inp.classList.add('error');
-                speak(`Стоп. Лимит ${p.targetPcs} достигнут`);
-                setTimeout(()=>inp.classList.remove('error'), 500);
-                return;
+                inp.classList.add('error'); speak(`Стоп. Лимит ${p.targetPcs} достигнут`);
+                setTimeout(()=>inp.classList.remove('error'), 500); return;
             }
-            
             state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+1;
-            state.currentBox.weight+=0.12;
-            p.packedPcs++;
+            state.currentBox.weight+=0.12; p.packedPcs++;
             renderBox();renderTargets();inp.classList.add('success');
             const rem=p.targetPcs-p.packedPcs;
             const qt=p.quant>1?`Квант ${p.quant}. `:'';
@@ -326,43 +300,43 @@
             setTimeout(()=>inp.classList.remove('success'),400);
         }
 
-        // === ЗАКРЫТИЕ КОРОБА ===
         function closeBox(){const city=document.getElementById('city').value.trim();if(!city)return showError('⚠️ Введите город');if(!state.activePallet)return showError('⚠️ Выберите палет');if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');const now=new Date();const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;const palId=state.activePallet;const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};state.pallets[palId].boxes.push(boxId);state.pallets[palId].weight+=boxData.weight;state.history.unshift(boxData);state.boxCounter++;saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();speak('Короб закрыт. Печать');lastPrintedLabelId='label-box';document.getElementById('retry-print-btn').style.display='block';setTimeout(()=>{window.print();setTimeout(()=>{document.getElementById('retry-print-btn').style.display='none';},10000);},400);}
         function retryPrint(){if(lastPrintedLabelId)window.print();else showError('Нет этикетки');}
         function reopenLastBox(){if(!state.history.length)return showError('Нет закрытых коробов');const lb=state.history[0];if(!confirm(`Переоткрыть ${lb.id}?`))return;for(const[bc,q]of Object.entries(lb.items)){state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox.weight+=lb.weight;state.history.shift();if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}saveState();renderBox();renderTargets();renderPallets();updateUI();speak(`Короб ${lb.id} переоткрыт`);document.getElementById('retry-print-btn').style.display='none';document.getElementById('scanner').focus();}
         function clearBox(){if(Object.keys(state.currentBox.items).length&&!confirm('Очистить короб?'))return;for(const[bc,q]of Object.entries(state.currentBox.items)){if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox={items:{},weight:0};updateUI();renderBox();renderTargets();speak('Очищено');}
-        
-        // === ОТРИСОВКА ===
         function renderBox(){const tb=document.getElementById('box-tbody');tb.innerHTML='';const items=Object.entries(state.currentBox.items);document.getElementById('empty-msg').style.display=items.length?'none':'block';items.forEach(([bc,q])=>{const p=state.db[bc]||{sku:'?',name:'?'};tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,22)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;});updateUI();}
-        
-        // 🔴 ИЗМЕНЕНО: Проверка лимита при ручном изменении
         function changeQty(bc,d){
-            if(d > 0 && state.db[bc] && state.db[bc].packedPcs >= state.db[bc].targetPcs) {
-                showError(`🚫 Лимит ТЗ: ${state.db[bc].targetPcs} шт.`);
-                speak(`Лимит ${state.db[bc].targetPcs}`);
-                return;
-            }
+            if(d > 0 && state.db[bc] && state.db[bc].packedPcs >= state.db[bc].targetPcs) { showError(`🚫 Лимит ТЗ: ${state.db[bc].targetPcs} шт.`); speak(`Лимит ${state.db[bc].targetPcs}`); return; }
             const o=state.currentBox.items[bc]||0;const n=Math.max(0,o+d);if(n===0)delete state.currentBox.items[bc];else state.currentBox.items[bc]=n;if(state.db[bc])state.db[bc].packedPcs+=(n-o);updWeight();renderBox();renderTargets();
         }
-        
         function removeItem(bc){const q=state.currentBox.items[bc]||0;delete state.currentBox.items[bc];if(state.db[bc])state.db[bc].packedPcs-=q;updWeight();renderBox();renderTargets();}
         function updWeight(){let w=0;for(const q of Object.values(state.currentBox.items))w+=0.12*q;state.currentBox.weight=w;}
         function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';}
         function clearBoxUI(){state.currentBox={items:{},weight:0};renderBox();updateUI();}
-        
-        // === ПАЛЕТЫ ===
         function createPallet(){const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;if(state.pallets[id])return showError('❌ Существует');state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();speak('Палет создан');saveState();}
         function selectPallet(id){state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();}
         function renderPallets(){const l=document.getElementById('pallets-list');l.innerHTML='';if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}Object.values(state.pallets).forEach(p=>{const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;d.onclick=()=>selectPallet(p.id);l.appendChild(d);});}
-        
-        // === ПЛАН ===
         function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,28)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,100)}${p.tz.length>100?'...':''}</div>`:''}</div>`;}).join('');}
         
-        // === ЭТИКЕТКИ ===
-        function generateBoxLabel(b){document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');document.getElementById('lbl-city-box').textContent=b.city;document.getElementById('lbl-pallet-box').textContent=b.pallet;document.getElementById('lbl-box-id-box').textContent=b.id;document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';const ul=document.getElementById('lbl-items-list-box');ul.innerHTML='';Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc];ul.innerHTML+=`<li>${p?.name?.substring(0,22)||bc} ×${q}</li>`;});document.getElementById('lbl-barcode-text-box').textContent=b.id;JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});}
+        // 🔴 ИСПРАВЛЕНО: Этикетка теперь явно выводит штрихкод товара
+        function generateBoxLabel(b){
+            document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
+            document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
+            document.getElementById('lbl-city-box').textContent=b.city;
+            document.getElementById('lbl-pallet-box').textContent=b.pallet;
+            document.getElementById('lbl-box-id-box').textContent=b.id;
+            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';
+            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
+            Object.entries(b.items).forEach(([bc,q])=>{
+                const p=state.db[bc];
+                // Штрихкод теперь жирным моноширинным шрифтом + обрезанное название
+                ul.innerHTML+=`<li>🔹 <code>${bc}</code> ${p?.name?.substring(0,16)||''} ×${q}</li>`;
+            });
+            document.getElementById('lbl-barcode-text-box').textContent=b.id;
+            JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
+        }
+
         function printPalletLabel(){if(!state.activePallet)return showError('⚠️ Выберите палет');const p=state.pallets[state.activePallet];const city=document.getElementById('city').value.trim()||'ЕКБ';document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');document.getElementById('lbl-city-pal').textContent=city;document.getElementById('lbl-pal-id').textContent=p.id;document.getElementById('lbl-pal-count').textContent=p.boxes.length;document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(2)+' кг';const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';p.boxes.forEach(b=>ul.innerHTML+=`<li>${b}</li>`);document.getElementById('lbl-barcode-text-pal').textContent=p.id;JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});lastPrintedLabelId='label-pallet';document.getElementById('retry-print-btn').style.display='block';speak('Печать палета');setTimeout(()=>window.print(),400);}
-        
-        // === ЭКСПОРТ И УТИЛИТЫ ===
         function exportCSV(){if(!state.history.length)return showError('Нет данных');let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';state.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]||{};csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${(p.name||'').replace(/"/g,'""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;}));const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fbo_${new Date().toISOString().slice(0,10)}.csv`;a.click();speak('Отчёт скачан');}
         function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
         function hideError(){document.getElementById('error-msg').style.display='none';}
