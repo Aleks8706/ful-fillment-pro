@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBO Отгрузка | Кванты + Голос + Авто-минус</title>
+    <title>FBO Отгрузка | Исправленная печать</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -45,7 +45,6 @@
         .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
         .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
         
-        /* ПЛАН ОТГРУЗКИ С КВАНТАМИ */
         .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
         .target-item.done { border-left-color: var(--success); opacity: 0.7; }
         .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
@@ -55,7 +54,6 @@
         .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
         .quant-badge { display: inline-block; background: #e6f0ff; color: var(--ozon); padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-left: 5px; }
 
-        /* МОДАЛЬНОЕ ОКНО МАППИНГА */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; }
         .modal { background: #fff; padding: 25px; border-radius: 12px; width: 600px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .modal h3 { margin-bottom: 15px; font-size: 18px; }
@@ -64,8 +62,20 @@
         .mapping-select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* ЭТИКЕТКИ 120x75 ММ */
-        .label-area { display: none; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 2mm; font-family: 'Arial', monospace; position: relative; overflow: hidden; }
+        /* === ИСПРАВЛЕННЫЕ СТИЛИ ПЕЧАТИ === */
+        .label-area { 
+            position: absolute; 
+            left: -9999px; /* Прячем за экраном, а не через display:none */
+            top: 0;
+            width: 120mm; 
+            height: 75mm; 
+            background: #fff; 
+            border: 1px solid #000; 
+            padding: 2mm; 
+            font-family: 'Arial', monospace; 
+            overflow: hidden;
+            z-index: -1;
+        }
         .label-header { border-bottom: 1px dashed #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
         .label-title { font-size: 11pt; font-weight: bold; }
         .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 4mm; }
@@ -78,11 +88,31 @@
         .barcode-wrap svg { height: 10mm; }
         .weight-box { font-size: 9pt; font-weight: bold; background: #eee; padding: 1mm 3mm; border-radius: 2mm; }
 
+        /* Кнопка повторной печати */
+        #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
+
         @media print {
-            body * { visibility: hidden; }
+            body * { visibility: hidden !important; }
             .grid, .no-print, .modal-overlay { display: none !important; }
-            .print-target, .print-target * { visibility: visible; display: block; }
-            .print-target { position: absolute; left: 0; top: 0; margin: 0; padding: 2mm; width: 120mm; height: 75mm; border: none; }
+            
+            .print-target { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 120mm !important; 
+                height: 75mm !important; 
+                padding: 2mm !important;
+                border: none !important;
+                visibility: visible !important; 
+                display: block !important;
+                z-index: 9999 !important;
+                background: #fff !important;
+            }
+            .print-target * { visibility: visible !important; display: block !important; }
+            .print-target ul { display: block !important; column-count: 2 !important; }
+            .print-target li { display: list-item !important; }
+            .print-target svg { display: inline-block !important; }
+            
             @page { size: 120mm 75mm; margin: 0; }
         }
     </style>
@@ -102,23 +132,17 @@
     </div>
 
     <div class="grid no-print">
-        <!-- ЛЕВАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto; font-size:12px; padding:4px 8px;">🔊 Голос: ВКЛ</button></h2>
                 <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
                 <div id="upload-status" class="alert alert-success"></div>
             </div>
-            
             <div class="card" id="order-info" style="display:none;">
                 <h2>📋 Информация о заказе</h2>
                 <div class="info-box">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
-                <div class="stats">
-                    <span>📦 SKU: <span id="loaded-count">0</span></span>
-                    <span>📊 План: <span id="total-plan">0</span> шт.</span>
-                </div>
+                <div class="stats"><span>📦 SKU: <span id="loaded-count">0</span></span><span>📊 План: <span id="total-plan">0</span> шт.</span></div>
             </div>
-
             <div class="card">
                 <h2>🎛️ Параметры</h2>
                 <select id="marketplace"><option value="WB" selected>Wildberries FBO</option><option value="OZON">Ozon FBO</option></select>
@@ -126,7 +150,6 @@
                 <input type="text" id="pallet-input" placeholder="📦 Выберите палет" readonly>
                 <div class="alert alert-error" id="error-msg"></div>
             </div>
-
             <div class="card">
                 <h2>🏗 Палеты</h2>
                 <div class="row" style="margin-bottom: 8px;">
@@ -137,23 +160,20 @@
             </div>
         </div>
 
-        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>📡 Сканирование</h2>
                 <input type="text" id="scanner" class="scanner-input" placeholder="Кликните → сканируйте ШК" autocomplete="off">
-                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Голос озвучит квант и остаток. Enter = добавить.</p>
+                <p style="font-size: 11px; color: #666; margin-top: 4px;">💡 Голос озвучит квант и остаток.</p>
             </div>
             <div class="card">
                 <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
-                <div class="stats">
-                    <span>📦 Поз.: <span id="items-count">0</span></span>
-                    <span>⚖️ Вес: <span id="total-weight">0.00</span> кг</span>
-                </div>
+                <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ Вес: <span id="total-weight">0.00</span> кг</span></div>
                 <div class="row">
                     <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть & Печать</button>
                     <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️ Открыть последний</button>
                 </div>
+                <button id="retry-print-btn" onclick="retryPrint()">🔄 Повторить печать</button>
                 <button class="secondary danger" onclick="clearBox()" style="margin-top: 6px;">🗑 Очистить текущий</button>
             </div>
             <div class="card">
@@ -163,7 +183,6 @@
             </div>
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА -->
         <div>
             <div class="card">
                 <h2>🎯 План отгрузки (по ТЗ)</h2>
@@ -177,7 +196,7 @@
         </div>
     </div>
 
-    <!-- ЭТИКЕТКИ -->
+    <!-- ЭТИКЕТКИ (Всегда в DOM, скрыты через position) -->
     <div class="label-area print-target" id="label-box">
         <div class="label-header"><span class="label-title" id="lbl-mp-box">FBO</span><span style="font-size:6pt" id="lbl-date-box"></span></div>
         <div class="label-info-row">
@@ -207,7 +226,6 @@
     </div>
 
     <script>
-        // === КОНФИГУРАЦИЯ ПОЛЕЙ ДЛЯ МАППИНГА ===
         const MAPPING_CONFIG = [
             { key: 'sku', label: 'Артикул / Код товара *', required: true },
             { key: 'name', label: 'Название товара *', required: true },
@@ -222,30 +240,15 @@
         ];
 
         let state = { db: {}, targets: [], currentBox: { items: {}, weight: 0 }, history: [], boxCounter: 1, orderMeta: {}, pallets: {}, activePallet: null };
-        let tempExcelData = null;
-        let tempHeaders = [];
+        let tempExcelData = null, tempHeaders = [];
+        let lastPrintedLabelId = null; // Для кнопки повторной печати
 
         // === ГОЛОС ===
         let voiceEnabled = true, maleVoice = null;
         const synth = window.speechSynthesis;
-        function initVoices() {
-            const v = synth.getVoices().filter(x => x.lang.startsWith('ru'));
-            maleVoice = v.find(x => /male|pavel|yuri|dmitry/i.test(x.name)) || v[0];
-        }
-        function speak(t) {
-            if (!voiceEnabled || !synth || synth.pending) return;
-            synth.cancel();
-            const u = new SpeechSynthesisUtterance(t);
-            u.lang = 'ru-RU'; u.rate = 1.05; u.pitch = 0.85;
-            if (maleVoice) u.voice = maleVoice;
-            synth.speak(u);
-        }
-        document.getElementById('voice-toggle').onclick = function() {
-            voiceEnabled = !voiceEnabled;
-            this.textContent = voiceEnabled ? '🔊 Голос: ВКЛ' : '🔇 Голос: ВЫКЛ';
-            this.style.background = voiceEnabled ? '#6c757d' : '#dc3545';
-            if(voiceEnabled) speak('Голос включен');
-        };
+        function initVoices() { const v = synth.getVoices().filter(x => x.lang.startsWith('ru')); maleVoice = v.find(x => /male|pavel|yuri|dmitry/i.test(x.name)) || v[0]; }
+        function speak(t) { if (!voiceEnabled || !synth || synth.pending) return; synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'ru-RU'; u.rate = 1.05; u.pitch = 0.85; if (maleVoice) u.voice = maleVoice; synth.speak(u); }
+        document.getElementById('voice-toggle').onclick = function() { voiceEnabled = !voiceEnabled; this.textContent = voiceEnabled ? '🔊 Голос: ВКЛ' : '🔇 Голос: ВЫКЛ'; this.style.background = voiceEnabled ? '#6c757d' : '#dc3545'; if(voiceEnabled) speak('Голос включен'); };
         if(synth) { synth.onvoiceschanged = initVoices; initVoices(); }
 
         // === ИНИЦИАЛИЗАЦИЯ ===
@@ -258,54 +261,39 @@
 
         function setupScanner() {
             const inp = document.getElementById('scanner');
-            inp.addEventListener('keypress', e => { 
-                if(e.key==='Enter'){ e.preventDefault(); handleScan(inp.value.trim()); inp.value=''; setTimeout(()=>inp.classList.remove('success','error'), 300); } 
-            });
+            inp.addEventListener('keypress', e => { if(e.key==='Enter'){ e.preventDefault(); handleScan(inp.value.trim()); inp.value=''; setTimeout(()=>inp.classList.remove('success','error'), 300); } });
             inp.addEventListener('focus', () => inp.select());
         }
 
-        // === ЗАГРУЗКА ФАЙЛА И МАППИНГ ===
+        // === ЗАГРУЗКА И МАППИНГ ===
         function handleFileSelect(e) {
             const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
                     const wb = XLSX.read(ev.target.result, {type: 'array'});
-                    const ws = wb.Sheets[wb.SheetNames[0]];
-                    const data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
-                    
+                    const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ''});
                     let route = '';
                     for(let i=0; i<10; i++) if(data[i]?.join(' ').match(/Екатеринбург|Москва|Чехов|Новоселки|Перспективная/i)) { route = data[i].join(' '); break; }
                     state.orderMeta = { route };
-
                     let headerRowIdx = -1;
-                    for(let i=0; i<Math.min(20, data.length); i++) {
-                        const rowStr = data[i]?.join(' ').toLowerCase() || '';
-                        if(rowStr.includes('артикул') || rowStr.includes('шк') || rowStr.includes('наименование')) {
-                            headerRowIdx = i; break;
-                        }
-                    }
-                    if(headerRowIdx === -1) throw new Error('Не удалось найти строку с заголовками');
-
+                    for(let i=0; i<Math.min(20, data.length); i++) { const rowStr = data[i]?.join(' ').toLowerCase() || ''; if(rowStr.includes('артикул') || rowStr.includes('шк') || rowStr.includes('наименование')) { headerRowIdx = i; break; } }
+                    if(headerRowIdx === -1) throw new Error('Не найдены заголовки');
                     tempHeaders = data[headerRowIdx].map(h => String(h).trim()).filter(h => h);
                     tempExcelData = data.slice(headerRowIdx + 1);
                     openMappingModal();
-                } catch(err) { showError('❌ Ошибка чтения: ' + err.message); speak('Ошибка файла'); }
+                } catch(err) { showError('❌ Ошибка: ' + err.message); speak('Ошибка файла'); }
             };
             reader.readAsArrayBuffer(file);
         }
 
         function openMappingModal() {
-            const container = document.getElementById('mapping-fields');
-            container.innerHTML = '';
+            const container = document.getElementById('mapping-fields'); container.innerHTML = '';
             MAPPING_CONFIG.forEach(field => {
                 const row = document.createElement('div'); row.className = 'mapping-row';
                 const label = document.createElement('div'); label.className = 'mapping-label'; label.textContent = field.label;
                 const select = document.createElement('select'); select.className = 'mapping-select'; select.dataset.key = field.key; select.dataset.required = field.required;
-                
-                const emptyOpt = document.createElement('option'); emptyOpt.value = ''; emptyOpt.textContent = field.required ? '-- Выберите * --' : '-- Не выбрано --';
-                select.appendChild(emptyOpt);
-                
+                const emptyOpt = document.createElement('option'); emptyOpt.value = ''; emptyOpt.textContent = field.required ? '-- Выберите * --' : '-- Не выбрано --'; select.appendChild(emptyOpt);
                 tempHeaders.forEach((h, idx) => {
                     const opt = document.createElement('option'); opt.value = idx; opt.textContent = h;
                     const hl = h.toLowerCase();
@@ -321,24 +309,16 @@
                     if(field.key === 'expiry' && hl.includes('годен')) opt.selected = true;
                     select.appendChild(opt);
                 });
-                
                 row.appendChild(label); row.appendChild(select); container.appendChild(row);
             });
             document.getElementById('mapping-modal').style.display = 'flex';
         }
-
         function closeMappingModal() { document.getElementById('mapping-modal').style.display = 'none'; document.getElementById('excel-upload').value = ''; }
-
         function applyMapping() {
-            const selects = document.querySelectorAll('.mapping-select');
-            const mapping = {}; let valid = true;
-            selects.forEach(sel => {
-                if(sel.dataset.required === 'true' && sel.value === '') { sel.style.borderColor = 'red'; valid = false; }
-                else { sel.style.borderColor = ''; if(sel.value !== '') mapping[sel.dataset.key] = parseInt(sel.value); }
-            });
+            const selects = document.querySelectorAll('.mapping-select'); const mapping = {}; let valid = true;
+            selects.forEach(sel => { if(sel.dataset.required === 'true' && sel.value === '') { sel.style.borderColor = 'red'; valid = false; } else { sel.style.borderColor = ''; if(sel.value !== '') mapping[sel.dataset.key] = parseInt(sel.value); } });
             if(!valid) { showError('⚠️ Заполните обязательные поля'); speak('Заполните обязательные поля'); return; }
-            processDataWithMapping(mapping);
-            closeMappingModal();
+            processDataWithMapping(mapping); closeMappingModal();
         }
 
         function processDataWithMapping(mapping) {
@@ -346,20 +326,13 @@
                 state.db = {}; state.targets = []; let total = 0;
                 document.getElementById('excel-route-display').textContent = state.orderMeta.route || '-';
                 document.getElementById('city').value = '';
-
                 for(let i=0; i<tempExcelData.length; i++) {
-                    const r = tempExcelData[i];
-                    const sku = String(r[mapping.sku] || '').trim();
+                    const r = tempExcelData[i]; const sku = String(r[mapping.sku] || '').trim();
                     if(!sku || sku.includes('ERROR') || isNaN(sku.replace(/\D/g,''))) continue;
-
                     const targetPcs = parseInt(String(r[mapping.qty_total]).replace(/[,\s]/g,'')) || 0;
                     if(targetPcs <= 0) continue;
-
                     const product = {
-                        sku, 
-                        name: String(r[mapping.name] || 'Товар').trim(), 
-                        targetPcs, 
-                        packedPcs: 0,
+                        sku, name: String(r[mapping.name] || 'Товар').trim(), targetPcs, packedPcs: 0,
                         quant: mapping.quant !== undefined ? (parseInt(String(r[mapping.quant]).replace(/[,\s]/g,'')) || 1) : 1,
                         boxesPlan: mapping.boxes_plan !== undefined ? (parseInt(String(r[mapping.boxes_plan]).replace(/[,\s]/g,'')) || 0) : 0,
                         pcsPerBox: mapping.pcs_per_box !== undefined ? (parseInt(String(r[mapping.pcs_per_box]).replace(/[,\s]/g,'')) || 0) : 0,
@@ -367,47 +340,38 @@
                         expiry: mapping.expiry !== undefined ? String(r[mapping.expiry] || '').trim() : ''
                     };
                     total += targetPcs; state.targets.push(product);
-
                     const bcs = new Set();
                     if(mapping.barcode_orig !== undefined) String(r[mapping.barcode_orig] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
                     if(mapping.barcode_wb !== undefined) String(r[mapping.barcode_wb] || '').split(/[;,\s]+/).forEach(b => { if(b && !b.includes('ERROR')) bcs.add(b.trim()); });
                     if(bcs.size === 0) bcs.add(sku);
                     bcs.forEach(b => { state.db[b] = product; });
                 }
-
                 document.getElementById('order-info').style.display = 'block';
                 document.getElementById('loaded-count').textContent = state.targets.length;
                 document.getElementById('total-plan').textContent = total.toLocaleString('ru');
                 renderTargets(); showSuccess(`✅ Загружено ${state.targets.length} позиций`); saveState();
-                speak('Файл загружен. Проверка активна');
+                speak('Файл загружен');
             } catch(err) { showError('❌ Ошибка: ' + err.message); speak('Ошибка обработки'); }
         }
 
-        // === СКАНИРОВАНИЕ С ГОЛОСОМ ПО КВАНТУ ===
+        // === СКАНИРОВАНИЕ ===
         function handleScan(bc) {
             hideError(); const inp = document.getElementById('scanner');
             if(Object.keys(state.db).length === 0) { showError('⚠️ Загрузите ТЗ'); inp.classList.add('error'); speak('Загрузите файл'); return; }
             if(!state.activePallet) { showError('⚠️ Выберите палет'); inp.classList.add('error'); speak('Выберите палет'); return; }
             const p = state.db[bc];
             if(!p) { showError(`❌ ШК ${bc} не найден`); inp.classList.add('error'); speak('Не найдено'); return; }
-
             state.currentBox.items[bc] = (state.currentBox.items[bc]||0)+1;
             state.currentBox.weight += 0.12;
-            
-            // АВТОМАТИЧЕСКИЙ ПЕРЕСЧЕТ ПРОГРЕССА
             p.packedPcs++;
-            renderBox(); 
-            renderTargets(); // Мгновенное обновление плана
-            inp.classList.add('success');
-            
-            // ГОЛОСОВОЕ ОПОВЕЩЕНИЕ С КВАНТОМ И ОСТАТКОМ
+            renderBox(); renderTargets(); inp.classList.add('success');
             const remaining = p.targetPcs - p.packedPcs;
-            const quantText = p.quant > 1 ? `Квант ${p.quant} штуки. ` : '';
-            const remainText = remaining > 0 ? `Осталось собрать ${remaining}` : 'План выполнен';
+            const quantText = p.quant > 1 ? `Квант ${p.quant}. ` : '';
+            const remainText = remaining > 0 ? `Осталось ${remaining}` : 'План выполнен';
             speak(`Добавлено. ${p.name.substring(0,25)}. ${quantText}${remainText}`);
         }
 
-        // === ЗАКРЫТИЕ КОРОБА ===
+        // === ЗАКРЫТИЕ КОРОБА С ГАРАНТИРОВАННОЙ ПЕЧАТЬЮ ===
         function closeBox() {
             const city = document.getElementById('city').value.trim();
             if(!city) return showError('⚠️ Введите город');
@@ -417,53 +381,60 @@
             const now = new Date();
             const boxId = `BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
             const palId = state.activePallet;
-            
             const boxData = { id: boxId, city, pallet: palId, items: {...state.currentBox.items}, weight: state.currentBox.weight, date: now.toISOString() };
+            
             state.pallets[palId].boxes.push(boxId);
             state.pallets[palId].weight += boxData.weight;
             state.history.unshift(boxData); state.boxCounter++;
             
-            // Прогресс уже обновлен при сканировании, здесь ничего менять не нужно
-            
-            saveState(); generateBoxLabel(boxData); clearBoxUI(); renderTargets(); renderPallets();
+            saveState(); 
+            generateBoxLabel(boxData); 
+            clearBoxUI(); renderTargets(); renderPallets();
             speak('Короб закрыт. Печатаю');
-            setTimeout(() => window.print(), 100);
+            
+            // Запоминаем ID для повторной печати
+            lastPrintedLabelId = 'label-box';
+            document.getElementById('retry-print-btn').style.display = 'block';
+            
+            // Увеличенная задержка для гарантии рендеринга штрихкода
+            setTimeout(() => { 
+                window.print(); 
+                // Скрываем кнопку повтора через 10 сек если печать прошла
+                setTimeout(() => { document.getElementById('retry-print-btn').style.display = 'none'; }, 10000);
+            }, 500);
         }
 
-        // === ПЕРЕОТКРЫТИЕ С АВТО-МИНУСОМ ===
+        // Кнопка повторной печати
+        function retryPrint() {
+            if(lastPrintedLabelId) {
+                window.print();
+            } else {
+                showError('Нет этикетки для печати');
+            }
+        }
+
+        // === ПЕРЕОТКРЫТИЕ ===
         function reopenLastBox() {
             if(state.history.length === 0) return showError('Нет закрытых коробов');
             const lastBox = state.history[0];
-            if(!confirm(`Переоткрыть короб ${lastBox.id}?\nЭтикетка будет аннулирована.`)) return;
-
-            // Возвращаем товары и МИНУСУЕМ из прогресса
+            if(!confirm(`Переоткрыть короб ${lastBox.id}?`)) return;
             for(const [bc, q] of Object.entries(lastBox.items)) {
                 state.currentBox.items[bc] = (state.currentBox.items[bc] || 0) + q;
-                if(state.db[bc]) state.db[bc].packedPcs -= q; // АВТО-МИНУС
+                if(state.db[bc]) state.db[bc].packedPcs -= q;
             }
             state.currentBox.weight += lastBox.weight;
-
             state.history.shift();
-            if(state.pallets[lastBox.pallet]) {
-                const p = state.pallets[lastBox.pallet];
-                p.boxes = p.boxes.filter(b => b !== lastBox.id);
-                p.weight -= lastBox.weight;
-            }
-
+            if(state.pallets[lastBox.pallet]) { const p = state.pallets[lastBox.pallet]; p.boxes = p.boxes.filter(b => b !== lastBox.id); p.weight -= lastBox.weight; }
             saveState(); renderBox(); renderTargets(); renderPallets(); updateUI();
-            speak(`Короб ${lastBox.id} переоткрыт. Количество возвращено в план`);
-            showSuccess(`↩️ Короб ${lastBox.id} возвращён в работу`);
+            speak(`Короб ${lastBox.id} переоткрыт`);
+            document.getElementById('retry-print-btn').style.display = 'none';
             document.getElementById('scanner').focus();
         }
 
         function clearBox() { 
-            if(Object.keys(state.currentBox.items).length > 0 && !confirm('Очистить текущий короб?')) return;
-            // Минусуем из прогресса перед очисткой
-            for(const [bc, q] of Object.entries(state.currentBox.items)) {
-                if(state.db[bc]) state.db[bc].packedPcs -= q;
-            }
-            state.currentBox = { items: {}, weight: 0 }; 
-            updateUI(); renderBox(); renderTargets(); speak('Очищено'); 
+            if(Object.keys(state.currentBox.items).length > 0 && !confirm('Очистить короб?')) return;
+            for(const [bc, q] of Object.entries(state.currentBox.items)) { if(state.db[bc]) state.db[bc].packedPcs -= q; }
+            state.currentBox = { items: {}, weight: 0 }; updateUI(); renderBox(); renderTargets(); speak('Очищено'); 
         }
 
         function renderBox() {
@@ -476,37 +447,15 @@
             });
             updateUI();
         }
-        
-        function changeQty(bc,d) { 
-            const oldQty = state.currentBox.items[bc] || 0;
-            const newQty = Math.max(0, oldQty + d);
-            if(newQty === 0) delete state.currentBox.items[bc]; 
-            else state.currentBox.items[bc] = newQty;
-            
-            // Обновляем прогресс на разницу
-            if(state.db[bc]) state.db[bc].packedPcs += (newQty - oldQty);
-            
-            updWeight(); renderBox(); renderTargets(); 
-        }
-        
-        function removeItem(bc) { 
-            const q = state.currentBox.items[bc] || 0;
-            delete state.currentBox.items[bc]; 
-            if(state.db[bc]) state.db[bc].packedPcs -= q; // АВТО-МИНУС
-            updWeight(); renderBox(); renderTargets(); 
-        }
-        
+        function changeQty(bc,d) { const old = state.currentBox.items[bc]||0; const nw = Math.max(0,old+d); if(nw===0) delete state.currentBox.items[bc]; else state.currentBox.items[bc]=nw; if(state.db[bc]) state.db[bc].packedPcs+=(nw-old); updWeight(); renderBox(); renderTargets(); }
+        function removeItem(bc) { const q=state.currentBox.items[bc]||0; delete state.currentBox.items[bc]; if(state.db[bc]) state.db[bc].packedPcs-=q; updWeight(); renderBox(); renderTargets(); }
         function updWeight() { let w=0; for(const q of Object.values(state.currentBox.items)) w+=0.12*q; state.currentBox.weight=w; }
-        
         function updateUI() { 
             document.getElementById('items-count').textContent = Object.keys(state.currentBox.items).length; 
             document.getElementById('total-weight').textContent = state.currentBox.weight.toFixed(2);
             const hasItems = Object.keys(state.currentBox.items).length > 0;
-            const hasCity = document.getElementById('city').value.trim().length > 0;
-            const hasPallet = !!state.activePallet;
-            document.getElementById('btn-close').disabled = !(hasCity && hasPallet && hasItems);
-            const canReopen = state.history.length > 0 && !hasItems;
-            document.getElementById('btn-reopen').disabled = !canReopen;
+            document.getElementById('btn-close').disabled = !(document.getElementById('city').value.trim() && state.activePallet && hasItems);
+            document.getElementById('btn-reopen').disabled = !(state.history.length > 0 && !hasItems);
             document.getElementById('box-id-display').textContent = hasItems ? '# ТЕКУЩИЙ' : '# НОВАЯ';
         }
 
@@ -514,28 +463,22 @@
         function createPallet() {
             const id = prompt('ID палета:') || `PAL-${Date.now().toString().slice(-5)}`;
             if(state.pallets[id]) return showError('❌ Существует');
-            state.pallets[id] = { id, boxes:[], weight:0 };
-            state.activePallet = id;
-            document.getElementById('pallet-input').value = id;
-            document.getElementById('btn-print-pallet').disabled = false;
+            state.pallets[id] = { id, boxes:[], weight:0 }; state.activePallet = id;
+            document.getElementById('pallet-input').value = id; document.getElementById('btn-print-pallet').disabled = false;
             renderPallets(); updateUI(); speak('Палет создан'); saveState();
         }
-        function selectPallet(id) {
-            state.activePallet = id; document.getElementById('pallet-input').value = id;
-            document.getElementById('btn-print-pallet').disabled = false; renderPallets(); updateUI();
-        }
+        function selectPallet(id) { state.activePallet = id; document.getElementById('pallet-input').value = id; document.getElementById('btn-print-pallet').disabled = false; renderPallets(); updateUI(); }
         function renderPallets() {
             const l = document.getElementById('pallets-list'); l.innerHTML='';
             if(!Object.keys(state.pallets).length) { l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>'; return; }
             Object.values(state.pallets).forEach(p => {
-                const d = document.createElement('div');
-                d.className = `pallet-item ${p.id===state.activePallet?'active':''}`;
+                const d = document.createElement('div'); d.className = `pallet-item ${p.id===state.activePallet?'active':''}`;
                 d.innerHTML = `<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;
                 d.onclick = () => selectPallet(p.id); l.appendChild(d);
             });
         }
 
-        // === ПЛАН ОТГРУЗКИ С КВАНТАМИ ===
+        // === ПЛАН ===
         function renderTargets() {
             const list = document.getElementById('targets-list');
             if(!state.targets.length) { list.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>'; return; }
@@ -544,19 +487,13 @@
                 const done = p.packedPcs >= p.targetPcs && p.targetPcs > 0;
                 const boxesInfo = p.boxesPlan > 0 ? `📦 ${p.boxesPlan} кор. × ${p.pcsPerBox} шт.` : '';
                 const quantBadge = p.quant > 1 ? `<span class="quant-badge">Квант: ${p.quant} шт.</span>` : '';
-                
-                return `<div class="target-item ${done?'done':''}">
-                    <b>${p.sku} | ${p.name.substring(0,30)} ${quantBadge}</b>
-                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-                    <div class="progress-text"><span>✅ ${p.packedPcs} / ${p.targetPcs} шт.</span><span>${boxesInfo}</span></div>
-                    ${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 120)}${p.tz.length>120?'...':''}</div>` : ''}
-                </div>`;
+                return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,30)} ${quantBadge}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs} / ${p.targetPcs} шт.</span><span>${boxesInfo}</span></div>${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 120)}${p.tz.length>120?'...':''}</div>` : ''}</div>`;
             }).join('');
         }
 
-        // === ЭТИКЕТКИ ===
+        // === ГЕНЕРАЦИЯ ЭТИКЕТОК ===
         function generateBoxLabel(b) {
-            document.getElementById('label-box').style.display='block';
+            const el = document.getElementById('label-box');
             document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
             document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
             document.getElementById('lbl-city-box').textContent=b.city;
@@ -567,14 +504,12 @@
             Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]; ul.innerHTML+=`<li>${p?.name?.substring(0,25)||bc} ×${q}</li>`;});
             document.getElementById('lbl-barcode-text-box').textContent=b.id;
             JsBarcode("#barcode-svg-box", b.id, {format:"CODE128", width:1.5, height:10, displayValue:false});
-            setTimeout(()=>{document.getElementById('label-box').style.display='none';}, 200);
         }
 
         function printPalletLabel() {
             if(!state.activePallet) return showError('⚠️ Выберите палет');
             const p = state.pallets[state.activePallet];
             const city = document.getElementById('city').value.trim() || 'ЕКБ';
-            document.getElementById('label-pallet').style.display='block';
             document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';
             document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
             document.getElementById('lbl-city-pal').textContent=city;
@@ -585,27 +520,26 @@
             p.boxes.forEach(b=>ul.innerHTML+=`<li>${b}</li>`);
             document.getElementById('lbl-barcode-text-pal').textContent=p.id;
             JsBarcode("#barcode-svg-pal", p.id, {format:"CODE128", width:2, height:12, displayValue:false});
-            setTimeout(()=>{document.getElementById('label-pallet').style.display='none';}, 200);
-            speak('Печать палета'); window.print();
+            
+            lastPrintedLabelId = 'label-pallet';
+            document.getElementById('retry-print-btn').style.display = 'block';
+            speak('Печать палета'); 
+            setTimeout(() => window.print(), 500);
         }
 
         // === УТИЛИТЫ ===
         function exportCSV() {
             if(!state.history.length) return showError('Нет данных');
             let csv = '\uFEFFКороб;Палет;Город;Штрихкод;Артикул;Название;Кол-во;Вес;Дата\n';
-            state.history.forEach(b => Object.entries(b.items).forEach(([bc,q])=>{
-                const p=state.db[bc]||{}; csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${p.name||''}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;
-            }));
-            const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
-            const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`fbo_report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-            speak('Отчёт скачан');
+            state.history.forEach(b => Object.entries(b.items).forEach(([bc,q])=>{ const p=state.db[bc]||{}; csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${p.name||''}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`; }));
+            const blob = new Blob([csv],{type:'text/csv;charset=utf-8'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`fbo_report_${new Date().toISOString().slice(0,10)}.csv`; a.click(); speak('Отчёт скачан');
         }
         function showError(m) { const e=document.getElementById('error-msg'); e.textContent=m; e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
         function hideError() { document.getElementById('error-msg').style.display='none'; }
         function showSuccess(m) { const s=document.getElementById('upload-status'); s.textContent=m; s.style.display='block'; setTimeout(()=>s.style.display='none',3000); }
-        function saveState() { localStorage.setItem('fbo_quant_v2', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
-        function loadState() { const s=localStorage.getItem('fbo_quant_v2'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); updateUI(); } }
-        function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_quant_v2'); location.reload(); } }
+        function saveState() { localStorage.setItem('fbo_print_fix_v1', JSON.stringify({targets:state.targets, history:state.history, boxCounter:state.boxCounter, orderMeta:state.orderMeta, pallets:state.pallets, activePallet:state.activePallet})); }
+        function loadState() { const s=localStorage.getItem('fbo_print_fix_v1'); if(s){ const d=JSON.parse(s); Object.assign(state, d); if(state.activePallet) document.getElementById('pallet-input').value=state.activePallet; renderTargets(); renderPallets(); updateUI(); } }
+        function resetAllData() { if(confirm('Сбросить всё?')){ localStorage.removeItem('fbo_print_fix_v1'); location.reload(); } }
     </script>
 </body>
 </html>
