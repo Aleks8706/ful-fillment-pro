@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка | Стабильная версия</title>
-    <!-- Библиотеки -->
+    <title>FBO Отгрузка | Этикетка на короб</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
@@ -67,19 +66,64 @@
         .mapping-select { flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* Этикетки */
-        .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 2mm; font-family: 'Arial', monospace; overflow: hidden; z-index: -1; }
-        .label-header { border-bottom: 1px dashed #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
-        .label-title { font-size: 11pt; font-weight: bold; }
-        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 4mm; }
+        /* 🔴 УЛУЧШЕННЫЕ ЭТИКЕТКИ ДЛЯ ПЕЧАТИ */
+        .label-area { 
+            position: absolute; left: -9999px; top: 0; 
+            width: 120mm; height: 75mm; background: #fff; 
+            border: 1px solid #000; padding: 3mm; 
+            font-family: 'Arial', 'Segoe UI', sans-serif; 
+            overflow: hidden; z-index: -1; 
+            line-height: 1.15;
+        }
+        
+        .label-header { 
+            border-bottom: 2px solid #000; padding-bottom: 2mm; margin-bottom: 2.5mm; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .label-title { font-size: 13pt; font-weight: 900; letter-spacing: 0.5px; }
+        .label-subtitle { font-size: 8pt; color: #333; font-weight: 600; }
+        
+        .label-info-row { 
+            font-size: 8.5pt; margin-bottom: 2mm; display: flex; justify-content: space-between; gap: 3mm; 
+            border-bottom: 1px dashed #999; padding-bottom: 1.5mm;
+        }
         .label-info-row div { flex: 1; }
-        .label-content { font-size: 7pt; border-top: 1px solid #ccc; padding-top: 1.5mm; height: 28mm; overflow: hidden; }
-        .label-content ul { column-count: 2; column-gap: 3mm; margin: 0; padding-left: 10px; }
-        .label-content li { margin-bottom: 0.5mm; break-inside: avoid; font-size: 6.5pt; line-height: 1.2; }
-        .label-content li code { font-family: monospace; font-weight: bold; font-size: 7pt; background: #eee; padding: 0 2px; border-radius: 2px; }
-        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; }
-        .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; }
-        .weight-box { font-size: 9pt; font-weight: bold; background: #eee; padding: 1mm 3mm; border-radius: 2mm; }
+        .label-info-row strong { font-weight: 800; }
+        
+        .label-summary {
+            font-size: 7.5pt; background: #f0f0f0; padding: 1.5mm 2mm; 
+            border-radius: 2mm; margin-bottom: 2mm; display: flex; justify-content: space-between;
+        }
+        .label-summary span { font-weight: 700; }
+        
+        .label-content { 
+            font-size: 7pt; border-top: 1px solid #666; padding-top: 1.5mm; height: 30mm; overflow: hidden; 
+        }
+        .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; border-bottom: 1px solid #ccc; padding-bottom: 0.5mm; }
+        .label-content ul { 
+            column-count: 2; column-gap: 3mm; margin: 0; padding-left: 8px; 
+            list-style: none;
+        }
+        .label-content li { 
+            margin-bottom: 1mm; break-inside: avoid; padding: 0.5mm 0; 
+            border-bottom: 1px dotted #ddd; font-size: 6.5pt; line-height: 1.15; 
+        }
+        .label-content li code { 
+            font-family: 'Courier New', monospace; font-weight: 900; font-size: 7.5pt; 
+            background: #eee; padding: 0 2px; border-radius: 2px; letter-spacing: 0.3px;
+        }
+        .label-content li .qty { font-weight: 700; color: #000; }
+        
+        .label-footer { 
+            display: flex; justify-content: space-between; align-items: flex-end; 
+            margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; 
+        }
+        .barcode-wrap { flex: 1; text-align: center; }
+        .barcode-wrap svg { height: 10mm; width: auto; }
+        .weight-box { 
+            font-size: 10pt; font-weight: 900; background: #000; color: #fff; 
+            padding: 1.5mm 4mm; border-radius: 2mm; text-align: center;
+        }
 
         #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
 
@@ -97,7 +141,25 @@
         .scan-status { font-size: 11px; text-align: center; margin-top: 5px; min-height: 18px; font-weight: 500; }
         .scan-status.detecting { color: var(--warning); } .scan-status.found { color: var(--success); font-weight: bold; } .scan-status.error { color: var(--danger); }
 
-        @media print { body * { visibility: hidden !important; } .grid, .no-print, .modal-overlay, #camera-section { display: none !important; } .print-target { position: absolute !important; left: 0 !important; top: 0 !important; width: 120mm !important; height: 75mm !important; padding: 2mm !important; border: none !important; visibility: visible !important; display: block !important; z-index: 9999 !important; background: #fff !important; } .print-target * { visibility: visible !important; display: block !important; } .print-target ul { display: block !important; column-count: 2 !important; } .print-target li { display: list-item !important; } .print-target svg { display: inline-block !important; } @page { size: 120mm 75mm; margin: 0; } }
+        @media print { 
+            body * { visibility: hidden !important; } 
+            .grid, .no-print, .modal-overlay, #camera-section { display: none !important; } 
+            .print-target { 
+                position: absolute !important; left: 0 !important; top: 0 !important; 
+                width: 120mm !important; height: 75mm !important; padding: 3mm !important; 
+                border: none !important; visibility: visible !important; display: block !important; 
+                z-index: 9999 !important; background: #fff !important; 
+            } 
+            .print-target * { visibility: visible !important; display: block !important; } 
+            .print-target ul { display: block !important; column-count: 2 !important; list-style: none !important; } 
+            .print-target li { display: block !important; break-inside: avoid !important; border: none !important; margin-bottom: 1mm !important; } 
+            .print-target li code { display: inline !important; } 
+            .print-target svg { display: inline-block !important; visibility: visible !important; } 
+            .label-content h3 { display: block !important; visibility: visible !important; }
+            .label-summary { display: flex !important; visibility: visible !important; }
+            .label-footer { display: flex !important; visibility: visible !important; }
+            @page { size: 120mm 75mm; margin: 0; } 
+        }
         @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .mapping-row { flex-direction: column; align-items: stretch; } .mapping-label { width: 100%; } #interactive { max-height: 220px; } }
     </style>
 </head>
@@ -186,16 +248,40 @@
         </div>
     </div>
 
+    <!-- 🔴 ЭТИКЕТКА НА КОРОБ С ПОЛНЫМ СОДЕРЖИМЫМ -->
     <div class="label-area print-target" id="label-box">
-        <div class="label-header"><span class="label-title" id="lbl-mp-box">FBO</span><span style="font-size:6pt" id="lbl-date-box"></span></div>
-        <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-box"></span></div><div>📦<b>Палет:</b><span id="lbl-pallet-box"></span></div><div>🆔<b>Короб:</b><span id="lbl-box-id-box"></span></div></div>
-        <div class="label-content"><strong>Состав:</strong><ul id="lbl-items-list-box"></ul></div>
-        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg><div style="font-size:5pt" id="lbl-barcode-text-box"></div></div><div class="weight-box">⚖️<span id="lbl-weight-box"></span></div></div>
+        <div class="label-header">
+            <span class="label-title" id="lbl-mp-box">🔴 WB FBO</span>
+            <span class="label-subtitle" id="lbl-date-box"></span>
+        </div>
+        <div class="label-info-row">
+            <div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div>
+            <div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div>
+            <div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div>
+        </div>
+        <div class="label-summary">
+            <span>📦 Позиций: <b id="lbl-total-pos">0</b></span>
+            <span>🔢 Штук: <b id="lbl-total-qty">0</b></span>
+            <span>⚖️ Вес: <b id="lbl-weight-box"></b></span>
+        </div>
+        <div class="label-content">
+            <h3>📋 СОДЕРЖИМОЕ КОРОБА:</h3>
+            <ul id="lbl-items-list-box"></ul>
+        </div>
+        <div class="label-footer">
+            <div class="barcode-wrap">
+                <svg id="barcode-svg-box"></svg>
+                <div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-box"></div>
+            </div>
+            <div class="weight-box" id="lbl-weight-footer"></div>
+        </div>
     </div>
+
+    <!-- ЭТИКЕТКА ПАЛЕТА -->
     <div class="label-area print-target" id="label-pallet">
-        <div class="label-header"><span class="label-title" id="lbl-mp-pal">FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
+        <div class="label-header"><span class="label-title" id="lbl-mp-pal">🔴 WB FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
         <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-pal"></span></div><div>🆔<b>Палет:</b><span id="lbl-pal-id"></span></div><div>📦<b>Коробов:</b><span id="lbl-pal-count"></span></div></div>
-        <div class="label-content"><strong>Палет:</strong><ul id="lbl-pal-boxes-list"></ul></div>
+        <div class="label-content"><strong>Состав палета:</strong><ul id="lbl-pal-boxes-list"></ul></div>
         <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-pal"></svg><div style="font-size:5pt" id="lbl-barcode-text-pal"></div></div><div class="weight-box">⚖️<span id="lbl-pal-weight"></span></div></div>
     </div>
 
@@ -217,7 +303,6 @@
         let tempExcelData=null,tempHeaders=[],lastPrintedLabelId=null;
         let quaggaActive=false,scanDebounce=false,scanTimeout=null;
 
-        // === ГОЛОС ===
         let voiceEnabled=true,maleVoice=null;
         const synth=window.speechSynthesis;
         function initVoices(){const v=synth.getVoices().filter(x=>x.lang.startsWith('ru'));maleVoice=v.find(x=>/male|pavel|yuri|dmitry/i.test(x.name))||v[0];}
@@ -225,12 +310,10 @@
         document.getElementById('voice-toggle').onclick=function(){voiceEnabled=!voiceEnabled;this.textContent=voiceEnabled?'🔊 ВКЛ':'🔇 ВЫКЛ';this.style.background=voiceEnabled?'#6c757d':'#dc3545';if(voiceEnabled)speak('Голос включен');};
         if(synth){synth.onvoiceschanged=initVoices;initVoices();}
 
-        // === INIT ===
         document.addEventListener('DOMContentLoaded',()=>{loadState();setupScanner();renderPallets();renderTargets();updateUI();document.getElementById('excel-upload').addEventListener('change',handleFileSelect);document.getElementById('city').addEventListener('input',updateUI);document.getElementById('scanner').focus();checkCameraSupport();});
 
         function checkCameraSupport(){if(!navigator.mediaDevices?.getUserMedia){document.getElementById('btn-camera-start').disabled=true;document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';document.querySelector('.camera-permission').textContent='❌ Камера недоступна (нужен HTTPS)';}}
 
-        // === КАМЕРА: ЗАПУСК ===
         async function startCameraScan(){
             if(!navigator.mediaDevices?.getUserMedia){showError('❌ Камера не поддерживается');return;}
             try{
@@ -272,14 +355,12 @@
         function stopCameraScan(){if(quaggaActive){Quagga.stop();quaggaActive=false;}if(window._quagga)window._quagga=false;if(scanTimeout)clearTimeout(scanTimeout);document.getElementById('scanner').style.display='block';document.getElementById('interactive').style.display='none';document.getElementById('btn-camera-start').style.display='block';document.getElementById('btn-camera-stop').style.display='none';document.getElementById('scanner').classList.remove('camera-active');setStatus('','');document.getElementById('scanner').focus();}
         function setStatus(text,cls){const el=document.getElementById('scan-status');el.textContent=text;el.className='scan-status'+(cls?' '+cls:'');}
 
-        // === СКАНЕР ===
         function setupScanner(){const inp=document.getElementById('scanner');inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}});inp.addEventListener('focus',()=>inp.select());}
 
-        // 🔴 УЛУЧШЕННАЯ ЗАГРУЗКА ФАЙЛА (Исправление "Ошибка файла")
         function handleFileSelect(e){
             const file=e.target.files[0];
             if(!file){ showError('⚠️ Файл не выбран'); return; }
-            if(typeof XLSX === 'undefined'){ showError('❌ Библиотека Excel не загружена (нет интернета?)'); return; }
+            if(typeof XLSX === 'undefined'){ showError('❌ Библиотека Excel не загружена'); return; }
             
             const reader=new FileReader();
             reader.onerror = () => showError('❌ Ошибка чтения файла');
@@ -287,49 +368,24 @@
                 try{
                     const wb=XLSX.read(ev.target.result,{type:'array'});
                     if(!wb.SheetNames.length) throw new Error('В файле нет листов');
-                    
                     const sheet=wb.Sheets[wb.SheetNames[0]];
                     const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
-                    
                     if(!data || data.length===0) throw new Error('Файл пуст');
-
-                    // Умный поиск заголовков (Рус/Англ)
                     let headerRowIdx = -1;
                     const searchTerms = ['артикул','шк','наименование','код','товар','barcode','sku','qty','name','fbo','кол'];
-                    
                     for(let i=0; i < Math.min(30, data.length); i++){
                         const rowStr = (data[i]||[]).join(' ').toLowerCase();
                         if(!rowStr) continue;
-                        
                         let matches = 0;
                         searchTerms.forEach(t => { if(rowStr.includes(t)) matches++; });
-                        
-                        // Если нашли 2+ совпадения или ключевое слово "артикул"
-                        if(matches >= 2 || rowStr.includes('артикул') || rowStr.includes('barcode')){
-                            headerRowIdx = i; break;
-                        }
+                        if(matches >= 2 || rowStr.includes('артикул') || rowStr.includes('barcode')){ headerRowIdx = i; break; }
                     }
-
-                    // Если не нашли, берем первую строку
-                    if(headerRowIdx === -1) {
-                        headerRowIdx = 0;
-                        console.warn('Заголовки не найдены, используется 1-я строка.');
-                    }
-
-                    // Заголовки
+                    if(headerRowIdx === -1) headerRowIdx = 0;
                     tempHeaders = (data[headerRowIdx]||[]).map(h=>String(h||'').trim()).filter(h=>h);
                     if(tempHeaders.length === 0) throw new Error('Не удалось прочитать заголовки');
-
-                    // Данные
                     tempExcelData = data.slice(headerRowIdx + 1);
-                    if(tempExcelData.length === 0) { alert('⚠️ Данные под заголовками не найдены.'); }
-
                     openMappingModal();
-                }catch(err){
-                    console.error('File Error:', err);
-                    showError('❌ ' + err.message);
-                    speak('Ошибка файла');
-                }
+                }catch(err){ console.error('File Error:', err); showError('❌ ' + err.message); speak('Ошибка файла'); }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -341,8 +397,6 @@
                 const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;
                 const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;
                 const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);
-                
-                // Авто-выбор колонок
                 tempHeaders.forEach((h,idx)=>{
                     const o=document.createElement('option');o.value=idx;o.textContent=h;
                     const hl=h.toLowerCase();
@@ -377,33 +431,15 @@
                 document.getElementById('city').value='';
                 for(let i=0;i<tempExcelData.length;i++){
                     const r=tempExcelData[i];
-                    // Безопасное чтение
-                    const skuVal = r[mapping.sku];
-                    const sku = String(skuVal||'').trim();
-                    
+                    const sku = String(r[mapping.sku]||'').trim();
                     if(!sku||sku==='undefined'||isNaN(sku.replace(/\D/g,''))) continue;
-                    
-                    const tpVal = r[mapping.qty_total];
-                    const tp = parseInt(String(tpVal||'0').replace(/[,\s]/g,''));
+                    const tp = parseInt(String(r[mapping.qty_total]||'0').replace(/[,\s]/g,''));
                     if(!tp || tp<=0) continue;
-                    
-                    const prod={
-                        sku,
-                        name: String(r[mapping.name]||'Без названия').trim(),
-                        targetPcs:tp, packedPcs:0,
-                        quant: mapping.quant!==undefined?parseInt(String(r[mapping.quant]||1).replace(/[,\s]/g,'')):1,
-                        boxesPlan: mapping.boxes_plan!==undefined?parseInt(String(r[mapping.boxes_plan]||0).replace(/[,\s]/g,'')):0,
-                        pcsPerBox: mapping.pcs_per_box!==undefined?parseInt(String(r[mapping.pcs_per_box]||0).replace(/[,\s]/g,'')):0,
-                        tz: mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',
-                        expiry: mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''
-                    };
+                    const prod={sku,name: String(r[mapping.name]||'Без названия').trim(),targetPcs:tp,packedPcs:0,quant: mapping.quant!==undefined?parseInt(String(r[mapping.quant]||1).replace(/[,\s]/g,'')):1,boxesPlan: mapping.boxes_plan!==undefined?parseInt(String(r[mapping.boxes_plan]||0).replace(/[,\s]/g,'')):0,pcsPerBox: mapping.pcs_per_box!==undefined?parseInt(String(r[mapping.pcs_per_box]||0).replace(/[,\s]/g,'')):0,tz: mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',expiry: mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''};
                     total+=tp;state.targets.push(prod);
-                    
                     const bcs=new Set();
-                    // Штрихкоды
                     const bcOrig = mapping.barcode_orig!==undefined?String(r[mapping.barcode_orig]||''):'';
                     const bcWb = mapping.barcode_wb!==undefined?String(r[mapping.barcode_wb]||''):'';
-                    
                     bcOrig.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
                     bcWb.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
                     if(bcs.size===0)bcs.add(sku);
@@ -416,37 +452,18 @@
             }catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}
         }
 
-        // 🔴 ОБРАБОТКА ШК С ЖЕСТКИМ ЛИМИТОМ
         function handleScan(bc){
             hideError();const inp=document.getElementById('scanner');
             if(!Object.keys(state.db).length){showError('⚠️ Загрузите ТЗ');inp.classList.add('error');speak('Загрузите файл');return;}
             if(!state.activePallet){showError('⚠️ Выберите палет');inp.classList.add('error');speak('Выберите палет');return;}
-            
-            // Поддержка поиска по части ШК (если сканер не до считал)
             let p = state.db[bc];
-            if(!p){
-                // Попробуем найти частичное совпадение
-                const found = Object.keys(state.db).find(key => key.includes(bc) || bc.includes(key));
-                if(found) p = state.db[found];
-            }
-
+            if(!p){ const found = Object.keys(state.db).find(key => key.includes(bc) || bc.includes(key)); if(found) p = state.db[found]; }
             if(!p){showError(`❌ ШК ${bc} не найден`);inp.classList.add('error');speak('Не найдено');return;}
-            
-            if(p.packedPcs >= p.targetPcs) {
-                showError(`🚫 Лимит: ${p.targetPcs} шт.`);
-                inp.classList.add('error'); speak(`Стоп. План выполнен`);
-                setTimeout(()=>inp.classList.remove('error'), 500);
-                return;
-            }
-            
-            state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+1;
-            state.currentBox.weight+=0.12; p.packedPcs++;
+            if(p.packedPcs >= p.targetPcs) { showError(`🚫 Лимит: ${p.targetPcs} шт.`); inp.classList.add('error'); speak(`Стоп. План выполнен`); setTimeout(()=>inp.classList.remove('error'), 500); return; }
+            state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+1; state.currentBox.weight+=0.12; p.packedPcs++;
             renderBox();renderTargets();inp.classList.add('success');
-            const rem=p.targetPcs-p.packedPcs;
-            const qt=p.quant>1?`Квант ${p.quant}. `:'';
-            const rt=rem>0?`Осталось ${rem}`:'Готово';
-            speak(`${qt}${rt}`);
-            setTimeout(()=>inp.classList.remove('success'),400);
+            const rem=p.targetPcs-p.packedPcs; const qt=p.quant>1?`Квант ${p.quant}. `:''; const rt=rem>0?`Осталось ${rem}`:'Готово';
+            speak(`${qt}${rt}`); setTimeout(()=>inp.classList.remove('success'),400);
         }
 
         function closeBox(){
@@ -454,16 +471,11 @@
             if(!city)return showError('⚠️ Введите город');
             if(!state.activePallet)return showError('⚠️ Выберите палет');
             if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');
-            
             const now=new Date();
             const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
             const palId=state.activePallet;
             const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};
-            
-            state.pallets[palId].boxes.push(boxId);
-            state.pallets[palId].weight+=boxData.weight;
-            state.history.unshift(boxData);state.boxCounter++;
-            
+            state.pallets[palId].boxes.push(boxId); state.pallets[palId].weight+=boxData.weight; state.history.unshift(boxData);state.boxCounter++;
             saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();
             speak('Короб закрыт. Печать');
             lastPrintedLabelId='label-box';
@@ -475,15 +487,12 @@
         
         function reopenLastBox(){
             if(!state.history.length)return showError('Нет коробов');
-            const lb=state.history[0];
-            if(!confirm(`Переоткрыть ${lb.id}?`))return;
+            const lb=state.history[0]; if(!confirm(`Переоткрыть ${lb.id}?`))return;
             for(const[bc,q]of Object.entries(lb.items)){state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;if(state.db[bc])state.db[bc].packedPcs-=q;}
             state.currentBox.weight+=lb.weight;state.history.shift();
             if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}
             saveState();renderBox();renderTargets();renderPallets();updateUI();
-            speak(`Переоткрыто ${lb.id}`);
-            document.getElementById('retry-print-btn').style.display='none';
-            document.getElementById('scanner').focus();
+            speak(`Переоткрыто ${lb.id}`); document.getElementById('retry-print-btn').style.display='none'; document.getElementById('scanner').focus();
         }
 
         function clearBox(){
@@ -509,34 +518,48 @@
         
         function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,25)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,80)}...</div>`:''}</div>`;}).join('');}
         
-        // 🔴 ИСПРАВЛЕННАЯ ЭТИКЕТКА С ШТРИХКОДОМ
+        // 🔴 УЛУЧШЕННАЯ ГЕНЕРАЦИЯ ЭТИКЕТКИ С ПОЛНЫМ СОДЕРЖИМЫМ
         function generateBoxLabel(b){
             document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
             document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
             document.getElementById('lbl-city-box').textContent=b.city;
             document.getElementById('lbl-pallet-box').textContent=b.pallet;
             document.getElementById('lbl-box-id-box').textContent=b.id;
-            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(2)+' кг';
-            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
-            Object.entries(b.items).forEach(([bc,q])=>{
-                const p=state.db[bc];
-                // Явно прописываем ШК жирным кодом
-                ul.innerHTML+=`<li>🔹 <code>${bc}</code> ${p?.name?.substring(0,15)||''} ×${q}</li>`;
-            });
+            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(1)+' кг';
+            document.getElementById('lbl-weight-footer').textContent='⚖️ ' + b.weight.toFixed(1) + ' кг';
             document.getElementById('lbl-barcode-text-box').textContent=b.id;
-            JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
+            
+            // Подсчет статистики
+            let totalQty = 0;
+            let uniquePositions = 0;
+            Object.values(b.items).forEach(q => { totalQty += q; uniquePositions++; });
+            document.getElementById('lbl-total-pos').textContent = uniquePositions;
+            document.getElementById('lbl-total-qty').textContent = totalQty;
+            
+            // Генерация списка содержимого
+            const ul = document.getElementById('lbl-items-list-box'); ul.innerHTML = '';
+            Object.entries(b.items).forEach(([bc, q]) => {
+                const p = state.db[bc];
+                // Формат: ШК (жирный) + Название (короткое) + Кол-во
+                ul.innerHTML += `<li>
+                    <code>${bc}</code> 
+                    <span style="font-weight:600; margin-left:2px;">${p?.name?.substring(0,20)||''}</span> 
+                    <span class="qty">×${q} шт</span>
+                </li>`;
+            });
+            
+            JsBarcode("#barcode-svg-box", b.id, {format:"CODE128", width:1.5, height:10, displayValue:false});
         }
 
         function printPalletLabel(){
             if(!state.activePallet)return showError('⚠️ Выберите палет');
-            const p=state.pallets[state.activePallet];
-            const city=document.getElementById('city').value.trim()||'ЕКБ';
+            const p=state.pallets[state.activePallet]; const city=document.getElementById('city').value.trim()||'ЕКБ';
             document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';
             document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
             document.getElementById('lbl-city-pal').textContent=city;
             document.getElementById('lbl-pal-id').textContent=p.id;
             document.getElementById('lbl-pal-count').textContent=p.boxes.length;
-            document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(2)+' кг';
+            document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(1)+' кг';
             const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';p.boxes.forEach(bx=>ul.innerHTML+=`<li>${bx}</li>`);
             document.getElementById('lbl-barcode-text-pal').textContent=p.id;
             JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});
