@@ -97,9 +97,11 @@
 
         /* 🔴 ЭТИКЕТКА МАРШРУТА (120x75) */
         .label-city { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .lbl-city-big { font-size: 22pt; font-weight: 900; margin: 4mm 0 2mm 0; line-height: 1.1; }
-        .lbl-route-sub { font-size: 10pt; color: #444; margin-bottom: 3mm; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2mm 0; width: 100%; }
-        .lbl-city-stats { font-size: 10pt; display: flex; justify-content: space-around; width: 100%; margin-bottom: 4mm; }
+        .lbl-city-big { font-size: 20pt; font-weight: 900; margin: 2mm 0 1mm 0; line-height: 1.1; text-transform: uppercase; }
+        .lbl-route-sub { font-size: 9pt; color: #444; margin-bottom: 2mm; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 1.5mm 0; width: 100%; }
+        .lbl-city-details { font-size: 10pt; line-height: 1.5; margin: 2mm 0 4mm 0; text-align: left; width: 92%; background: #f8f8f8; padding: 2mm; border-radius: 2mm; }
+        .lbl-city-details div { margin-bottom: 1mm; display: flex; justify-content: space-between; }
+        .lbl-city-details b { color: #000; }
 
         #retry-print-btn, #btn-product-print { display: none; margin-top: 8px; background: var(--warning); color: #333; }
 
@@ -241,14 +243,18 @@
         <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-pal"></svg><div style="font-size:5pt" id="lbl-barcode-text-pal"></div></div><div class="weight-box">⚖️<span id="lbl-pal-weight"></span></div></div>
     </div>
 
+    <!-- 🔴 ЭТИКЕТКА МАРШРУТА / ТЗ -->
     <div class="label-area label-city" id="label-city">
-        <div class="label-header"><span class="label-title" style="font-size:14pt;">📍 МАРШРУТ / ТЗ</span><span class="label-date" id="lbl-city-date"></span></div>
+        <div class="label-header"><span class="label-title" style="font-size:13pt;">📍 МАРШРУТ / ТЗ</span><span class="label-date" id="lbl-city-date"></span></div>
         <div class="lbl-city-big" id="lbl-city-name">-</div>
         <div class="lbl-route-sub" id="lbl-route-info">-</div>
-        <div class="lbl-city-stats">
-            <span>📦 Палетов: <b id="lbl-city-pallets">0</b></span>
-            <span>📦 Коробов: <b id="lbl-city-boxes">0</b></span>
+        
+        <div class="lbl-city-details">
+            <div><span>№ Палета:</span> <b id="lbl-city-pallet-id">-</b></div>
+            <div><span>№ Короба:</span> <b id="lbl-city-box-range">-</b></div>
+            <div><span>Количество коробок:</span> <b id="lbl-city-box-count">-</b></div>
         </div>
+        
         <div class="barcode-wrap"><svg id="barcode-svg-city"></svg><div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-city"></div></div>
     </div>
 
@@ -374,20 +380,39 @@
         document.getElementById('lbl-barcode-text-pal').textContent=p.id; JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});
         triggerPrint('label-pallet'); speak('Печать палета');}
 
-        // 🔴 ПЕЧАТЬ МАРШРУТА / ТЗ К ГОРОДУ
+        // 🔴 ПЕЧАТЬ МАРШРУТА / ТЗ К ГОРОДУ (Обновлено)
         function printCityLabel(){
             const city=document.getElementById('city').value.trim();
-            if(!city)return showError('⚠️ Введите город');
-            document.getElementById('lbl-city-name').textContent=city;
-            document.getElementById('lbl-route-info').textContent=state.orderMeta.route||'Маршрут не указан';
-            document.getElementById('lbl-city-date').textContent=new Date().toLocaleString('ru');
-            let totalBoxes=0; Object.values(state.pallets).forEach(p=>totalBoxes+=p.boxes.length);
-            document.getElementById('lbl-city-pallets').textContent=Object.keys(state.pallets).length;
-            document.getElementById('lbl-city-boxes').textContent=totalBoxes;
-            const cityCode='CITY_'+city.replace(/\s/g,'_').toUpperCase();
-            document.getElementById('lbl-barcode-text-city').textContent=cityCode;
-            JsBarcode("#barcode-svg-city",cityCode,{format:"CODE128",width:2,height:12,displayValue:false});
-            triggerPrint('label-city'); speak('Печать маршрута');
+            if(!city) return showError('⚠️ Введите город');
+            
+            document.getElementById('lbl-city-name').textContent = city;
+            document.getElementById('lbl-route-info').textContent = state.orderMeta.route || 'Маршрут не указан';
+            document.getElementById('lbl-city-date').textContent = new Date().toLocaleString('ru');
+            
+            // Сбор данных для печати ТЗ
+            let palletId = state.activePallet || 'Все';
+            let boxIds = [];
+            if(state.activePallet && state.pallets[state.activePallet]) {
+                boxIds = state.pallets[state.activePallet].boxes;
+            } else {
+                Object.values(state.pallets).forEach(p => boxIds.push(...p.boxes));
+            }
+            
+            const boxCount = boxIds.length;
+            const boxRange = boxIds.length > 0 ? 
+                (boxIds.length === 1 ? boxIds[0] : `${boxIds[0]} ... ${boxIds[boxIds.length-1]}`) 
+                : '-';
+                
+            document.getElementById('lbl-city-pallet-id').textContent = palletId;
+            document.getElementById('lbl-city-box-range').textContent = boxRange;
+            document.getElementById('lbl-city-box-count').textContent = boxCount;
+            
+            const cityCode = 'ROUTE_'+city.replace(/\s/g,'_').toUpperCase();
+            document.getElementById('lbl-barcode-text-city').textContent = cityCode;
+            JsBarcode("#barcode-svg-city", cityCode, {format:"CODE128", width:2, height:12, displayValue:false});
+            
+            triggerPrint('label-city'); 
+            speak('Печать маршрута');
         }
 
         // ПЕЧАТЬ ЭТИКЕТОК НА ТОВАР (58x40)
@@ -399,9 +424,9 @@
         function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
         function hideError(){document.getElementById('error-msg').style.display='none';}
         function showSuccess(m){const s=document.getElementById('upload-status');s.textContent=m;s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
-        function saveState(){localStorage.setItem('fbo_v8_final',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
-        function loadState(){const s=localStorage.getItem('fbo_v8_final');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
-        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v8_final');location.reload();}}
+        function saveState(){localStorage.setItem('fbo_v9_route',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
+        function loadState(){const s=localStorage.getItem('fbo_v9_route');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
+        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v9_route');location.reload();}}
         window.addEventListener('beforeunload',()=>{if(quaggaActive)Quagga.stop();});
     </script>
 </body>
