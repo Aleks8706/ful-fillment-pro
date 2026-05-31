@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка | Честный Знак</title>
+    <title>FBO Отгрузка | Этикетки</title>
     <!-- Библиотеки -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -69,7 +69,7 @@
         .mapping-select { flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* ЭТИКЕТКИ */
+        /* ЭТИКЕТКИ (Скрыты на экране) */
         .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 3mm; font-family: 'Arial', 'Segoe UI', sans-serif; overflow: hidden; z-index: -1; line-height: 1.1; }
         .label-header { border-bottom: 2px solid #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
         .label-title { font-size: 12pt; font-weight: 900; letter-spacing: 0.5px; }
@@ -78,26 +78,41 @@
         .label-info-row div { flex: 1; }
         .label-info-row strong { font-weight: 800; }
         .label-summary { font-size: 7.5pt; background: #f4f4f4; padding: 1mm 2mm; border-radius: 1.5mm; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border: 1px solid #ddd; }
-        
         .label-content { border-top: 1px solid #888; padding-top: 1.5mm; max-height: 32mm; }
         .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; text-transform: uppercase; color: #333; }
         .label-content ul { list-style: none; margin: 0; padding: 0; }
         .label-content li { margin-bottom: 1.5mm; padding: 1mm 0; border-bottom: 1px dotted #ccc; font-size: 7pt; display: flex; align-items: flex-start; gap: 2mm; }
-        .label-content li .item-info { flex: 1; }
-        .label-content li .bc { display: inline-block; font-family: monospace; font-weight: 900; font-size: 8pt; background: #eee; padding: 0 2px; border-radius: 2px; }
+        .label-content li .bc { display: inline-block; font-family: monospace; font-weight: 900; font-size: 8pt; background: #eee; padding: 0 3px; border-radius: 2px; }
         .label-content li .name { display: block; font-weight: 600; font-size: 6.5pt; margin-top: 1px; }
-        .label-content li .qty { font-weight: 800; font-size: 7.5pt; white-space: nowrap; }
-        
-        /* 🔴 БЛОК DATA MATRIX */
+        .label-content li .qty { float: right; font-weight: 800; font-size: 7.5pt; white-space: nowrap; }
         .datamatrix-box { width: 14mm; height: 14mm; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .datamatrix-box canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
-
         .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; }
         .barcode-wrap { flex: 1; text-align: center; }
         .barcode-wrap svg { height: 10mm; width: auto; }
         .weight-box { font-size: 9pt; font-weight: 900; background: #000; color: #fff; padding: 1mm 3mm; border-radius: 2mm; }
 
-        #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
+        /* 🔴 ЭТИКЕТКА НА ТОВАР (58x40 мм) */
+        .product-labels-container { display: none; }
+        .label-product {
+            width: 58mm; height: 40mm; background: #fff; border: 1px dashed #ccc;
+            padding: 2mm; box-sizing: border-box; overflow: hidden;
+            font-family: 'Arial', sans-serif; display: block; margin: 0 auto 2mm auto;
+            position: relative; page-break-after: always; page-break-inside: avoid;
+        }
+        .prod-header {
+            font-size: 8pt; font-weight: 900; text-align: center; color: #d00;
+            border-bottom: 1px solid #333; padding-bottom: 0.5mm; margin-bottom: 1mm;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .prod-name { font-size: 7.5pt; font-weight: 700; margin-bottom: 1mm; line-height: 1.1; min-height: 14px; }
+        .prod-info { font-size: 6.5pt; display: flex; justify-content: space-between; margin-bottom: 0.5mm; }
+        .prod-exp { font-size: 6pt; color: #444; margin-bottom: 1mm; }
+        .prod-barcode { text-align: center; margin-top: auto; }
+        .prod-barcode svg { height: 10mm; max-width: 100%; }
+
+        /* Кнопки */
+        #retry-print-btn, #btn-product-print { display: none; margin-top: 8px; background: var(--warning); color: #333; }
 
         /* Камера */
         #camera-section { margin-top: 10px; }
@@ -116,14 +131,35 @@
         /* ПЕЧАТЬ */
         @media print { 
             body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-            .no-print { display: none !important; } 
-            .label-area { position: relative !important; left: 0 !important; top: 0 !important; width: 120mm !important; height: 75mm !important; padding: 3mm !important; border: 1px solid #000 !important; margin: 0 !important; visibility: visible !important; display: block !important; page-break-after: always; page-break-inside: avoid; }
+            .no-print, .grid, .modal-overlay, #camera-section { display: none !important; } 
+            
+            /* Печать короба/палета (120x75) */
+            .label-area { 
+                position: relative !important; left: 0 !important; top: 0 !important; 
+                width: 120mm !important; height: 75mm !important; padding: 3mm !important; 
+                border: 1px solid #000 !important; margin: 0 !important; 
+                visibility: visible !important; display: block !important; 
+                page-break-after: always; page-break-inside: avoid;
+            }
             .label-area:last-child { page-break-after: auto; }
             .label-area.hide-during-print { display: none !important; visibility: hidden !important; }
             .label-content { max-height: none !important; overflow: visible !important; }
             .label-content li { break-inside: avoid !important; margin-bottom: 1mm !important; display: flex !important; }
             .datamatrix-box canvas { display: inline-block !important; }
+            
+            /* 🔴 Печать этикеток товара (58x40) */
+            body.printing-products .label-area { display: none !important; }
+            body.printing-products .product-labels-container { display: block !important; }
+            body.printing-products .label-product {
+                width: 58mm !important; height: 40mm !important;
+                border: none !important; margin: 0 !important;
+                visibility: visible !important; display: block !important;
+                position: relative !important; top: 0 !important; left: 0 !important;
+                page-break-after: always;
+            }
+            
             @page { size: 120mm 75mm; margin: 0; } 
+            body.printing-products @page { size: 58mm 40mm; margin: 0; }
         }
         @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .mapping-row { flex-direction: column; align-items: stretch; } .mapping-label { width: 100%; } #interactive { max-height: 220px; } }
     </style>
@@ -191,7 +227,8 @@
                     <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button>
                     <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️</button>
                 </div>
-                <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати</button>
+                <button id="btn-product-print" onclick="printProductLabels()">🏷 Этикетки на товар</button>
+                <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати короба</button>
                 <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;">🗑 Очистить</button>
             </div>
             <div class="card">
@@ -213,19 +250,19 @@
         </div>
     </div>
 
-    <!-- 🔴 ЭТИКЕТКА НА КОРОБ С DATA MATRIX -->
+    <!-- 🔴 КОНТЕЙНЕР ДЛЯ ПЕЧАТИ ЭТИКЕТОК ТОВАРА -->
+    <div class="product-labels-container" id="product-labels-container"></div>
+
+    <!-- ЭТИКЕТКА НА КОРОБ -->
     <div class="label-area" id="label-box">
         <div class="label-header"><span class="label-title" id="lbl-mp-box">🔴 WB FBO</span><span class="label-date" id="lbl-date-box"></span></div>
         <div class="label-info-row"><div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div><div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div><div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div></div>
         <div class="label-summary"><span>📦 Позиций: <b id="lbl-total-pos">0</b></span><span>🔢 Штук: <b id="lbl-total-qty">0</b></span><span>⚖️ Вес: <b id="lbl-weight-box"></b></span></div>
-        <div class="label-content">
-            <h3>📋 Содержимое:</h3>
-            <ul id="lbl-items-list-box"></ul>
-        </div>
+        <div class="label-content"><h3>📋 Содержимое:</h3><ul id="lbl-items-list-box"></ul></div>
         <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg><div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-box"></div></div><div class="weight-box" id="lbl-weight-footer"></div></div>
     </div>
 
-    <!-- 🔴 ЭТИКЕТКА ПАЛЕТА -->
+    <!-- ЭТИКЕТКА ПАЛЕТА -->
     <div class="label-area" id="label-pallet">
         <div class="label-header"><span class="label-title" id="lbl-mp-pal">🔴 WB FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
         <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-pal"></span></div><div>🆔<b>Палет:</b><span id="lbl-pal-id"></span></div><div>📦<b>Коробов:</b><span id="lbl-pal-count"></span></div></div>
@@ -437,6 +474,57 @@
             });
         }
 
+        // 🔴 ПЕЧАТЬ ЭТИКЕТОК НА ТОВАР (58x40)
+        function printProductLabels() {
+            if(!Object.keys(state.currentBox.items).length) return showError('⚠️ Короб пуст');
+            const container = document.getElementById('product-labels-container');
+            container.innerHTML = '';
+            
+            // Генерация этикеток
+            Object.entries(state.currentBox.items).forEach(([bc, q]) => {
+                const p = state.db[bc];
+                if (!p) return;
+                
+                // Создаем q этикеток (по одной на каждую штуку)
+                for (let i = 0; i < q; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'label-product';
+                    const name = p.name || 'Без названия';
+                    const sku = p.sku || '-';
+                    const quant = p.quant > 1 ? p.quant : '';
+                    const expiry = p.expiry || 'Не указан';
+                    
+                    el.innerHTML = `
+                        <div class="prod-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
+                        <div class="prod-name">${name}</div>
+                        <div class="prod-info">
+                            <span>Арт: <b>${sku}</b></span>
+                            ${quant ? `<span>Квант: <b>${quant}</b></span>` : ''}
+                        </div>
+                        <div class="prod-exp">Годен до: <b>${expiry}</b></div>
+                        <div class="prod-barcode"><svg id="pb-${bc}-${i}"></svg></div>
+                    `;
+                    container.appendChild(el);
+                    
+                    try {
+                        JsBarcode(`#pb-${bc}-${i}`, bc, {
+                            format: "auto", width: 1.5, height: 10, displayValue: false, margin: 0
+                        });
+                    } catch (e) { console.warn('Barcode error', e); }
+                }
+            });
+            
+            // Включаем режим печати товара
+            document.body.classList.add('printing-products');
+            requestAnimationFrame(() => {
+                window.print();
+                setTimeout(() => {
+                    document.body.classList.remove('printing-products');
+                    container.innerHTML = ''; // Очистка
+                }, 1000);
+            });
+        }
+
         function closeBox(){
             const city=document.getElementById('city').value.trim();if(!city)return showError('⚠️ Введите город');
             if(!state.activePallet)return showError('⚠️ Выберите палет');
@@ -463,14 +551,14 @@
         function changeQty(bc,d){if(d>0&&state.db[bc]&&state.db[bc].packedPcs>=state.db[bc].targetPcs){showError(`🚫 Лимит: ${state.db[bc].targetPcs}`);speak(`Лимит`);return;}const o=state.currentBox.items[bc]||0;const n=Math.max(0,o+d);if(n===0)delete state.currentBox.items[bc];else state.currentBox.items[bc]=n;if(state.db[bc])state.db[bc].packedPcs+=(n-o);updWeight();renderBox();renderTargets();}
         function removeItem(bc){const q=state.currentBox.items[bc]||0;delete state.currentBox.items[bc];if(state.db[bc])state.db[bc].packedPcs-=q;updWeight();renderBox();renderTargets();}
         function updWeight(){let w=0;for(const q of Object.values(state.currentBox.items))w+=0.12*q;state.currentBox.weight=w;}
-        function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';}
+        function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';document.getElementById('btn-product-print').style.display = hi ? 'block' : 'none';}
         function clearBoxUI(){state.currentBox={items:{},weight:0};renderBox();updateUI();}
         function createPallet(){const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;if(state.pallets[id])return showError('Существует');state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();speak('Палет создан');saveState();}
         function selectPallet(id){state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();}
         function renderPallets(){const l=document.getElementById('pallets-list');l.innerHTML='';if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}Object.values(state.pallets).forEach(p=>{const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;d.onclick=()=>selectPallet(p.id);l.appendChild(d);});}
         function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,25)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,80)}...</div>`:''}</div>`;}).join('');}
         
-        // 🔴 ГЕНЕРАЦИЯ ЭТИКЕТКИ С DATA MATRIX
+        // ГЕНЕРАЦИЯ ЭТИКЕТКИ КОРОБА
         function generateBoxLabel(b){
             document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
             document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
@@ -488,52 +576,26 @@
             
             const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
             
-            // Рендеринг списка с DataMatrix
             Object.entries(b.items).forEach(([bc,q])=>{
                 const p=state.db[bc]; 
-                const name=p?.name||'Без названия'; 
-                const sku=p?.sku||'-';
-                const dm = p?.datamatrix || ''; // Код маркировки Честный Знак
+                const name=p?.name||'Без названия'; const sku=p?.sku||'-'; const dm = p?.datamatrix || '';
                 
                 const li = document.createElement('li');
-                
-                // Блок с информацией о товаре
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'item-info';
-                infoDiv.innerHTML = `
-                    <span class="bc">${bc}</span>
-                    <span class="qty">×${q}</span>
-                    <div class="name">${name}</div>
-                    <div style="font-size:6pt; color:#666;">Арт: ${sku}</div>
-                `;
+                const infoDiv = document.createElement('div'); infoDiv.className = 'item-info';
+                infoDiv.innerHTML = `<span class="bc">${bc}</span><span class="qty">×${q}</span><div class="name">${name}</div><div style="font-size:6pt; color:#666;">Арт: ${sku}</div>`;
                 li.appendChild(infoDiv);
                 
-                // 🔴 БЛОК DATA MATRIX
                 if (dm && dm.length > 10) {
-                    const dmBox = document.createElement('div');
-                    dmBox.className = 'datamatrix-box';
+                    const dmBox = document.createElement('div'); dmBox.className = 'datamatrix-box';
                     const canvas = document.createElement('canvas');
                     try {
-                        bwipjs.toCanvas(canvas, {
-                            bcid: 'datamatrix',
-                            text: dm,
-                            scale: 1,
-                            width: 12, // мм
-                            height: 12,
-                            includetext: false,
-                            padding: 0.5
-                        });
+                        bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: dm, scale: 1, width: 12, height: 12, padding: 0.5 });
                         dmBox.appendChild(canvas);
-                    } catch (e) {
-                        console.error('DataMatrix error:', e);
-                        dmBox.innerHTML = '<div style="font-size:5pt;color:red;">DM Err</div>';
-                    }
+                    } catch (e) { dmBox.innerHTML = '<div style="font-size:5pt;color:red;">DM Err</div>'; }
                     li.appendChild(dmBox);
                 }
-                
                 ul.appendChild(li);
             });
-            
             JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
         }
 
@@ -557,9 +619,9 @@
         function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
         function hideError(){document.getElementById('error-msg').style.display='none';}
         function showSuccess(m){const s=document.getElementById('upload-status');s.textContent=m;s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
-        function saveState(){localStorage.setItem('fbo_v6_dm',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
-        function loadState(){const s=localStorage.getItem('fbo_v6_dm');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
-        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v6_dm');location.reload();}}
+        function saveState(){localStorage.setItem('fbo_v7_prod',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
+        function loadState(){const s=localStorage.getItem('fbo_v7_prod');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
+        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v7_prod');location.reload();}}
         window.addEventListener('beforeunload',()=>{if(quaggaActive)Quagga.stop();});
     </script>
 </body>
