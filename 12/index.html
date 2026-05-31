@@ -2,2131 +2,568 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Система отгрузки FBO для Wildberries и Ozon">
-    <title>FBO Отгрузка v2.0 | Стабильная печать</title>
-    
-    <!-- Библиотеки -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBO Отгрузка v2.1 | Стабильная печать</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    
     <style>
-        :root { 
-            --ozon: #005bff; 
-            --wb: #cb11ab; 
-            --bg: #f5f7fa; 
-            --card: #fff; 
-            --text: #222; 
-            --border: #e0e0e0; 
-            --success: #28a745; 
-            --danger: #dc3545; 
-            --warning: #ffc107;
-            --info: #17a2b8;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            padding: 12px; 
-            line-height: 1.4; 
-            font-size: 13px;
-        }
-        
-        /* 🔷 СЕТКА И КАРТОЧКИ */
-        .grid { display: grid; grid-template-columns: 320px 1fr 360px; gap: 12px; max-width: 1500px; margin: 0 auto; }
-        .card { 
-            background: var(--card); 
-            border-radius: 10px; 
-            padding: 14px; 
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1); 
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-        }
-        h2 { 
-            font-size: 14px; 
-            margin-bottom: 10px; 
-            padding-bottom: 8px; 
-            border-bottom: 2px solid var(--border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-weight: 700;
-            color: #333;
-        }
-        
-        /* 🔷 ЭЛЕМЕНТЫ ФОРМ */
-        input, select, button { 
-            width: 100%; 
-            padding: 10px 12px; 
-            margin-bottom: 8px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 13px; 
-            background: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input:focus, select:focus { 
-            outline: none; 
-            border-color: var(--ozon); 
-            box-shadow: 0 0 0 3px rgba(0,91,255,0.15);
-        }
-        button { 
-            cursor: pointer; 
-            background: var(--ozon); 
-            color: #fff; 
-            border: none; 
-            font-weight: 600; 
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        button:hover { opacity: 0.95; transform: translateY(-1px); } 
-        button:active { transform: scale(0.98); }
-        button.secondary { background: #6c757d; } 
-        button.danger { background: var(--danger); }
-        button.warning { background: var(--warning); color: #333; }
-        button.info { background: var(--info); }
-        button:disabled { 
-            background: #ccc; 
-            cursor: not-allowed; 
-            opacity: 0.7; 
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        .row { display: flex; gap: 8px; flex-wrap: wrap; } 
-        .row > * { flex: 1; min-width: 0; }
-        .row.auto { flex-wrap: nowrap; }
-        .row.auto > * { flex: none; }
-        
-        /* 🔷 СКАНЕР */
-        .scanner-input { 
-            background: #f8f9fa; 
-            border: 2px dashed #005bff; 
-            font-size: 15px; 
-            text-align: center; 
-            font-family: 'Consolas', 'Monaco', monospace; 
-            transition: all 0.2s; 
-            letter-spacing: 0.5px;
-        }
-        .scanner-input:focus { 
-            outline: none; 
-            border-color: var(--success); 
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(40,167,69,0.15);
-        }
-        .scanner-input.success { 
-            border-color: var(--success); 
-            background: #e6ffe6; 
-            animation: pulse 0.3s; 
-        }
-        .scanner-input.error { 
-            border-color: var(--danger); 
-            background: #ffe6e6; 
-            animation: shake 0.3s; 
-        }
-        
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-        
-        /* 🔷 ТАБЛИЦЫ */
+        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; --info: #17a2b8; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.4; font-size: 13px; }
+        .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 12px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; border: 1px solid var(--border); }
+        h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
+        button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; transition: 0.15s; }
+        button:hover { opacity: 0.95; } button:active { transform: scale(0.98); }
+        button.secondary { background: #6c757d; } button.danger { background: var(--danger); } button.warning { background: var(--warning); color: #333; } button.info { background: var(--info); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
+        .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; }
+        .scanner-input:focus { outline: 2px solid var(--ozon); border-color: transparent; }
+        .scanner-input.success { border-color: var(--success); background: #e6ffe6; } .scanner-input.error { border-color: var(--danger); background: #ffe6e6; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-        th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; z-index: 1; }
-        tr:hover { background: #f8f9fa; }
-        .qty-btn { 
-            width: auto; 
-            padding: 3px 10px; 
-            margin: 0 2px; 
-            background: #e9ecef; 
-            color: #333; 
-            font-size: 12px; 
-            border-radius: 4px; 
-            border: none;
-            cursor: pointer;
-        }
-        .qty-btn:hover { background: #dee2e6; }
-        
-        /* 🔷 СТАТИСТИКА И УВЕДОМЛЕНИЯ */
-        .stats { 
-            display: flex; 
-            justify-content: space-between; 
-            background: #f0f4ff; 
-            padding: 8px 12px; 
-            border-radius: 6px; 
-            margin: 8px 0; 
-            font-size: 12px; 
-            font-weight: 600;
-            border-left: 3px solid var(--ozon);
-        }
-        .stats.wb { border-left-color: var(--wb); background: #fdf5ff; }
-        .alert { 
-            padding: 10px 12px; 
-            border-radius: 6px; 
-            margin-bottom: 8px; 
-            font-size: 12px; 
-            display: none; 
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
+        th { background: #f8f9fa; font-weight: 600; }
+        .qty-btn { width: auto; padding: 3px 8px; margin: 0 2px; background: #e9ecef; color: #333; border: none; border-radius: 4px; cursor: pointer; }
+        .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px; border-radius: 6px; margin: 8px 0; font-size: 12px; font-weight: 600; }
+        .alert { padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; }
         .alert-error { background: #ffe6e6; color: #842029; border: 1px solid #ffcdd2; }
-        .alert-success { background: #e6ffe6; color: #0f5132; border: 1px solid #c8e6c9; }
-        .alert-warning { background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; }
+        .alert-success { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .alert-info { background: #cff4fc; color: #055160; border: 1px solid #b6effb; }
-        
-        .info-box { 
-            background: #fff3cd; 
-            color: #664d03; 
-            padding: 10px 12px; 
-            border-radius: 6px; 
-            font-size: 12px; 
-            margin-bottom: 8px; 
-            border-left: 4px solid var(--warning);
-        }
-        
-        /* 🔷 ПАЛЕТЫ */
-        .pallet-item { 
-            background: #f8f9fa; 
-            padding: 10px; 
-            border-radius: 6px; 
-            margin-bottom: 8px; 
-            font-size: 11px; 
-            cursor: pointer; 
-            border: 2px solid transparent; 
-            transition: all 0.2s;
-            position: relative;
-        }
-        .pallet-item:hover { background: #e9ecef; transform: translateX(2px); }
-        .pallet-item.active { 
-            border-color: var(--success); 
-            background: #e8f5e9; 
-            box-shadow: 0 2px 8px rgba(40,167,69,0.2);
-        }
-        .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
-        .pallet-item .mp-badge {
-            position: absolute;
-            top: 6px;
-            right: 8px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 700;
-            color: #fff;
-        }
-        .pallet-item .mp-badge.wb { background: var(--wb); }
-        .pallet-item .mp-badge.ozon { background: var(--ozon); }
-        
-        /* 🔷 ЦЕЛЕВЫЕ ПОЗИЦИИ (ТЗ) */
-        .target-item { 
-            background: #f8f9fa; 
-            padding: 10px; 
-            border-radius: 6px; 
-            margin-bottom: 8px; 
-            font-size: 11px; 
-            border-left: 3px solid #ccc;
-            transition: opacity 0.2s;
-        }
+        .log-box { background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; }
+        .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 12px; }
+        .pallet-item:hover { background: #e9ecef; } .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
+        .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #ccc; font-size: 12px; }
         .target-item.done { border-left-color: var(--success); opacity: 0.8; }
-        .target-item.partial { border-left-color: var(--warning); }
-        .target-item b { display: block; margin-bottom: 4px; font-size: 12px; }
-        .tz-note { 
-            font-size: 10px; 
-            color: #666; 
-            margin-top: 5px; 
-            font-style: italic; 
-            line-height: 1.3; 
-            background: #fff; 
-            padding: 5px 8px; 
-            border-radius: 4px; 
-            border: 1px solid #eee;
-        }
-        .progress-bar { 
-            height: 6px; 
-            background: #e9ecef; 
-            border-radius: 3px; 
-            overflow: hidden; 
-            margin: 5px 0;
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: var(--success); 
-            transition: width 0.4s ease;
-        }
-        .progress-fill.partial { background: var(--warning); }
-        .progress-text { 
-            display: flex; 
-            justify-content: space-between; 
-            color: #555; 
-            font-size: 10px;
-            font-weight: 500;
-        }
-        .quant-badge { 
-            display: inline-block; 
-            background: #e6f0ff; 
-            color: var(--ozon); 
-            padding: 1px 6px; 
-            border-radius: 3px; 
-            font-size: 9px; 
-            font-weight: 700; 
-            margin-left: 5px;
-        }
+        .progress-bar { height: 5px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 15px; }
+        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .mapping-select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions button { flex: 1; }
         
-        /* 🔷 МОДАЛЬНЫЕ ОКНА */
-        .modal-overlay { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.65); 
-            z-index: 2000; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 15px;
-            backdrop-filter: blur(3px);
-        }
-        .modal { 
-            background: #fff; 
-            padding: 20px; 
-            border-radius: 12px; 
-            width: 100%; 
-            max-width: 600px; 
-            max-height: 90vh; 
-            overflow-y: auto; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-            animation: modalIn 0.25s ease;
-        }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .modal h3 { margin-bottom: 15px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
-        .mapping-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
-        .mapping-label { width: 100%; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: #444; }
-        .mapping-select { 
-            flex: 1; 
-            min-width: 150px; 
-            padding: 9px 12px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 13px;
-            background: #fff;
-        }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-        .modal-actions button { flex: 1; min-width: 120px; }
+        /* ЭТИКЕТКИ */
+        .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 4mm; font-family: Arial, sans-serif; overflow: hidden; z-index: -1; line-height: 1.1; }
+        .label-header { border-bottom: 2px solid #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
+        .label-title { font-size: 12pt; font-weight: 900; } .label-title.wb { color: var(--wb); } .label-title.ozon { color: var(--ozon); }
+        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border-bottom: 1px dashed #888; padding-bottom: 1.5mm; }
+        .label-summary { font-size: 7.5pt; background: #f4f4f4; padding: 1mm 2mm; border-radius: 1.5mm; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border: 1px solid #ddd; }
+        .label-content { border-top: 1px solid #888; padding-top: 1.5mm; max-height: 32mm; }
+        .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; }
+        .label-content ul { list-style: none; padding: 0; }
+        .label-content li { margin-bottom: 1mm; padding-bottom: 1mm; border-bottom: 1px dotted #ccc; font-size: 7.5pt; }
+        .label-content li .bc { font-family: monospace; font-weight: 900; background: #eee; padding: 0 3px; border-radius: 2px; margin-right: 4px; }
+        .label-content li .qty { float: right; font-weight: 800; font-size: 8pt; }
+        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; }
+        .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; width: auto; }
+        .weight-box { font-size: 9pt; font-weight: 900; background: #000; color: #fff; padding: 1mm 3mm; border-radius: 2mm; }
+        #pallet-labels-container { display: none; }
         
-        /* 🔷 ЭТИКЕТКИ (скрыты на экране) */
-        .label-area { 
-            position: absolute; 
-            left: -9999px; 
-            top: 0; 
-            width: 120mm; 
-            height: 75mm; 
-            background: #fff; 
-            border: 1px solid #000; 
-            padding: 4mm; 
-            font-family: 'Arial', 'Segoe UI', sans-serif; 
-            overflow: hidden; 
-            z-index: -1; 
-            line-height: 1.15;
-            page-break-inside: avoid;
-        }
-        .label-area.pallet-label {
-            width: 210mm !important;
-            height: auto !important;
-            min-height: 297mm;
-            padding: 15mm !important;
-        }
-        
-        .label-header { 
-            border-bottom: 2px solid #000; 
-            padding-bottom: 2mm; 
-            margin-bottom: 3mm; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .label-title { 
-            font-size: 13pt; 
-            font-weight: 900; 
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .label-title.wb { color: var(--wb); }
-        .label-title.ozon { color: var(--ozon); }
-        .label-date { font-size: 7.5pt; color: #555; font-weight: 500; }
-        
-        .label-info-row { 
-            font-size: 8.5pt; 
-            margin-bottom: 2mm; 
-            display: flex; 
-            justify-content: space-between; 
-            gap: 3mm; 
-            border-bottom: 1px dashed #888; 
-            padding-bottom: 2mm;
-            flex-wrap: wrap;
-        }
-        .label-info-row div { flex: 1; min-width: 30%; }
-        .label-info-row strong { font-weight: 800; }
-        
-        .label-summary { 
-            font-size: 8pt; 
-            background: #f4f4f4; 
-            padding: 1.5mm 3mm; 
-            border-radius: 2mm; 
-            margin-bottom: 2mm; 
-            display: flex; 
-            justify-content: space-between; 
-            border: 1px solid #ddd;
-            flex-wrap: wrap;
-            gap: 2mm;
-        }
-        .label-summary span { display: flex; align-items: center; gap: 3px; }
-        
-        .label-content { 
-            border-top: 1px solid #888; 
-            padding-top: 2mm; 
-            max-height: 35mm; 
-            overflow: hidden;
-        }
-        .label-content h3 { 
-            font-size: 8pt; 
-            margin-bottom: 1.5mm; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            color: #333;
-            letter-spacing: 0.3px;
-        }
-        .label-content ul { list-style: none; margin: 0; padding: 0; }
-        .label-content li { 
-            margin-bottom: 1.2mm; 
-            padding: 1mm 0; 
-            border-bottom: 1px dotted #ccc; 
-            font-size: 7.5pt;
-            display: flex;
-            align-items: flex-start;
-            gap: 4px;
-        }
-        .label-content li:last-child { border-bottom: none; }
-        .label-content li .bc { 
-            display: inline-block; 
-            font-family: 'Consolas', monospace; 
-            font-weight: 800; 
-            font-size: 8.5pt; 
-            background: #eee; 
-            padding: 0 4px; 
-            border-radius: 2px; 
-            margin-right: 5px;
-            letter-spacing: 0.5px;
-        }
-        .label-content li .name { 
-            display: block; 
-            font-weight: 600; 
-            font-size: 7.5pt; 
-            margin-top: 1px;
-            line-height: 1.2;
-        }
-        .label-content li .qty { 
-            float: right; 
-            font-weight: 800; 
-            font-size: 8.5pt; 
-            background: #000;
-            color: #fff;
-            padding: 0 5px;
-            border-radius: 2px;
-            min-width: 25px;
-            text-align: center;
-        }
-        
-        .label-footer { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-end; 
-            margin-top: 3mm; 
-            border-top: 2px solid #000; 
-            padding-top: 2mm;
-        }
-        .barcode-wrap { flex: 1; text-align: center; }
-        .barcode-wrap svg { height: 11mm; width: auto; display: block; margin: 0 auto; }
-        .weight-box { 
-            font-size: 10pt; 
-            font-weight: 900; 
-            background: #000; 
-            color: #fff; 
-            padding: 1.5mm 5mm; 
-            border-radius: 3mm;
-            min-width: 80px;
-            text-align: center;
-        }
-        
-        /* 🔷 ПЕЧАТЬ ПАЛЕТА (А4) */
-        .pallet-label-page {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            padding: 15mm !important;
-            margin: 0 !important;
-            page-break-after: always;
-            page-break-inside: avoid;
-            background: #fff !important;
-            border: 1px solid #000 !important;
-            box-sizing: border-box !important;
-        }
-        .pallet-label-page:last-child { page-break-after: auto !important; }
-        
-        .pallet-header {
-            text-align: center;
-            border-bottom: 3px solid #000;
-            padding-bottom: 4mm;
-            margin-bottom: 4mm;
-        }
-        .pallet-header h1 {
-            font-size: 16pt;
-            font-weight: 900;
-            margin: 0 0 2mm 0;
-            letter-spacing: 1px;
-        }
-        .pallet-meta {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2mm;
-            font-size: 9pt;
-            margin-bottom: 4mm;
-        }
-        .pallet-meta div {
-            padding: 2mm;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            text-align: center;
-        }
-        .pallet-meta strong { display: block; font-size: 8pt; color: #666; margin-bottom: 1mm; }
-        
-        .boxes-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2mm;
-            font-size: 7.5pt;
-            margin: 4mm 0;
-        }
-        .boxes-grid li {
-            padding: 2mm;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            break-inside: avoid;
-            text-align: center;
-        }
-        .boxes-grid .box-id {
-            font-weight: 800;
-            font-family: 'Consolas', monospace;
-            font-size: 9pt;
-            margin-bottom: 1mm;
-            color: #000;
-        }
-        .boxes-grid .box-info {
-            font-size: 6.5pt;
-            color: #555;
-            line-height: 1.3;
-        }
-        
-        .page-number {
-            position: fixed;
-            bottom: 8mm;
-            right: 15mm;
-            font-size: 8pt;
-            color: #666;
-        }
-        
-        .label-footer-print {
-            position: fixed;
-            bottom: 5mm;
-            left: 15mm;
-            right: 15mm;
-            font-size: 7pt;
-            color: #666;
-            text-align: center;
-            border-top: 1px solid #ccc;
-            padding-top: 2mm;
-        }
-        
-        /* 🔷 КАМЕРА */
-        #camera-section { margin-top: 10px; }
-        #interactive { 
-            width: 100%; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            background: #000; 
-            display: none; 
-            position: relative; 
-            min-height: 200px;
-            border: 2px solid var(--border);
-        }
-        #interactive video { width: 100%; height: 100%; object-fit: cover; display: block; }
-        #interactive canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .camera-overlay { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            width: 85%; 
-            height: 28%; 
-            border: 3px solid var(--success); 
-            border-radius: 5px; 
-            pointer-events: none; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
-            background: rgba(0, 91, 255, 0.1);
-        }
-        .scan-hint { 
-            font-size: 11px; 
-            color: #fff; 
-            background: rgba(0,0,0,0.8); 
-            padding: 6px 12px; 
-            border-radius: 5px; 
-            margin-top: 8px; 
-            text-align: center;
-            font-weight: 500;
-        }
-        #camera-toggle { display: flex; gap: 8px; margin-top: 8px; }
-        #camera-toggle button { flex: 1; padding: 10px; font-size: 12px; }
-        .camera-permission { font-size: 11px; color: #666; margin-top: 6px; text-align: center; }
-        .camera-active { border-color: var(--success) !important; background: #e6ffe6 !important; }
-        .scan-status { 
-            font-size: 11px; 
-            text-align: center; 
-            margin-top: 6px; 
-            min-height: 20px; 
-            font-weight: 500;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .scan-status.detecting { color: var(--warning); background: #fff3cd; } 
-        .scan-status.found { color: var(--success); font-weight: 700; background: #d4edda; } 
-        .scan-status.error { color: var(--danger); background: #f8d7da; }
-        
-        /* 🔷 ФИЛЬТРЫ ТЗ */
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-        }
-        .filter-bar select, .filter-bar input {
-            margin-bottom: 0;
-            padding: 8px 10px;
-            font-size: 12px;
-            flex: none;
-            min-width: 120px;
-        }
-        .filter-bar button {
-            padding: 8px 12px;
-            font-size: 12px;
-            flex: none;
-            width: auto;
-        }
-        
-        /* 🔷 ПРЕДПРОСМОТР ТЗ */
-        #tz-preview {
-            margin-top: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px;
-            background: #fafafa;
-            max-height: 280px;
-            overflow-y: auto;
-            font-size: 11px;
-            display: none;
-        }
-        #tz-preview table { font-size: 10.5px; }
-        #tz-preview th { background: #e9ecef; font-weight: 700; }
-        #tz-preview .status-badge {
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 600;
-        }
-        #tz-preview .status-done { background: #d4edda; color: #155724; }
-        #tz-preview .status-partial { background: #fff3cd; color: #856404; }
-        #tz-preview .status-pending { background: #f8d7da; color: #721c24; }
-        
-        /* 🔷 КНОПКИ ДЕЙСТВИЙ */
-        .action-buttons {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-        .action-buttons button {
-            flex: 1;
-            min-width: auto;
-            padding: 8px 10px;
-            font-size: 11px;
-        }
-        
-        /* 🔷 СИСТЕМНЫЕ СООБЩЕНИЯ */
-        .system-alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            max-width: 350px;
-            z-index: 3000;
-            animation: slideInRight 0.3s ease;
-        }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
-        
-        /* 🔷 АДАПТИВ */
-        @media (max-width: 1200px) { 
-            .grid { grid-template-columns: 1fr; } 
-            .mapping-row { flex-direction: column; align-items: stretch; } 
-            .mapping-label { width: 100%; } 
-            #interactive { max-height: 240px; }
-            .boxes-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 600px) {
-            body { padding: 8px; font-size: 12px; }
-            .card { padding: 12px; }
-            .row { flex-direction: column; }
-            .row.auto { flex-direction: row; flex-wrap: wrap; }
-            .boxes-grid { grid-template-columns: repeat(2, 1fr); }
-            .pallet-meta { grid-template-columns: repeat(2, 1fr); }
-        }
-        
-        /* 🔷 ПЕЧАТЬ */
         @media print { 
-            body { 
-                background: #fff !important; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                font-size: 11pt !important;
-            }
+            body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
             .no-print { display: none !important; } 
-            
-            .label-area { 
-                position: relative !important; 
-                left: 0 !important; 
-                top: 0 !important; 
-                visibility: visible !important; 
-                display: block !important; 
-                margin: 0 !important;
-                box-shadow: none !important;
-            }
-            
-            /* Короб 120×75 мм */
-            .label-area:not(.pallet-label) {
-                width: 120mm !important; 
-                height: 75mm !important; 
-                padding: 4mm !important;
-                page-break-after: always;
-            }
-            .label-area:not(.pallet-label):last-child { page-break-after: auto; }
-            
-            /* Палет А4 */
-            .label-area.pallet-label {
-                width: 210mm !important;
-                height: auto !important;
-                min-height: 297mm !important;
-                padding: 15mm !important;
-                page-break-after: always;
-            }
-            .label-area.pallet-label:last-child { page-break-after: auto; }
-            
-            .label-area.hide-during-print { 
-                display: none !important; 
-                visibility: hidden !important; 
-            }
-            
-            .label-content { max-height: none !important; overflow: visible !important; }
-            .label-content li { break-inside: avoid !important; margin-bottom: 1mm !important; }
-            .label-content li .bc { background: #ddd !important; -webkit-print-color-adjust: exact; }
-            
-            @page { margin: 0; }
-            @page:first { margin-top: 0; }
-            
-            /* Скрываем элементы управления в этикетках */
-            .label-area button, 
-            .label-area input,
-            .label-area select { display: none !important; }
+            .label-area { position: relative !important; left: 0 !important; top: 0 !important; visibility: visible !important; display: block !important; width: 120mm !important; height: 75mm !important; padding: 4mm !important; margin: 0 !important; page-break-after: always; }
+            .label-area:last-child { page-break-after: auto; }
+            @page { size: 120mm 75mm; margin: 0; } 
         }
-        
-        /* 🔷 УТИЛИТЫ */
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .font-mono { font-family: 'Consolas', 'Monaco', monospace; }
-        .hidden { display: none !important; }
-        .mt-8 { margin-top: 8px; }
-        .mb-8 { margin-bottom: 8px; }
-        .fw-bold { font-weight: 700; }
-        .text-success { color: var(--success); }
-        .text-danger { color: var(--danger); }
-        .text-warning { color: var(--warning); }
-        
-        /* 🔷 СКРОЛЛБАР */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <!-- 🔷 МОДАЛКА: НАСТРОЙКА КОЛОНОК -->
+    <!-- МОДАЛКА МАППИНГА -->
     <div class="modal-overlay no-print" id="mapping-modal">
         <div class="modal">
             <h3>📋 Настройка колонок Excel</h3>
-            <p style="font-size:12px; color:#666; margin-bottom:15px;">
-                Укажите, какие колонки в вашем файле соответствуют полям системы.
-                <br><strong style="color:var(--danger)">* — обязательные поля</strong>
-            </p>
+            <p style="font-size:12px; color:#666; margin-bottom:15px;">Выберите соответствие колонок. <b>*</b> обязательные.</p>
             <div id="mapping-fields"></div>
             <div class="modal-actions">
-                <button onclick="applyMapping()">✅ Применить настройки</button>
+                <button onclick="applyMapping()">✅ Применить</button>
                 <button class="secondary" onclick="closeMappingModal()">❌ Отмена</button>
             </div>
         </div>
     </div>
 
-    <!-- 🔷 МОДАЛКА: ОТЧЁТ ПО ГОРОДУ -->
-    <div class="modal-overlay no-print" id="report-modal">
-        <div class="modal" style="max-width: 750px; max-height: 95vh;">
-            <h3>📊 Отчёт: <span id="report-city-name">-</span></h3>
-            <p style="font-size:11px; color:#666; margin-bottom:12px">
-                Сформирован: <span id="report-date">-</span> | 
-                МП: <span id="report-mp">-</span>
-            </p>
-            
-            <div class="stats" id="report-summary">
-                <!-- Заполняется динамически -->
-            </div>
-            
-            <div style="max-height: 450px; overflow-y: auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:#fafafa">
-                <div id="report-content">
-                    <!-- Детализация по палетам -->
-                </div>
-            </div>
-            
-            <div class="modal-actions" style="margin-top:15px">
-                <button onclick="exportReportPDF()">📄 Экспорт PDF</button>
-                <button class="secondary" onclick="exportReportCSV()">📤 Экспорт CSV</button>
-                <button class="info" onclick="printReport()">🖨 Печать отчёта</button>
-                <button class="danger" onclick="closeReportModal()">✕ Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔷 СИСТЕМНЫЕ УВЕДОМЛЕНИЯ -->
-    <div id="system-alerts" class="system-alert"></div>
-
-    <!-- 🔷 ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div class="grid no-print">
-        <!-- 🔷 ЛЕВАЯ КОЛОНКА: ЗАГРУЗКА, ПАРАМЕТРЫ, ПАЛЕТЫ -->
         <div>
             <div class="card">
-                <h2>📂 Загрузка ТЗ 
-                    <button id="voice-toggle" class="secondary" style="width:auto;font-size:11px;padding:4px 8px;" title="Голосовые подсказки">🔊</button>
-                </h2>
-                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv" title="Выберите файл с техническим заданием">
+                <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto;font-size:11px;padding:4px 8px;">🔊</button></h2>
+                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
                 <div id="upload-status" class="alert alert-success"></div>
-                <p style="font-size:10px;color:#666;margin-top:5px">
-                    💡 Поддерживаются: .xlsx, .xls, .csv
-                </p>
+                <div id="debug-log" class="log-box">📡 Лог загрузки...</div>
             </div>
-            
             <div class="card" id="order-info" style="display:none;">
-                <h2>📋 Информация о заказе</h2>
-                <div class="info-box">
-                    📌 <b>Маршрут:</b> <span id="excel-route-display">-</span>
-                </div>
-                <div class="stats" id="order-stats">
-                    <span>📦 SKU: <span id="loaded-count">0</span></span>
-                    <span>📊 План: <span id="total-plan">0</span></span>
-                </div>
-                <div class="action-buttons">
-                    <button class="warning" onclick="generateTZReport()" style="flex:2">📋 ТЗ для печати</button>
-                    <button class="info" onclick="closeCity()" style="flex:1">✅ Закрыть город</button>
-                </div>
+                <h2>📋 Информация</h2>
+                <div class="alert alert-info">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
+                <div class="stats"><span>📦 SKU: <span id="loaded-count">0</span></span><span>📊 План: <span id="total-plan">0</span></span></div>
             </div>
-            
             <div class="card">
-                <h2>🎛️ Параметры отгрузки</h2>
-                <select id="marketplace" onchange="onMarketplaceChange()">
-                    <option value="WB" selected>🔴 Wildberries FBO</option>
-                    <option value="OZON">🔵 Ozon FBO</option>
-                </select>
-                <input type="text" id="city" placeholder="🏙 Город доставки *" list="city-list" onchange="onCityChange()">
-                <datalist id="city-list">
-                    <option value="Екатеринбург">
-                    <option value="Москва">
-                    <option value="Санкт-Петербург">
-                    <option value="Казань">
-                    <option value="Новосибирск">
-                    <option value="Краснодар">
-                </datalist>
-                <input type="text" id="pallet-input" placeholder="📦 Текущий палет" readonly style="background:#f8f9fa;cursor:not-allowed">
-                <div class="alert alert-error" id="error-msg" style="font-size:11px"></div>
+                <h2>🎛️ Параметры</h2>
+                <select id="marketplace"><option value="WB">🔴 Wildberries FBO</option><option value="OZON">🔵 Ozon FBO</option></select>
+                <input type="text" id="city" placeholder="🏙 Город вручную" list="cities-list">
+                <datalist id="cities-list"><option value="Екатеринбург"><option value="Москва"><option value="Санкт-Петербург"><option value="Казань"></datalist>
+                <input type="text" id="pallet-input" placeholder="📦 Текущий палет" readonly style="background:#f8f9fa">
+                <div class="alert alert-error" id="error-msg"></div>
             </div>
-            
             <div class="card">
-                <h2>🏗 Управление палетами</h2>
-                <div class="row" style="margin-bottom:10px">
-                    <button onclick="createPallet()" style="flex:2">+ Создать палет</button>
-                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled title="Печать этикетки палета">🖨</button>
-                </div>
-                <div id="pallets-list" style="max-height:180px;overflow-y:auto;"></div>
-                <p id="no-pallets-msg" style="color:#888;font-size:11px;text-align:center;padding:10px">
-                    Нет созданных палетов
-                </p>
+                <h2>🏗 Палеты</h2>
+                <div class="row" style="margin-bottom:8px"><button onclick="createPallet()" style="flex:2">+ Палет</button><button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨</button></div>
+                <div id="pallets-list" style="max-height:150px;overflow-y:auto"></div>
             </div>
         </div>
-        
-        <!-- 🔷 ЦЕНТРАЛЬНАЯ КОЛОНКА: СКАНИРОВАНИЕ, КОРОБ, СОСТАВ -->
         <div>
             <div class="card">
-                <h2>📡 Сканирование штрихкодов</h2>
-                <input type="text" id="scanner" class="scanner-input" 
-                       placeholder="🔤 Введите или сканируйте ШК" 
-                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                       title="Поле для ввода или сканирования штрихкода">
-                
-                <div id="camera-section">
+                <h2>📡 Сканирование</h2>
+                <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или сканируйте ШК" autocomplete="off">
+                <div id="camera-section" style="margin-top:8px">
                     <div class="row" id="camera-toggle">
-                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Включить камеру</button>
-                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none">⏹ Остановить</button>
+                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
+                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none">⏹ Стоп</button>
                     </div>
-                    <div id="interactive">
-                        <div class="camera-overlay"></div>
-                    </div>
-                    <div class="scan-hint">🎯 Наведите рамку на штрихкод для авто-сканирования</div>
-                    <div id="scan-status" class="scan-status"></div>
-                    <p class="camera-permission">💡 Для работы камеры требуется HTTPS или localhost</p>
+                    <div id="interactive" style="width:100%;height:180px;background:#000;border-radius:8px;overflow:hidden;display:none;position:relative"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:30%;border:2px solid var(--success);pointer-events:none"></div></div>
                 </div>
             </div>
-            
             <div class="card">
-                <h2>📦 Текущий короб 
-                    <span id="box-id-display" style="background:#e6f0ff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600"># НОВАЯ</span>
-                </h2>
-                <div class="stats">
-                    <span>📦 Позиций: <span id="items-count">0</span></span>
-                    <span>⚖️ Вес: <span id="total-weight">0.00</span> кг</span>
-                    <span>🔢 Штук: <span id="total-qty">0</span></span>
-                </div>
-                <div class="row">
-                    <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть короб</button>
-                    <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled title="Переоткрыть последний короб">↩️</button>
-                </div>
-                <button id="retry-print-btn" onclick="retryPrint()" style="display:none;margin-top:6px;background:var(--warning);color:#333">
-                    🔄 Повторить печать этикетки
-                </button>
-                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px">🗑 Очистить текущий короб</button>
+                <h2>📦 Короб <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px"># НОВАЯ</span></h2>
+                <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
+                <div class="row"><button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button><button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️</button></div>
+                <button id="retry-print-btn" onclick="retryPrint()" style="display:none;background:var(--warning);color:#333;margin-top:6px">🔄 Повтор печати</button>
+                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px">🗑 Очистить</button>
             </div>
-            
             <div class="card">
-                <h2>📋 Состав короба</h2>
-                <div style="overflow-x:auto">
-                    <table id="box-table">
-                        <thead>
-                            <tr>
-                                <th>ШК</th>
-                                <th>Артикул</th>
-                                <th>Название</th>
-                                <th class="text-center">Кол-во</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="box-tbody"></tbody>
-                    </table>
-                </div>
-                <p id="empty-msg" style="text-align:center;color:#888;margin:20px 0;font-style:italic">
-                    📭 Короб пуст — начните сканирование товаров
-                </p>
+                <h2>📋 Состав</h2>
+                <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
+                <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0">Коробка пуста</p>
             </div>
         </div>
-        
-        <!-- 🔷 ПРАВАЯ КОЛОНКА: ПЛАН, ФИЛЬТРЫ, ЭКСПОРТ -->
         <div>
             <div class="card">
-                <h2>🎯 План отгрузки (ТЗ)</h2>
-                
-                <!-- 🔷 ФИЛЬТРЫ -->
-                <div class="filter-bar">
-                    <select id="filter-city" onchange="applyTZFilters()" title="Фильтр по городу">
-                        <option value="">🏙 Все города</option>
-                    </select>
-                    <select id="filter-mp" onchange="applyTZFilters()" title="Фильтр по маркетплейсу">
-                        <option value="">🛒 Все МП</option>
-                        <option value="WB">🔴 WB</option>
-                        <option value="OZON">🔵 Ozon</option>
-                    </select>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap">
-                        <input type="checkbox" id="filter-incomplete" onchange="applyTZFilters()">
-                        Только незавершённые
-                    </label>
-                    <button class="secondary" onclick="resetTZFilters()" style="width:auto;padding:8px 10px;margin:0" title="Сбросить фильтры">↺</button>
-                </div>
-                
-                <div class="row" style="margin-bottom:8px">
-                    <button class="secondary" onclick="printTZ()" style="flex:2">🖨 Печать ТЗ (А4)</button>
-                    <button class="info" onclick="toggleTZPreview()" style="flex:1;font-size:12px">👁 Предпросмотр</button>
-                </div>
-                
-                <!-- 🔷 ПРЕДПРОСМОТР -->
-                <div id="tz-preview">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Артикул</th>
-                                <th>Товар</th>
-                                <th>Город</th>
-                                <th>МП</th>
-                                <th>План/Факт</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tz-preview-body"></tbody>
-                    </table>
-                </div>
-                
-                <!-- 🔷 СПИСОК ЦЕЛЕЙ -->
-                <div id="targets-list" style="max-height:420px;overflow-y:auto;margin-top:8px"></div>
+                <h2>🎯 План (ТЗ)</h2>
+                <div class="row" style="margin-bottom:8px"><input type="text" id="target-search" placeholder="🔍 Поиск по ШК/Артикулу" oninput="renderTargets()"></div>
+                <div id="targets-list" style="max-height:580px;overflow-y:auto"></div>
             </div>
-            
             <div class="card">
-                <h2>📜 Экспорт и управление</h2>
-                <button class="secondary" onclick="exportCSV()">📤 Экспорт всех данных (CSV)</button>
-                <button class="secondary" onclick="exportState()">💾 Скачать резервную копию</button>
-                <button class="warning" onclick="importState()" style="margin-top:6px">📥 Восстановить из бэкапа</button>
-                <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
-                <button class="danger" onclick="resetAllData()" style="margin-top:6px">🔄 Полный сброс системы</button>
-                <p style="font-size:10px;color:#666;margin-top:8px">
-                    💡 Данные автоматически сохраняются в браузере
-                </p>
+                <h2>📜 Экспорт</h2>
+                <button class="secondary" onclick="exportCSV()">📤 CSV</button>
+                <button class="danger" onclick="resetAllData()" style="margin-top:6px">🔄 Сброс</button>
             </div>
         </div>
     </div>
 
-    <!-- 🔷 ЭТИКЕТКА НА КОРОБ (120×75 мм) -->
+    <!-- ЭТИКЕТКИ -->
     <div class="label-area" id="label-box">
-        <div class="label-header">
-            <span class="label-title" id="lbl-mp-box">🔴 WB FBO</span>
-            <span class="label-date" id="lbl-date-box"></span>
-        </div>
-        <div class="label-info-row">
-            <div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div>
-            <div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div>
-            <div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div>
-        </div>
-        <div class="label-summary">
-            <span>📦 Позиций: <b id="lbl-total-pos">0</b></span>
-            <span>🔢 Штук: <b id="lbl-total-qty">0</b></span>
-            <span>⚖️ Вес: <b id="lbl-weight-box"></b></span>
-        </div>
-        <div class="label-content">
-            <h3>📋 Содержимое:</h3>
-            <ul id="lbl-items-list-box"></ul>
-        </div>
-        <div class="label-footer">
-            <div class="barcode-wrap">
-                <svg id="barcode-svg-box"></svg>
-                <div style="font-size:5.5pt; margin-top:1.5mm" id="lbl-barcode-text-box"></div>
-            </div>
-            <div class="weight-box" id="lbl-weight-footer"></div>
-        </div>
+        <div class="label-header"><span class="label-title" id="lbl-mp-box">🔴 WB FBO</span><span style="font-size:7pt" id="lbl-date-box"></span></div>
+        <div class="label-info-row"><div>📍<b>Город:</b> <span id="lbl-city-box"></span></div><div>📦<b>Палет:</b> <span id="lbl-pallet-box"></span></div><div>🆔<b>Короб:</b> <span id="lbl-box-id-box"></span></div></div>
+        <div class="label-summary"><span>📦 Позиций: <b id="lbl-total-pos">0</b></span><span>🔢 Штук: <b id="lbl-total-qty">0</b></span><span>⚖️ Вес: <b id="lbl-weight-box"></b></span></div>
+        <div class="label-content"><h3>📋 Содержимое:</h3><ul id="lbl-items-list-box"></ul></div>
+        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg></div><div class="weight-box" id="lbl-weight-footer"></div></div>
     </div>
-
-    <!-- 🔷 ЭТИКЕТКА ПАЛЕТА (контейнер для многостраничной печати) -->
-    <div id="pallet-labels-container" class="no-print"></div>
-
-    <!-- 🔷 СКРЫТЫЙ КОНТЕЙНЕР ДЛЯ ПЕЧАТИ ТЗ (А4) -->
-    <div id="tz-print-container" class="no-print" style="position:absolute;left:-9999px;top:0"></div>
+    <div id="label-pallet-container"></div>
 
     <script>
-        // ═══════════════════════════════════════════════════════════════
-        // 🔧 КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-        // ═══════════════════════════════════════════════════════════════
-        
-        const CONFIG = {
-            version: '2.0.0',
-            appName: 'FBO Отгрузка',
-            storageKey: 'fbo_state_v2',
-            backupKey: 'fbo_backup_critical',
-            debounceScan: 500,        // ms между сканированиями одного ШК
-            itemWeight: 0.12,         // кг на единицу товара (условно)
-            boxesPerPage: 60,         // коробов на страницу этикетки палета
-            autoSaveInterval: 30000,  // авто-сохранение каждые 30 сек
-            maxHistoryItems: 500,     // лимит истории для производительности
-        };
-
         const MAPPING_CONFIG = [
-            {key:'sku', label:'Артикул / Код товара *', required:true, auto:['артикул','код','sku','article']},
-            {key:'name', label:'Название товара *', required:true, auto:['наименование','назв','name','товар']},
-            {key:'barcode_orig', label:'ШК исходный', required:false, auto:['шк','barcode','код1']},
-            {key:'barcode_wb', label:'ШК для этикетки', required:false, auto:['этикетк','wb шк','код2']},
-            {key:'qty_total', label:'ИТОГО к отгрузке (шт.) *', required:true, auto:['итого','кол-во','qty','план']},
-            {key:'quant', label:'Квант спайки', required:false, auto:['квант','спайк','упак']},
-            {key:'tz_note', label:'Требования / Примечание', required:false, auto:['тз','прим','треб','коммент']},
-            {key:'boxes_plan', label:'План коробов', required:false, auto:['короб','боксов','boxes']},
-            {key:'pcs_per_box', label:'Штук в коробе', required:false, auto:['штук в','шт/кор','штук']},
-            {key:'expiry', label:'Годен до', required:false, auto:['годен','срок','эксп','до']},
-            {key:'city', label:'Город доставки', required:false, auto:['город','город отгрузки','город пвз','доставка']},
-            {key:'marketplace', label:'Маркетплейс', required:false, auto:['мп','площадк','wb','ozon','маркет']}
+            {key:'sku',label:'Артикул / Код *',required:true,auto:['артикул','sku','код']},
+            {key:'name',label:'Название товара *',required:true,auto:['наименование','назв','name']},
+            {key:'barcode_orig',label:'ШК исходный',required:false,auto:['шк','barcode']},
+            {key:'barcode_wb',label:'ШК на этикетку',required:false,auto:['этикетк','wb']},
+            {key:'qty_total',label:'ИТОГО к отгрузке *',required:true,auto:['итого','кол','qty','план']},
+            {key:'quant',label:'Квант спайки',required:false,auto:['квант']},
+            {key:'tz_note',label:'ТЗ / Примечание',required:false,auto:['тз','прим']},
+            {key:'city',label:'Город',required:false,auto:['город']},
+            {key:'marketplace',label:'Маркетплейс',required:false,auto:['мп','wb','ozon']}
         ];
 
-        // Глобальное состояние приложения
-        const appState = {
-            db: {},                    // База товаров: { [barcode]: product }
-            targets: [],               // План отгрузки: массив продуктов
-            currentBox: { items: {}, weight: 0, openedAt: null },
-            history: [],               // История закрытых коробов
-            pallets: {},               // Палеты: { [palletId]: { id, boxes: [], weight, mp, city } }
-            activePallet: null,
-            orderMeta: { route: '', loadedAt: null },
-            filters: { city: '', mp: '', incomplete: false },
-            settings: { voice: true, printFormat: 'A4', labelSize: '120x75' },
-            cityReports: [],           // История отчётов по городам
-            lastPrintedLabel: null,
-            scanLock: new Map(),       // Debounce для сканирования
-            diagnostics: { errors: [], lastCheck: null }
-        };
+        let appState = {db:{}, targets:[], currentBox:{items:{},weight:0}, history:[], boxCounter:1, pallets:{}, activePallet:null};
+        let tempExcelData=null, tempHeaders=[], quaggaActive=false, scanDebounce=false;
+        let voiceEnabled=true;
 
-        // Временные данные для обработки файла
-        let tempExcelData = null, tempHeaders = [];
-        let quaggaInstance = null, quaggaActive = false;
-        let scanDebounce = false, scanTimeout = null;
-        let autoSaveTimer = null;
-
-        // Голосовой синтез
-        let voiceEnabled = true, preferredVoice = null;
-        const synth = window.speechSynthesis;
-
-        // ═══════════════════════════════════════════════════════════════
-        // 🔊 ГОЛОСОВЫЕ ПОДСКАЗКИ
-        // ═══════════════════════════════════════════════════════════════
-        
-        function initVoices() {
-            if (!synth) return;
-            const voices = synth.getVoices().filter(v => v.lang?.startsWith('ru'));
-            // Приоритет: мужской голос с именем "Pavel", "Yuri", "Dmitry" или первый русский
-            preferredVoice = voices.find(v => /male|pavel|yuri|dmitry|filipp/i.test(v.name)) || voices[0];
+        const logEl = document.getElementById('debug-log');
+        function log(msg, type='info') {
+            const time = new Date().toLocaleTimeString();
+            const color = type==='error' ? '#ff6b6b' : type==='success' ? '#51cf66' : '#74c0fc';
+            logEl.innerHTML += `<span style="color:${color}">[${time}] ${msg}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[FBO] ${msg}`);
         }
 
-        function speak(text, priority = 'normal') {
-            if (!voiceEnabled || !synth) return;
-            // Отменяем предыдущие сообщения низкого приоритета
-            if (priority === 'high') synth.cancel();
-            else if (synth.pending && priority !== 'high') return;
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Инициализация приложения...');
+            loadState();
+            setupScanner();
+            renderPallets();
+            renderTargets();
+            updateUI();
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ru-RU';
-            utterance.rate = 1.15;
-            utterance.pitch = 0.95;
-            utterance.volume = 0.9;
-            if (preferredVoice) utterance.voice = preferredVoice;
-            synth.speak(utterance);
-        }
+            // 🔍 КРИТИЧЕСКАЯ ПРИВЯЗКА ЗАГРУЗКИ ФАЙЛА
+            const fileInput = document.getElementById('excel-upload');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
+                log('✅ Слушатель загрузки файла привязан');
+            } else {
+                log('❌ ОШИБКА: Элемент #excel-upload не найден!', 'error');
+            }
+
+            document.getElementById('city').addEventListener('input', updateUI);
+            document.getElementById('marketplace').addEventListener('change', () => saveState());
+            document.getElementById('voice-toggle').onclick = toggleVoice;
+            document.getElementById('scanner').focus();
+            log('📱 Готово к работе');
+        });
 
         function toggleVoice() {
             voiceEnabled = !voiceEnabled;
-            const btn = document.getElementById('voice-toggle');
-            btn.textContent = voiceEnabled ? '🔊' : '🔇';
-            btn.title = voiceEnabled ? 'Голос включён (нажмите для отключения)' : 'Голос выключен (нажмите для включения)';
-            btn.style.background = voiceEnabled ? '#6c757d' : '#dc3545';
-            if (voiceEnabled) speak('Голосовые подсказки включены', 'high');
-            else synth?.cancel();
-            appState.settings.voice = voiceEnabled;
-            saveState();
+            document.getElementById('voice-toggle').textContent = voiceEnabled ? '🔊 ВКЛ' : '🔇 ВЫКЛ';
+            document.getElementById('voice-toggle').style.background = voiceEnabled ? '#6c757d' : '#dc3545';
+            speak(voiceEnabled ? 'Голос включен' : 'Голос выключен');
+        }
+        function speak(t) {
+            if(!voiceEnabled || !window.speechSynthesis || speechSynthesis.pending) return;
+            speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(t); u.lang='ru-RU'; u.rate=1.1; u.pitch=0.9;
+            speechSynthesis.speak(u);
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // 💾 СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
-        // ═══════════════════════════════════════════════════════════════
-        
-        function saveState() {
-            try {
-                // Основная копия (полная)
-                const stateToSave = {
-                    version: CONFIG.version,
-                    timestamp: Date.now(),
-                    db: appState.db,
-                    targets: appState.targets,
-                    history: appState.history.slice(-CONFIG.maxHistoryItems), // Обрезаем историю
-                    pallets: appState.pallets,
-                    activePallet: appState.activePallet,
-                    orderMeta: appState.orderMeta,
-                    filters: {
-                        city: document.getElementById('city')?.value || '',
-                        mp: document.getElementById('marketplace')?.value || 'WB',
-                        incomplete: document.getElementById('filter-incomplete')?.checked || false
-                    },
-                    settings: appState.settings,
-                    cityReports: appState.cityReports.slice(-20) // Последние 20 отчётов
-                };
-                
-                localStorage.setItem(CONFIG.storageKey, JSON.stringify(stateToSave));
-                
-                // Критичный бэкап (только самое важное)
-                const criticalBackup = {
-                    history: appState.history.slice(-100),
-                    pallets: appState.pallets,
-                    targets: appState.targets.map(t => ({
-                        sku: t.sku, name: t.name, targetPcs: t.targetPcs, packedPcs: t.packedPcs
-                    }))
-                };
-                localStorage.setItem(CONFIG.backupKey, JSON.stringify(criticalBackup));
-                
-                console.log(`💾 State saved at ${new Date().toLocaleTimeString()}`);
-            } catch (e) {
-                console.error('❌ Save failed:', e);
-                showSystemAlert('⚠️ Не удалось сохранить данные. Проверьте место в браузере.', 'warning');
-            }
-        }
-
-        function loadState() {
-            try {
-                const saved = localStorage.getItem(CONFIG.storageKey);
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    
-                    // Проверка версии и целостности
-                    if (data.version && data.targets && Array.isArray(data.targets)) {
-                        // Восстанавливаем состояние
-                        Object.assign(appState, {
-                            db: data.db || {},
-                            targets: data.targets || [],
-                            history: data.history || [],
-                            pallets: data.pallets || {},
-                            activePallet: data.activePallet || null,
-                            orderMeta: data.orderMeta || {},
-                            settings: { ...appState.settings, ...(data.settings || {}) },
-                            cityReports: data.cityReports || [],
-                            filters: data.filters || {}
-                        });
-                        
-                        // Восстанавливаем настройки интерфейса
-                        voiceEnabled = appState.settings.voice;
-                        document.getElementById('voice-toggle').textContent = voiceEnabled ? '🔊' : '🔇';
-                        document.getElementById('voice-toggle').style.background = voiceEnabled ? '#6c757d' : '#dc3545';
-                        
-                        if (appState.filters.mp) {
-                            document.getElementById('marketplace').value = appState.filters.mp;
-                        }
-                        if (appState.filters.city) {
-                            document.getElementById('city').value = appState.filters.city;
-                            document.getElementById('pallet-input').value = appState.activePallet || '';
-                        }
-                        
-                        // Обновляем UI
-                        renderTargets();
-                        renderPallets();
-                        renderBox();
-                        updateUI();
-                        populateCityFilter();
-                        
-                        console.log(`✅ State restored from v${data.version}`);
-                        showSystemAlert(`Данные восстановлены | Загружено: ${appState.targets.length} позиций`, 'success');
-                        return true;
-                    }
-                }
-                
-                // Попытка восстановления из критичного бэкапа
-                const critical = localStorage.getItem(CONFIG.backupKey);
-                if (critical) {
-                    const data = JSON.parse(critical);
-                    if (data.history) {
-                        appState.history = data.history;
-                        appState.pallets = data.pallets || {};
-                        // Восстанавливаем только packedPcs для targets
-                        if (data.targets && appState.targets.length) {
-                            data.targets.forEach(saved => {
-                                const target = appState.targets.find(t => t.sku === saved.sku);
-                                if (target) target.packedPcs = saved.packedPcs;
-                            });
-                        }
-                        console.log('⚠️ Restored from critical backup');
-                        showSystemAlert('⚠️ Восстановлено из резервной копии', 'warning');
-                        renderTargets();
-                        renderPallets();
-                        return true;
-                    }
-                }
-                
-                console.log('🆕 Starting with fresh state');
-                return false;
-            } catch (e) {
-                console.error('❌ Load failed:', e);
-                showSystemAlert('❌ Ошибка загрузки данных. Начинаем с чистого листа.', 'error');
-                return false;
-            }
-        }
-
-        function exportState() {
-            const exportData = {
-                exportedAt: new Date().toISOString(),
-                version: CONFIG.version,
-                ...appState
-            };
-            // Удаляем не-сериализуемые поля
-            delete exportData.scanLock;
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `fbo_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            speak('Резервная копия скачана');
-            showSystemAlert('✅ Бэкап успешно скачан', 'success');
-        }
-
-        function importState(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (!imported.version) throw new Error('Неверный формат файла');
-                    
-                    if (!confirm(`Импорт данных из бэкапа от ${new Date(imported.exportedAt || imported.timestamp).toLocaleString('ru')}\n\n⚠️ Текущие данные будут заменены!\nПродолжить?`)) {
-                        event.target.value = '';
-                        return;
-                    }
-                    
-                    // Восстанавливаем состояние
-                    Object.assign(appState, {
-                        db: imported.db || {},
-                        targets: imported.targets || [],
-                        history: imported.history || [],
-                        pallets: imported.pallets || {},
-                        activePallet: imported.activePallet || null,
-                        orderMeta: imported.orderMeta || {},
-                        settings: imported.settings || appState.settings,
-                        cityReports: imported.cityReports || []
-                    });
-                    
-                    // Обновляем UI
-                    voiceEnabled = appState.settings.voice;
-                    document.getElementById('voice-toggle').textContent = voiceEnabled ? '🔊' : '🔇';
-                    renderTargets();
-                    renderPallets();
-                    renderBox();
-                    updateUI();
-                    populateCityFilter();
-                    saveState();
-                    
-                    showSystemAlert('✅ Данные успешно импортированы', 'success');
-                    speak('Данные восстановлены из бэкапа');
-                } catch (err) {
-                    console.error('Import error:', err);
-                    showSystemAlert('❌ Ошибка импорта: ' + err.message, 'error');
-                }
-                event.target.value = '';
-            };
-            reader.readAsText(file);
-        }
-
-        function resetAllData() {
-            if (!confirm('⚠️ ВНИМАНИЕ!\n\nВы действительно хотите выполнить ПОЛНЫЙ СБРОС?\n\nЭто удалит:\n• Все данные о коробах и палетах\n• Историю сканирований\n• Настройки фильтров\n• Отчёты по городам\n\nДействие нельзя отменить!')) {
-                return;
-            }
-            
-            // Очищаем localStorage
-            localStorage.removeItem(CONFIG.storageKey);
-            localStorage.removeItem(CONFIG.backupKey);
-            
-            // Сбрасываем состояние
-            Object.assign(appState, {
-                db: {}, targets: [], currentBox: { items: {}, weight: 0 },
-                history: [], pallets: {}, activePallet: null,
-                orderMeta: {}, filters: {}, cityReports: []
-            });
-            
-            // Сбрасываем UI
-            document.getElementById('city').value = '';
-            document.getElementById('pallet-input').value = '';
-            document.getElementById('order-info').style.display = 'none';
-            document.getElementById('pallets-list').innerHTML = '';
-            document.getElementById('no-pallets-msg').style.display = 'block';
-            document.getElementById('targets-list').innerHTML = '<p style="color:#888;font-size:11px">Загрузите Excel-файл с ТЗ</p>';
-            document.getElementById('btn-print-pallet').disabled = true;
-            
-            renderBox();
-            updateUI();
-            
-            showSystemAlert('🔄 Система сброшена. Начните с загрузки нового ТЗ.', 'info');
-            speak('Система сброшена');
-        }
-
-        // Авто-сохранение
-        function startAutoSave() {
-            if (autoSaveTimer) clearInterval(autoSaveTimer);
-            autoSaveTimer = setInterval(() => {
-                if (Object.keys(appState.db).length > 0) {
-                    saveState();
-                }
-            }, CONFIG.autoSaveInterval);
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // 🔍 ДИАГНОСТИКА И ОБРАБОТКА ОШИБОК
-        // ═══════════════════════════════════════════════════════════════
-        
-        function runDiagnostics() {
-            const issues = [];
-            appState.diagnostics.errors = [];
-            
-            // 1. Проверка localStorage
-            try {
-                const testKey = '__fbo_diag__';
-                localStorage.setItem(testKey, '1');
-                localStorage.removeItem(testKey);
-            } catch (e) {
-                issues.push('❌ localStorage недоступен');
-                appState.diagnostics.errors.push({ type: 'storage', message: 'localStorage error', time: Date.now() });
-            }
-            
-            // 2. Проверка библиотек
-            if (typeof JsBarcode === 'undefined') {
-                issues.push('❌ JsBarcode не загружен');
-                appState.diagnostics.errors.push({ type: 'lib', message: 'JsBarcode missing', time: Date.now() });
-            }
-            if (typeof XLSX === 'undefined') {
-                issues.push('❌ SheetJS (xlsx) не загружен');
-                appState.diagnostics.errors.push({ type: 'lib', message: 'XLSX missing', time: Date.now() });
-            }
-            if (typeof Quagga === 'undefined') {
-                issues.push('❌ Quagga.js не загружен');
-                // Не блокируем, камера — опциональная функция
-            }
-            
-            // 3. Проверка прав камеры
-            if (navigator.mediaDevices?.getUserMedia) {
-                navigator.permissions?.query({ name: 'camera' }).then(res => {
-                    if (res.state === 'denied') {
-                        issues.push('⚠️ Доступ к камере запрещён в настройках браузера');
-                        updateCameraUI('denied');
-                    }
-                }).catch(() => {});
-            } else {
-                issues.push('⚠️ API камеры не поддерживается браузером');
-                document.getElementById('btn-camera-start').disabled = true;
-                document.getElementById('btn-camera-start').textContent = '📷 Не поддерживается';
-            }
-            
-            // 4. Проверка целостности данных
-            if (appState.targets?.some(t => !t?.sku || !t?.name)) {
-                issues.push('⚠️ Обнаружены повреждённые записи в ТЗ');
-                appState.diagnostics.errors.push({ type: 'data', message: 'Corrupted targets', time: Date.now() });
-            }
-            
-            // 5. Проверка места в localStorage
-            try {
-                const test = 'x'.repeat(1024 * 1024); // 1MB test
-                localStorage.setItem('__fbo_test__', test);
-                localStorage.removeItem('__fbo_test__');
-            } catch (e) {
-                issues.push('⚠️ Мало места в хранилище браузера');
-                appState.diagnostics.errors.push({ type: 'storage', message: 'Quota exceeded', time: Date.now() });
-            }
-            
-            // Вывод результатов
-            appState.diagnostics.lastCheck = Date.now();
-            
-            if (issues.length > 0) {
-                console.warn('🔍 Diagnostics:', issues);
-                if (issues.some(i => i.startsWith('❌'))) {
-                    showSystemAlert('Обнаружены критические проблемы:\n' + issues.filter(i=>i.startsWith('❌')).join('\n'), 'error');
-                } else {
-                    showSystemAlert('Рекомендации:\n' + issues.join('\n'), 'warning');
-                }
-            } else {
-                console.log('✅ All systems operational');
-            }
-            
-            return issues.length === 0;
-        }
-
-        function showSystemAlert(message, type = 'info', duration = 5000) {
-            const container = document.getElementById('system-alerts');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.style.cssText = 'margin-bottom:8px;animation:slideIn 0.3s ease';
-            alert.innerHTML = `<strong>${type.toUpperCase()}</strong><br>${message.replace(/\n/g, '<br>')}`;
-            container.appendChild(alert);
-            
-            // Авто-удаление
-            setTimeout(() => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateX(100px)';
-                setTimeout(() => alert.remove(), 300);
-            }, duration);
-            
-            // Вибрация на мобильных
-            if (navigator.vibrate && type !== 'info') {
-                navigator.vibrate(type === 'error' ? [100, 50, 100] : [50]);
-            }
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('error-msg');
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 5000);
-        }
-
-        function hideError() {
-            document.getElementById('error-msg').style.display = 'none';
-        }
-
-        function showSuccess(msg) {
-            const el = document.getElementById('upload-status');
-            el.textContent = msg;
-            el.className = 'alert alert-success';
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 4000);
-        }
-
-        // Глобальный обработчик ошибок
-        window.addEventListener('error', (e) => {
-            console.error('🚨 Unhandled error:', e);
-            showSystemAlert('Произошла непредвиденная ошибка. Данные сохранены.', 'error');
-            saveState(); // Экстренное сохранение
-            appState.diagnostics.errors.push({
-                type: 'runtime',
-                message: e.message || 'Unknown error',
-                source: e.filename,
-                line: e.lineno,
-                time: Date.now()
-            });
-        });
-
-        window.addEventListener('unhandledrejection', (e) => {
-            console.error('🚨 Unhandled promise rejection:', e.reason);
-            showSystemAlert('Ошибка сети или данных. Попробуйте повторить действие.', 'warning');
-            saveState();
-        });
-
-        // ═══════════════════════════════════════════════════════════════
-        // 📷 КАМЕРА И СКАНИРОВАНИЕ
-        // ═══════════════════════════════════════════════════════════════
-        
-        function checkCameraSupport() {
-            const hasMediaDevices = !!(navigator.mediaDevices?.getUserMedia);
-            const btn = document.getElementById('btn-camera-start');
-            const hint = document.querySelector('.camera-permission');
-            
-            if (!hasMediaDevices) {
-                btn.disabled = true;
-                btn.textContent = '📷 Не поддерживается';
-                btn.title = 'Ваш браузер не поддерживает доступ к камере';
-                hint.textContent = '❌ Требуется современный браузер с поддержкой WebRTC';
-                return false;
-            }
-            
-            // Проверка HTTPS для камеры (кроме localhost)
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                hint.innerHTML = '⚠️ Для камеры требуется <b>HTTPS</b> или localhost';
-                hint.style.color = '#856404';
-            }
-            
-            return true;
-        }
-
-        function updateCameraUI(state) {
-            const status = document.getElementById('scan-status');
-            if (state === 'denied') {
-                status.textContent = '❌ Доступ к камере запрещён';
-                status.className = 'scan-status error';
-                document.getElementById('btn-camera-start').disabled = true;
-            }
-        }
-
-        async function startCameraScan() {
-            if (!checkCameraSupport()) {
-                showError('❌ Камера не поддерживается этим браузером');
-                return;
-            }
-            
-            try {
-                // Переключаем UI
-                document.getElementById('scanner').style.display = 'none';
-                document.getElementById('interactive').style.display = 'block';
-                document.getElementById('btn-camera-start').style.display = 'none';
-                document.getElementById('btn-camera-stop').style.display = 'block';
-                document.getElementById('scanner').classList.add('camera-active');
-                
-                setStatus('🔄 Инициализация камеры...', 'detecting');
-                scanDebounce = false;
-                
-                // Останавливаем предыдущий экземпляр если есть
-                if (quaggaActive && quaggaInstance) {
-                    Quagga.stop();
-                }
-                
-                // Инициализируем Quagga
-                await new Promise((resolve, reject) => {
-                    quaggaInstance = Quagga.init({
-                        inputStream: {
-                            name: "Live",
-                            type: "LiveStream",
-                            target: document.querySelector('#interactive'),
-                            constraints: {
-                                facingMode: "environment",
-                                width: { min: 640, ideal: 1280 },
-                                height: { min: 480, ideal: 720 }
-                            },
-                            area: {
-                                top: "35%", right: "10%", left: "10%", bottom: "35%"
-                            }
-                        },
-                        locator: {
-                            patchSize: "medium",
-                            halfSample: true
-                        },
-                        numOfWorkers: navigator.hardwareConcurrency > 2 ? 2 : 1,
-                        decoder: {
-                            readers: [
-                                { format: "code_128_reader", config: {} },
-                                { format: "ean_reader", config: {} },
-                                { format: "ean_8_reader", config: {} },
-                                { format: "upc_reader", config: {} },
-                                { format: "code_39_reader", config: {} },
-                                { format: "codabar_reader", config: {} }
-                            ],
-                            multiple: false,
-                            debug: { drawOnCanvas: false }
-                        },
-                        locate: true
-                    }, (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    });
-                });
-                
-                Quagga.start();
-                quaggaActive = true;
-                setStatus('📷 Наведите рамку на штрихкод', 'detecting');
-                speak('Камера включена. Наведите на штрихкод', 'high');
-                
-                // Обработчик успешного сканирования
-                Quagga.onDetected((result) => {
-                    if (scanDebounce) return;
-                    
-                    const code = result?.codeResult?.code?.trim();
-                    if (!code || code.length < 4 || code.length > 50) return;
-                    
-                    // Debounce: игнорируем повторные сканирования того же кода
-                    const now = Date.now();
-                    const lastScan = appState.scanLock.get(code) || 0;
-                    if (now - lastScan < CONFIG.debounceScan) return;
-                    appState.scanLock.set(code, now);
-                    
-                    // Визуальная обратная связь
-                    setStatus(`✅ ${code}`, 'found');
-                    document.getElementById('scanner').classList.add('success');
-                    if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
-                    
-                    // Обработка
-                    handleScan(code);
-                    
-                    // Сброс визуальных эффектов
-                    scanDebounce = true;
-                    if (scanTimeout) clearTimeout(scanTimeout);
-                    scanTimeout = setTimeout(() => {
-                        scanDebounce = false;
-                        document.getElementById('scanner').classList.remove('success', 'error');
-                        if (quaggaActive) setStatus('📷 Наведите на штрихкод', 'detecting');
-                    }, 800);
-                    
-                });
-                
-            } catch (err) {
-                console.error('Camera error:', err);
-                showError('❌ Ошибка камеры: ' + (err.message || 'Неизвестная ошибка'));
-                setStatus('❌ Ошибка подключения', 'error');
-                stopCameraScan();
-                speak('Ошибка камеры', 'high');
-            }
-        }
-
-        function stopCameraScan() {
-            if (quaggaActive && quaggaInstance) {
-                Quagga.stop();
-                quaggaActive = false;
-            }
-            if (scanTimeout) clearTimeout(scanTimeout);
-            
-            // Восстанавливаем UI
-            document.getElementById('scanner').style.display = 'block';
-            document.getElementById('interactive').style.display = 'none';
-            document.getElementById('btn-camera-start').style.display = 'block';
-            document.getElementById('btn-camera-stop').style.display = 'none';
-            document.getElementById('scanner').classList.remove('camera-active', 'success', 'error');
-            setStatus('', '');
-            document.getElementById('scanner').focus();
-        }
-
-        function setStatus(text, cls) {
-            const el = document.getElementById('scan-status');
-            el.textContent = text;
-            el.className = 'scan-status' + (cls ? ' ' + cls : '');
-        }
-
-        function setupScanner() {
-            const inp = document.getElementById('scanner');
-            
-            inp.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const value = inp.value.trim();
-                    if (value) {
-                        handleScan(value);
-                        inp.value = '';
-                        // Визуальный фидбек
-                        inp.classList.add('success');
-                        setTimeout(() => inp.classList.remove('success', 'error'), 400);
-                    }
-                }
-            });
-            
-            // Авто-выделение текста при фокусе (удобно для ТСД)
-            inp.addEventListener('focus', () => inp.select());
-            
-            // Предотвращаем авто-коррекцию (важно для ШК)
-            inp.setAttribute('autocomplete', 'off');
-            inp.setAttribute('autocorrect', 'off');
-            inp.setAttribute('autocapitalize', 'off');
-            inp.setAttribute('spellcheck', 'false');
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // 📊 ОБРАБОТКА ДАННЫХ И ТЗ
-        // ═══════════════════════════════════════════════════════════════
-        
+        // 📥 ОБРАБОТКА ФАЙЛА (ИСПРАВЛЕННАЯ)
         function handleFileSelect(e) {
+            log('📥 Файл выбран: ' + (e.target.files[0]?.name || 'Неизвестно'));
             const file = e.target.files[0];
-            if (!file) {
-                showError('⚠️ Файл не выбран');
-                return;
-            }
+            if (!file) { log('⚠️ Файл не выбран', 'error'); return; }
             
             if (typeof XLSX === 'undefined') {
-                showError('❌ Библиотека для Excel не загружена. Перезагрузите страницу.');
+                log('❌ Библиотека SheetJS (XLSX) НЕ ЗАГРУЖЕНА!', 'error');
+                showError('❌ Ошибка сети: библиотека Excel не загрузилась. Проверьте интернет.');
                 return;
             }
-            
+            log('✅ Библиотека XLSX доступна');
+
             const reader = new FileReader();
-            reader.onerror = () => {
-                showError('❌ Ошибка чтения файла. Проверьте формат и целостность.');
-                speak('Ошибка файла');
-            };
-            
+            reader.onerror = () => { log('❌ Ошибка чтения файла', 'error'); showError('❌ Не удалось прочитать файл'); };
             reader.onload = (ev) => {
+                log('🔄 Чтение данных...');
                 try {
-                    const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
-                    if (!wb.SheetNames?.length) throw new Error('В файле нет листов');
+                    const wb = XLSX.read(ev.target.result, {type:'array'});
+                    if (!wb.SheetNames?.length) throw new Error('Нет листов в файле');
                     
                     const sheet = wb.Sheets[wb.SheetNames[0]];
-                    const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+                    const rawData = XLSX.utils.sheet_to_json(sheet, {header:1, defval:'', raw:false});
+                    if (!rawData?.length) throw new Error('Файл пуст');
                     
-                    if (!data || data.length === 0) throw new Error('Файл пуст или не содержит данных');
-                    
-                    // Поиск строки с заголовками (первые 30 строк)
-                    let headerRowIdx = -1;
-                    const searchTerms = ['артикул', 'шк', 'наименование', 'код', 'товар', 'barcode', 'sku', 'qty', 'name', 'кол', 'fbo', 'wb', 'ozon'];
-                    
-                    for (let i = 0; i < Math.min(30, data.length); i++) {
-                        const rowStr = (data[i] || []).join(' ').toLowerCase();
-                        if (!rowStr) continue;
-                        
-                        // Считаем совпадения с ключевыми словами
-                        let matchCount = 0;
-                        searchTerms.forEach(term => { if (rowStr.includes(term)) matchCount++; });
-                        
-                        // Если найдено 2+ совпадения или ключевые поля — это заголовки
-                        if (matchCount >= 2 || rowStr.includes('артикул') || rowStr.includes('barcode') || rowStr.includes('sku')) {
-                            headerRowIdx = i;
-                            break;
+                    // Поиск заголовков
+                    let headerIdx = -1;
+                    for(let i=0; i<Math.min(15, rawData.length); i++) {
+                        const row = (rawData[i]||[]).join(' ').toLowerCase();
+                        if(row.includes('артикул') || row.includes('sku') || (row.match(/(шк|наименование|кол-во)/g)||[]).length >= 2) {
+                            headerIdx = i; break;
                         }
                     }
+                    if(headerIdx===-1) headerIdx=0;
                     
-                    if (headerRowIdx === -1) headerRowIdx = 0; // fallback
+                    tempHeaders = (rawData[headerIdx]||[]).map(h=>String(h||'').trim()).filter(h=>h);
+                    tempExcelData = rawData.slice(headerIdx+1);
                     
-                    tempHeaders = (data[headerRowIdx] || []).map(h => String(h || '').trim()).filter(h => h);
-                    if (tempHeaders.length === 0) throw new Error('Не удалось прочитать заголовки колонок');
-                    
-                    tempExcelData = data.slice(headerRowIdx + 1);
-                    
-                    // Авто-заполнение маппинга на основе названий колонок
+                    log(`📊 Найдено строк: ${tempExcelData.length}, колонок: ${tempHeaders.length}`);
                     openMappingModal();
-                    
-                } catch (err) {
-                    console.error('File processing error:', err);
-                    showError('❌ ' + (err.message || 'Ошибка обработки файла'));
-                    speak('Ошибка файла');
+                } catch(err) {
+                    log('❌ Ошибка парсинга: ' + err.message, 'error');
+                    showError('❌ ' + err.message);
                 }
             };
-            
             reader.readAsArrayBuffer(file);
-            e.target.value = ''; // Сброс input для повторной загрузки того же файла
+            e.target.value = ''; // Сброс для повторной загрузки
         }
 
         function openMappingModal() {
-            const container = document.getElementById('mapping-fields');
-            container.innerHTML = '';
-            
-            MAPPING_CONFIG.forEach(field => {
-                const row = document.createElement('div');
-                row.className = 'mapping-row';
+            log('🔧 Открытие окна маппинга');
+            const c = document.getElementById('mapping-fields'); c.innerHTML='';
+            MAPPING_CONFIG.forEach(f => {
+                const r = document.createElement('div'); r.className='mapping-row';
+                const l = document.createElement('div'); l.style.width='140px'; l.style.fontSize='12px'; l.textContent = f.label + (f.required?' *':'');
+                const s = document.createElement('select'); s.className='mapping-select'; s.dataset.key=f.key; s.dataset.req=f.required;
+                const def = document.createElement('option'); def.value=''; def.textContent=f.required?'-- Выберите --':'-- Не использовать'; s.appendChild(def);
                 
-                const label = document.createElement('div');
-                label.className = 'mapping-label';
-                label.innerHTML = field.label + (field.required ? ' <span style="color:var(--danger)">*</span>' : '');
-                
-                const select = document.createElement('select');
-                select.className = 'mapping-select';
-                select.dataset.key = field.key;
-                select.dataset.required = field.required;
-                
-                // Опция "не выбрано"
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.textContent = field.required ? '-- Выберите * --' : '-- Не использовать --';
-                select.appendChild(defaultOpt);
-                
-                // Опции из заголовков файла
-                tempHeaders.forEach((header, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = header;
-                    
-                    // Авто-выбор на основе ключевых слов
-                    const hl = header.toLowerCase();
-                    if (field.auto?.some(kw => hl.includes(kw))) {
-                        opt.selected = true;
-                    }
-                    
-                    select.appendChild(opt);
+                tempHeaders.forEach((h,i) => {
+                    const o = document.createElement('option'); o.value=i; o.textContent=h;
+                    const hl = h.toLowerCase();
+                    if(f.auto?.some(kw => hl.includes(kw))) o.selected = true;
+                    s.appendChild(o);
                 });
-                
-                row.appendChild(label);
-                row.appendChild(select);
-                container.appendChild(row);
+                r.appendChild(l); r.appendChild(s); c.appendChild(r);
             });
-            
-            document.getElementById('mapping-modal').style.display = 'flex';
+            document.getElementById('mapping-modal').style.display='flex';
         }
-
-        function closeMappingModal() {
-            document.getElementById('mapping-modal').style.display = 'none';
-            document.getElementById('excel-upload').value = '';
-            tempExcelData = null;
-            tempHeaders = [];
-        }
-
+        function closeMappingModal() { document.getElementById('mapping-modal').style.display='none'; document.getElementById('excel-upload').value=''; }
+        
         function applyMapping() {
-            const selects = document.querySelectorAll('.mapping-select');
-            const mapping = {};
-            let valid = true;
-            
-            selects.forEach(sel => {
-                const key = sel.dataset.key;
-                const required = sel.dataset.required === 'true';
-                
-                if (required && !sel.value) {
-                    sel.style.borderColor = 'var(--danger)';
-                    sel.style.boxShadow = '0 0 0 2px rgba(220,53,69,0.2)';
-                    valid = false;
-                } else {
-                    sel.style.borderColor = '';
-                    sel.style.boxShadow = '';
-                    if (sel.value !== '') {
-                        mapping[key] = parseInt(sel.value);
-                    }
-                }
+            const map = {}; let ok=true;
+            document.querySelectorAll('.mapping-select').forEach(sel => {
+                if(sel.dataset.req==='true' && !sel.value) { sel.style.borderColor='red'; ok=false; }
+                else if(sel.value) map[sel.dataset.key] = parseInt(sel.value);
             });
+            if(!ok) { log('⚠️ Заполните обязательные поля','error'); return; }
             
-            if (!valid) {
-                showError('⚠️ Заполните все обязательные поля (помечены *)');
-                speak('Заполните обязательные поля');
-                return;
-            }
-            
-            processDataWithMapping(mapping);
+            log('🔄 Обработка данных по маппингу...');
+            processData(map);
             closeMappingModal();
-            showSuccess('✅ ТЗ успешно загружено и обработано');
         }
 
-        function processDataWithMapping(mapping) {
+        function processData(map) {
+            appState.db={}; appState.targets=[]; let total=0;
+            const cities=new Set();
+            
+            for(let i=0; i<tempExcelData.length; i++) {
+                const r = tempExcelData[i];
+                const sku = String(r[map.sku]||'').trim();
+                if(!sku || sku==='undefined') continue;
+                
+                const tp = parseInt(String(r[map.qty_total]||'0').replace(/[,\s]/g,''));
+                if(!tp || tp<=0) continue;
+                
+                const prod = {
+                    sku, name:String(r[map.name]||`Товар ${sku}`).trim(), targetPcs:tp, packedPcs:0,
+                    quant: map.quant!==undefined ? parseInt(String(r[map.quant]||1).replace(/[,\s]/g,''))||1 : 1,
+                    tz: map.tz_note!==undefined ? String(r[map.tz_note]||'').trim() : '',
+                    city: map.city!==undefined ? String(r[map.city]||'').trim() : '',
+                    mp: map.marketplace!==undefined ? String(r[map.marketplace]||'').toUpperCase().trim() : ''
+                };
+                total += tp; if(prod.city) cities.add(prod.city);
+                appState.targets.push(prod);
+                
+                // Индексация по ШК
+                const bcs = new Set();
+                [map.barcode_orig, map.barcode_wb].forEach(k => {
+                    if(k!==undefined) {
+                        String(r[k]||'').split(/[;,\s]+/).forEach(b => { if(b && b!=='null') bcs.add(b.trim()); });
+                    }
+                });
+                if(bcs.size===0) bcs.add(sku);
+                bcs.forEach(b => appState.db[b] = prod);
+            }
+            
+            document.getElementById('order-info').style.display='block';
+            document.getElementById('loaded-count').textContent=appState.targets.length;
+            document.getElementById('total-plan').textContent=total.toLocaleString('ru');
+            renderTargets(); updateUI(); saveState();
+            log(`✅ Загружено ${appState.targets.length} позиций. План: ${total} шт.`, 'success');
+            showSuccess('✅ ТЗ загружено и обработано');
+            speak('Файл загружен');
+        }
+
+        // 📡 СКАНИРОВАНИЕ
+        function setupScanner() {
+            const inp = document.getElementById('scanner');
+            inp.addEventListener('keypress', e => {
+                if(e.key==='Enter') { e.preventDefault(); handleScan(inp.value.trim()); inp.value=''; setTimeout(()=>inp.classList.remove('success','error'),300); }
+            });
+            inp.addEventListener('focus', () => inp.select());
+        }
+
+        async function startCameraScan() {
+            log('📷 Запуск камеры...');
+            if(!navigator.mediaDevices?.getUserMedia) { log('❌ Камера не поддерживается','error'); return; }
             try {
-                // Сбрасываем базу, но сохраняем историю если нужно
-                appState.db = {};
-                appState.targets = [];
-                let totalPlanned = 0;
-                const cities = new Set();
+                document.getElementById('scanner').style.display='none';
+                document.getElementById('interactive').style.display='block';
+                document.getElementById('btn-camera-start').style.display='none';
+                document.getElementById('btn-camera-stop').style.display='block';
                 
-                // Обновляем мета-информацию
-                appState.orderMeta.loadedAt = new Date().toISOString();
-                document.getElementById('excel-route-display').textContent = appState.orderMeta.route || 'Не указан';
-                
-                for (let i = 0; i < tempExcelData.length; i++) {
-                    const row = tempExcelData[i];
-                    
-                    // Артикул (обязательный)
-                    const sku = String(row[mapping.sku] || '').trim();
-                    if (!sku || sku === 'undefined' || sku === 'null') continue;
-                    
-                    // Количество (обязательное)
-                    const qtyStr = String(row[mapping.qty_total] || '0').replace(/[,\s]/g, '');
-                    const targetPcs = parseInt(qtyStr);
-                    if (!targetPcs || targetPcs <= 0) continue;
-                    
-                    // Название
-                    const name = String(row[mapping.name] || `Товар ${sku}`).trim() || `Товар ${sku}`;
-                    
-                    // Создаём объект продукта
-                    const product = {
-                        sku,
-                        name,
-                        targetPcs,
-                        packedPcs: 0,
-                        // Опциональные поля
-                        quant: mapping.quant !== undefined ? parseInt(String(row[mapping.quant] || 1).replace(/[,\s]/g, '')) || 1 : 1,
-                        boxesPlan: mapping.boxes_plan !== undefined ? parseInt(String(row[mapping.boxes_plan] || 0).replace(/[,\s]/g, '')) || 0 : 0,
-                        pcsPerBox: mapping.pcs_per_box !== undefined ? parseInt(String(row[mapping.pcs_per_box] || 0).replace(/[,\s]/g, '')) || 0 : 0,
-                        tz: mapping.tz_note !== undefined ? String(row[mapping.tz_note] || '').trim() : '',
-                        expiry: mapping.expiry !== undefined ? String(row[mapping.expiry] || '').trim() : '',
-                        city: mapping.city !== undefined ? String(row[mapping.city] || '').trim() : '',
-                        marketplace: mapping.marketplace !== undefined ? String(row[mapping.marketplace] || '').toUpperCase().trim() : ''
-                    };
-                    
-                    totalPlanned += targetPcs;
-                    if (product.city) cities.add(product.city);
-                    appState.targets.push(product);
-                    
-                    // Индексируем по штрихкодам
-                    const barcodes = new Set();
-                    
-                    // Исходный ШК
-                    if (mapping.barcode_orig !== undefined) {
-                        const bcOrig = String(row[mapping.barcode_orig] || '');
-                        bcOrig.split(/[;,\s\n]+/).forEach(bc => {
-                            const clean = bc.trim();
-                            if (clean && !clean.includes('ERROR') && !clean.includes('null')) {
-                                barcodes.add(clean);
-                            }
-                        });
-                    }
-                    
-                    // ШК для этикетки (WB)
-                    if (mapping.barcode_wb !== undefined) {
-                        const bcWb = String(row[mapping.barcode_wb] || '');
-                        bcWb.split(/[;,\s\n]+/).forEach(bc => {
-                            const clean = bc.trim();
-                            if (clean && !clean.includes('ERROR') && !clean.includes('null')) {
-                                barcodes.add(clean);
-                            }
-                        });
-                    }
-                    
-                    // Если нет ШК — используем артикул
-                    if (barcodes.size === 0) {
-                        barcodes.add(sku);
-                    }
-                    
-                    // Добавляем в базу
-                    barcodes.forEach(bc => {
-                        // Если ШК уже занят — предупреждаем (но не блокируем)
-                        if (appState.db[bc] && appState.db[bc].sku !== sku) {
-                            console.warn(`⚠️ ШК "${bc}" используется для разных товаров: ${appState.db[bc].sku} и ${sku}`);
-                        }
-                        appState.db[bc] = product;
-                    });
-                }
-                
-                // Обновляем статистику
-                document.getElementById('order-info').style.display = 'block';
-                document.getElementById('loaded-count').textContent = appState.targets.length;
-                document.getElementById('total-plan').textContent = totalPlanned.toLocaleString('ru');
-                
-                // Обновляем фильтры городов
-                populateCityFilter(cities);
-                
-                // Рендерим интерфейс
-                renderTargets();
-                updateOrderStats();
-                
-                // Сохраняем и озвучиваем
-                saveState();
-                speak(`Загружено ${appState.targets.length} позиций, план: ${totalPlanned} штук`);
-                
-                // Запускаем авто-сохранение если ещё не запущено
-                startAutoSave();
-                
-            } catch (err) {
-                console.error('Processing error:', err);
-                showError('❌ Ошибка обработки данных: ' + err.message);
-                speak('Ошибка обработки данных');
+                await new Promise((res,rej) => {
+                    Quagga.init({
+                        inputStream:{name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),constraints:{facingMode:"environment"}},
+                        decoder:{readers:["code_128_reader","ean_reader","ean_8_reader","upc_reader","code_39_reader"]},
+                        locate:true
+                    }, err => err ? rej(err) : res());
+                });
+                Quagga.start(); quaggaActive=true; log('✅ Камера активна', 'success');
+                Quagga.onDetected(res => {
+                    if(scanDebounce) return;
+                    const code = res.codeResult?.code?.trim();
+                    if(!code || code.length<4) return;
+                    scanDebounce=true; setTimeout(()=>scanDebounce=false, 600);
+                    document.getElementById('scanner').classList.add('success');
+                    handleScan(code);
+                    setTimeout(()=>document.getElementById('scanner').classList.remove('success'),400);
+                });
+            } catch(err) { log('❌ Ошибка камеры: '+err.message,'error'); stopCameraScan(); }
+        }
+        function stopCameraScan() {
+            if(quaggaActive) Quagga.stop(); quaggaActive=false;
+            document.getElementById('scanner').style.display='block';
+            document.getElementById('interactive').style.display='none';
+            document.getElementById('btn-camera-start').style.display='block';
+            document.getElementById('btn-camera-stop').style.display='none';
+            document.getElementById('scanner').focus();
+            log('⏹ Камера остановлена');
+        }
+
+        function handleScan(bc) {
+            hideError();
+            if(!Object.keys(appState.db).length) return showError('⚠️ Сначала загрузите ТЗ');
+            if(!appState.activePallet) return showError('⚠️ Выберите или создайте палет');
+            
+            let p = appState.db[bc];
+            if(!p) {
+                const found = Object.keys(appState.db).find(key => key.includes(bc) || bc.includes(key));
+                if(found) p = appState.db[found];
             }
+            if(!p) return showError(`❌ ШК "${bc}" не найден в базе`);
+            if(p.packedPcs >= p.targetPcs) return showError(`🚫 Лимит: ${p.targetPcs} шт.`);
+            
+            appState.currentBox.items[bc] = (appState.currentBox.items[bc]||0) + 1;
+            appState.currentBox.weight += 0.12;
+            p.packedPcs++;
+            renderBox(); renderTargets(); updateUI();
+            log(`📦 Отсканирован: ${bc} (${p.name.substring(0,20)})`, 'success');
+            const rem = p.targetPcs - p.packedPcs;
+            speak(rem>0 ? `Осталось ${rem}` : `Готово`);
         }
 
-        function populateCityFilter(cities = null) {
-            const select = document.getElementById('filter-city');
-            const current = select.value;
+        // 📦 КОРОБ И ПАЛЕТЫ
+        function closeBox() {
+            const city = document.getElementById('city').value.trim(); if(!city) return showError('⚠️ Укажите город');
+            if(!appState.activePallet) return showError('⚠️ Выберите палет');
+            if(!Object.keys(appState.currentBox.items).length) return showError('⚠️ Короб пуст');
             
-            // Сохраняем текущий выбор
-            const selectedCity = cities ? null : current;
+            const now = new Date();
+            const boxId = `BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(appState.boxCounter).padStart(3,'0')}`;
+            const palId = appState.activePallet;
             
-            // Очищаем и добавляем "Все города"
-            select.innerHTML = '<option value="">🏙 Все города</option>';
+            appState.pallets[palId].boxes.push(boxId);
+            appState.pallets[palId].weight += appState.currentBox.weight;
+            appState.history.unshift({id:boxId, city, pallet:palId, items:{...appState.currentBox.items}, weight:appState.currentBox.weight, date:now.toISOString()});
+            appState.boxCounter++;
             
-            // Собираем уникальные города из данных
-            const citySet = cities || new Set(appState.targets.map(t => t.city).filter(c => c));
-            
-            // Добавляем опции
-            [...citySet].sort().forEach(city => {
-                const opt = document.createElement('option');
-                opt.value = city;
-                opt.textContent = city;
-                select.appendChild(opt);
-            });
-            
-            // Восстанавливаем выбор если он ещё актуален
-            if (selectedCity && [...citySet].includes(selectedCity)) {
-                select.value = selectedCity;
-            }
+            saveState(); generateBoxLabel(boxId); clearBoxUI(); renderTargets(); renderPallets();
+            speak('Короб закрыт');
+            triggerPrint('label-box');
         }
-
-        function applyTZFilters() {
-            appState.filters = {
-                city: document.getElementById('filter-city').value,
-                mp: document.getElementById('filter-mp').value,
-                incomplete: document.getElementById('filter-incomplete').checked
-            };
-            
-            renderTargets();
-            updateTZPreview();
-            saveState(); // Сохраняем состояние фильтров
+        function retryPrint() { if(appState.lastPrinted) triggerPrint(appState.lastPrinted); }
+        function reopenLastBox() {
+            if(!appState.history.length) return showError('Нет коробов');
+            const lb = appState.history[0]; if(!confirm(`Переоткрыть ${lb.id}?`)) return;
+            for(const [bc,q] of Object.entries(lb.items)) { appState.currentBox.items[bc]=(appState.currentBox.items[bc]||0)+q; if(appState.db[bc]) appState.db[bc].packedPcs-=q; }
+            appState.currentBox.weight += lb.weight; appState.history.shift();
+            const p = appState.pallets[lb.pallet]; if(p) { p.boxes=p.boxes.filter(b=>b!==lb.id); p.weight-=lb.weight; }
+            saveState(); renderBox(); renderTargets(); renderPallets(); updateUI(); document.getElementById('retry-print-btn').style.display='none';
         }
-
-        function resetTZFilters() {
-            document.getElementById('filter-city').value = '';
-            document.getElementById('filter-mp').value = '';
-            document.getElementById('filter-incomplete').checked = false;
-            applyTZFilters();
-            showSystemAlert('🔄 Фильтры сброшены', 'info');
+        function clearBox() {
+            if(!Object.keys(appState.currentBox.items).length || !confirm('Очистить?')) return;
+            for(const [bc,q] of Object.entries(appState.currentBox.items)) if(appState.db[bc]) appState.db[bc].packedPcs-=q;
+            appState.currentBox={items:{},weight:0}; renderBox(); updateUI();
         }
-
-        function toggleTZPreview() {
-            const preview = document.getElementById('tz-preview');
-            const isVisible = preview.style.display !== 'none';
-            
-            if (!isVisible) {
-                updateTZPreview();
-                preview.style.display = 'block';
-                speak('Показан предпросмотр ТЗ');
-            } else {
-                preview.style.display = 'none';
-            }
+        function createPallet() {
+            const id = prompt('ID палета (например: PAL-001):') || `PAL-${Date.now().toString().slice(-5)}`;
+            if(appState.pallets[id]) return showError('Палет уже существует');
+            appState.pallets[id] = {id, boxes:[], weight:0}; appState.activePallet=id;
+            document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false;
+            renderPallets(); updateUI(); saveState(); speak('Палет создан');
         }
-
-        function updateTZPreview() {
-            const tbody = document.getElementById('tz-preview-body');
-            tbody.innerHTML = '';
-            
-            const filtered = getFilteredTargets();
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:20px">Нет данных по выбранным фильтрам</td></tr>';
-                return;
-            }
-            
-            filtered.slice(0, 50).forEach((t, idx) => { // Ограничиваем для производительности
-                const remaining = t.targetPcs - t.packedPcs;
-                const status = remaining === 0 ? '✅ Готово' : (remaining < t.targetPcs * 0.3 ? '🟡 Почти' : '🔴 В работе');
-                const statusClass = remaining === 0 ? 'status-done' : (remaining < t.targetPcs * 0.3 ? 'status-partial' : 'status-pending');
-                const mpBadge = t.marketplace ? `<span style="background:${t.marketplace==='WB'?'#cb11ab':'#005bff'};color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700">${t.marketplace}</span>` : '-';
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td><b>${t.sku}</b></td>
-                        <td>${t.name.length > 25 ? t.name.substring(0,25)+'…' : t.name}</td>
-                        <td>${t.city || '-'}</td>
-                        <td>${mpBadge}</td>
-                        <td class="text-right">${t.packedPcs}/${t.targetPcs}</td>
-                        <td><span class="status-badge ${statusClass}">${status}</span></td>
-                    </tr>
-                `;
-            });
-            
-            if (filtered.length > 50) {
-                tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;color:#666;font-size:10px;padding:8px">… и ещё ${filtered.length - 50} позиций</td></tr>`;
-            }
-        }
-
-        function getFilteredTargets() {
-            return appState.targets.filter(t => {
-                if (appState.filters.city && t.city !== appState.filters.city) return false;
-                if (appState.filters.mp && t.marketplace !== appState.filters.mp) return false;
-                if (appState.filters.incomplete && t.packedPcs >= t.targetPcs) return false;
-                return true;
+        function selectPallet(id) { appState.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; renderPallets(); updateUI(); }
+        function renderPallets() {
+            const l = document.getElementById('pallets-list'); l.innerHTML='';
+            if(!Object.keys(appState.pallets).length) { l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>'; return; }
+            const mp = document.getElementById('marketplace').value;
+            Object.values(appState.pallets).forEach(p => {
+                const d = document.createElement('div'); d.className=`pallet-item ${p.id===appState.activePallet?'active':''}`;
+                d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div><div style="font-size:10px;color:#666">МП: ${mp}</div>`;
+                d.onclick=()=>selectPallet(p.id); l.appendChild(d);
             });
         }
-
         function renderTargets() {
-            const container = document.getElementById('targets-list');
-            const filtered = getFilteredTargets();
-            
-            if (appState.targets.length === 0) {
-                container.innerHTML = '<p style="color:#888;font-size:11px;text-align:center;padding:20px">📭 Загрузите Excel-файл с техническим заданием</p>';
-                return;
-            }
-            
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="color:#666;font-size:11px;text-align:center;padding:20px">🔍 Нет позиций по выбранным фильтрам</p>';
-                return;
-            }
-            
-            container.innerHTML = filtered.map(p => {
-                const remaining = p.targetPcs - p.packedPcs;
-                const pct = p.targetPcs > 0 ? Math.min(100, Math.round((p.packedPcs / p.targetPcs) * 100)) : 0;
-                const done = remaining === 0 && p.targetPcs > 0;
-                const partial = remaining > 0 && remaining < p.targetPcs * 0.3;
-                
-                const planInfo = p.boxesPlan > 0 ? `📦 ${p.boxesPlan}×${p.pcsPerBox || '?'}` : '';
-                const quantBadge = p.quant > 1 ? `<span class="quant-badge">Квант: ${p.quant}</span>` : '';
-                const mpBadge = p.marketplace ? `<span style="background:${p.marketplace==='WB'?'var(--wb)':'var(--ozon)'};color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;margin-left:5px">${p.marketplace}</span>` : '';
-                
-                return `
-                    <div class="target-item ${done ? 'done' : (partial ? 'partial' : '')}">
-                        <b>${p.sku} | ${p.name.substring(0, 30)}${p.name.length > 30 ? '…' : ''} ${quantBadge}${mpBadge}</b>
-                        ${p.city ? `<div style="font-size:10px;color:#666;margin:2px 0">🏙 ${p.city}</div>` : ''}
-                        <div class="progress-bar">
-                            <div class="progress-fill ${partial ? 'partial' : ''}" style="width:${pct}%"></div>
-                        </div>
-                        <div class="progress-text">
-                            <span>✅ ${p.packedPcs}/${p.targetPcs} шт.</span>
-                            <span>${planInfo}</span>
-                        </div>
-                        ${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 70)}${p.tz.length > 70 ? '…' : ''}</div>` : ''}
-                        ${p.expiry ? `<div style="font-size:10px;color:#856404;margin-top:3px">⏰ Годен до: ${p.expiry}</div>` : ''}
-                    </div>
-                `;
+            const l = document.getElementById('targets-list'); const search = document.getElementById('target-search')?.value.toLowerCase()||'';
+            if(!appState.targets.length) { l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>'; return; }
+            const filtered = appState.targets.filter(p => p.sku.toLowerCase().includes(search) || p.name.toLowerCase().includes(search));
+            l.innerHTML = filtered.map(p => {
+                const pct = p.targetPcs>0 ? Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)) : 0;
+                const done = p.packedPcs>=p.targetPcs && p.targetPcs>0;
+                return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,25)}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:10px;color:#555">✅ ${p.packedPcs}/${p.targetPcs} ${p.tz?'| 📝 '+p.tz.substring(0,30):''}</div></div>`;
             }).join('');
         }
+        function renderBox() {
+            const tb=document.getElementById('box-tbody'); tb.innerHTML=''; const items=Object.entries(appState.currentBox.items);
+            document.getElementById('empty-msg').style.display=items.length?'none':'block';
+            items.forEach(([bc,q]) => {
+                const p=appState.db[bc]||{sku:'?',name:'?'};
+                tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,15)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button> ${q} <button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px" onclick="removeItem('${bc}')">✕</button></td></tr>`;
+            });
+        }
+        function changeQty(bc,d) {
+            if(d>0 && appState.db[bc] && appState.db[bc].packedPcs>=appState.db[bc].targetPcs) return showError('🚫 Лимит');
+            const o=appState.currentBox.items[bc]||0; const n=Math.max(0,o+d);
+            if(n===0) delete appState.currentBox.items[bc]; else appState.currentBox.items[bc]=n;
+            if(appState.db[bc]) appState.db[bc].packedPcs+=(n-o); renderBox(); updateUI();
+        }
+        function removeItem(bc) { const q=appState.currentBox.items[bc]||0; delete appState.currentBox.items[bc]; if(appState.db[bc]) appState.db[bc].packedPcs-=q; renderBox(); updateUI(); }
+        function updateUI() {
+            document.getElementById('items-count').textContent=Object.keys(appState.currentBox.items).length;
+            document.getElementById('total-weight').textContent=appState.currentBox.weight.toFixed(2);
+            const hi=Object.keys(appState.currentBox.items).length>0;
+            document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim() && appState.activePallet && hi);
+            document.getElementById('btn-reopen').disabled=!(appState.history.length>0 && !hi);
+            document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';
+        }
+        function clearBoxUI() { appState.currentBox={items:{},weight:0}; renderBox(); updateUI(); }
 
-        function updateOrderStats() {
-            const stats = document.getElementById('order-stats');
-            const total = appState.targets.reduce((sum, t) => sum + t.targetPcs, 0);
-            const packed = appState.targets.reduce((sum, t) => sum + t.packedPcs, 0);
-            const remaining = total - packed;
+        // 🖨️ ПЕЧАТЬ
+        function generateBoxLabel(boxId) {
+            const box = appState.history[0];
+            const mp = document.getElementById('marketplace').value;
+            document.getElementById('lbl-mp-box').className = `label-title ${mp==='WB'?'wb':'ozon'}`;
+            document.getElementById('lbl-mp-box').textContent = mp==='WB' ? '🔴 WB FBO' : '🔵 OZON FBO';
+            document.getElementById('lbl-date-box').textContent = new Date(box.date).toLocaleString('ru');
+            document.getElementById('lbl-city-box').textContent = box.city;
+            document.getElementById('lbl-pallet-box').textContent = box.pallet;
+            document.getElementById('lbl-box-id-box').textContent = box.id;
+            document.getElementById('lbl-weight-box').textContent = box.weight.toFixed(1)+' кг';
+            document.getElementById('lbl-weight-footer').textContent = '⚖️ '+box.weight.toFixed(1)+' кг';
             
-            stats.innerHTML = `
-                <span>📦 SKU: <span id="loaded-count">${appState.targets.length}</span></span>
-                <span>📊 План: <span id="total-plan">${total.toLocaleString('ru')}</span></span>
-                <span>✅ Собр
+            let totalQty=0; document.getElementById('lbl-total-pos').textContent=Object.keys(box.items).length;
+            Object.values(box.items).forEach(q=>totalQty+=q); document.getElementById('lbl-total-qty').textContent=totalQty;
+            
+            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
+            Object.entries(box.items).forEach(([bc,q])=>{
+                const p=appState.db[bc]; ul.innerHTML+=`<li><span class="bc">${bc}</span><span class="qty">×${q}</span><div>${p?.name||'?'}</div></li>`;
+            });
+            if(typeof JsBarcode!=='undefined') JsBarcode("#barcode-svg-box",box.id,{format:"CODE128",width:1.5,height:12,displayValue:false});
+        }
+        function triggerPrint(type) { appState.lastPrinted=type; document.getElementById('retry-print-btn').style.display='block'; window.print(); setTimeout(()=>document.getElementById('retry-print-btn').style.display='none', 1000); }
+        function printPalletLabel() {
+            if(!appState.activePallet) return showError('Выберите палет');
+            const p=appState.pallets[appState.activePallet]; const city=document.getElementById('city').value.trim()||'Город не указан';
+            const mp = document.getElementById('marketplace').value;
+            const container = document.getElementById('label-pallet-container');
+            container.innerHTML = `
+                <div class="label-area" style="width:210mm;height:297mm;position:relative;visibility:visible;display:block;page-break-after:always">
+                    <div class="label-header"><span class="label-title ${mp==='WB'?'wb':'ozon'}">${mp==='WB'?'🔴 WB FBO':'🔵 OZON FBO'}</span><span style="font-size:8pt">${new Date().toLocaleString('ru')}</span></div>
+                    <div style="font-size:10pt;margin:5px 0"><b>🆔 Палет:</b> ${p.id} | <b>📍 Город:</b> ${city} | <b>📦 Коробов:</b> ${p.boxes.length}</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px;font-size:9pt">
+                        ${p.boxes.map(b=>`<div style="border:1px solid #ccc;padding:3px;text-align:center">${b}</div>`).join('')}
+                    </div>
+                    <div style="position:absolute;bottom:20mm;right:20mm"><svg id="barcode-svg-pal"></svg><div style="text-align:center;font-size:8pt">${p.id}</div></div>
+                </div>`;
+            setTimeout(()=>{
+                if(typeof JsBarcode!=='undefined') JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:15,displayValue:false});
+                triggerPrint('label-pallet-container');
+            }, 200);
+        }
+
+        // 💾 СОХРАНЕНИЕ/ЭКСПОРТ
+        function exportCSV() {
+            if(!appState.history.length) return showError('Нет данных');
+            let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес\n';
+            appState.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{
+                const p=appState.db[bc]||{}; csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};${(p.name||'').replace(/;/g,' ')};${q};${b.weight.toFixed(2)}\n`;
+            }));
+            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`fbo_${new Date().toISOString().slice(0,10)}.csv`; a.click(); speak('Готово');
+        }
+        function saveState() { try { localStorage.setItem('fbo_v2', JSON.stringify({targets:appState.targets, history:appState.history, boxCounter:appState.boxCounter, pallets:appState.pallets, activePallet:appState.activePallet})); } catch(e) {} }
+        function loadState() { try { const s=localStorage.getItem('fbo_v2'); if(s){const d=JSON.parse(s); Object.assign(appState,d); if(appState.activePallet) document.getElementById('pallet-input').value=appState.activePallet; renderTargets(); renderPallets(); updateUI(); log('💾 Состояние восстановлено');} } catch(e) { log('⚠️ Ошибка восстановления: '+e.message,'error'); } }
+        function resetAllData() { if(confirm('Полный сброс?')) { localStorage.removeItem('fbo_v2'); location.reload(); } }
+        function showError(m) { const e=document.getElementById('error-msg'); e.textContent=m; e.style.display='block'; setTimeout(()=>e.style.display='none',4000); }
+        function hideError() { document.getElementById('error-msg').style.display='none'; }
+        function showSuccess(m) { const s=document.getElementById('upload-status'); s.textContent=m; s.style.display='block'; setTimeout(()=>s.style.display='none',3000); }
+    </script>
+</body>
+</html>
