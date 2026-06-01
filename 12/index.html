@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка v5.2 | WB + Ozon + Отчёты</title>
-    
-    <!-- Подключение библиотек -->
+    <title>FBO Отгрузка v6.0 | WB + Ozon + Excel Отчёты</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    
     <style>
         :root { --ozon:#005bff; --wb:#cb11ab; --bg:#f5f7fa; --card:#fff; --text:#222; --border:#e0e0e0; --success:#28a745; --danger:#dc3545; --warning:#ffc107; --info:#17a2b8; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -46,7 +43,7 @@
         .progress-bar { height: 5px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
         .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(3px); }
-        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
         .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
         .mapping-select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; } .modal-actions button { flex: 1; min-width: 120px; }
@@ -115,12 +112,12 @@
             <h3>📊 Отчёт закрытия города: <span id="report-city-name">-</span></h3>
             <p style="font-size:11px; color:#666; margin-bottom:12px">Сформирован: <span id="report-date">-</span> | МП: <span id="report-mp">-</span></p>
             <div class="stats" id="report-summary"></div>
-            <div style="max-height: 500px; overflow-y: auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:#fafafa; margin:10px 0">
+            <div style="max-height: 400px; overflow-y: auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:#fafafa; margin:10px 0">
                 <div id="report-content"></div>
             </div>
             <div class="modal-actions">
                 <button onclick="printReport()">🖨 Печать</button>
-                <button class="secondary" onclick="exportReportCSV()">📤 CSV</button>
+                <button class="secondary" onclick="exportExcelReport()">📥 Скачать отчёт (Excel)</button>
                 <button class="danger" onclick="document.getElementById('report-modal').style.display='none'">✕ Закрыть</button>
             </div>
         </div>
@@ -192,8 +189,7 @@
             </div>
             <div class="card">
                 <h2>📜 Экспорт и бэкап</h2>
-                <button class="secondary" onclick="exportCSV()">📤 Выгрузка CSV</button>
-                <button class="info" onclick="exportState()">💾 Скачать бэкап</button>
+                <button class="info" onclick="exportState()">💾 Скачать бэкап JSON</button>
                 <input type="file" id="import-file" accept=".json" style="display:none" onchange="importState(event)">
                 <button class="warning" onclick="document.getElementById('import-file').click()" style="margin-top:6px">📥 Восстановить бэкап</button>
                 <button class="danger" onclick="resetAllData()" style="margin-top:6px">🔄 Полный сброс</button>
@@ -214,7 +210,7 @@
     <div id="label-pallet-container" class="no-print"></div>
 
     <script>
-        const CONFIG = { version: '5.2', storageKey: 'fbo_v5', debounce: 500 };
+        const CONFIG = { version: '6.0', storageKey: 'fbo_v6', debounce: 500 };
         const FIELD_KEYWORDS = {
             sku: ['артикул вб','озон id','артикул','sku','код'],
             name: ['наименование','составляющего','назв','name'],
@@ -230,6 +226,7 @@
 
         let S = {db:{}, targets:[], currentBox:{items:{},weight:0}, history:[], boxCounter:1, pallets:{}, activePallet:null, filters:{city:'',mp:''}, voice:true, lastPrint:null};
         let tempData=[], tempHeaders=[], quaggaActive=false, scanLock=new Set();
+        let currentReportData = null; // Для Excel экспорта
 
         const logEl = document.getElementById('debug-log');
         function log(m, t='i') { const c=t==='e'?'#ff6b6b':t==='s'?'#51cf66':'#74c0fc'; logEl.innerHTML+=`<span style="color:${c}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`; logEl.scrollTop=logEl.scrollHeight; }
@@ -240,7 +237,7 @@
         function hideError() { document.getElementById('error-msg').style.display='none'; }
         function parseNum(v) { return parseInt(String(v).replace(/[^0-9]/g, '')) || 0; }
         function cleanBC(v) { return String(v).replace(/[^\dA-Za-z]/g, '').trim(); }
-        function isSkipRow(row) { const str = (row.slice(0,3)||[]).join(' ').toLowerCase(); return /^(итого|заказ|готовые|наименование|для меня|озон id|вб|артикул|отгрузка|короб|фадеев)/i.test(str) || !/\d/.test(str); }
+        function isSkipRow(row) { const str = (row.slice(0,3)||[]).join(' ').toLowerCase(); return /^(итого|заказ|готовые|наименование|для меня|озон id|вб|артикул|отгрузка|короб|фадеев|тип поставки|заказчик)/i.test(str) || !/\d/.test(str); }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadState();
@@ -250,13 +247,13 @@
             updateUI();
             document.getElementById('excel-upload').addEventListener('change', handleFile);
             document.getElementById('voice-toggle').onclick = toggleVoice;
-            log('🚀 FBO Отгрузка v5.2 | WB+Ozon + Отчёты');
+            log('🚀 FBO Отгрузка v6.0 | WB+Ozon+Excel');
         });
 
-        // 📥 1. ЗАГРУЗКА И АВТО-ОПРЕДЕЛЕНИЕ ФОРМАТА
+        // 📥 ЗАГРУЗКА И МАППИНГ
         function handleFile(e) {
             const f=e.target.files[0]; if(!f) return; log(`📥 Файл: ${f.name}`);
-            if(typeof XLSX==='undefined') return showError('❌ Библиотека XLSX не загрузилась. Проверьте интернет.');
+            if(typeof XLSX==='undefined') return showError('❌ Библиотека XLSX не загрузилась.');
             
             const r=new FileReader(); 
             r.onload=ev=>{
@@ -305,7 +302,7 @@
             processData(map); closeMappingModal();
         }
 
-        // 🔄 2. ОБРАБОТКА ДАННЫХ
+        // 🔄 ОБРАБОТКА ДАННЫХ
         function processData(map) {
             S.db = {}; S.targets = []; let totalUnits = 0;
             const mp = document.getElementById('marketplace').value;
@@ -318,12 +315,10 @@
                 const quant = map.quant !== undefined ? parseNum(row[map.quant]) || 1 : 1;
                 const units = map.qty_units !== undefined ? parseNum(row[map.qty_units]) : 0;
                 const packs = map.qty_packs !== undefined ? parseNum(row[map.qty_packs]) : 0;
-                const boxes = map.boxes_plan !== undefined ? parseNum(row[map.boxes_plan]) : 0;
-                const pcsBox = map.pcs_per_box !== undefined ? parseNum(row[map.pcs_per_box]) : 0;
                 const expiry = map.expiry !== undefined ? String(row[map.expiry] || '').trim() : '';
                 if(units <= 0 && packs <= 0) return;
 
-                const p = { sku, name, mp, targetPcs: units>0?units:packs*quant, targetPacks: packs>0?packs:Math.ceil(units/quant), packedPcs:0, packedPacks:0, quant, boxesPlan:boxes||0, pcsPerBox:pcsBox||0, expiry, city: document.getElementById('city').value.trim()||'Не указан' };
+                const p = { sku, name, mp, targetPcs: units>0?units:packs*quant, packedPcs:0, quant, expiry, city: document.getElementById('city').value.trim()||'Не указан' };
                 totalUnits += p.targetPcs; S.targets.push(p);
 
                 const barcodes = new Set();
@@ -344,7 +339,7 @@
             log(`✅ Загружено: ${S.targets.length} SKU | ${totalUnits} шт.`, 's'); showStatus('✅ ТЗ обработано', 's'); speak('Загружено');
         }
 
-        // 🎯 3. РЕНДЕР И ФИЛЬТРЫ
+        // 🎯 РЕНДЕР И ФИЛЬТРЫ
         function getFiltered(){ return S.targets.filter(t=>{ if(S.filters.city&&t.city!==S.filters.city) return false; if(S.filters.mp&&t.mp!==S.filters.mp) return false; return true; }); }
         function renderTargets(){
             S.filters.city=document.getElementById('filter-city')?.value||''; S.filters.mp=document.getElementById('filter-mp')?.value||'';
@@ -352,12 +347,12 @@
             if(!data.length){list.innerHTML='<p style="color:#888;padding:10px">Нет данных</p>';return;}
             data.forEach(p=>{
                 const pct=p.targetPcs>0?Math.min(100,Math.round(p.packedPcs/p.targetPcs*100)):0;
-                list.innerHTML+=`<div class="target-item ${p.packedPcs>=p.targetPcs?'done':''}"><b>${p.sku} | ${p.name}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:10px;color:#555">✅ ${p.packedPcs}/${p.targetPcs} шт. | 📦 ${p.targetPacks} уп. ${p.expiry?'| ⏰ '+p.expiry:''}</div></div>`;
+                list.innerHTML+=`<div class="target-item ${p.packedPcs>=p.targetPcs?'done':''}"><b>${p.sku} | ${p.name}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:10px;color:#555">✅ ${p.packedPcs}/${p.targetPcs} шт. ${p.expiry?'| ⏰ '+p.expiry:''}</div></div>`;
             }); save();
         }
         function resetFilters(){ document.getElementById('filter-city').value=''; document.getElementById('filter-mp').value=''; renderTargets(); }
 
-        // 📡 4. СКАНИРОВАНИЕ
+        // 📡 СКАНИРОВАНИЕ
         function setupScanner(){ const inp=document.getElementById('scanner'); inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}}); inp.addEventListener('focus',()=>inp.select()); }
         async function startCameraScan(){
             if(!navigator.mediaDevices?.getUserMedia) return log('❌ Камера не поддерживается','e');
@@ -381,7 +376,7 @@
             renderBox(); renderTargets(); updateUI(); log(`📦 ${bc}`,'s'); speak(p.targetPcs-p.packedPcs>0?`Осталось ${p.targetPcs-p.packedPcs}`:'Готово');
         }
 
-        // 📦 5. КОРОБ И ПАЛЕТЫ
+        // 📦 КОРОБ И ПАЛЕТЫ
         function closeBox(){
             const city=document.getElementById('city').value.trim(); if(!city) return showError('⚠️ Укажите город'); if(!S.activePallet) return showError('⚠️ Выберите палет'); if(!Object.keys(S.currentBox.items).length) return showError('⚠️ Короб пуст');
             const id=`BOX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(S.boxCounter).padStart(3,'0')}`;
@@ -429,7 +424,7 @@
         }
         function clearBoxUI(){S.currentBox={items:{},weight:0}; renderBox(); updateUI();}
 
-        // 🖨️ 6. ПЕЧАТЬ И ОТЧЁТЫ
+        // 🖨️ ПЕЧАТЬ И ОТЧЁТЫ
         function generateBoxLabel(id){
             const b=S.history[0]; const mp=b.mp||'WB';
             document.getElementById('lbl-mp-box').className=`label-title ${mp==='WB'?'wb':'ozon'}`;
@@ -443,38 +438,20 @@
             if(typeof JsBarcode!=='undefined') JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:12,displayValue:false});
         }
         function triggerPrint(type){ S.lastPrint=type; document.getElementById('retry-print-btn').style.display='block'; window.print(); setTimeout(()=>document.getElementById('retry-print-btn').style.display='none',1000); }
-        
         function printPalletLabel(){
             if(!S.activePallet) return showError('Выберите палет');
-            const p=S.pallets[S.activePallet]; 
-            const city=document.getElementById('city').value.trim()||'Не указан'; 
-            const mp=p.mp||document.getElementById('marketplace').value;
-            const container=document.getElementById('label-pallet-container'); 
-            container.innerHTML='';
-            const boxesPer=60; 
-            const pages=Math.ceil(p.boxes.length/boxesPer);
+            const p=S.pallets[S.activePallet]; const city=document.getElementById('city').value.trim()||'Не указан'; const mp=p.mp||document.getElementById('marketplace').value;
+            const container=document.getElementById('label-pallet-container'); container.innerHTML='';
+            const boxesPer=60; const pages=Math.ceil(p.boxes.length/boxesPer);
             const totalBoxes = p.boxes.length;
             
-            if(totalBoxes === 0) return showError('⚠️ На палете пока нет коробов. Закройте хотя бы один короб.');
-
             for(let i=0;i<pages;i++){
                 const slice=p.boxes.slice(i*boxesPer,(i+1)*boxesPer);
-                const page=document.createElement('div'); 
-                page.className='pallet-page label-area';
-                // 🔴 Явное отображение количества коробов в заголовке и мета-блоке
-                page.innerHTML=`
-                <div class="pallet-header">
-                    <h1 class="label-title ${mp==='WB'?'wb':'ozon'}">${mp==='WB'?'🔴 WILDBERRIES FBO':'🔵 OZON FBO'}</h1>
-                    <span style="font-size:10pt; font-weight:bold;">📦 Всего коробов: ${totalBoxes} шт.</span>
-                    <span style="font-size:8pt">${new Date().toLocaleString('ru')}</span>
-                </div>
-                <div class="pallet-meta">
-                    <div><strong>📍 Город</strong>${city}</div>
-                    <div><strong>🆔 Палет</strong>${p.id}</div>
-                    <div><strong>📦 Коробов</strong><span style="font-size:18pt; font-weight:bold; color:#000;">${totalBoxes}</span></div>
-                </div>
+                const page=document.createElement('div'); page.className='pallet-page label-area';
+                page.innerHTML=`<div class="pallet-header"><h1 class="label-title ${mp==='WB'?'wb':'ozon'}">${mp==='WB'?'🔴 WILDBERRIES FBO':'🔵 OZON FBO'}</h1><span style="font-size:10pt; font-weight:bold;">📦 Всего коробов: ${totalBoxes} шт.</span><span style="font-size:8pt">${new Date().toLocaleString('ru')}</span></div>
+                <div class="pallet-meta"><div><strong>📍 Город</strong>${city}</div><div><strong>🆔 Палет</strong>${p.id}</div><div><strong>📦 Коробов</strong><span style="font-size:18pt; font-weight:bold; color:#000;">${totalBoxes}</span></div></div>
                 <div style="text-align:center;font-size:10pt;margin-bottom:5mm">📄 Страница ${i+1} из ${pages}</div>
-                <ul class="boxes-grid">${slice.map((b,idx)=>`<li><div class="box-id">${b}</div><div style="color:#666">№ ${i*boxesPer + idx + 1} из ${totalBoxes}</div></li>`).join('')}</ul>
+                <ul class="boxes-grid">${slice.map((b,idx)=>`<li><div class="box-id">${b}</div><div style="color:#666">№ ${i*boxesPer+idx+1} из ${totalBoxes}</div></li>`).join('')}</ul>
                 <div class="page-footer">FBO Отгрузка • ${city} • ${mp} • Стр. ${i+1}/${pages}</div>`;
                 container.appendChild(page);
             }
@@ -491,110 +468,89 @@
             </tbody></table><p style="margin-top:20px;text-align:center;font-size:8pt;color:#666">FBO Отгрузка v${CONFIG.version}</p></body></html>`);
             win.document.close(); setTimeout(()=>win.print(), 500); speak('Подготовлено к печати');
         }
-        
-        // 🔴 НОВАЯ ФУНКЦИЯ ОТЧЁТА ПО ПАЛЕТАМ
-        function closeCity() {
-            const city = document.getElementById('city').value.trim();
-            if (!city) return showError('⚠️ Укажите город');
+        function closeCity(){
+            const city=document.getElementById('city').value.trim(); if(!city) return showError('Укажите город');
+            const cityBoxes=S.history.filter(b=>b.city===city); if(!cityBoxes.length) return showError(`Нет коробов по городу "${city}"`);
             
-            const cityBoxes = S.history.filter(b => b.city === city);
-            if (!cityBoxes.length) return showError(`❌ Нет собранных коробов по городу "${city}"`);
-
-            // Группируем короба по палетам и суммируем товары
-            const pallets = {};
-            let totalWeight = 0, totalBoxes = 0;
-
+            const pallets={}; let totalW=0, totalBoxes=0;
             cityBoxes.forEach(box => {
-                if (!pallets[box.pallet]) {
-                    pallets[box.pallet] = { id: box.pallet, mp: box.mp, boxes: [], weight: 0, items: {} };
-                }
-                pallets[box.pallet].boxes.push(box);
-                pallets[box.pallet].weight += box.weight;
-                totalWeight += box.weight;
-                totalBoxes++;
-
-                // Агрегируем количество товаров внутри палета
-                Object.entries(box.items).forEach(([bc, qty]) => {
-                    pallets[box.pallet].items[bc] = (pallets[box.pallet].items[bc] || 0) + qty;
-                });
+                if(!pallets[box.pallet]) pallets[box.pallet] = { id:box.pallet, mp:box.mp, boxes:[], weight:0, items:{} };
+                pallets[box.pallet].boxes.push(box); pallets[box.pallet].weight+=box.weight; totalW+=box.weight; totalBoxes++;
+                Object.entries(box.items).forEach(([bc,qty])=>{ pallets[box.pallet].items[bc]=(pallets[box.pallet].items[bc]||0)+qty; });
             });
 
-            const palletList = Object.values(pallets).sort((a, b) => a.id.localeCompare(b.id));
-            const totalPallets = palletList.length;
-            const uniqueSKU = new Set(cityBoxes.flatMap(b => Object.keys(b.items))).size;
+            currentReportData = { city, date: new Date().toLocaleString('ru'), mp: pallets[Object.keys(pallets)[0]]?.mp, pallets, totalW, totalBoxes, uniqueSKU: new Set(cityBoxes.flatMap(b=>Object.keys(b.items))).size };
+            
+            document.getElementById('report-city-name').textContent = currentReportData.city;
+            document.getElementById('report-date').textContent = currentReportData.date;
+            document.getElementById('report-mp').textContent = currentReportData.mp;
+            document.getElementById('report-summary').innerHTML = `<span>📦 Палет: <b>${Object.keys(pallets).length}</b></span><span>📦 Коробов: <b>${totalBoxes}</b></span><span>⚖️ Вес: <b>${totalW.toFixed(1)} кг</b></span><span>🔢 SKU: <b>${currentReportData.uniqueSKU}</b></span>`;
 
-            // Обновляем шапку отчёта
-            document.getElementById('report-city-name').textContent = city;
-            document.getElementById('report-date').textContent = new Date().toLocaleString('ru');
-            document.getElementById('report-mp').textContent = palletList[0]?.mp || 'Не указан';
-            document.getElementById('report-summary').innerHTML = `
-                <span>📦 Палет: <b>${totalPallets}</b></span>
-                <span>📦 Коробов: <b>${totalBoxes}</b></span>
-                <span>⚖️ Вес: <b>${totalWeight.toFixed(1)} кг</b></span>
-                <span>🔢 SKU: <b>${uniqueSKU}</b></span>
-            `;
-
-            // Генерируем детальную таблицу
-            let html = `<div style="margin-top:10px">`;
-            palletList.forEach(p => {
-                const itemRows = Object.entries(p.items)
-                    .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([bc, qty]) => {
-                        const prod = S.db[bc] || { sku: '?', name: 'Неизвестно' };
-                        return `<tr>
-                            <td style="padding:4px; border:1px solid #ddd; font-family:monospace; font-size:11px;">${bc}</td>
-                            <td style="padding:4px; border:1px solid #ddd; font-size:11px;">${prod.sku}</td>
-                            <td style="padding:4px; border:1px solid #ddd; font-size:11px;">${prod.name}</td>
-                            <td style="padding:4px; border:1px solid #ddd; font-size:11px; text-align:center; font-weight:bold;">${qty}</td>
-                        </tr>`;
-                    }).join('');
-
-                html += `
-                <div style="margin-bottom:15px; page-break-inside: avoid;">
-                    <div style="background:#e8f5e9; padding:6px 10px; border-radius:6px; border:1px solid #c8e6c9; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                        <b style="font-size:12px;">🏷️ Палет: ${p.id}</b>
-                        <span style="font-size:11px; color:#555;">
-                            📦 Коробов: <b>${p.boxes.length}</b> | ⚖️ Вес: <b>${p.weight.toFixed(1)} кг</b> | МП: <b>${p.mp}</b>
-                        </span>
-                    </div>
-                    <table style="width:100%; border-collapse:collapse; font-size:11px;">
-                        <thead>
-                            <tr style="background:#f8f9fa; text-align:left;">
-                                <th style="padding:5px; border:1px solid #ddd;">ШК</th>
-                                <th style="padding:5px; border:1px solid #ddd;">Артикул</th>
-                                <th style="padding:5px; border:1px solid #ddd;">Название</th>
-                                <th style="padding:5px; border:1px solid #ddd; text-align:center;">Кол-во</th>
-                            </tr>
-                        </thead>
-                        <tbody>${itemRows}</tbody>
-                    </table>
-                </div>`;
+            let html=''; 
+            Object.values(pallets).sort((a,b)=>a.id.localeCompare(b.id)).forEach(p=>{
+                const rows = Object.entries(p.items).map(([bc,q])=>{
+                    const prod=S.db[bc]||{sku:'?',name:'Неизвестно'};
+                    return `<tr><td style="padding:4px;border:1px solid #ddd;font-family:monospace">${bc}</td><td style="padding:4px;border:1px solid #ddd">${prod.sku}</td><td style="padding:4px;border:1px solid #ddd">${prod.name.substring(0,30)}</td><td style="padding:4px;border:1px solid #ddd;text-align:center;font-weight:bold">${q}</td></tr>`;
+                }).join('');
+                html+=`<div style="margin-bottom:15px"><div style="background:#e8f5e9;padding:6px;border-radius:6px;margin-bottom:6px;font-weight:bold">📦 Палет: ${p.id} | 📦 ${p.boxes.length} кор. | ⚖️ ${p.weight.toFixed(1)} кг | МП: ${p.mp}</div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f8f9fa"><th style="padding:5px;border:1px solid #ddd">ШК</th><th style="padding:5px;border:1px solid #ddd">Артикул</th><th style="padding:5px;border:1px solid #ddd">Название</th><th style="padding:5px;border:1px solid #ddd">Кол-во</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
-            html += `</div>`;
-
             document.getElementById('report-content').innerHTML = html;
             document.getElementById('report-modal').style.display = 'flex';
-            speak(`Отчёт сформирован: ${totalPallets} палетов, ${totalBoxes} коробов`);
+            speak('Отчёт сформирован');
+        }
+        function printReport(){
+            const modal=document.getElementById('report-modal');
+            modal.style.position='absolute';modal.style.top='0';modal.style.left='0';modal.style.background='#fff';modal.style.display='block';
+            window.print(); setTimeout(()=>{modal.style.position='fixed';modal.style.background='rgba(0,0,0,0.6)';},300);
         }
 
-        function printReport() {
-            const modal = document.getElementById('report-modal');
-            modal.style.position = 'absolute'; modal.style.top = '0'; modal.style.left = '0';
-            modal.style.width = '100%'; modal.style.height = 'auto'; modal.style.background = '#fff';
-            modal.style.zIndex = '9999'; modal.style.display = 'block';
-            window.print();
-            setTimeout(() => { modal.style.position = 'fixed'; modal.style.display = 'flex'; modal.style.background = 'rgba(0,0,0,0.6)'; }, 300);
+        // 📊 ЭКСПОРТ ОТЧЁТА В EXCEL
+        function exportExcelReport(){
+            if(!currentReportData) return showError('Нет данных для экспорта');
+            const {city, date, mp, pallets, totalW, totalBoxes, uniqueSKU} = currentReportData;
+            
+            // Лист 1: Сводка
+            const summary = [
+                ['ОТЧЁТ ЗАКРЫТИЯ ГОРОДА', ''],
+                ['Город', city],
+                ['Дата', date],
+                ['Маркетплейс', mp],
+                ['Палетов', Object.keys(pallets).length],
+                ['Коробов', totalBoxes],
+                ['Общий вес (кг)', totalW.toFixed(2)],
+                ['Уникальных SKU', uniqueSKU]
+            ];
+            const wsSummary = XLSX.utils.aoa_to_sheet(summary);
+            
+            // Лист 2: Детализация
+            const details = [['Палет', 'ID Короба', 'ШК', 'Артикул', 'Название', 'Кол-во']];
+            Object.values(pallets).sort((a,b)=>a.id.localeCompare(b.id)).forEach(p=>{
+                p.boxes.forEach(box=>{
+                    Object.entries(box.items).forEach(([bc, qty])=>{
+                        const prod=S.db[bc]||{sku:'?',name:'?'};
+                        details.push([p.id, box.id, bc, prod.sku, prod.name, qty]);
+                    });
+                });
+            });
+            const wsDetails = XLSX.utils.aoa_to_sheet(details);
+
+            // Сборка файла
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
+            XLSX.utils.book_append_sheet(wb, wsDetails, 'Детализация по коробам');
+            
+            const fileName = `FBO_Отчёт_${city}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            speak('Отчёт Excel скачан');
+            showStatus('✅ Excel отчёт сформирован', 's');
         }
 
-        function exportReportCSV(){ let csv='Короб;Палет;МП;ШК;Артикул;Название;Кол-во;Город\n'; S.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=S.db[bc]||{};csv+=`${b.id};${b.pallet};${p.mp||b.mp};${bc};${p.sku||''};"${p.name||''}";${q};${b.city}\n`}));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`report_${new Date().toISOString().slice(0,10)}.csv`;a.click(); }
-        function exportCSV(){ if(!S.history.length) return showError('Нет данных'); exportReportCSV(); }
-
-        // 💾 7. СОХРАНЕНИЕ / ЭКСПОРТ
+        // 💾 СОХРАНЕНИЕ
         function save(){ try{localStorage.setItem(CONFIG.storageKey, JSON.stringify({targets:S.targets, history:S.history, boxCounter:S.boxCounter, pallets:S.pallets, activePallet:S.activePallet, filters:S.filters, voice:S.voice, city:document.getElementById('city').value, mp:document.getElementById('marketplace').value}));}catch(e){} }
         function loadState(){ try{ const s=localStorage.getItem(CONFIG.storageKey); if(s){const d=JSON.parse(s); Object.assign(S,d); if(S.city) document.getElementById('city').value=S.city; if(S.mp) document.getElementById('marketplace').value=S.mp; if(S.voice===false) toggleVoice(); renderTargets(); renderPallets(); updateUI(); log('💾 Данные восстановлены','s');} }catch(e){log('⚠️ Ошибка загрузки','e');} }
         function exportState(){ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download=`fbo_backup_${new Date().toISOString().slice(0,10)}.json`;a.click(); speak('Бэкап скачан'); }
-        function importState(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{ try{const d=JSON.parse(ev.target.result); if(confirm('Заменить текущие данные бэкапом?')){Object.assign(S,d); if(S.city) document.getElementById('city').value=S.city; renderTargets(); renderPallets(); updateUI(); save(); showStatus('✅ Восстановлено','s');}}catch(err){showError('❌ Ошибка бэкапа')}}; r.readAsText(f); e.target.value=''; }
-        function resetAllData(){ if(confirm('⚠️ Полный сброс? Все данные будут удалены.')){localStorage.removeItem(CONFIG.storageKey);location.reload();} }
+        function importState(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{ try{const d=JSON.parse(ev.target.result); if(confirm('Заменить данные бэкапом?')){Object.assign(S,d); if(S.city) document.getElementById('city').value=S.city; renderTargets(); renderPallets(); updateUI(); save(); showStatus('✅ Восстановлено','s');}}catch(err){showError('❌ Ошибка бэкапа')}}; r.readAsText(f); e.target.value=''; }
+        function resetAllData(){ if(confirm('⚠️ Полный сброс?')){localStorage.removeItem(CONFIG.storageKey);location.reload();} }
     </script>
 </body>
 </html>
