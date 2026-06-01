@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка v6.0 | WB + Ozon + Excel Отчёты</title>
+    <title>FBO Отгрузка v6.1 | WB + Ozon + Excel Отчёты</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
@@ -150,7 +150,11 @@
             </div>
             <div class="card">
                 <h2>🏗 Палеты</h2>
-                <div class="row" style="margin-bottom:8px"><button onclick="createPallet()" style="flex:2">+ Создать палет</button><button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨 Печать палета</button></div>
+                <div class="row" style="margin-bottom:8px">
+                    <button onclick="createPallet()" style="flex:2">+ Создать палет</button>
+                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨 Печать палета</button>
+                    <button class="info" onclick="exportPalletExcel()" id="btn-export-pallet" disabled style="flex:0 0 auto;padding:10px 12px;margin-left:4px">📥 Excel</button>
+                </div>
                 <div id="pallets-list" style="max-height:150px;overflow-y:auto"></div>
             </div>
         </div>
@@ -210,7 +214,7 @@
     <div id="label-pallet-container" class="no-print"></div>
 
     <script>
-        const CONFIG = { version: '6.0', storageKey: 'fbo_v6', debounce: 500 };
+        const CONFIG = { version: '6.1', storageKey: 'fbo_v6', debounce: 500 };
         const FIELD_KEYWORDS = {
             sku: ['артикул вб','озон id','артикул','sku','код'],
             name: ['наименование','составляющего','назв','name'],
@@ -226,7 +230,7 @@
 
         let S = {db:{}, targets:[], currentBox:{items:{},weight:0}, history:[], boxCounter:1, pallets:{}, activePallet:null, filters:{city:'',mp:''}, voice:true, lastPrint:null};
         let tempData=[], tempHeaders=[], quaggaActive=false, scanLock=new Set();
-        let currentReportData = null; // Для Excel экспорта
+        let currentReportData = null;
 
         const logEl = document.getElementById('debug-log');
         function log(m, t='i') { const c=t==='e'?'#ff6b6b':t==='s'?'#51cf66':'#74c0fc'; logEl.innerHTML+=`<span style="color:${c}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`; logEl.scrollTop=logEl.scrollHeight; }
@@ -247,7 +251,7 @@
             updateUI();
             document.getElementById('excel-upload').addEventListener('change', handleFile);
             document.getElementById('voice-toggle').onclick = toggleVoice;
-            log('🚀 FBO Отгрузка v6.0 | WB+Ozon+Excel');
+            log('🚀 FBO Отгрузка v6.1 | WB+Ozon+Excel');
         });
 
         // 📥 ЗАГРУЗКА И МАППИНГ
@@ -395,9 +399,9 @@
         function clearBox(){ if(!Object.keys(S.currentBox.items).length||!confirm('Очистить?')) return; for(const [bc,q] of Object.entries(S.currentBox.items)) if(S.db[bc]) S.db[bc].packedPcs-=q; S.currentBox={items:{},weight:0}; renderBox(); updateUI(); }
         function createPallet(){
             const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`; if(S.pallets[id]) return showError('Палет существует');
-            S.pallets[id]={id, boxes:[], weight:0, mp: document.getElementById('marketplace').value}; S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; renderPallets(); updateUI(); save(); speak('Палет создан');
+            S.pallets[id]={id, boxes:[], weight:0, mp: document.getElementById('marketplace').value}; S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; document.getElementById('btn-export-pallet').disabled=false; renderPallets(); updateUI(); save(); speak('Палет создан');
         }
-        function selectPallet(id){ S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; renderPallets(); updateUI(); }
+        function selectPallet(id){ S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; document.getElementById('btn-export-pallet').disabled=false; renderPallets(); updateUI(); }
         function renderPallets(){
             const l=document.getElementById('pallets-list'); l.innerHTML=''; 
             if(!Object.keys(S.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}
@@ -438,25 +442,137 @@
             if(typeof JsBarcode!=='undefined') JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:12,displayValue:false});
         }
         function triggerPrint(type){ S.lastPrint=type; document.getElementById('retry-print-btn').style.display='block'; window.print(); setTimeout(()=>document.getElementById('retry-print-btn').style.display='none',1000); }
+        
+        // 🖨️ ПЕЧАТЬ ДЕТАЛЬНОГО ОТЧЁТА ПАЛЕТА (ОБНОВЛЁНО)
         function printPalletLabel(){
             if(!S.activePallet) return showError('Выберите палет');
-            const p=S.pallets[S.activePallet]; const city=document.getElementById('city').value.trim()||'Не указан'; const mp=p.mp||document.getElementById('marketplace').value;
-            const container=document.getElementById('label-pallet-container'); container.innerHTML='';
-            const boxesPer=60; const pages=Math.ceil(p.boxes.length/boxesPer);
-            const totalBoxes = p.boxes.length;
+            const p = S.pallets[S.activePallet];
+            const city = document.getElementById('city').value.trim() || 'Не указан';
+            const mp = p.mp || document.getElementById('marketplace').value;
             
-            for(let i=0;i<pages;i++){
-                const slice=p.boxes.slice(i*boxesPer,(i+1)*boxesPer);
-                const page=document.createElement('div'); page.className='pallet-page label-area';
-                page.innerHTML=`<div class="pallet-header"><h1 class="label-title ${mp==='WB'?'wb':'ozon'}">${mp==='WB'?'🔴 WILDBERRIES FBO':'🔵 OZON FBO'}</h1><span style="font-size:10pt; font-weight:bold;">📦 Всего коробов: ${totalBoxes} шт.</span><span style="font-size:8pt">${new Date().toLocaleString('ru')}</span></div>
-                <div class="pallet-meta"><div><strong>📍 Город</strong>${city}</div><div><strong>🆔 Палет</strong>${p.id}</div><div><strong>📦 Коробов</strong><span style="font-size:18pt; font-weight:bold; color:#000;">${totalBoxes}</span></div></div>
-                <div style="text-align:center;font-size:10pt;margin-bottom:5mm">📄 Страница ${i+1} из ${pages}</div>
-                <ul class="boxes-grid">${slice.map((b,idx)=>`<li><div class="box-id">${b}</div><div style="color:#666">№ ${i*boxesPer+idx+1} из ${totalBoxes}</div></li>`).join('')}</ul>
-                <div class="page-footer">FBO Отгрузка • ${city} • ${mp} • Стр. ${i+1}/${pages}</div>`;
+            const container = document.getElementById('label-pallet-container');
+            container.innerHTML = '';
+            
+            // Группируем короба по палету с детализацией
+            const boxesData = p.boxes.map(boxId => {
+                const box = S.history.find(b => b.id === boxId);
+                if(!box) return null;
+                
+                const items = Object.entries(box.items).map(([bc, qty]) => {
+                    const prod = S.db[bc] || {sku: '?', name: 'Неизвестно', quant: 1};
+                    return { bc, sku: prod.sku, name: prod.name.substring(0, 25), qty, quant: prod.quant };
+                }).filter(i => i);
+                
+                return { id: boxId, weight: box.weight, items, date: box.date };
+            }).filter(b => b);
+            
+            if(!boxesData.length) return showError('Нет данных по коробам палета');
+            
+            // Печатаем по 8 коробов на страницу А4 для читаемости
+            const boxesPerPage = 8;
+            const pages = Math.ceil(boxesData.length / boxesPerPage);
+            
+            for(let i = 0; i < pages; i++){
+                const slice = boxesData.slice(i * boxesPerPage, (i + 1) * boxesPerPage);
+                const page = document.createElement('div');
+                page.className = 'pallet-page label-area';
+                
+                // Заголовок страницы
+                page.innerHTML = `
+                    <div class="pallet-header">
+                        <h1 class="label-title ${mp === 'WB' ? 'wb' : 'ozon'}">
+                            ${mp === 'WB' ? '🔴 WILDBERRIES FBO' : '🔵 OZON FBO'}
+                        </h1>
+                        <div style="font-size:9pt;margin-top:3mm">
+                            <b>📍 Город:</b> ${city} &nbsp;|&nbsp; 
+                            <b>🆔 Палет:</b> ${p.id} &nbsp;|&nbsp; 
+                            <b>📦 Коробов:</b> ${p.boxes.length} &nbsp;|&nbsp; 
+                            <b>⚖️ Вес:</b> ${p.weight.toFixed(1)} кг
+                        </div>
+                        <div style="font-size:8pt;color:#666;margin-top:2mm">
+                            📄 Страница ${i + 1} из ${pages} • ${new Date().toLocaleString('ru')}
+                        </div>
+                    </div>
+                `;
+                
+                // Таблица с детализацией коробов
+                let boxesHtml = '<table style="width:100%;border-collapse:collapse;font-size:8.5pt">';
+                boxesHtml += `<thead><tr style="background:#f0f4ff">
+                    <th style="padding:4px;border:1px solid #ccc;width:18%">📦 Короб</th>
+                    <th style="padding:4px;border:1px solid #ccc;width:15%">🔢 Артикул</th>
+                    <th style="padding:4px;border:1px solid #ccc">📝 Товар</th>
+                    <th style="padding:4px;border:1px solid #ccc;width:10%">🔢 ШК</th>
+                    <th style="padding:4px;border:1px solid #ccc;width:8%">Кол-во</th>
+                    <th style="padding:4px;border:1px solid #ccc;width:10%">⚖️ Вес</th>
+                </tr></thead><tbody>`;
+                
+                slice.forEach((box, idx) => {
+                    const globalIdx = i * boxesPerPage + idx + 1;
+                    if(box.items.length > 0){
+                        box.items.forEach((item, itemIdx) => {
+                            boxesHtml += `<tr style="${itemIdx > 0 ? 'background:#fafafa' : ''}">
+                                ${itemIdx === 0 ? `<td rowspan="${box.items.length}" style="padding:4px;border:1px solid #ccc;font-weight:bold;font-family:monospace;background:#e8f4ff">${box.id}<br><span style="font-weight:normal;font-size:7.5pt;color:#666">№${globalIdx}</span></td>` : ''}
+                                <td style="padding:4px;border:1px solid #ccc">${item.sku}</td>
+                                <td style="padding:4px;border:1px solid #ccc">${item.name}${item.name.length >= 25 ? '...' : ''}</td>
+                                <td style="padding:4px;border:1px solid #ccc;font-family:monospace;font-size:8pt">${item.bc}</td>
+                                <td style="padding:4px;border:1px solid #ccc;text-align:center;font-weight:bold">${item.qty}</td>
+                                ${itemIdx === 0 ? `<td rowspan="${box.items.length}" style="padding:4px;border:1px solid #ccc;text-align:center;font-weight:bold">${box.weight.toFixed(1)} кг</td>` : ''}
+                            </tr>`;
+                        });
+                    } else {
+                        boxesHtml += `<tr><td style="padding:4px;border:1px solid #ccc;font-family:monospace">${box.id}</td>
+                            <td colspan="4" style="padding:4px;border:1px solid #ccc;color:#999;font-style:italic">Пустой короб</td>
+                            <td style="padding:4px;border:1px solid #ccc;text-align:center">${box.weight.toFixed(1)} кг</td></tr>`;
+                    }
+                });
+                
+                boxesHtml += '</tbody></table>';
+                page.innerHTML += boxesHtml;
+                
+                // Футер страницы
+                page.innerHTML += `
+                    <div class="page-footer">
+                        FBO Отгрузка v${CONFIG.version} • ${city} • ${mp} • Палет: ${p.id} • Стр. ${i + 1}/${pages}
+                    </div>
+                `;
+                
                 container.appendChild(page);
             }
-            setTimeout(()=>triggerPrint('label-pallet-container'), 200);
+            
+            setTimeout(() => {
+                triggerPrint('label-pallet-container');
+                speak('Палетный лист готов к печати');
+            }, 300);
         }
+
+        // 📥 ЭКСПОРТ ПАЛЕТА В EXCEL (НОВОЕ)
+        function exportPalletExcel(){
+            if(!S.activePallet) return showError('Выберите палет');
+            const p = S.pallets[S.activePallet];
+            const city = document.getElementById('city').value.trim() || 'Не указан';
+            const mp = p.mp || document.getElementById('marketplace').value;
+            
+            const data = [['Палет', 'Короб', 'ШК', 'Артикул', 'Товар', 'Кол-во', 'Вес(кг)', 'Город', 'МП']];
+            
+            p.boxes.forEach(boxId => {
+                const box = S.history.find(b => b.id === boxId);
+                if(!box) return;
+                Object.entries(box.items).forEach(([bc, qty]) => {
+                    const prod = S.db[bc] || {sku:'?', name:'?'};
+                    data.push([p.id, boxId, bc, prod.sku, prod.name, qty, box.weight.toFixed(2), city, mp]);
+                });
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Детализация палета');
+            
+            const fileName = `FBO_Палет_${p.id}_${city}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showStatus('✅ Excel-отчёт палета скачан', 's');
+            speak('Эксель отчёт скачан');
+        }
+        
         function generateTZReport(){
             const data=getFiltered(); if(!data.length) return showError('Нет данных для печати');
             const mp=document.getElementById('marketplace').value; const city=S.filters.city||'Все';
@@ -509,7 +625,6 @@
             if(!currentReportData) return showError('Нет данных для экспорта');
             const {city, date, mp, pallets, totalW, totalBoxes, uniqueSKU} = currentReportData;
             
-            // Лист 1: Сводка
             const summary = [
                 ['ОТЧЁТ ЗАКРЫТИЯ ГОРОДА', ''],
                 ['Город', city],
@@ -522,7 +637,6 @@
             ];
             const wsSummary = XLSX.utils.aoa_to_sheet(summary);
             
-            // Лист 2: Детализация
             const details = [['Палет', 'ID Короба', 'ШК', 'Артикул', 'Название', 'Кол-во']];
             Object.values(pallets).sort((a,b)=>a.id.localeCompare(b.id)).forEach(p=>{
                 p.boxes.forEach(box=>{
@@ -534,7 +648,6 @@
             });
             const wsDetails = XLSX.utils.aoa_to_sheet(details);
 
-            // Сборка файла
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
             XLSX.utils.book_append_sheet(wb, wsDetails, 'Детализация по коробам');
