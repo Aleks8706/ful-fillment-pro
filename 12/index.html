@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FulFillPro — Система управления складом v3.1</title>
+    <title>FulFillPro v3.1 | FBO Отгрузка</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        :root { --primary: #4f46e5; --secondary: #06b6d4; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --dark: #1e293b; --light: #f1f5f9; }
+        :root { --primary: #4f46e5; --secondary: #06b6d4; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --dark: #1e293b; --light: #f1f5f9; --wb: #cb11ab; --ozon: #005bff; }
         body { background: var(--light); color: #333; font-size: 14px; }
         
         /* Login */
@@ -19,8 +19,8 @@
         .login-box p { text-align: center; color: #666; margin-bottom: 30px; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--dark); }
-        .form-group input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: 0.3s; }
-        .form-group input:focus { outline: none; border-color: var(--primary); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
         .checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
         .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; }
         .btn:hover { background: #4338ca; transform: translateY(-2px); }
@@ -43,63 +43,113 @@
         .top-bar { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .page-title { font-size: 24px; font-weight: 700; color: var(--dark); }
         
-        /* Voice Assistant */
-        .voice-assistant { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .voice-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .voice-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: white; color: var(--primary); font-size: 24px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .voice-btn.active { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .voice-input { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; }
-        .voice-examples { margin-top: 10px; font-size: 12px; opacity: 0.9; }
-        
-        /* Stats Cards */
+        /* Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .stat-card h3 { font-size: 13px; color: #64748b; margin-bottom: 10px; text-transform: uppercase; }
         .stat-card .value { font-size: 32px; font-weight: 700; color: var(--dark); }
         .stat-card .sub { font-size: 12px; color: #94a3b8; margin-top: 5px; }
         
-        /* Cards & Tables */
+        /* Cards */
         .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--light); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--light); flex-wrap: wrap; gap: 10px; }
         .card-header h2 { font-size: 18px; color: var(--dark); }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: var(--light); font-weight: 600; color: var(--dark); }
         tr:hover { background: #f8fafc; }
-        .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; }
         .badge.success { background: #d1fae5; color: #065f46; }
         .badge.warning { background: #fef3c7; color: #92400e; }
         .badge.danger { background: #fee2e2; color: #991b1b; }
         .badge.info { background: #dbeafe; color: #1e40af; }
+        .badge.wb { background: var(--wb); color: white; }
+        .badge.ozon { background: var(--ozon); color: white; }
         
         /* Buttons */
-        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
-        .btn-success { background: var(--success); color: white; border: none; cursor: pointer; }
-        .btn-danger { background: var(--danger); color: white; border: none; cursor: pointer; }
-        .btn-warning { background: var(--warning); color: white; border: none; cursor: pointer; }
-        .btn-secondary { background: #64748b; color: white; border: none; cursor: pointer; }
-        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-info { background: var(--secondary); color: white; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         
-        /* Scanner */
-        .scanner-area { background: #000; border-radius: 8px; height: 300px; position: relative; overflow: hidden; margin: 15px 0; }
-        .scanner-area::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 40%; border: 2px solid var(--success); border-radius: 4px; }
+        /* FBO Specific */
+        .fbo-grid { display: grid; grid-template-columns: 350px 1fr 380px; gap: 15px; }
+        .scanner-input { background: #f0f8ff; border: 2px dashed var(--ozon); font-size: 18px; text-align: center; font-family: monospace; font-weight: 600; padding: 15px; }
+        .scanner-input.success { border-color: var(--success); background: #e6ffe6; }
+        .scanner-input.error { border-color: var(--danger); background: #ffe6e6; }
+        .log-box { background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 6px; max-height: 120px; overflow-y: auto; }
+        .pallet-item { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .pallet-item:hover { background: #e9ecef; }
+        .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
+        .pallet-item .mp-tag { float: right; font-size: 9px; padding: 2px 6px; border-radius: 4px; color: white; }
+        .target-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #ccc; }
+        .target-item.done { border-left-color: var(--success); background: #e8f5e9; }
+        .progress-bar { height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 6px 0; }
+        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+        
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 750px; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--light); }
+        .mapping-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px; }
+        .mapping-row label { min-width: 150px; font-weight: 600; font-size: 12px; }
+        .mapping-row select { flex: 1; margin: 0; padding: 8px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions button { flex: 1; }
+        
+        /* Labels 58x40 */
+        .label-58x40 { width: 58mm; height: 40mm; background: white; border: 0.5px solid #000; padding: 2mm; font-family: Arial, sans-serif; font-size: 7pt; overflow: hidden; position: relative; page-break-inside: avoid; display: inline-block; margin: 2mm; }
+        .label-58x40 .top-line { border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm; display: flex; justify-content: space-between; }
+        .label-58x40 .mp-badge { font-size: 8pt; font-weight: 900; padding: 0.5mm 2mm; border-radius: 1mm; color: white; }
+        .label-58x40 .mp-badge.wb { background: var(--wb); }
+        .label-58x40 .mp-badge.ozon { background: var(--ozon); }
+        .label-58x40 .barcode-area { text-align: center; margin: 1mm 0; }
+        .label-58x40 .barcode-area svg { height: 12mm; width: auto; }
+        .label-58x40 .product-info { line-height: 1.3; margin: 1mm 0; font-size: 6.5pt; }
+        .label-58x40 .bottom-info { display: flex; justify-content: space-between; margin-top: 1mm; padding-top: 1mm; border-top: 1px solid #ccc; font-size: 6pt; }
+        
+        /* Pallet Label A4 */
+        .pallet-label-a4 { width: 210mm; height: 297mm; padding: 15mm; background: white; position: relative; page-break-after: always; }
+        .pallet-label-a4 .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 8mm; margin-bottom: 8mm; }
+        .pallet-label-a4 .mp-badge-large { display: inline-block; font-size: 14pt; font-weight: 900; padding: 3mm 8mm; border-radius: 4mm; color: white; margin: 3mm 0; }
+        .pallet-label-a4 .mp-badge-large.wb { background: var(--wb); }
+        .pallet-label-a4 .mp-badge-large.ozon { background: var(--ozon); }
+        .pallet-label-a4 .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-bottom: 8mm; }
+        .pallet-label-a4 .meta-box { padding: 4mm; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+        .pallet-label-a4 .boxes-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2mm; font-size: 7.5pt; }
+        .pallet-label-a4 .box-item { padding: 2mm; background: #f9f9f9; border: 1px solid #ddd; border-radius: 3px; text-align: center; }
         
         /* Tabs */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        /* Responsive */
-        @media (max-width: 768px) {
+        /* Print */
+        @media print {
+            .no-print, .sidebar, .top-bar, .btn, .btn-group { display: none !important; }
+            .main-content { margin-left: 0; padding: 0; }
+            .print-only { display: block !important; }
+        }
+        
+        @media (max-width: 1200px) {
+            .fbo-grid { grid-template-columns: 1fr; }
             .sidebar { width: 100%; position: relative; height: auto; }
             .main-content { margin-left: 0; }
-            .stats-grid { grid-template-columns: 1fr; }
         }
+        
+        .alert { padding: 12px; border-radius: 6px; margin-bottom: 10px; display: none; }
+        .alert.show { display: block; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .empty-state { text-align: center; color: #94a3b8; padding: 30px; }
     </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div class="login-page" id="loginPage">
     <div class="login-box">
         <h1>📦 FulFillPro</h1>
@@ -107,11 +157,11 @@
         <form onsubmit="login(event)">
             <div class="form-group">
                 <label>Логин</label>
-                <input type="text" id="loginUser" placeholder="Введите логин" required>
+                <input type="text" id="loginUser" placeholder="admin" required>
             </div>
             <div class="form-group">
                 <label>Пароль</label>
-                <input type="password" id="loginPass" placeholder="Введите пароль" required>
+                <input type="password" id="loginPass" placeholder="admin123" required>
             </div>
             <div class="checkbox">
                 <input type="checkbox" id="remember">
@@ -119,16 +169,14 @@
             </div>
             <button type="submit" class="btn">Войти</button>
         </form>
-        <div class="demo-info">
-            <strong>Демо:</strong> admin / admin123
-        </div>
+        <div class="demo-info"><strong>Демо:</strong> admin / admin123</div>
     </div>
 </div>
 
 <!-- MAIN APP -->
 <div class="app-container" id="appContainer">
     <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="sidebar no-print">
         <div class="sidebar-header">
             <h2>📦 FulFillPro</h2>
             <p>Склад v3.1</p>
@@ -137,16 +185,10 @@
             <div class="menu-item active" onclick="showTab('dashboard', this)">📊 Дашборд</div>
             <div class="menu-item" onclick="showTab('warehouse', this)">🏢 Склад</div>
             <div class="menu-item" onclick="showTab('acceptance', this)">📥 Приёмка ТСД</div>
+            <div class="menu-item" onclick="showTab('fbo', this)">🚀 FBO Отгрузка</div>
             <div class="menu-item" onclick="showTab('shipping', this)">📤 Отгрузка</div>
             <div class="menu-item" onclick="showTab('tasks', this)">✅ Задачи</div>
             <div class="menu-item" onclick="showTab('employees', this)">👥 Сотрудники</div>
-            <div class="menu-item" onclick="showTab('scanner', this)">📷 Сканер QR</div>
-            <div class="menu-item" onclick="showTab('attendance', this)">📅 Посещаемость</div>
-            <div class="menu-item" onclick="showTab('inventory', this)">📋 Инвентаризация</div>
-            <div class="menu-item" onclick="showTab('labels', this)">🏷️ Этикетки</div>
-            <div class="menu-item" onclick="showTab('fines', this)">⚠️ Штрафы</div>
-            <div class="menu-item" onclick="showTab('clients', this)">👔 Клиенты</div>
-            <div class="menu-item" onclick="showTab('integrations', this)">🔌 Интеграции</div>
             <div class="menu-item" onclick="showTab('settings', this)">⚙️ Настройки</div>
         </div>
         <div class="sidebar-footer">
@@ -159,568 +201,759 @@
     <div class="main-content">
         <!-- DASHBOARD -->
         <div id="dashboard" class="tab-content active">
-            <div class="top-bar">
+            <div class="top-bar no-print">
                 <h1 class="page-title">📊 Дашборд</h1>
             </div>
-            
-            <div class="voice-assistant">
-                <div class="voice-header">
-                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
-                    <div>
-                        <h3 style="font-size: 16px;">Голосовой помощник</h3>
-                        <p style="font-size: 13px; opacity: 0.9;">Нажмите на микрофон и задайте вопрос...</p>
-                    </div>
-                </div>
-                <input type="text" class="voice-input" id="voiceInput" placeholder="Примеры команд: 'где товар [артикул]', 'сколько товара [название]', 'кто на смене'..." readonly>
-                <div class="voice-examples">
-                    Примеры команд: "где товар [артикул]" | "сколько товара [название]" | "кто на смене" | "сколько приёмок" | "статус отгрузки [номер]" | "покажи задачи на сегодня"
-                </div>
-            </div>
-
             <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Товары на складе</h3>
-                    <div class="value" id="statProducts">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Приёмки сегодня</h3>
-                    <div class="value" id="statAcceptances">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Отгрузки сегодня</h3>
-                    <div class="value" id="statShipping">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Сотрудники онлайн</h3>
-                    <div class="value" id="statEmployees">0 <span style="font-size: 16px; color: #94a3b8;">из <span id="statEmployeesTotal">0</span></span></div>
-                </div>
+                <div class="stat-card"><h3>Товары на складе</h3><div class="value" id="statProducts">0</div></div>
+                <div class="stat-card"><h3>FBO Коробов</h3><div class="value" id="statFboBoxes">0</div></div>
+                <div class="stat-card"><h3>Приёмки сегодня</h3><div class="value" id="statAcceptances">0</div></div>
+                <div class="stat-card"><h3>Сотрудников на смене</h3><div class="value" id="statEmployees">0</div></div>
             </div>
-
             <div class="card">
-                <div class="card-header">
-                    <h2>📈 Движение товара за 7 дней</h2>
-                </div>
-                <div style="height: 200px; background: var(--light); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
-                    График будет здесь
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h2>📋 Последние операции</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>Время</th><th>Тип</th><th>Описание</th><th>Пользователь</th></tr>
-                    </thead>
-                    <tbody id="recentOps">
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Нет операций</td></tr>
-                    </tbody>
-                </table>
+                <div class="card-header"><h2>📋 Последние операции</h2></div>
+                <table><thead><tr><th>Время</th><th>Тип</th><th>Описание</th></tr></thead><tbody id="recentOps"><tr><td colspan="3" class="empty-state">Нет операций</td></tr></tbody></table>
             </div>
         </div>
 
         <!-- WAREHOUSE -->
         <div id="warehouse" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">🏢 Склад</h1>
-            </div>
+            <div class="top-bar no-print"><h1 class="page-title">🏢 Склад</h1></div>
             <div class="card">
                 <div class="card-header">
                     <h2>Схема склада</h2>
-                    <div class="btn-group">
+                    <div class="btn-group no-print">
                         <button class="btn-success btn-sm">Добавить товар</button>
-                        <button class="btn-secondary btn-sm">Импорт Excel</button>
                         <button class="btn-secondary btn-sm">Экспорт</button>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Фото</th>
-                            <th>Артикул</th>
-                            <th>Название</th>
-                            <th>ШК / КИЗ</th>
-                            <th>Склад</th>
-                            <th>Кол-во</th>
-                            <th>Срок годности</th>
-                            <th>Документы</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="warehouseTable">
-                        <tr><td colspan="9" style="text-align: center; color: #94a3b8;">Нет товаров</td></tr>
-                    </tbody>
-                </table>
+                <table><thead><tr><th>Артикул</th><th>Название</th><th>ШК</th><th>Кол-во</th><th>Действия</th></tr></thead><tbody id="warehouseTable"><tr><td colspan="5" class="empty-state">Нет товаров</td></tr></tbody></table>
             </div>
         </div>
 
         <!-- ACCEPTANCE -->
         <div id="acceptance" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">📥 Приёмка товара через ТСД</h1>
-            </div>
+            <div class="top-bar no-print"><h1 class="page-title">📥 Приёмка ТСД</h1></div>
             <div class="card">
-                <div class="card-header">
-                    <h2>Сканируйте штрих-код товара</h2>
-                    <div class="btn-group">
-                        <button class="btn-success btn-sm">Новая приёмка</button>
-                        <button class="btn-secondary btn-sm">Завершить</button>
-                    </div>
-                </div>
-                <div class="scanner-area" id="scannerArea">
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
-                        <p>ТСД активен — сканируйте штрих-код</p>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0;">
-                    <div class="stat-card">
-                        <h3>Поставщик</h3>
-                        <div class="value" style="font-size: 20px;">—</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Позиций</h3>
-                        <div class="value" style="font-size: 20px;" id="accPositions">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Общее кол-во</h3>
-                        <div class="value" style="font-size: 20px;" id="accTotal">0</div>
-                    </div>
-                </div>
-                <h3>Отсканированные товары</h3>
-                <table>
-                    <thead>
-                        <tr><th>ШК</th><th>Название</th><th>Кол-во</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="scannedItems">
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Пока нет отсканированных товаров</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>История приёмки</h2>
-                    <div class="btn-group">
-                        <select style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                            <option>Все статусы</option>
-                            <option>Новая</option>
-                            <option>В процессе</option>
-                            <option>Завершена</option>
-                            <option>Отменена</option>
-                        </select>
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>№</th><th>Дата</th><th>Поставщик</th><th>Товары</th><th>Статус</th><th>Документы</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="acceptanceHistory">
-                        <tr><td colspan="7" style="text-align: center; color: #94a3b8;">Нет данных</td></tr>
-                    </tbody>
-                </table>
+                <div class="card-header"><h2>Сканирование</h2><div class="btn-group no-print"><button class="btn-success btn-sm">Новая приёмка</button></div></div>
+                <div class="scanner-area" style="background:#000;height:200px;border-radius:8px;margin:15px 0;"></div>
+                <table><thead><tr><th>ШК</th><th>Название</th><th>Кол-во</th></tr></thead><tbody id="scannedItems"><tr><td colspan="3" class="empty-state">Нет товаров</td></tr></tbody></table>
             </div>
         </div>
 
-        <!-- SHIPPING -->
-        <div id="shipping" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">📤 Отгрузка</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Новая отгрузка</h2>
-                    <button class="btn-success btn-sm">Создать</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>№</th><th>Дата</th><th>Клиент</th><th>Товары</th><th>Статус</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="shippingTable">
-                        <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Нет отгрузок</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- TASKS -->
-        <div id="tasks" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">✅ Задачи</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Управление задачами</h2>
-                    <button class="btn-success btn-sm">Новая задача</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>№</th><th>Задача</th><th>Исполнитель</th><th>Срок</th><th>Статус</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="tasksTable">
-                        <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Нет задач</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- EMPLOYEES -->
-        <div id="employees" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">👥 Сотрудники</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Список сотрудников</h2>
-                    <button class="btn-success btn-sm">Добавить сотрудника</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>Сотрудник</th><th>Должность</th><th>Приход</th><th>Уход</th><th>Часы</th><th>Ставка</th><th>Сумма</th><th>Статус</th></tr>
-                    </thead>
-                    <tbody id="employeesTable">
-                        <tr><td colspan="8" style="text-align: center; color: #94a3b8;">Нет сотрудников</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- SCANNER -->
-        <div id="scanner" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">📷 Сканер QR-кодов сотрудников</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Наведите камеру на QR-код сотрудника</h2>
-                    <div class="btn-group">
-                        <button class="btn-success btn-sm">Включить камеру</button>
-                        <button class="btn-danger btn-sm">Выключить</button>
+        <!-- FBO SHIPPING - FULL FUNCTIONALITY -->
+        <div id="fbo" class="tab-content">
+            <div class="top-bar no-print"><h1 class="page-title">🚀 FBO Отгрузка v7.0 | WB + Ozon</h1></div>
+            
+            <!-- Modals -->
+            <div class="modal-overlay no-print" id="mappingModal">
+                <div class="modal">
+                    <h3>📋 Настройка колонок Excel</h3>
+                    <p style="font-size:12px;color:#666;margin-bottom:15px;">Сопоставьте колонки с полями системы. <span style="color:var(--danger);font-weight:bold">*</span> — обязательно</p>
+                    <div id="mappingFields"></div>
+                    <div class="modal-actions">
+                        <button class="btn-success" onclick="applyMapping()">✅ Применить</button>
+                        <button class="btn-secondary" onclick="closeModal('mappingModal')">❌ Отмена</button>
                     </div>
                 </div>
-                <div class="scanner-area">
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
-                        <p>Камера готова к работе</p>
+            </div>
+
+            <div class="modal-overlay no-print" id="reportModal">
+                <div class="modal" style="max-width:900px;">
+                    <h3>📊 Отчёт закрытия города: <span id="reportCityName"></span></h3>
+                    <div class="stats-grid" id="reportSummary"></div>
+                    <div id="reportContent" style="max-height:500px;overflow-y:auto;margin:15px 0;"></div>
+                    <div class="modal-actions">
+                        <button onclick="printReport()">🖨 Печать</button>
+                        <button class="btn-success" onclick="exportReportExcel()">📥 Excel</button>
+                        <button class="btn-secondary" onclick="closeModal('reportModal')">✕ Закрыть</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Или введите код вручную:</label>
-                    <input type="text" placeholder="Введите код сотрудника">
-                </div>
             </div>
-        </div>
 
-        <!-- ATTENDANCE -->
-        <div id="attendance" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">📅 Посещаемость</h1>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Всего сотрудников</h3>
-                    <div class="value" id="attTotal">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Пришло</h3>
-                    <div class="value" style="color: var(--success);" id="attPresent">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Не пришло</h3>
-                    <div class="value" style="color: var(--danger);" id="attAbsent">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>На смене</h3>
-                    <div class="value" style="color: var(--secondary);" id="attOnShift">0</div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Лог сегодня</h2>
-                    <button class="btn-secondary btn-sm">Экспорт</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>Сотрудник</th><th>Время прихода</th><th>Время ухода</th><th>Статус</th></tr>
-                    </thead>
-                    <tbody id="attendanceLog">
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Нет данных</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- INVENTORY -->
-        <div id="inventory" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">📋 Инвентаризация</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Проведение инвентаризации</h2>
-                    <div class="btn-group">
-                        <button class="btn-success btn-sm">Новая инвентаризация</button>
-                        <button class="btn-secondary btn-sm">Сканировать ТСД</button>
+            <div class="fbo-grid no-print">
+                <!-- Left Column -->
+                <div>
+                    <div class="card">
+                        <h2>📂 Загрузка ТЗ</h2>
+                        <input type="file" id="excelUpload" accept=".xlsx,.xls,.csv">
+                        <div id="uploadStatus"></div>
+                        <div class="log-box" id="debugLog">📡 Система готова...</div>
+                    </div>
+                    <div class="card" id="orderInfo" style="display:none;">
+                        <h2>📋 Информация</h2>
+                        <div class="stats-grid" style="margin:10px 0;">
+                            <div class="stat-card"><h3>SKU</h3><div class="value" style="font-size:24px;" id="loadedCount">0</div></div>
+                            <div class="stat-card"><h3>План</h3><div class="value" style="font-size:24px;" id="totalPlan">0</div></div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-warning" onclick="showTZPrint()" style="flex:2;">📋 Печать ТЗ</button>
+                            <button class="btn-success" onclick="closeCity()" style="flex:1;">✅ Закрыть город</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2>🎛️ Параметры</h2>
+                        <select id="marketplace" onchange="updateUI();saveState();"><option value="WB">🔴 Wildberries FBO</option><option value="OZON">🔵 Ozon FBO</option></select>
+                        <input type="text" id="city" placeholder="🏙 Город" value="Екатеринбург" onchange="saveState();">
+                        <input type="text" id="palletInput" placeholder="📦 Активный палет" readonly style="background:#f0f8ff;">
+                        <div id="errorMsg" class="alert alert-error"></div>
+                    </div>
+                    <div class="card">
+                        <h2>🏗 Палеты</h2>
+                        <div class="btn-group" style="margin-bottom:10px;">
+                            <button class="btn-success" onclick="createPallet()" style="flex:2;">+ Палет</button>
+                            <button class="btn-secondary" onclick="printPalletLabel()" id="btnPrintPallet" disabled>🖨</button>
+                        </div>
+                        <div id="palletsList" style="max-height:200px;overflow-y:auto;"></div>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>№</th><th>Дата</th><th>Ответственный</th><th>Товаров</th><th>Статус</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="inventoryTable">
-                        <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Нет инвентаризаций</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- LABELS -->
-        <div id="labels" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">🏷️ Этикетки</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Печать этикеток</h2>
-                    <div class="btn-group">
-                        <button class="btn-success btn-sm">Печать этикетки</button>
-                        <button class="btn-secondary btn-sm">Пакетная печать</button>
+                <!-- Center Column -->
+                <div>
+                    <div class="card">
+                        <h2>📡 Сканирование</h2>
+                        <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Сканируйте ШК" autocomplete="off">
+                        <div class="btn-group" style="margin-top:10px;">
+                            <button class="btn-secondary" id="btnCameraStart" onclick="startCamera()">📷 Камера</button>
+                            <button class="btn-danger" id="btnCameraStop" onclick="stopCamera()" style="display:none;">⏹ Стоп</button>
+                        </div>
+                        <div id="interactive" style="width:100%;height:200px;background:#000;border-radius:8px;display:none;margin-top:10px;position:relative;"></div>
+                    </div>
+                    <div class="card">
+                        <h2>📦 Короб <span id="boxIdDisplay" class="badge info"># НОВЫЙ</span></h2>
+                        <div class="stats-grid" style="margin:10px 0;">
+                            <div class="stat-card"><h3>Позиций</h3><div class="value" style="font-size:24px;" id="itemsCount">0</div></div>
+                            <div class="stat-card"><h3>Вес</h3><div class="value" style="font-size:24px;" id="totalWeight">0.00 кг</div></div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-success" onclick="closeBox()" id="btnClose" disabled>✅ Закрыть</button>
+                            <button class="btn-warning" onclick="reopenLastBox()" id="btnReopen" disabled>↩️ Переоткрыть</button>
+                        </div>
+                        <button id="retryPrintBtn" onclick="retryPrint()" style="display:none;margin-top:8px;width:100%;" class="btn-warning">🔄 Повтор печати</button>
+                        <button class="btn-danger" onclick="clearBox()" style="margin-top:8px;width:100%;">🗑 Очистить</button>
+                    </div>
+                    <div class="card">
+                        <h2>📋 Состав короба</h2>
+                        <table><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="boxTbody"></tbody></table>
+                        <div id="emptyMsg" class="empty-state">Короб пуст</div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Выберите товар:</label>
-                    <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <option>Выберите из списка</option>
-                    </select>
-                </div>
-            </div>
-        </div>
 
-        <!-- FINES -->
-        <div id="fines" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">⚠️ Штрафы</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Учёт штрафов</h2>
-                    <div class="btn-group">
-                        <button class="btn-danger btn-sm">Новый штраф</button>
-                        <button class="btn-success btn-sm">Прощение</button>
+                <!-- Right Column -->
+                <div>
+                    <div class="card">
+                        <h2>🎯 План (ТЗ)</h2>
+                        <div class="btn-group" style="margin-bottom:10px;">
+                            <select id="filterCity" onchange="renderTargets();saveState();" style="flex:1;"><option value="">🏙 Все города</option></select>
+                            <select id="filterMp" onchange="renderTargets();saveState();" style="flex:1;"><option value="">🛒 Все МП</option><option value="WB">🔴 WB</option><option value="OZON">🔵 Ozon</option></select>
+                        </div>
+                        <div id="targetsList" style="max-height:500px;overflow-y:auto;"></div>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>Дата</th><th>Сотрудник</th><th>Тип</th><th>Причина</th><th>Сумма</th><th>Фото</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="finesTable">
-                        <tr><td colspan="7" style="text-align: center; color: #94a3b8;">Нет штрафов</td></tr>
-                    </tbody>
-                </table>
             </div>
+
+            <!-- Print Containers -->
+            <div id="labelContainer" class="print-only" style="display:none;"></div>
+            <div id="palletLabelContainer" class="print-only" style="display:none;"></div>
+            <div id="tzPrintContainer" class="print-only" style="display:none;"></div>
         </div>
 
-        <!-- CLIENTS -->
-        <div id="clients" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">👔 Клиенты</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>База клиентов</h2>
-                    <button class="btn-success btn-sm">Добавить клиента</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr><th>Название</th><th>IP Ключ</th><th>Контакт</th><th>Статус</th><th>Действия</th></tr>
-                    </thead>
-                    <tbody id="clientsTable">
-                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Нет клиентов</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- INTEGRATIONS -->
-        <div id="integrations" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">🔌 Интеграции</h1>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Диадок</h2>
-                    <p style="color: #64748b; margin-bottom: 15px;">Электронный документооборот</p>
-                    <button class="btn-secondary btn-sm">Подключить</button>
-                    <span class="badge warning" style="margin-left: 10px;">Не подключено</span>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>1С</h2>
-                    <p style="color: #64748b; margin-bottom: 15px;">Интеграция с 1С:Предприятие</p>
-                    <button class="btn-secondary btn-sm">Подключить</button>
-                    <span class="badge warning" style="margin-left: 10px;">Не подключено</span>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>WMS</h2>
-                    <p style="color: #64748b; margin-bottom: 15px;">Warehouse Management System</p>
-                    <button class="btn-secondary btn-sm">Подключить</button>
-                    <span class="badge warning" style="margin-left: 10px;">Не подключено</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- SETTINGS -->
+        <!-- Other tabs placeholders -->
+        <div id="shipping" class="tab-content"><div class="top-bar no-print"><h1 class="page-title">📤 Отгрузка</h1></div><div class="card"><p class="empty-state">Раздел в разработке</p></div></div>
+        <div id="tasks" class="tab-content"><div class="top-bar no-print"><h1 class="page-title">✅ Задачи</h1></div><div class="card"><p class="empty-state">Раздел в разработке</p></div></div>
+        <div id="employees" class="tab-content"><div class="top-bar no-print"><h1 class="page-title">👥 Сотрудники</h1></div><div class="card"><p class="empty-state">Раздел в разработке</p></div></div>
         <div id="settings" class="tab-content">
-            <div class="top-bar">
-                <h1 class="page-title">⚙️ Настройки</h1>
-            </div>
+            <div class="top-bar no-print"><h1 class="page-title">⚙️ Настройки</h1></div>
             <div class="card">
-                <div class="card-header">
-                    <h2>Настройки системы</h2>
+                <h2>Управление данными</h2>
+                <div class="btn-group" style="margin-top:15px;">
+                    <button class="btn-info" onclick="exportState()">📥 Бэкап JSON</button>
+                    <button class="btn-warning" onclick="document.getElementById('importFile').click()">📤 Восстановить</button>
+                    <button class="btn-danger" onclick="resetAllData()">🔄 Сброс</button>
                 </div>
-                <div class="form-group">
-                    <label>Название компании</label>
-                    <input type="text" placeholder="Введите название">
-                </div>
-                <div class="form-group">
-                    <label>Адрес склада</label>
-                    <input type="text" placeholder="Введите адрес">
-                </div>
-                <div class="form-group">
-                    <label>Телефон</label>
-                    <input type="text" placeholder="Введите телефон">
-                </div>
-                <div class="form-group">
-                    <label>Размер ячеек склада (ширина)</label>
-                    <input type="number" placeholder="Ширина в см">
-                </div>
-                <div class="form-group">
-                    <label>Размер ячеек склада (высота)</label>
-                    <input type="number" placeholder="Высота в см">
-                </div>
-                <button class="btn-success" style="padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Сохранить настройки</button>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>Управление данными</h2>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <div style="padding: 20px; background: var(--light); border-radius: 8px;">
-                        <h3 style="margin-bottom: 10px;">Экспорт всей системы</h3>
-                        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Скачать все данные в JSON формате</p>
-                        <button class="btn-secondary btn-sm">Экспорт JSON</button>
-                    </div>
-                    <div style="padding: 20px; background: var(--light); border-radius: 8px;">
-                        <h3 style="margin-bottom: 10px;">Импорт данных</h3>
-                        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Загрузить данные из JSON файла</p>
-                        <button class="btn-secondary btn-sm">Импорт JSON</button>
-                    </div>
-                    <div style="padding: 20px; background: var(--light); border-radius: 8px;">
-                        <h3 style="margin-bottom: 10px;">Сброс данных</h3>
-                        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Удалить все данные системы</p>
-                        <button class="btn-danger btn-sm">Сбросить всё</button>
-                    </div>
-                </div>
+                <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importState(event)">
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// Auth
+// ==================== AUTH ====================
 function login(e) {
     e.preventDefault();
     const user = document.getElementById('loginUser').value;
     const pass = document.getElementById('loginPass').value;
-    
     if (user === 'admin' && pass === 'admin123') {
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
-        updateStats();
-        logOperation('Вход в систему', 'Авторизация');
+        initFBO();
+        log('Система запущена', 's');
     } else {
         alert('Неверный логин или пароль!');
     }
 }
 
-// Navigation
+// ==================== NAVIGATION ====================
 function showTab(tabId, element) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-    
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     element.classList.add('active');
+    if (tabId === 'dashboard') updateDashboard();
 }
 
-// Voice Assistant
-let voiceActive = false;
-function toggleVoice() {
-    voiceActive = !voiceActive;
-    const btn = document.getElementById('voiceBtn');
-    const input = document.getElementById('voiceInput');
+// ==================== FBO SYSTEM ====================
+const CONFIG = { version: '7.0', storageKey: 'fulfillpro_fbo_v7', defaultWeight: 0.15 };
+const FIELD_KEYWORDS = {
+    sku: ['артикул', 'sku', 'код', 'озон id'],
+    name: ['наименование', 'назв', 'name', 'товар'],
+    bc: ['шк', 'barcode', 'штрихкод', 'баркод'],
+    qty_units: ['шт', 'количество', 'итого', 'план']
+};
+
+let S = { db: {}, targets: [], currentBox: { items: {}, weight: 0 }, history: [], boxCounter: 1, pallets: {}, activePallet: null, filters: { city: '', mp: '' } };
+let tempData = [], tempHeaders = [], quaggaActive = false, scanLock = new Set();
+let currentReportData = null;
+
+const $ = id => document.getElementById(id);
+const logEl = $('debugLog');
+
+function log(m, t='i') {
+    const colors = { e: '#ff6b6b', s: '#51cf66', i: '#74c0fc' };
+    const time = new Date().toLocaleTimeString('ru');
+    logEl.innerHTML += `<span style="color:${colors[t]}">[${time}] ${m}</span>\n`;
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function showError(msg) {
+    const el = $('errorMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+    log(msg, 'e');
+}
+
+function closeModal(id) { $(id).classList.remove('show'); }
+
+// File Upload & Mapping
+$('excelUpload').addEventListener('change', handleFile);
+
+function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    log(`Загрузка: ${file.name}`, 'i');
     
-    if (voiceActive) {
-        btn.classList.add('active');
-        input.placeholder = 'Слушаю...';
-        startVoiceRecognition();
-    } else {
-        btn.classList.remove('active');
-        input.placeholder = 'Нажмите на микрофон и задайте вопрос...';
-    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const wb = XLSX.read(ev.target.result, { type: 'array' });
+            const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+            
+            let hIdx = 0;
+            for (let i = 0; i < Math.min(20, raw.length); i++) {
+                if ((raw[i] || []).join(' ').toLowerCase().match(/артикул|наименование|шк/)) { hIdx = i; break; }
+            }
+            
+            tempHeaders = (raw[hIdx] || []).map(x => String(x || '').trim()).filter(x => x);
+            tempData = raw.slice(hIdx + 1);
+            log(`Найдено колонок: ${tempHeaders.length}, строк: ${tempData.length}`, 's');
+            openMapping();
+        } catch (err) {
+            showError('Ошибка: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
 }
 
-function startVoiceRecognition() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'ru-RU';
-        recognition.continuous = false;
+function openMapping() {
+    const container = $('mappingFields');
+    container.innerHTML = '';
+    
+    Object.entries(FIELD_KEYWORDS).forEach(([key, keywords]) => {
+        const row = document.createElement('div');
+        row.className = 'mapping-row';
         
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('voiceInput').value = transcript;
-            processVoiceCommand(transcript);
-        };
+        const isRequired = ['sku', 'name', 'qty_units'].includes(key);
+        const label = document.createElement('label');
+        label.innerHTML = key === 'sku' ? 'Артикул *' : key === 'name' ? 'Название *' : key === 'qty_units' ? 'Количество *' : key;
         
-        recognition.start();
-    } else {
-        alert('Ваш браузер не поддерживает голосовое распознавание');
-        voiceActive = false;
-    }
+        const select = document.createElement('select');
+        select.dataset.key = key;
+        select.dataset.req = isRequired ? 'true' : 'false';
+        
+        const def = document.createElement('option');
+        def.value = '';
+        def.textContent = isRequired ? '-- Выберите --' : '-- Не использовать --';
+        select.appendChild(def);
+        
+        tempHeaders.forEach((h, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = h;
+            if (keywords.some(kw => h.toLowerCase().includes(kw))) opt.selected = true;
+            select.appendChild(opt);
+        });
+        
+        row.appendChild(label);
+        row.appendChild(select);
+        container.appendChild(row);
+    });
+    
+    $('mappingModal').classList.add('show');
 }
 
-function processVoiceCommand(command) {
-    alert('Команда: ' + command);
-    // Здесь можно добавить обработку команд
+function applyMapping() {
+    const map = {};
+    let valid = true;
+    
+    document.querySelectorAll('.mapping-select, .mapping-row select').forEach(s => {
+        if (s.dataset.req === 'true' && !s.value) {
+            s.style.borderColor = 'var(--danger)';
+            valid = false;
+        } else if (s.value) {
+            map[s.dataset.key] = parseInt(s.value);
+        }
+    });
+    
+    if (!valid) { showError('Заполните обязательные поля'); return; }
+    processData(map);
+    closeModal('mappingModal');
 }
 
-// Stats
-function updateStats() {
-    document.getElementById('statProducts').textContent = '0';
-    document.getElementById('statAcceptances').textContent = '0';
-    document.getElementById('statShipping').textContent = '0';
-    document.getElementById('statEmployees').innerHTML = '0 <span style="font-size: 16px; color: #94a3b8;">из <span id="statEmployeesTotal">0</span></span>';
+function processData(map) {
+    S.db = {}; S.targets = [];
+    let total = 0;
+    const mp = $('marketplace').value;
+    const city = $('city').value.trim();
+    
+    tempData.forEach(row => {
+        const sku = String(row[map.sku] || '').replace(/[^\dA-Za-z]/g, '').trim();
+        if (!sku || !/\d/.test(sku)) return;
+        
+        const name = String(row[map.name] || sku).substring(0, 60);
+        const qty = parseInt(String(row[map.qty_units] || '0').replace(/[^\d]/g, '')) || 0;
+        if (qty <= 0) return;
+        
+        const target = { sku, name, mp, targetPcs: qty, packedPcs: 0, city };
+        total += qty;
+        S.targets.push(target);
+        
+        const bc = String(row[map.bc] || '').replace(/[^\dA-Za-z]/g, '').trim() || sku;
+        S.db[bc] = target;
+    });
+    
+    $('orderInfo').style.display = 'block';
+    $('loadedCount').textContent = S.targets.length;
+    $('totalPlan').textContent = total;
+    
+    const cities = [...new Set(S.targets.map(t => t.city).filter(Boolean))].sort();
+    const sel = $('filterCity');
+    sel.innerHTML = '<option value="">🏙 Все города</option>';
+    cities.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+    
+    renderTargets();
+    updateUI();
+    saveState();
+    log(`Загружено: ${S.targets.length} SKU, ${total} шт.`, 's');
 }
 
-// Operations Log
-function logOperation(description, type) {
-    const tbody = document.getElementById('recentOps');
-    const row = tbody.insertRow(0);
-    const time = new Date().toLocaleString('ru-RU');
-    row.innerHTML = `<td>${time}</td><td>${type}</td><td>${description}</td><td>Админ</td>`;
+function renderTargets() {
+    S.filters.city = $('filterCity').value;
+    S.filters.mp = $('filterMp').value;
+    
+    const container = $('targetsList');
+    container.innerHTML = '';
+    const data = S.targets.filter(t => {
+        if (S.filters.city && t.city !== S.filters.city) return false;
+        if (S.filters.mp && t.mp !== S.filters.mp) return false;
+        return true;
+    });
+    
+    if (!data.length) { container.innerHTML = '<div class="empty-state">Нет данных</div>'; return; }
+    
+    data.forEach(t => {
+        const pct = t.targetPcs > 0 ? Math.round(t.packedPcs / t.targetPcs * 100) : 0;
+        const done = t.packedPcs >= t.targetPcs;
+        const div = document.createElement('div');
+        div.className = `target-item ${done ? 'done' : ''}`;
+        div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <b>${t.sku}</b>
+                <span class="badge ${t.mp === 'WB' ? 'wb' : 'ozon'}">${t.mp}</span>
+            </div>
+            <div style="font-size:11px;color:#666;margin-bottom:5px;">${t.name}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <div style="font-size:11px;">${t.packedPcs}/${t.targetPcs} шт. | ${t.city}</div>
+        `;
+        container.appendChild(div);
+    });
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if already logged in
-    const saved = localStorage.getItem('fulfillpro_auth');
-    if (saved) {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('appContainer').style.display = 'block';
-        updateStats();
+// Scanner
+$('scanner').addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+        const bc = $('scanner').value.trim();
+        if (bc) { handleScan(bc); $('scanner').value = ''; }
     }
 });
+
+function handleScan(bc) {
+    if (!Object.keys(S.db).length) { showError('Загрузите ТЗ'); return; }
+    if (!S.activePallet) { showError('Выберите палет'); return; }
+    
+    let target = S.db[bc];
+    if (!target) {
+        const found = Object.keys(S.db).find(k => k.includes(bc) || bc.includes(k));
+        if (found) target = S.db[found];
+    }
+    
+    if (!target) { showError(`Не найден: ${bc}`); return; }
+    if (target.packedPcs >= target.targetPcs) { showError('План выполнен'); return; }
+    
+    S.currentBox.items[bc] = (S.currentBox.items[bc] || 0) + 1;
+    S.currentBox.weight += CONFIG.defaultWeight;
+    target.packedPcs++;
+    
+    renderBox();
+    renderTargets();
+    updateUI();
+    log(`${bc}: ${target.packedPcs}/${target.targetPcs}`, 's');
+}
+
+function startCamera() {
+    $('scanner').style.display = 'none';
+    $('interactive').style.display = 'block';
+    $('btnCameraStart').style.display = 'none';
+    $('btnCameraStop').style.display = 'block';
+    
+    Quagga.init({
+        inputStream: { name: 'Live', type: 'LiveStream', target: $('interactive'), constraints: { facingMode: 'environment' } },
+        decoder: { readers: ['code_128_reader', 'ean_reader'] }
+    }, err => {
+        if (err) { log(err.message, 'e'); return; }
+        Quagga.start();
+        quaggaActive = true;
+        log('Камера активна', 's');
+        
+        Quagga.onDetected(res => {
+            const code = res.codeResult.code;
+            if (scanLock.has(code)) return;
+            scanLock.add(code);
+            setTimeout(() => scanLock.delete(code), 500);
+            handleScan(code);
+        });
+    });
+}
+
+function stopCamera() {
+    if (quaggaActive) Quagga.stop();
+    quaggaActive = false;
+    $('scanner').style.display = 'block';
+    $('interactive').style.display = 'none';
+    $('btnCameraStart').style.display = 'block';
+    $('btnCameraStop').style.display = 'none';
+}
+
+// Box & Pallets
+function renderBox() {
+    const tbody = $('boxTbody');
+    tbody.innerHTML = '';
+    const items = Object.entries(S.currentBox.items);
+    $('emptyMsg').style.display = items.length ? 'none' : 'block';
+    
+    items.forEach(([bc, qty]) => {
+        const t = S.db[bc] || { sku: '?', name: '?' };
+        const row = tbody.insertRow();
+        row.innerHTML = `<td style="font-family:monospace;">${bc}</td><td>${t.sku}</td><td>${t.name.substring(0,20)}</td><td>${qty}</td><td><button class="btn-danger btn-sm" onclick="removeItem('${bc}')">✕</button></td>`;
+    });
+}
+
+function removeItem(bc) {
+    const qty = S.currentBox.items[bc] || 0;
+    delete S.currentBox.items[bc];
+    if (S.db[bc]) S.db[bc].packedPcs -= qty;
+    S.currentBox.weight = Object.values(S.currentBox.items).reduce((s, q) => s + q * CONFIG.defaultWeight, 0);
+    renderBox();
+    updateUI();
+}
+
+function closeBox() {
+    if (!S.activePallet) { showError('Выберите палет'); return; }
+    if (!Object.keys(S.currentBox.items).length) { showError('Короб пуст'); return; }
+    
+    const id = `BOX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(S.boxCounter++).padStart(3,'0')}`;
+    const mp = S.db[Object.keys(S.currentBox.items)[0]]?.mp || $('marketplace').value;
+    
+    S.pallets[S.activePallet].boxes.push(id);
+    S.pallets[S.activePallet].weight += S.currentBox.weight;
+    S.pallets[S.activePallet].mp = mp;
+    
+    S.history.unshift({ id, city: $('city').value, pallet: S.activePallet, mp, items: {...S.currentBox.items}, weight: S.currentBox.weight, date: new Date().toISOString() });
+    
+    saveState();
+    generateBoxLabel(id);
+    clearBox();
+    renderTargets();
+    renderPallets();
+    log(`Короб ${id} закрыт`, 's');
+    
+    $('retryPrintBtn').style.display = 'block';
+    setTimeout(() => window.print(), 300);
+}
+
+function clearBox() {
+    Object.entries(S.currentBox.items).forEach(([bc, qty]) => { if (S.db[bc]) S.db[bc].packedPcs -= qty; });
+    S.currentBox = { items: {}, weight: 0 };
+    renderBox();
+    updateUI();
+}
+
+function createPallet() {
+    const id = prompt('ID палета:', `PAL-${Date.now().toString().slice(-5)}`);
+    if (!id || S.pallets[id]) { showError('Палет существует'); return; }
+    
+    S.pallets[id] = { id, boxes: [], weight: 0, mp: $('marketplace').value };
+    S.activePallet = id;
+    $('palletInput').value = id;
+    $('btnPrintPallet').disabled = false;
+    renderPallets();
+    updateUI();
+    saveState();
+    log(`Палет ${id} создан`, 's');
+}
+
+function selectPallet(id) {
+    S.activePallet = id;
+    $('palletInput').value = id;
+    renderPallets();
+    updateUI();
+}
+
+function renderPallets() {
+    const container = $('palletsList');
+    container.innerHTML = '';
+    Object.values(S.pallets).forEach(p => {
+        const div = document.createElement('div');
+        div.className = `pallet-item ${p.id === S.activePallet ? 'active' : ''}`;
+        div.onclick = () => selectPallet(p.id);
+        div.innerHTML = `<span class="mp-tag ${p.mp.toLowerCase()}">${p.mp}</span><b>${p.id}</b><div style="font-size:11px;color:#666;">${p.boxes.length} кор. | ${p.weight.toFixed(1)} кг</div>`;
+        container.appendChild(div);
+    });
+}
+
+function updateUI() {
+    $('itemsCount').textContent = Object.keys(S.currentBox.items).length;
+    $('totalWeight').textContent = S.currentBox.weight.toFixed(2) + ' кг';
+    const has = Object.keys(S.currentBox.items).length > 0;
+    $('btnClose').disabled = !(S.activePallet && has);
+    $('btnReopen').disabled = !(S.history.length && !has);
+    $('boxIdDisplay').textContent = has ? '# ТЕКУЩИЙ' : '# НОВЫЙ';
+}
+
+// Labels
+function generateBoxLabel(boxId) {
+    const box = S.history[0];
+    if (!box) return;
+    
+    const container = $('labelContainer');
+    container.innerHTML = '';
+    const mp = box.mp;
+    
+    Object.entries(box.items).forEach(([bc, qty], i) => {
+        const t = S.db[bc] || { sku: '?', name: '?' };
+        const label = document.createElement('div');
+        label.className = 'label-58x40';
+        label.innerHTML = `
+            <div class="top-line"><span>${i+1}/${Object.keys(box.items).length}</span><span class="mp-badge ${mp.toLowerCase()}">${mp}</span></div>
+            <div class="barcode-area"><svg id="bc-${i}"></svg></div>
+            <div class="product-info"><div style="font-weight:600;">${t.name}</div><div>Артикул: ${t.sku}</div><div>ШК: ${bc}</div></div>
+            <div class="bottom-info"><span>×${qty}</span><span>${box.city}</span></div>
+        `;
+        container.appendChild(label);
+        setTimeout(() => JsBarcode(`#bc-${i}`, bc, { format: 'CODE128', width: 1.5, height: 15, displayValue: false }), 100);
+    });
+}
+
+function printPalletLabel() {
+    if (!S.activePallet) return;
+    const p = S.pallets[S.activePallet];
+    const container = $('palletLabelContainer');
+    container.innerHTML = '';
+    
+    const page = document.createElement('div');
+    page.className = 'pallet-label-a4';
+    const mp = p.mp;
+    
+    page.innerHTML = `
+        <div class="header">
+            <h1>📦 ПАЛЕТНЫЙ ЛИСТ</h1>
+            <div class="mp-badge-large ${mp.toLowerCase()}">${mp === 'WB' ? 'WILDBERRIES' : 'OZON'}</div>
+            <div style="font-size:11pt;margin-top:3mm;">Всего коробов: <b>${p.boxes.length}</b></div>
+        </div>
+        <div class="meta-grid">
+            <div class="meta-box"><strong>Город</strong><div style="font-size:12pt;">${$('city').value}</div></div>
+            <div class="meta-box"><strong>Палет</strong><div style="font-size:12pt;">${p.id}</div></div>
+            <div class="meta-box"><strong>Коробов</strong><div style="font-size:16pt;">${p.boxes.length}</div></div>
+        </div>
+        <div class="boxes-grid">${p.boxes.map((b,i) => `<div class="box-item"><div style="font-family:monospace;font-weight:700;">${b}</div><div>№${i+1}</div></div>`).join('')}</div>
+    `;
+    
+    container.appendChild(page);
+    setTimeout(() => window.print(), 300);
+}
+
+function showTZPrint() {
+    const data = S.targets.filter(t => {
+        if (S.filters.city && t.city !== S.filters.city) return false;
+        if (S.filters.mp && t.mp !== S.filters.mp) return false;
+        return true;
+    });
+    
+    if (!data.length) { showError('Нет данных'); return; }
+    
+    const container = $('tzPrintContainer');
+    container.innerHTML = `
+        <div style="text-align:center;border-bottom:3px solid #000;padding-bottom:10mm;margin-bottom:10mm;">
+            <h1 style="font-size:18pt;">ТЕХНИЧЕСКОЕ ЗАДАНИЕ</h1>
+            <p>Дата: ${new Date().toLocaleString('ru')} | Город: ${S.filters.city || 'Все'} | МП: ${S.filters.mp || 'Все'}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+            <thead><tr style="background:#f0f0f0;"><th style="border:1px solid #000;padding:3mm;">№</th><th style="border:1px solid #000;padding:3mm;">МП</th><th style="border:1px solid #000;padding:3mm;">Артикул</th><th style="border:1px solid #000;padding:3mm;">Название</th><th style="border:1px solid #000;padding:3mm;">План</th><th style="border:1px solid #000;padding:3mm;">Факт</th><th style="border:1px solid #000;padding:3mm;">Статус</th></tr></thead>
+            <tbody>${data.map((t,i) => `<tr><td style="border:1px solid #000;padding:2mm;">${i+1}</td><td style="border:1px solid #000;padding:2mm;"><b>${t.mp}</b></td><td style="border:1px solid #000;padding:2mm;">${t.sku}</td><td style="border:1px solid #000;padding:2mm;">${t.name}</td><td style="border:1px solid #000;padding:2mm;">${t.targetPcs}</td><td style="border:1px solid #000;padding:2mm;">${t.packedPcs}</td><td style="border:1px solid #000;padding:2mm;">${t.packedPcs >= t.targetPcs ? '✅ Готово' : '🔴 В работе'}</td></tr>`).join('')}</tbody>
+        </table>
+    `;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay show no-print';
+    modal.innerHTML = `<div class="modal" style="max-width:1000px;"><h3>📋 ТЗ для печати</h3><div id="tzContent"></div><div class="modal-actions"><button onclick="window.print()">🖨 Печать</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">✕ Закрыть</button></div></div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#tzContent').appendChild(container.cloneNode(true));
+}
+
+function closeCity() {
+    const city = $('city').value.trim();
+    if (!city) { showError('Укажите город'); return; }
+    
+    const boxes = S.history.filter(b => b.city === city);
+    if (!boxes.length) { showError('Нет коробов'); return; }
+    
+    const pallets = {};
+    boxes.forEach(b => {
+        if (!pallets[b.pallet]) pallets[b.pallet] = { id: b.pallet, mp: b.mp, boxes: [], items: {}, weight: 0 };
+        pallets[b.pallet].boxes.push(b);
+        pallets[b.pallet].weight += b.weight;
+        Object.entries(b.items).forEach(([bc, qty]) => { pallets[b.pallet].items[bc] = (pallets[b.pallet].items[bc] || 0) + qty; });
+    });
+    
+    currentReportData = { city, pallets, totalBoxes: boxes.length, totalWeight: boxes.reduce((s,b) => s + b.weight, 0) };
+    
+    $('reportCityName').textContent = city;
+    $('reportSummary').innerHTML = `<div class="stat-card"><h3>Палетов</h3><div class="value">${Object.keys(pallets).length}</div></div><div class="stat-card"><h3>Коробов</h3><div class="value">${boxes.length}</div></div><div class="stat-card"><h3>Вес</h3><div class="value">${currentReportData.totalWeight.toFixed(1)} кг</div></div>`;
+    
+    let html = '';
+    Object.values(pallets).forEach(p => {
+        html += `<div style="margin-bottom:15mm;"><h3 style="background:#e8f5e9;padding:5px;border-left:4px solid var(--success);">📦 Палет: ${p.id} | ${p.boxes.length} кор. | ${p.weight.toFixed(1)} кг</h3>`;
+        html += `<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-top:5px;"><thead><tr style="background:#f5f5f5;"><th style="border:1px solid #999;padding:2mm;">ШК</th><th style="border:1px solid #999;padding:2mm;">Артикул</th><th style="border:1px solid #999;padding:2mm;">Название</th><th style="border:1px solid #999;padding:2mm;">Кол-во</th></tr></thead><tbody>${Object.entries(p.items).map(([bc,qty]) => { const t = S.db[bc] || {sku:'?',name:'?'}; return `<tr><td style="border:1px solid #999;padding:2mm;font-family:monospace;">${bc}</td><td style="border:1px solid #999;padding:2mm;">${t.sku}</td><td style="border:1px solid #999;padding:2mm;">${t.name}</td><td style="border:1px solid #999;padding:2mm;text-align:center;"><b>${qty}</b></td></tr>`; }).join('')}</tbody></table></div>`;
+    });
+    
+    $('reportContent').innerHTML = html;
+    $('reportModal').classList.add('show');
+}
+
+function printReport() {
+    const modal = $('reportModal');
+    modal.style.position = 'absolute';
+    modal.style.background = 'white';
+    window.print();
+    setTimeout(() => { modal.style.position = ''; modal.style.background = ''; }, 500);
+}
+
+function exportReportExcel() {
+    if (!currentReportData) return;
+    const rows = [['Палет','Короб','ШК','Артикул','Название','Кол-во']];
+    Object.values(currentReportData.pallets).forEach(p => {
+        p.boxes.forEach(b => {
+            Object.entries(b.items).forEach(([bc, qty]) => {
+                const t = S.db[bc] || {sku:'?',name:'?'};
+                rows.push([p.id, b.id, bc, t.sku, t.name, qty]);
+            });
+        });
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Отчёт');
+    XLSX.writeFile(wb, `FBO_${currentReportData.city}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// State
+function saveState() {
+    try {
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify({
+            targets: S.targets, history: S.history, boxCounter: S.boxCounter,
+            pallets: S.pallets, activePallet: S.activePallet, filters: S.filters,
+            city: $('city').value, mp: $('marketplace').value
+        }));
+    } catch(e) { log('Ошибка сохранения', 'e'); }
+}
+
+function loadState() {
+    try {
+        const s = localStorage.getItem(CONFIG.storageKey);
+        if (s) {
+            const d = JSON.parse(s);
+            Object.assign(S, d);
+            if (d.city) $('city').value = d.city;
+            if (d.mp) $('marketplace').value = d.mp;
+            renderTargets();
+            renderPallets();
+            updateUI();
+            log('Данные восстановлены', 's');
+        }
+    } catch(e) { log('Ошибка загрузки', 'e'); }
+}
+
+function exportState() {
+    const blob = new Blob([JSON.stringify(S, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fbo_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+function importState(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            if (confirm('Заменить данные?')) {
+                S = JSON.parse(ev.target.result);
+                saveState();
+                location.reload();
+            }
+        } catch(err) { showError('Ошибка импорта'); }
+    };
+    reader.readAsText(file);
+}
+
+function resetAllData() {
+    if (confirm('Удалить все данные?')) {
+        localStorage.removeItem(CONFIG.storageKey);
+        location.reload();
+    }
+}
+
+function initFBO() {
+    loadState();
+    updateDashboard();
+}
+
+function updateDashboard() {
+    $('statProducts').textContent = Object.keys(S.db).length;
+    $('statFboBoxes').textContent = S.history.length;
+}
+
+function retryPrint() { window.print(); }
 </script>
 
 </body>
