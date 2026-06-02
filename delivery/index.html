@@ -22,12 +22,6 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            80% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
     </style>
     <script type="importmap">
         {
@@ -48,7 +42,7 @@
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"></path></svg>
                     Карта размещения
                 </h1>
-                <p class="text-xs text-gray-500 mt-1">Профессиональный логистический калькулятор</p>
+                <p class="text-xs text-gray-500 mt-1">Логистический калькулятор</p>
             </div>
             <button id="exportBtn" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded font-medium transition-colors flex items-center gap-1" title="Сохранить как изображение">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -159,7 +153,7 @@
                     <div class="pt-2 border-t border-gray-100 flex justify-between text-sm">
                         <span class="text-gray-600 font-medium">Загрузка объема:</span>
                         <span class="font-bold text-blue-600 stat-value" id="resEfficiency">0%</span>
-                    </div>
+                    </div
                 </div>
 
                 <!-- Animation Controls -->
@@ -209,7 +203,6 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xf8fafc);
@@ -217,9 +210,9 @@
         let perspectiveCamera, orthoCamera, activeCamera;
         
         function initCameras(l, w, h) {
-            perspectiveCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const aspect = container.clientWidth / container.clientHeight || 1;
+            perspectiveCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
             const maxDim = Math.max(l, w) * 1.5;
-            const aspect = container.clientWidth / container.clientHeight;
             orthoCamera = new THREE.OrthographicCamera(-maxDim * aspect / 2, maxDim * aspect / 2, maxDim / 2, -maxDim / 2, 0.1, 1000);
             orthoCamera.position.set(l / 2, 20, w / 2);
             orthoCamera.lookAt(l / 2, 0, w / 2);
@@ -265,11 +258,8 @@
                     const obj = group.children[0];
                     if(obj.geometry) obj.geometry.dispose();
                     if(obj.material) { 
-                        if(Array.isArray(obj.material)) {
-                            obj.material.forEach(m => m.dispose());
-                        } else {
-                            obj.material.dispose();
-                        }
+                        if(Array.isArray(obj.material)) obj.material.forEach(m => m.dispose()); 
+                        else obj.material.dispose(); 
                     }
                     group.remove(obj); 
                 }
@@ -325,6 +315,17 @@
             const boxGeo = new THREE.BoxGeometry(1, 1, 1);
             const gap = 0.015;
 
+            // Очистка только палет для анимации
+            while(palletGroup.children.length > 0) {
+                const obj = palletGroup.children[0];
+                if(obj.geometry) obj.geometry.dispose();
+                if(obj.material) {
+                    if(Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                    else obj.material.dispose();
+                }
+                palletGroup.remove(obj);
+            }
+
             placedPallets.forEach((p, index) => {
                 if (index >= maxIndex) return;
 
@@ -352,6 +353,13 @@
         }
 
         function drawCenterOfGravity(placed, truckL, truckW, truckH) {
+            while(cogGroup.children.length > 0) {
+                const obj = cogGroup.children[0];
+                if(obj.geometry) obj.geometry.dispose();
+                if(obj.material) obj.material.dispose();
+                cogGroup.remove(obj);
+            }
+
             if (placed.length === 0) return;
 
             let totalWeight = 0;
@@ -394,112 +402,112 @@
             }
         }
 
-        // --- Improved Packing Algorithm ---
+        // --- ОПТИМИЗИРОВАННЫЙ АЛГОРИТМ УПАКОВКИ (Corner-Point) ---
         function calculatePacking(truckL, truckW, truckH, palletTypes, maxWeight) {
             const placed = [];
+            let points = [{x: 0, y: 0, z: 0}];
             let currentWeight = 0;
             const epsilon = 0.001;
 
             const palletsToPlace = [];
             palletTypes.forEach((type, typeIndex) => {
                 for (let i = 0; i < type.quantity; i++) {
-                    palletsToPlace.push({ 
-                        l: type.l, w: type.w, h: type.h, 
-                        weight: type.weight, typeIndex, typeName: type.name 
-                    });
+                    palletsToPlace.push({ l: type.l, w: type.w, h: type.h, weight: type.weight, typeIndex, typeName: type.name });
                 }
             });
 
-            // Sort by volume descending (larger first)
-            palletsToPlace.sort((a, b) => (b.l * b.w * b.h) - (a.l * a.w * a.h));
+            // Сортировка: сначала самые объемные и тяжелые
+            palletsToPlace.sort((a, b) => {
+                const volA = a.l * a.w * a.h;
+                const volB = b.l * b.w * b.h;
+                if (Math.abs(volA - volB) > 0.01) return volB - volA;
+                return b.weight - a.weight;
+            });
 
             for (const pallet of palletsToPlace) {
                 if (currentWeight + pallet.weight > maxWeight) continue;
 
-                let bestPosition = null;
-                let bestScore = Infinity;
+                let placedThis = false;
+                
+                // Сортировка точек: снизу вверх (Y), затем от задней стенки (Z), затем от кабины (X)
+                points.sort((a, b) => {
+                    if (Math.abs(a.y - b.y) > epsilon) return a.y - b.y;
+                    if (Math.abs(a.z - b.z) > epsilon) return a.z - b.z;
+                    return a.x - b.x;
+                });
 
-                // Try all possible positions
-                const orientations = [
-                    {l: pallet.l, w: pallet.w},
-                    {l: pallet.w, w: pallet.l}
-                ];
+                const orientations = [{l: pallet.l, w: pallet.w}, {l: pallet.w, w: pallet.l}];
 
-                for (const orient of orientations) {
-                    // Scan possible positions
-                    for (let x = 0; x <= truckL - orient.l + epsilon; x += 0.1) {
-                        for (let z = 0; z <= truckW - orient.w + epsilon; z += 0.1) {
-                            // Try different Y levels
-                            for (let y = 0; y <= truckH - pallet.h + epsilon; y += 0.1) {
-                                // Check if position is valid
-                                if (x + orient.l > truckL + epsilon || 
-                                    y + pallet.h > truckH + epsilon || 
-                                    z + orient.w > truckW + epsilon) continue;
+                for (let i = 0; i < points.length; i++) {
+                    const pt = points[i];
+                    
+                    for (const orient of orientations) {
+                        // 1. Проверка границ кузова
+                        if (pt.x + orient.l > truckL + epsilon || 
+                            pt.y + pallet.h > truckH + epsilon || 
+                            pt.z + orient.w > truckW + epsilon) {
+                            continue;
+                        }
 
-                                // Check collision with placed pallets
-                                let collision = false;
-                                for (const p of placed) {
-                                    if (x < p.x + p.l - epsilon && x + orient.l > p.x + epsilon &&
-                                        y < p.y + p.h - epsilon && y + pallet.h > p.y + epsilon &&
-                                        z < p.z + p.w - epsilon && z + orient.w > p.z + epsilon) {
-                                        collision = true;
-                                        break;
-                                    }
-                                }
-
-                                if (collision) continue;
-
-                                // Check support (must be on floor or on top of another pallet)
-                                let hasSupport = false;
-                                if (y < epsilon) {
-                                    hasSupport = true; // On floor
-                                } else {
-                                    // Check if supported by pallets below
-                                    for (const p of placed) {
-                                        if (Math.abs(y - (p.y + p.h)) < epsilon) {
-                                            // Check overlap in X and Z
-                                            const overlapX = Math.min(x + orient.l, p.x + p.l) - Math.max(x, p.x);
-                                            const overlapZ = Math.min(z + orient.w, p.z + p.w) - Math.max(z, p.z);
-                                            if (overlapX > 0 && overlapZ > 0) {
-                                                const overlapArea = overlapX * overlapZ;
-                                                const palletArea = orient.l * orient.w;
-                                                if (overlapArea >= palletArea * 0.5) { // At least 50% support
-                                                    hasSupport = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (!hasSupport) continue;
-
-                                // Calculate score (prefer positions closer to center and lower)
-                                const centerX = x + orient.l / 2;
-                                const centerZ = z + orient.w / 2;
-                                const distFromCenter = Math.abs(centerX - truckL / 2) + Math.abs(centerZ - truckW / 2);
-                                const score = y * 10 + distFromCenter + x * 0.5; // Prefer lower, centered, and closer to start
-
-                                if (score < bestScore) {
-                                    bestScore = score;
-                                    bestPosition = { x, y, z, l: orient.l, w: orient.w, h: pallet.h };
-                                }
+                        // 2. Проверка коллизий с уже размещенными палетами
+                        let collision = false;
+                        for (const p of placed) {
+                            if (pt.x < p.x + p.l - epsilon && pt.x + orient.l > p.x + epsilon &&
+                                pt.y < p.y + p.h - epsilon && pt.y + pallet.h > p.y + epsilon &&
+                                pt.z < p.z + p.w - epsilon && pt.z + orient.w > p.z + epsilon) {
+                                collision = true;
+                                break;
                             }
                         }
-                    }
-                }
+                        if (collision) continue;
 
-                if (bestPosition) {
-                    placed.push({
-                        ...bestPosition,
-                        weight: pallet.weight,
-                        typeIndex: pallet.typeIndex,
-                        typeName: pallet.typeName
-                    });
-                    currentWeight += pallet.weight;
+                        // 3. Проверка опоры (если не на полу)
+                        if (pt.y > epsilon) {
+                            let supportArea = 0;
+                            const baseArea = orient.l * orient.w;
+                            
+                            for (const p of placed) {
+                                // Проверяем, находится ли палета прямо под текущей точкой
+                                if (Math.abs(pt.y - (p.y + p.h)) < epsilon) {
+                                    const overlapX = Math.min(pt.x + orient.l, p.x + p.l) - Math.max(pt.x, p.x);
+                                    const overlapZ = Math.min(pt.z + orient.w, p.z + p.w) - Math.max(pt.z, p.z);
+                                    if (overlapX > epsilon && overlapZ > epsilon) {
+                                        supportArea += overlapX * overlapZ;
+                                    }
+                                }
+                            }
+                            // Требуем минимум 50% площади опоры для стабильности
+                            if (supportArea < baseArea * 0.5) continue;
+                        }
+
+                        // 4. Размещение палеты
+                        const newPallet = { 
+                            x: Math.max(0, pt.x), 
+                            y: Math.max(0, pt.y), 
+                            z: Math.max(0, pt.z), 
+                            l: orient.l, 
+                            w: orient.w, 
+                            h: pallet.h, 
+                            weight: pallet.weight, 
+                            typeIndex: pallet.typeIndex, 
+                            typeName: pallet.typeName 
+                        };
+                        placed.push(newPallet);
+                        currentWeight += pallet.weight;
+
+                        // 5. Добавление новых угловых точек
+                        points.push({x: pt.x + orient.l, y: pt.y, z: pt.z});
+                        points.push({x: pt.x, y: pt.y + pallet.h, z: pt.z});
+                        points.push({x: pt.x, y: pt.y, z: pt.z + orient.w});
+                        
+                        // Удаление использованной точки
+                        points.splice(i, 1);
+                        placedThis = true;
+                        break;
+                    }
+                    if (placedThis) break;
                 }
             }
-
             return { placed, totalWeight: currentWeight };
         }
 
@@ -572,18 +580,12 @@
             ozon: { 
                 types: [{ name: 'Ozon Стандарт', l: 1.2, w: 0.8, h: 1.8, weight: 500, quantity: 10 }], 
                 text: "<strong>Ozon:</strong> 1200×800 мм, макс. 1.8 м, 500 кг", 
-                theme: "ozon-theme", 
-                bgColor: "bg-blue-50", 
-                borderColor: "border-blue-100", 
-                textColor: "text-blue-800" 
+                theme: "ozon-theme", bgColor: "bg-blue-50", borderColor: "border-blue-100", textColor: "text-blue-800" 
             },
             wb: { 
                 types: [{ name: 'WB Стандарт', l: 1.2, w: 0.8, h: 1.8, weight: 500, quantity: 10 }], 
                 text: "<strong>Wildberries:</strong> 1200×800 мм, макс. 1.8 м, 500 кг", 
-                theme: "wb-theme", 
-                bgColor: "bg-fuchsia-50", 
-                borderColor: "border-fuchsia-100", 
-                textColor: "text-fuchsia-800" 
+                theme: "wb-theme", bgColor: "bg-fuchsia-50", borderColor: "border-fuchsia-100", textColor: "text-fuchsia-800" 
             },
             custom: { 
                 types: [
@@ -591,10 +593,7 @@
                     { name: 'Палета B', l: 1.2, w: 1.0, h: 1.2, weight: 300, quantity: 5 }
                 ], 
                 text: "<strong>Custom:</strong> Задайте свои габариты и вес.", 
-                theme: "custom-theme", 
-                bgColor: "bg-gray-50", 
-                borderColor: "border-gray-200", 
-                textColor: "text-gray-700" 
+                theme: "custom-theme", bgColor: "bg-gray-50", borderColor: "border-gray-200", textColor: "text-gray-700" 
             }
         };
 
@@ -619,7 +618,7 @@
             if (viewMode === 'map') {
                 activeCamera = orthoCamera;
                 const maxDim = Math.max(l, w) * 1.2;
-                const aspect = container.clientWidth / container.clientHeight;
+                const aspect = container.clientWidth / container.clientHeight || 1;
                 orthoCamera.left = -maxDim * aspect / 2; 
                 orthoCamera.right = maxDim * aspect / 2;
                 orthoCamera.top = maxDim / 2; 
@@ -653,6 +652,7 @@
             document.getElementById('animSlider').value = 100;
             document.getElementById('loadingIndicator').classList.remove('hidden');
 
+            // Используем setTimeout, чтобы UI успел отрисовать индикатор загрузки до тяжелых вычислений
             setTimeout(() => {
                 const truckL = parseFloat(document.getElementById('truckL').value) || 13.6;
                 const truckW = parseFloat(document.getElementById('truckW').value) || 2.45;
@@ -694,7 +694,7 @@
                     badge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Соответствует стандартам ${mp.toUpperCase()}</span>`;
                 } else {
                     badge.className = "flex items-center gap-2 p-2 rounded bg-red-50 border border-red-200 text-red-800 text-sm font-medium";
-                    badge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg><span>${warningText}</span>`;
+                    badge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg><span>${warningText || 'Проверьте параметры'}</span>`;
                 }
 
                 const totalVolume = truckL * truckW * truckH;
@@ -705,8 +705,10 @@
                 document.getElementById('resRemaining').textContent = Math.max(0, totalRequested - result.placed.length);
                 document.getElementById('resWeight').textContent = result.totalWeight.toLocaleString('ru-RU') + ' кг';
                 document.getElementById('resEfficiency').textContent = totalVolume > 0 ? ((usedVolume / totalVolume) * 100).toFixed(1) + '%' : '0%';
-                document.getElementById('animSlider').max = result.placed.length || 1;
-                document.getElementById('animSlider').value = result.placed.length || 0;
+                
+                const maxSlider = result.placed.length || 1;
+                document.getElementById('animSlider').max = maxSlider;
+                document.getElementById('animSlider').value = maxSlider;
 
                 document.getElementById('loadingIndicator').classList.add('hidden');
             }, 50);
@@ -755,7 +757,7 @@
                 document.getElementById('animSlider').value = current;
                 drawPallets(allPlacedPallets, current);
                 if (current >= total) clearInterval(animationInterval);
-            }, 150);
+            }, 100);
         });
 
         document.getElementById('resetAnimBtn').addEventListener('click', () => {
@@ -763,7 +765,8 @@
                 clearInterval(animationInterval); 
                 animationInterval = null; 
             }
-            document.getElementById('animSlider').value = allPlacedPallets.length;
+            const maxVal = allPlacedPallets.length || 1;
+            document.getElementById('animSlider').value = maxVal;
             drawPallets(allPlacedPallets);
         });
 
@@ -777,21 +780,32 @@
         window.addEventListener('resize', () => {
             const l = parseFloat(document.getElementById('truckL').value) || 13.6;
             const w = parseFloat(document.getElementById('truckW').value) || 2.45;
-            perspectiveCamera.aspect = container.clientWidth / container.clientHeight;
-            perspectiveCamera.updateProjectionMatrix();
-            const maxDim = Math.max(l, w) * 1.5;
-            const aspect = container.clientWidth / container.clientHeight;
-            orthoCamera.left = -maxDim * aspect / 2; 
-            orthoCamera.right = maxDim * aspect / 2;
-            orthoCamera.top = maxDim / 2; 
-            orthoCamera.bottom = -maxDim / 2;
-            orthoCamera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            updateCameraView();
+            
+            if (container.clientWidth > 0 && container.clientHeight > 0) {
+                perspectiveCamera.aspect = container.clientWidth / container.clientHeight;
+                perspectiveCamera.updateProjectionMatrix();
+                const maxDim = Math.max(l, w) * 1.5;
+                const aspect = container.clientWidth / container.clientHeight;
+                orthoCamera.left = -maxDim * aspect / 2; 
+                orthoCamera.right = maxDim * aspect / 2;
+                orthoCamera.top = maxDim / 2; 
+                orthoCamera.bottom = -maxDim / 2;
+                orthoCamera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                updateCameraView();
+            }
         });
 
-        initCameras(13.6, 2.45, 2.7);
-        updateMarketplaceUI();
+        // Инициализация с проверкой размеров
+        function init() {
+            if (container.clientWidth > 0 && container.clientHeight > 0) {
+                initCameras(13.6, 2.45, 2.7);
+                updateMarketplaceUI();
+            } else {
+                setTimeout(init, 100);
+            }
+        }
+        init();
 
         function animate() {
             requestAnimationFrame(animate);
