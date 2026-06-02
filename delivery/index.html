@@ -1,1346 +1,698 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система загрузки палет - Pallet Loading System</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-
-        header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .tabs {
-            display: flex;
-            background: #f5f5f5;
-            border-bottom: 3px solid #ddd;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            padding: 15px 30px;
-            cursor: pointer;
-            background: #f5f5f5;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .tab:hover {
-            background: #e0e0e0;
-        }
-
-        .tab.active {
-            background: white;
-            color: #2a5298;
-            border-bottom: 3px solid #2a5298;
-        }
-
-        .content {
-            padding: 30px;
-            display: none;
-        }
-
-        .content.active {
-            display: block;
-            animation: fadeIn 0.5s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .vehicle-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .vehicle-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 3px solid transparent;
-        }
-
-        .vehicle-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            border-color: #2a5298;
-        }
-
-        .vehicle-card h3 {
-            color: #2a5298;
-            margin-bottom: 10px;
-            font-size: 1.5em;
-        }
-
-        .vehicle-card .specs {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        .calculator {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-top: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border 0.3s;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #2a5298;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .visualization {
-            background: white;
-            border: 3px solid #ddd;
-            border-radius: 15px;
-            padding: 30px;
-            margin-top: 20px;
-            min-height: 400px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .pallet {
-            position: absolute;
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-            border: 2px solid #654321;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-            transition: all 0.3s;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-        }
-
-        .pallet.euro {
-            width: 120px;
-            height: 80px;
-        }
-
-        .pallet.fin {
-            width: 120px;
-            height: 100px;
-        }
-
-        .pallet.standard {
-            width: 120px;
-            height: 120px;
-        }
-
-        .checklist {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-top: 20px;
-        }
-
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .checklist-item:hover {
-            background: #e3f2fd;
-        }
-
-        .checklist-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 15px;
-            cursor: pointer;
-        }
-
-        .checklist-item.checked {
-            background: #c8e6c9;
-            text-decoration: line-through;
-            color: #666;
-        }
-
-        .result-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .result-box.show {
-            display: block;
-            animation: slideIn 0.5s;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .warning {
-            background: #fff3cd;
-            border-left: 5px solid #ffc107;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            color: #856404;
-        }
-
-        .success {
-            background: #d4edda;
-            border-left: 5px solid #28a745;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            color: #155724;
-        }
-
-        .danger {
-            background: #f8d7da;
-            border-left: 5px solid #dc3545;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            color: #721c24;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .grid-2, .grid-3 {
-                grid-template-columns: 1fr;
-            }
-            
-            header h1 {
-                font-size: 1.8em;
-            }
-            
-            .tab {
-                min-width: 100%;
-            }
-        }
-
-        .info-box {
-            background: #e3f2fd;
-            border-left: 5px solid #2196f3;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #2a5298;
-            color: white;
-        }
-
-        tr:hover {
-            background: #f5f5f5;
-        }
-
-        .manual-calc-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .manual-viz {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            min-height: 500px;
-            position: relative;
-        }
-
-        .truck-outline {
-            position: relative;
-            background: white;
-            border: 3px solid #2a5298;
-            border-radius: 10px;
-            margin: 20px auto;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .pallet-mini {
-            position: absolute;
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-            border: 2px solid #654321;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 10px;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-card h4 {
-            font-size: 0.9em;
-            margin-bottom: 5px;
-            opacity: 0.9;
-        }
-
-        .stat-card .value {
-            font-size: 1.8em;
-            font-weight: bold;
-        }
-
-        .layer-selector {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .layer-btn {
-            flex: 1;
-            padding: 10px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .layer-btn.active {
-            background: #2a5298;
-            color: white;
-            border-color: #2a5298;
-        }
-
-        .layer-btn:hover {
-            border-color: #2a5298;
-        }
-
-        @media (max-width: 968px) {
-            .manual-calc-container {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профессиональная карта размещения палет: Ozon & WB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/npm/fontsource-roboto@4.0.0/index.css');
+        body { font-family: 'Roboto', sans-serif; }
+        #canvas-container { width: 100%; height: 100%; }
+        .input-group label { font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-bottom: 0.25rem; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+        .input-group input, .input-group select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; transition: all 0.2s; background-color: white; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .stat-value { font-variant-numeric: tabular-nums; }
+        .ozon-theme { border-left: 4px solid #005bff; }
+        .wb-theme { border-left: 4px solid #cb11ab; }
+        .custom-theme { border-left: 4px solid #6b7280; }
+        .pallet-card { transition: all 0.2s; }
+        .pallet-card:hover { transform: translateX(2px); }
+        .color-preview { width: 16px; height: 16px; border-radius: 4px; display: inline-block; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1); }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        /* Animation for loading */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🚛 Система загрузки палет</h1>
-            <p>Профессиональный инструмент для оптимальной загрузки транспортных средств</p>
-        </header>
+<body class="bg-gray-50 h-screen overflow-hidden flex flex-col md:flex-row">
 
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('vehicles')">📦 Типы автомобилей</button>
-            <button class="tab" onclick="showTab('manual')">✏️ Ручной расчет</button>
-            <button class="tab" onclick="showTab('calculator')">🧮 Калькулятор загрузки</button>
-            <button class="tab" onclick="showTab('visualization')">👁 Визуализация</button>
-            <button class="tab" onclick="showTab('checklist')">✅ Чек-лист</button>
-            <button class="tab" onclick="showTab('guidelines')">📋 Рекомендации</button>
-        </div>
+    <!-- Sidebar Controls -->
+    <div class="w-full md:w-[420px] bg-white shadow-xl z-10 flex flex-col h-full border-r border-gray-200">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"></path></svg>
+                    Карта размещения
+                </h1>
+                <p class="text-xs text-gray-500 mt-1">Профессиональный логистический калькулятор</p>
+            </div>
+            <button id="exportBtn" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded font-medium transition-colors flex items-center gap-1" title="Сохранить как изображение">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Экспорт
+            </button>
+        </div>
 
-        <!-- Tab: Vehicle Types -->
-        <div id="vehicles" class="content active">
-            <h2>Выберите тип транспортного средства</h2>
-            <div class="vehicle-grid">
-                <div class="vehicle-card" onclick="selectVehicle('eurotrailer')">
-                    <h3>🚚 Еврофура (Тент)</h3>
-                    <div class="specs">
-                        <p>• Вместимость: до 33 европалет</p>
-                        <p>• Объем: 82-96 м³</p>
-                        <p>• Размеры: 13.6м x 2.45м x 2.65м</p>
-                        <p>• Грузоподъемность: до 24 тонн</p>
-                    </div>
-                </div>
+        <div class="p-5 space-y-4 flex-1 overflow-y-auto custom-scroll">
+            <!-- View Toggle -->
+            <div class="flex bg-gray-200 rounded-lg p-1">
+                <button id="view3dBtn" class="flex-1 py-1.5 text-sm font-semibold rounded-md bg-white shadow text-gray-800 transition-all flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                    3D Вид
+                </button>
+                <button id="viewMapBtn" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 transition-all flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"></path></svg>
+                    2D Карта
+                </button>
+            </div>
 
-                <div class="vehicle-card" onclick="selectVehicle('refrigerator')">
-                    <h3>❄️ Рефрижератор</h3>
-                    <div class="specs">
-                        <p>• Вместимость: 26-30 европалет</p>
-                        <p>• Объем: 82-86 м³</p>
-                        <p>• Требуется циркуляция воздуха</p>
-                        <p>• Т-образный пол</p>
-                    </div>
-                </div>
+            <!-- Marketplace Selector -->
+            <div class="space-y-3">
+                <div class="input-group">
+                    <label>Стандарт маркетплейса</label>
+                    <select id="marketplace" class="font-medium">
+                        <option value="ozon">Ozon (FBO/FBS)</option>
+                        <option value="wb">Wildberries (WB)</option>
+                        <option value="custom">Произвольный (Custom)</option>
+                    </select>
+                </div>
+                <div id="mpRules" class="text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-100 ozon-theme"></div>
+            </div>
 
-                <div class="vehicle-card" onclick="selectVehicle('gazelle')">
-                    <h3>🚐 Газель / LCV</h3>
-                    <div class="specs">
-                        <p>• Вместимость: 4-6 европалет</p>
-                        <p>• Объем: 10-18 м³</p>
-                        <p>• Колесные арки внутри</p>
-                        <p>• Грузоподъемность: 1.5-3 тонны</p>
-                    </div>
-                </div>
+            <!-- Truck Params -->
+            <div class="space-y-3">
+                <h2 class="text-xs font-bold text-blue-600 uppercase tracking-wider border-b border-blue-100 pb-1">Кузов (м) и Вес (кг)</h2>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="input-group"><label>Длина</label><input type="number" id="truckL" value="13.6" step="0.1" min="1"></div>
+                    <div class="input-group"><label>Ширина</label><input type="number" id="truckW" value="2.45" step="0.01" min="1"></div>
+                    <div class="input-group"><label>Высота</label><input type="number" id="truckH" value="2.7" step="0.1" min="1"></div>
+                </div>
+                <div class="input-group">
+                    <label>Грузоподъемность (кг)</label>
+                    <input type="number" id="maxTruckWeight" value="20000" step="100" min="100">
+                </div>
+            </div>
 
-                <div class="vehicle-card" onclick="selectVehicle('jumbo')">
-                    <h3>🚛 Jumbo / Мега</h3>
-                    <div class="specs">
-                        <p>• Вместимость: до 36 европалет</p>
-                        <p>• Объем: 100-110 м³</p>
-                        <p>• Пониженная палуба</p>
-                        <p>• "Гортань" спереди</p>
-                    </div>
-                </div>
-            </div>
+            <!-- Pallet Types List -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-bold text-amber-600 uppercase tracking-wider border-b border-amber-100 pb-1 flex-1">Типы палет</h2>
+                    <button id="addPalletTypeBtn" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded font-medium transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Добавить
+                    </button>
+                </div>
+                <div id="palletTypesList" class="space-y-2"></div>
+            </div>
 
-            <div id="vehicle-details" class="info-box" style="display: none; margin-top: 20px;">
-                <h3 id="vehicle-title"></h3>
-                <p id="vehicle-desc"></p>
-            </div>
-        </div>
+            <button id="calculateBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                Построить карту
+            </button>
 
-        <!-- Tab: Manual Calculation -->
-        <div id="manual" class="content">
-            <h2>✏️ Ручной расчет габаритов</h2>
-            <p style="color: #666; margin-bottom: 20px;">Введите точные размеры вашего автомобиля и параметры груза для расчета оптимальной загрузки</p>
-            
-            <div class="manual-calc-container">
-                <div>
-                    <div class="calculator">
-                        <h3>📏 Параметры кузова</h3>
-                        <div class="grid-3">
-                            <div class="form-group">
-                                <label>Длина кузова (м):</label>
-                                <input type="number" id="manualLength" placeholder="13.6" min="0.1" step="0.1" value="13.6">
-                            </div>
-                            <div class="form-group">
-                                <label>Ширина кузова (м):</label>
-                                <input type="number" id="manualWidth" placeholder="2.45" min="0.1" step="0.1" value="2.45">
-                            </div>
-                            <div class="form-group">
-                                <label>Высота кузова (м):</label>
-                                <input type="number" id="manualHeight" placeholder="2.65" min="0.1" step="0.1" value="2.65">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Грузоподъемность (тонн):</label>
-                            <input type="number" id="manualCapacity" placeholder="20" min="0.1" step="0.1" value="20">
-                        </div>
+            <!-- Results & Analysis -->
+            <div id="resultsPanel" class="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
+                <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Анализ загрузки</h3>
+                
+                <div id="complianceBadge" class="flex items-center gap-2 p-2 rounded bg-green-50 border border-green-200 text-green-800 text-sm font-medium"></div>
 
-                        <h3 style="margin-top: 30px;">📦 Параметры палеты</h3>
-                        <div class="form-group">
-                            <label>Тип палеты:</label>
-                            <select id="manualPalletType" onchange="updateManualPalletDims()">
-                                <option value="euro">Европалета (800x1200 мм)</option>
-                                <option value="fin">Финпалета (1000x1200 мм)</option>
-                                <option value="standard">Стандарт (1200x1200 мм)</option>
-                                <option value="custom">Свой размер</option>
-                            </select>
-                        </div>
-                        <div class="grid-2" id="customPalletDims" style="display: none;">
-                            <div class="form-group">
-                                <label>Длина палеты (мм):</label>
-                                <input type="number" id="manualPalletLength" placeholder="1200" min="100" value="1200">
-                            </div>
-                            <div class="form-group">
-                                <label>Ширина палеты (мм):</label>
-                                <input type="number" id="manualPalletWidth" placeholder="800" min="100" value="800">
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label>Высота палеты с грузом (см):</label>
-                                <input type="number" id="manualPalletHeight" placeholder="150" min="10" value="150">
-                            </div>
-                            <div class="form-group">
-                                <label>Вес одной палеты (кг):</label>
-                                <input type="number" id="manualPalletWeight" placeholder="500" min="1" value="500">
-                            </div>
-                        </div>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white p-2 rounded border border-gray-200 text-center">
+                        <div class="text-gray-500 text-xs">Размещено</div>
+                        <div class="font-bold text-gray-900 text-xl stat-value" id="resCount">0</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-center">
+                        <div class="text-gray-500 text-xs">Осталось</div>
+                        <div class="font-bold text-red-600 text-xl stat-value" id="resRemaining">0</div>
+                    </div>
+                </div>
 
-                        <h3 style="margin-top: 30px;">🔢 Параметры загрузки</h3>
-                        <div class="form-group">
-                            <label>Количество палет для размещения:</label>
-                            <input type="number" id="manualPalletCount" placeholder="30" min="1" value="30">
-                        </div>
-                        <div class="form-group">
-                            <label>Схема расстановки:</label>
-                            <select id="manualLayout">
-                                <option value="straight">Прямая (в ряд)</option>
-                                <option value="chess">Шахматная</option>
-                                <option value="pinwheel">Перевязка (Pinwheel)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Количество ярусов:</label>
-                            <select id="manualLayers">
-                                <option value="1">1 ярус</option>
-                                <option value="2">2 яруса</option>
-                            </select>
-                        </div>
+                <!-- Center of Gravity & Weight -->
+                <div class="bg-white p-3 rounded border border-gray-200 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Общий вес:</span>
+                        <span class="font-bold text-gray-900 stat-value" id="resWeight">0 кг</span>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-500">Распределение по длине (Центр тяжести)</span>
+                            <span class="font-bold text-blue-600 stat-value" id="cogPercent">50%</span>
+                        </div>
+                        <div class="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="absolute left-0 right-0 top-0 bottom-0 flex">
+                                <div class="w-1/2 h-full bg-blue-100 border-r border-blue-300"></div>
+                                <div class="w-1/2 h-full bg-blue-50"></div>
+                            </div>
+                            <div id="cogMarker" class="absolute top-0 bottom-0 w-1 bg-red-600 transition-all duration-500" style="left: 50%"></div>
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-black opacity-20" style="left: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Кабина (0%)</span>
+                            <span>Идеал (50%)</span>
+                            <span>Зад (100%)</span>
+                        </div>
+                    </div>
 
-                        <button class="btn" onclick="calculateManual()" style="width: 100%; margin-top: 20px;">
-                            🧮 Рассчитать размещение
-                        </button>
-                    </div>
-                </div>
+                    <div class="pt-2 border-t border-gray-100 flex justify-between text-sm">
+                        <span class="text-gray-600 font-medium">Загрузка объема:</span>
+                        <span class="font-bold text-blue-600 stat-value" id="resEfficiency">0%</span>
+                    </div>
+                </div>
 
-                <div>
-                    <div class="manual-viz">
-                        <h3 style="margin-bottom: 15px;">👁 Визуализация размещения</h3>
-                        <div class="layer-selector">
-                            <button class="layer-btn active" onclick="switchLayer(1)">Ярус 1</button>
-                            <button class="layer-btn" onclick="switchLayer(2)" id="layer2Btn" style="display: none;">Ярус 2</button>
-                        </div>
-                        <div class="truck-outline" id="truckOutline">
-                            <!-- Pallets will be rendered here -->
-                        </div>
-                        <div id="manualStats" class="stats-grid">
-                            <!-- Stats will be rendered here -->
-                        </div>
-                    </div>
+                <!-- Animation Controls -->
+                <div class="bg-white p-3 rounded border border-gray-200 space-y-2">
+                    <h4 class="text-xs font-bold text-gray-700 uppercase">Анимация загрузки</h4>
+                    <div class="flex items-center gap-2">
+                        <button id="playAnimBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2 rounded transition-colors flex items-center justify-center gap-1">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            Проиграть
+                        </button>
+                        <button id="resetAnimBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold py-2 rounded transition-colors">
+                            Сброс
+                        </button>
+                    </div>
+                    <input type="range" id="animSlider" min="0" max="100" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                </div>
 
-                    <div id="manualResult" class="result-box" style="margin-top: 20px;">
-                        <h3>📊 Результаты расчета</h3>
-                        <div id="manualResultContent"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <!-- Legend -->
+                <div class="bg-white p-3 rounded border border-gray-200 space-y-2">
+                    <h4 class="text-xs font-bold text-gray-700 uppercase mb-2">Легенда:</h4>
+                    <div id="legendList" class="space-y-1.5"></div>
+                </div>
+            </div
+        </div>
+    </div>
 
-        <!-- Tab: Calculator -->
-        <div id="calculator" class="content">
-            <h2>Калькулятор загрузки</h2>
-            <div class="calculator">
-                <div class="grid-2">
-                    <div>
-                        <h3>Параметры груза</h3>
-                        <div class="form-group">
-                            <label>Тип палеты:</label>
-                            <select id="palletType">
-                                <option value="euro">Европалета (800x1200 мм)</option>
-                                <option value="fin">Финпалета (1000x1200 мм)</option>
-                                <option value="standard">Стандарт (1200x1200 мм)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Вес одной палеты (кг):</label>
-                            <input type="number" id="palletWeight" placeholder="Например: 500" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Количество палет:</label>
-                            <input type="number" id="palletCount" placeholder="Например: 20" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Высота палеты с грузом (см):</label>
-                            <input type="number" id="palletHeight" placeholder="Например: 150" min="1">
-                        </div>
-                    </div>
+    <!-- 3D Canvas -->
+    <div class="flex-1 relative bg-gray-100" id="canvas-container">
+        <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-2 rounded-md shadow-sm border border-gray-200 text-xs text-gray-600 pointer-events-none select-none z-10">
+            <div class="font-semibold text-gray-800 mb-1">Управление:</div>
+            <div>• ЛКМ: Вращение / Перемещение</div>
+            <div>• Колесо: Масштаб</div>
+            <div class="mt-2 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
+                <span>Красная линия = Центр тяжести</span>
+            </div>
+        </div>
+        <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-20 hidden">
+            <div class="flex flex-col items-center gap-2">
+                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-sm font-medium text-gray-600">Расчет и построение карты...</span>
+            </div>
+        </div>
+    </div>
 
-                    <div>
-                        <h3>Параметры автомобиля</h3>
-                        <div class="form-group">
-                            <label>Тип ТС:</label>
-                            <select id="vehicleType">
-                                <option value="eurotrailer">Еврофура (82-96 м³)</option>
-                                <option value="refrigerator">Рефрижератор (82-86 м³)</option>
-                                <option value="gazelle">Газель (10-18 м³)</option>
-                                <option value="jumbo">Jumbo/Мега (100-110 м³)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Грузоподъемность (тонн):</label>
-                            <input type="number" id="vehicleCapacity" placeholder="Например: 20" min="1" step="0.1">
-                        </div>
-                        <div class="form-group">
-                            <label>Длина кузова (м):</label>
-                            <input type="number" id="vehicleLength" placeholder="Например: 13.6" min="1" step="0.1">
-                        </div>
-                    </div>
-                </div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-                <button class="btn" onclick="calculateLoading()" style="margin-top: 20px;">
-                    🧮 Рассчитать загрузку
-                </button>
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf8fafc);
 
-                <div id="calculationResult" class="result-box">
-                    <h3>📊 Результаты расчета</h3>
-                    <div id="resultContent"></div>
-                </div>
-            </div>
-        </div>
+        let perspectiveCamera, orthoCamera, activeCamera;
+        
+        function initCameras(l, w, h) {
+            perspectiveCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const maxDim = Math.max(l, w) * 1.5;
+            const aspect = container.clientWidth / container.clientHeight;
+            orthoCamera = new THREE.OrthographicCamera(-maxDim * aspect / 2, maxDim * aspect / 2, maxDim / 2, -maxDim / 2, 0.1, 1000);
+            orthoCamera.position.set(l / 2, 20, w / 2);
+            orthoCamera.lookAt(l / 2, 0, w / 2);
+            activeCamera = perspectiveCamera;
+        }
 
-        <!-- Tab: Visualization -->
-        <div id="visualization" class="content">
-            <h2>Визуализация схемы загрузки</h2>
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label>Схема расстановки:</label>
-                <select id="layoutPattern" onchange="updateVisualization()">
-                    <option value="straight">Прямая (в ряд)</option>
-                    <option value="chess">Шахматная</option>
-                    <option value="pinwheel">Перевязка (Pinwheel)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Тип палеты:</label>
-                <select id="vizPalletType" onchange="updateVisualization()">
-                    <option value="euro">Европалета</option>
-                    <option value="fin">Финпалета</option>
-                    <option value="standard">Стандарт</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Количество палет:</label>
-                <input type="range" id="vizPalletCount" min="1" max="33" value="10" oninput="updateVisualization()">
-                <span id="palletCountDisplay">10</span>
-            </div>
-            
-            <div class="visualization" id="truckVisualization">
-                <!-- Pallets will be rendered here -->
-            </div>
-            
-            <div class="info-box" style="margin-top: 20px;">
-                <strong>💡 Подсказка:</strong> 
-                <span id="layoutTip">Прямая схема обеспечивает максимальное использование площади кузова</span>
-            </div>
-        </div>
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
 
-        <!-- Tab: Checklist -->
-        <div id="checklist" class="content">
-            <h2>Чек-лист перед отправкой</h2>
-            <div class="checklist">
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Груз не выступает за габариты кузова, двери закрываются</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Между верхом груза и потолком есть зазор (мин. 20 см)</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Общий вес не превышает грузоподъемность ТС</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Распределение веса по осям равномерное</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Все ремни натянуты и закреплены</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Противоскользящие листы уложены под палеты</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Воздушные пакеты надуты (если используются)</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Фактическое количество палет совпадает с документами</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Сделаны фото загрузки (4 стороны + двери)</span>
-                </div>
-                <div class="checklist-item" onclick="toggleCheck(this)">
-                    <input type="checkbox">
-                    <span>Для рефрижератора: обеспечена циркуляция воздуха</span>
-                </div>
-            </div>
-            
-            <div id="checklistProgress" style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 10px;">
-                <strong>Прогресс:</strong> <span id="progressPercent">0</span>% выполнено
-                <div style="background: #ddd; height: 20px; border-radius: 10px; margin-top: 10px; overflow: hidden;">
-                    <div id="progressBar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                </div>
-            </div>
-        </div>
+        const controls = new OrbitControls(perspectiveCamera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
-        <!-- Tab: Guidelines -->
-        <div id="guidelines" class="content">
-            <h2>Рекомендации по загрузке</h2>
-            
-            <div class="info-box">
-                <h3>📐 Основные правила распределения веса</h3>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                    <li>Тяжелое — вниз, легкое — наверх</li>
-                    <li>Центр тяжести должен быть максимально низким</li>
-                    <li>Разница в весе между левой и правой сторонами не более 5-10%</li>
-                    <li>Для фуры: нагрузка на ССУ 10-12 тонн, на оси тележки — до 18-20 тонн</li>
-                </ul>
-            </div>
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
 
-            <div class="info-box">
-                <h3>🔒 Способы крепления груза</h3>
-                <table>
-                    <tr>
-                        <th>Метод</th>
-                        <th>Описание</th>
-                        <th>Применение</th>
-                    </tr>
-                    <tr>
-                        <td>Противоскользящие коврики</td>
-                        <td>Увеличивают трение в 2-3 раза</td>
-                        <td>Под все палеты</td>
-                    </tr>
-                    <tr>
-                        <td>Стяжные ремни</td>
-                        <td>Усилие 250-500 даН</td>
-                        <td>Прямое и диагональное крепление</td>
-                    </tr>
-                    <tr>
-                        <td>Воздушные пакеты</td>
-                        <td>Заполняют пустоты</td>
-                        <td>Между палетами и стенами</td>
-                    </tr>
-                    <tr>
-                        <td>Перегородки</td>
-                        <td>Блокируют смещение</td>
-                        <td>При неполной загрузке</td>
-                    </tr>
-                </table>
-            </div>
+        const truckGroup = new THREE.Group();
+        const palletGroup = new THREE.Group();
+        const cogGroup = new THREE.Group();
+        scene.add(truckGroup);
+        scene.add(palletGroup);
+        scene.add(cogGroup);
 
-            <div class="warning">
-                <strong>⚠️ Важно для рефрижераторов:</strong>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                    <li>Оставлять зазор перед испарителем минимум 30-50 см</li>
-                    <li>Не ставить груз вплотную к стенам (мин. 15-20 см)</li>
-                    <li>Использовать схемы с вентиляционными каналами</li>
-                </ul>
-            </div>
+        const truckMaterial = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false });
+        const truckEdgeMaterial = new THREE.LineBasicMaterial({ color: 0x2563eb, linewidth: 2 });
+        const palletTypeColors = [0xf59e0b, 0x3b82f6, 0x10b981, 0x8b5cf6, 0xef4444, 0xec4899, 0x14b8a6, 0xf97316];
+        const wrapMaterial = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.15, roughness: 0.1, metalness: 0.1, transmission: 0.9, thickness: 0.5 });
 
-            <div class="success">
-                <strong>✅ Советы по оптимизации:</strong>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                    <li>Используйте 3D-софт для точного расчета (EasyCargo, Cape Pack)</li>
-                    <li>При двухъярусной загрузке строго контролируйте вес на верхний ярус</li>
-                    <li>Всегда делайте фотофиксацию перед отправкой</li>
-                    <li>Обучайте грузчиков физике груза и правилам безопасности</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+        function clearScene() {
+            [truckGroup, palletGroup, cogGroup].forEach(group => {
+                while(group.children.length > 0) { 
+                    const obj = group.children[0];
+                    if(obj.geometry) obj.geometry.dispose();
+                    if(obj.material) { if(Array.isArray(obj.material)) obj.material.forEach(m => m.dispose()); else obj.material.dispose(); }
+                    group.remove(obj); 
+                }
+            });
+        }
 
-    <script>
-        // Tab switching
-        function showTab(tabName) {
-            document.querySelectorAll('.content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tabName === 'visualization') {
-                updateVisualization();
-            }
-            if (tabName === 'manual') {
-                calculateManual();
-            }
-        }
+        function createTextSprite(message, options = {}) {
+            const fontface = options.fontface || 'Roboto';
+            const fontsize = options.fontsize || 24;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = `bold ${fontsize}px ${fontface}`;
+            const metrics = context.measureText(message);
+            canvas.width = metrics.width + 20;
+            canvas.height = fontsize + 20;
+            context.font = `bold ${fontsize}px ${fontface}`;
+            context.fillStyle = options.color || 'rgba(0, 0, 0, 0.8)';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(message, canvas.width / 2, canvas.height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+            sprite.scale.set(canvas.width / 40, canvas.height / 40, 1);
+            return sprite;
+        }
 
-        // Vehicle selection
-        function selectVehicle(vehicleType) {
-            const details = {
-                'eurotrailer': {
-                    title: 'Еврофура (Тент/Штора)',
-                    desc: 'Оптимальный выбор для большинства грузов. До 33 европалет. При неполной загрузке обязательно используйте перегородки или швартовочные ремни для предотвращения смещения груза.'
-                },
-                'refrigerator': {
-                    title: 'Рефрижератор',
-                    desc: 'Требует особой схемы загрузки для обеспечения циркуляции холодного воздуха. Обязательно оставляйте зазоры перед испарителем и по бокам. Используйте Т-образный пол для вентиляции.'
-                },
-                'gazelle': {
-                    title: 'Газель / LCV',
-                    desc: 'Учитывайте наличие колесных арок внутри кузова. Тяжелые палеты ставьте на дно (на арки), легкие — сверху. Обязательно используйте противоскользящие коврики.'
-                },
-                'jumbo': {
-                    title: 'Jumbo / Мегафура',
-                    desc: 'Имеет пониженную первую палубу и "гортань" спереди. Сначала загружается "гортань" (обычно 4 палеты в два яруса), затем основная площадка. Строгий расчет по высоте!'
-                }
-            };
-            
-            const vehicle = details[vehicleType];
-            document.getElementById('vehicle-title').textContent = vehicle.title;
-            document.getElementById('vehicle-desc').textContent = vehicle.desc;
-            document.getElementById('vehicle-details').style.display = 'block';
-        }
+        function drawTruck(l, w, h) {
+            const geometry = new THREE.BoxGeometry(l, h, w);
+            truckGroup.add(new THREE.Mesh(geometry, truckMaterial).translateX(l/2).translateY(h/2).translateZ(w/2));
+            
+            const edges = new THREE.EdgesGeometry(geometry);
+            truckGroup.add(new THREE.LineSegments(edges, truckEdgeMaterial).translateX(l/2).translateY(h/2).translateZ(w/2));
 
-        // Manual calculation
-        function updateManualPalletDims() {
-            const type = document.getElementById('manualPalletType').value;
-            const customDims = document.getElementById('customPalletDims');
-            
-            if (type === 'custom') {
-                customDims.style.display = 'grid';
-            } else {
-                customDims.style.display = 'none';
-            }
-        }
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(l, w), new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.9 }));
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(l/2, 0.005, w/2);
+            floor.receiveShadow = true;
+            truckGroup.add(floor);
 
-        let currentLayer = 1;
-        let manualLayoutData = null;
+            const frontLabel = createTextSprite("КАБИНА", { fontsize: 40, color: '#dc2626' });
+            frontLabel.position.set(l + 1.5, h + 0.5, w / 2);
+            truckGroup.add(frontLabel);
 
-        function switchLayer(layer) {
-            currentLayer = layer;
-            document.querySelectorAll('.layer-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            if (manualLayoutData) {
-                renderManualVisualization(manualLayoutData);
-            }
-        }
+            const backLabel = createTextSprite("ДВЕРИ", { fontsize: 40, color: '#16a34a' });
+            backLabel.position.set(-1.5, h + 0.5, w / 2);
+            truckGroup.add(backLabel);
+        }
 
-        function calculateManual() {
-            // Get truck dimensions
-            const truckLength = parseFloat(document.getElementById('manualLength').value) || 0;
-            const truckWidth = parseFloat(document.getElementById('manualWidth').value) || 0;
-            const truckHeight = parseFloat(document.getElementById('manualHeight').value) || 0;
-            const truckCapacity = parseFloat(document.getElementById('manualCapacity').value) || 0;
-            
-            // Get pallet dimensions
-            const palletType = document.getElementById('manualPalletType').value;
-            let palletLength, palletWidth;
-            
-            if (palletType === 'custom') {
-                palletLength = parseFloat(document.getElementById('manualPalletLength').value) / 1000 || 0;
-                palletWidth = parseFloat(document.getElementById('manualPalletWidth').value) / 1000 || 0;
-            } else {
-                const dims = {
-                    'euro': { l: 1.2, w: 0.8 },
-                    'fin': { l: 1.2, w: 1.0 },
-                    'standard': { l: 1.2, w: 1.2 }
-                };
-                palletLength = dims[palletType].l;
-                palletWidth = dims[palletType].w;
-            }
-            
-            const palletHeight = parseFloat(document.getElementById('manualPalletHeight').value) / 100 || 0;
-            const palletWeight = parseFloat(document.getElementById('manualPalletWeight').value) || 0;
-            const palletCount = parseInt(document.getElementById('manualPalletCount').value) || 0;
-            const layout = document.getElementById('manualLayout').value;
-            const layers = parseInt(document.getElementById('manualLayers').value) || 1;
-            
-            // Calculate how many pallets fit
-            const palletsPerRowLength = Math.floor(truckLength / palletLength);
-            const palletsPerRowWidth = Math.floor(truckWidth / palletWidth);
-            const palletsPerLayer = palletsPerRowLength * palletsPerRowWidth;
-            const maxPallets = palletsPerLayer * layers;
-            
-            // Check height constraint
-            const maxLayersByHeight = Math.floor(truckHeight / palletHeight);
-            const actualLayers = Math.min(layers, maxLayersByHeight);
-            
-            // Calculate weight
-            const totalWeight = (palletWeight * palletCount) / 1000;
-            const weightOk = totalWeight <= truckCapacity;
-            
-            // Calculate volume
-            const truckVolume = truckLength * truckWidth * truckHeight;
-            const cargoVolume = (palletLength * palletWidth * palletHeight) * palletCount;
-            
-            // Generate layout positions
-            const positions = [];
-            let placed = 0;
-            
-            for (let layer = 0; layer < actualLayers; layer++) {
-                for (let row = 0; row < palletsPerRowWidth && placed < palletCount; row++) {
-                    for (let col = 0; col < palletsPerRowLength && placed < palletCount; col++) {
-                        positions.push({
-                            x: col * palletLength,
-                            y: row * palletWidth,
-                            layer: layer,
-                            number: placed + 1
-                        });
-                        placed++;
-                    }
-                }
-            }
-            
-            // Store layout data
-            manualLayoutData = {
-                truckLength,
-                truckWidth,
-                truckHeight,
-                palletLength,
-                palletWidth,
-                palletHeight,
-                positions,
-                currentLayer: currentLayer - 1
-            };
-            
-            // Render visualization
-            renderManualVisualization(manualLayoutData);
-            
-            // Show layer 2 button if needed
-            document.getElementById('layer2Btn').style.display = actualLayers > 1 ? 'block' : 'none';
-            
-            // Render stats
-            const statsHTML = `
-                <div class="stat-card">
-                    <h4>Поместится</h4>
-                    <div class="value">${maxPallets}</div>
-                </div>
-                <div class="stat-card">
-                    <h4>В ряд (длина)</h4>
-                    <div class="value">${palletsPerRowLength}</div>
-                </div>
-                <div class="stat-card">
-                    <h4>В ряд (ширина)</h4>
-                    <div class="value">${palletsPerRowWidth}</div>
-                </div>
-                <div class="stat-card">
-                    <h4>Ярусов</h4>
-                    <div class="value">${actualLayers}</div>
-                </div>
-            `;
-            document.getElementById('manualStats').innerHTML = statsHTML;
-            
-            // Build result
-            let resultHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Общий вес:</strong> ${totalWeight.toFixed(2)} тонн
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Объем груза:</strong> ${cargoVolume.toFixed(2)} м³
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Объем кузова:</strong> ${truckVolume.toFixed(2)} м³
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Загрузка объема:</strong> ${((cargoVolume / truckVolume) * 100).toFixed(1)}%
-                    </div>
-                </div>
-            `;
-            
-            let warnings = [];
-            let tips = [];
-            
-            if (!weightOk) {
-                warnings.push(`🚨 ПРЕГРУЗ! Общий вес ${totalWeight.toFixed(2)}т превышает грузоподъемность ${truckCapacity}т на ${(totalWeight - truckCapacity).toFixed(2)}т`);
-            }
-            
-            if (palletCount > maxPallets) {
-                warnings.push(`🚨 Не все палеты поместятся! Максимум ${maxPallets} палет, вы указали ${palletCount}`);
-            }
-            
-            if (actualLayers < layers) {
-                warnings.push(`⚠️ Высота кузова позволяет только ${actualLayers} яруса вместо ${layers}`);
-            }
-            
-            if (cargoVolume > truckVolume * 0.9) {
-                tips.push('✅ Отличное использование объема кузова');
-            }
-            
-            if (layout === 'chess' || layout === 'pinwheel') {
-                tips.push('✅ Выбранная схема улучшает устойчивость груза');
-            }
-            
-            if (warnings.length > 0) {
-                resultHTML += '<div class="danger">';
-                warnings.forEach(w => resultHTML += `<div>${w}</div>`);
-                resultHTML += '</div>';
-            } else {
-                resultHTML += '<div class="success">✅ Все параметры в норме</div>';
-            }
-            
-            if (tips.length > 0) {
-                resultHTML += '<div class="info-box" style="background: rgba(255,255,255,0.9); margin-top: 15px;">';
-                resultHTML += '<strong>💡 Рекомендации:</strong><ul style="margin-left: 20px; margin-top: 10px;">';
-                tips.forEach(t => resultHTML += `<li>${t}</li>`);
-                resultHTML += '</ul></div>';
-            }
-            
-            document.getElementById('manualResultContent').innerHTML = resultHTML;
-            document.getElementById('manualResult').classList.add('show');
-        }
+        let allPlacedPallets = [];
 
-        function renderManualVisualization(data) {
-            const container = document.getElementById('truckOutline');
-            container.innerHTML = '';
-            
-            // Calculate scale
-            const maxWidth = container.offsetWidth - 40;
-            const maxHeight = 400;
-            const scaleX = maxWidth / data.truckLength;
-            const scaleY = maxHeight / data.truckWidth;
-            const scale = Math.min(scaleX, scaleY);
-            
-            // Set container size
-            container.style.width = (data.truckLength * scale) + 'px';
-            container.style.height = (data.truckWidth * scale) + 'px';
-            
-            // Render pallets for current layer
-            const layerPositions = data.positions.filter(p => p.layer === data.currentLayer);
-            
-            layerPositions.forEach(pos => {
-                const palletEl = document.createElement('div');
-                palletEl.className = 'pallet-mini';
-                palletEl.textContent = pos.number;
-                
-                const palletW = data.palletLength * scale;
-                const palletH = data.palletWidth * scale;
-                
-                palletEl.style.width = palletW + 'px';
-                palletEl.style.height = palletH + 'px';
-                palletEl.style.left = (pos.x * scale) + 'px';
-                palletEl.style.top = (pos.y * scale) + 'px';
-                
-                container.appendChild(palletEl);
-            });
-        }
+        function drawPallets(placedPallets, maxIndex = Infinity) {
+            const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+            const gap = 0.015;
 
-        // Calculator
-        function calculateLoading() {
-            const palletType = document.getElementById('palletType').value;
-            const palletWeight = parseFloat(document.getElementById('palletWeight').value) || 0;
-            const palletCount = parseInt(document.getElementById('palletCount').value) || 0;
-            const palletHeight = parseFloat(document.getElementById('palletHeight').value) || 0;
-            const vehicleType = document.getElementById('vehicleType').value;
-            const vehicleCapacity = parseFloat(document.getElementById('vehicleCapacity').value) || 0;
-            
-            const dimensions = {
-                'euro': { width: 0.8, length: 1.2, name: 'Европалета' },
-                'fin': { width: 1.0, length: 1.2, name: 'Финпалета' },
-                'standard': { width: 1.2, length: 1.2, name: 'Стандарт' }
-            };
-            
-            const vehicles = {
-                'eurotrailer': { capacity: 33, volume: 86, name: 'Еврофура' },
-                'refrigerator': { capacity: 28, volume: 82, name: 'Рефрижератор' },
-                'gazelle': { capacity: 5, volume: 15, name: 'Газель' },
-                'jumbo': { capacity: 36, volume: 100, name: 'Jumbo' }
-            };
-            
-            const pallet = dimensions[palletType];
-            const vehicle = vehicles[vehicleType];
-            
-            const totalWeight = (palletWeight * palletCount) / 1000;
-            const totalVolume = (pallet.width * pallet.length * (palletHeight/100)) * palletCount;
-            const weightUtilization = (totalWeight / vehicleCapacity) * 100;
-            const capacityUtilization = (palletCount / vehicle.capacity) * 100;
-            
-            let layout = '';
-            let tips = [];
-            
-            if (palletCount <= vehicle.capacity * 0.5) {
-                layout = 'Прямая схема с креплением ремнями';
-                tips.push('⚠️ При загрузке менее 50% обязательно используйте перегородки');
-            } else if (palletType === 'euro' && vehicleType === 'eurotrailer') {
-                layout = 'Шахматная схема (оптимально для европалет)';
-                tips.push('✅ Шахматная укладка обеспечивает лучшую устойчивость');
-            } else {
-                layout = 'Перевязка (Pinwheel)';
-                tips.push('✅ Схема перевязки предотвращает смещение палет');
-            }
-            
-            if (vehicleType === 'refrigerator') {
-                tips.push('❄️ Оставьте зазор 30-50 см перед холодильной установкой');
-                tips.push('❄️ Не перекрывайте воздушные каналы по бокам');
-            }
-            
-            let warnings = [];
-            if (totalWeight > vehicleCapacity) {
-                warnings.push('🚨 ПРЕГРУЗ! Общий вес превышает грузоподъемность на ' + (totalWeight - vehicleCapacity).toFixed(2) + ' тонн');
-            }
-            if (palletCount > vehicle.capacity) {
-                warnings.push('🚨 Не помещается! Превышение на ' + (palletCount - vehicle.capacity) + ' палет');
-            }
-            if (weightUtilization > 90) {
-                warnings.push('⚠️ Загрузка близка к максимальной (90%+)');
-            }
-            
-            let resultHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Общий вес:</strong> ${totalWeight.toFixed(2)} тонн
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Объем груза:</strong> ${totalVolume.toFixed(2)} м³
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Загрузка по весу:</strong> ${weightUtilization.toFixed(1)}%
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
-                        <strong>Загрузка по количеству:</strong> ${capacityUtilization.toFixed(1)}%
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 15px;">
-                    <strong>Рекомендуемая схема:</strong> ${layout}
-                </div>
-            `;
-            
-            if (warnings.length > 0) {
-                resultHTML += '<div class="danger">';
-                warnings.forEach(w => resultHTML += `<div>${w}</div>`);
-                resultHTML += '</div>';
-            } else {
-                resultHTML += '<div class="success">✅ Параметры загрузки в норме</div>';
-            }
-            
-            if (tips.length > 0) {
-                resultHTML += '<div class="info-box" style="background: rgba(255,255,255,0.9); margin-top: 15px;">';
-                resultHTML += '<strong>💡 Рекомендации:</strong><ul style="margin-left: 20px; margin-top: 10px;">';
-                tips.forEach(t => resultHTML += `<li>${t}</li>`);
-                resultHTML += '</ul></div>';
-            }
-            
-            document.getElementById('resultContent').innerHTML = resultHTML;
-            document.getElementById('calculationResult').classList.add('show');
-        }
+            placedPallets.forEach((p, index) => {
+                if (index >= maxIndex) return;
 
-        // Visualization
-        function updateVisualization() {
-            const pattern = document.getElementById('layoutPattern').value;
-            const palletType = document.getElementById('vizPalletType').value;
-            const count = parseInt(document.getElementById('vizPalletCount').value);
-            
-            document.getElementById('palletCountDisplay').textContent = count;
-            
-            const container = document.getElementById('truckVisualization');
-            container.innerHTML = '';
-            
-            const truckWidth = container.offsetWidth - 40;
-            const truckLength = 500;
-            
-            const palletDims = {
-                'euro': { w: 60, h: 40 },
-                'fin': { w: 60, h: 50 },
-                'standard': { w: 60, h: 60 }
-            };
-            
-            const pallet = palletDims[palletType];
-            const tips = {
-                'straight': 'Прямая схема обеспечивает максимальное использование площади кузова',
-                'chess': 'Шахматная схема улучшает устойчивость груза',
-                'pinwheel': 'Перевязка предотвращает смещение палет при транспортировке'
-            };
-            
-            document.getElementById('layoutTip').textContent = tips[pattern];
-            
-            let placed = 0;
-            const padding = 10;
-            
-            if (pattern === 'straight') {
-                const cols = Math.floor((truckWidth + padding) / (pallet.w + padding));
-                const rows = Math.ceil(count / cols);
-                
-                for (let i = 0; i < count; i++) {
-                    const row = Math.floor(i / cols);
-                    const col = i % cols;
-                    const palletEl = createPallet(palletType, i + 1);
-                    palletEl.style.left = (col * (pallet.w + padding) + padding) + 'px';
-                    palletEl.style.top = (row * (pallet.h + padding) + padding) + 'px';
-                    container.appendChild(palletEl);
-                }
-            } else if (pattern === 'chess') {
-                let x = padding, y = padding;
-                let row = 0;
-                
-                for (let i = 0; i < count; i++) {
-                    const palletEl = createPallet(palletType, i + 1);
-                    
-                    if (row % 2 === 1 && x + pallet.w > truckWidth - padding) {
-                        x = pallet.w / 2;
-                    }
-                    
-                    if (x + pallet.w > truckWidth - padding) {
-                        x = padding;
-                        y += pallet.h + padding;
-                        row++;
-                    }
-                    
-                    palletEl.style.left = x + 'px';
-                    palletEl.style.top = y + 'px';
-                    container.appendChild(palletEl);
-                    
-                    x += pallet.w + padding;
-                }
-            } else if (pattern === 'pinwheel') {
-                let x = padding, y = padding;
-                const palletW = palletType === 'euro' ? 40 : 60;
-                const palletH = palletType === 'euro' ? 60 : 60;
-                
-                for (let i = 0; i < count; i++) {
-                    const palletEl = createPallet(palletType, i + 1);
-                    
-                    if (i % 2 === 0) {
-                        palletEl.style.width = palletW + 'px';
-                        palletEl.style.height = palletH + 'px';
-                    }
-                    
-                    if (x + (i % 2 === 0 ? palletW : pallet.w) > truckWidth - padding) {
-                        x = padding;
-                        y += Math.max(palletH, pallet.h) + padding;
-                    }
-                    
-                    palletEl.style.left = x + 'px';
-                    palletEl.style.top = y + 'px';
-                    container.appendChild(palletEl);
-                    
-                    x += (i % 2 === 0 ? palletW : pallet.w) + padding;
-                }
-            }
-        }
-        
-        function createPallet(type, number) {
-            const div = document.createElement('div');
-            div.className = `pallet ${type}`;
-            div.textContent = number;
-            return div;
-        }
+                const colorHex = palletTypeColors[p.typeIndex % palletTypeColors.length];
+                const material = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.7, metalness: 0.1 });
+                
+                const mesh = new THREE.Mesh(boxGeo, material);
+                mesh.scale.set(p.l - gap, p.h - gap, p.w - gap);
+                mesh.position.set(p.x + p.l/2, p.y + p.h/2, p.z + p.w/2);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                palletGroup.add(mesh);
 
-        // Checklist
-        function toggleCheck(element) {
-            const checkbox = element.querySelector('input[type="checkbox"]');
-            checkbox.checked = !checkbox.checked;
-            
-            if (checkbox.checked) {
-                element.classList.add('checked');
-            } else {
-                element.classList.remove('checked');
-            }
-            
-            updateChecklistProgress();
-        }
-        
-        function updateChecklistProgress() {
-            const items = document.querySelectorAll('.checklist-item');
-            const checked = document.querySelectorAll('.checklist-item.checked');
-            const percent = Math.round((checked.length / items.length) * 100);
-            
-            document.getElementById('progressPercent').textContent = percent;
-            document.getElementById('progressBar').style.width = percent + '%';
-            
-            if (percent === 100) {
-                document.getElementById('checklistProgress').innerHTML += 
-                    '<div class="success" style="margin-top: 15px;">✅ Все пункты проверены! Можно отправлять груз!</div>';
-            }
-        }
+                const edges = new THREE.EdgesGeometry(boxGeo);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+                line.scale.set(p.l - gap, p.h - gap, p.w - gap);
+                line.position.copy(mesh.position);
+                palletGroup.add(line);
 
-        // Initialize
-        window.onload = function() {
-            updateVisualization();
-            calculateManual();
-        };
-    </script>
+                const wrapMesh = new THREE.Mesh(boxGeo, wrapMaterial);
+                wrapMesh.scale.set(p.l + 0.02, p.h + 0.02, p.w + 0.02);
+                wrapMesh.position.copy(mesh.position);
+                palletGroup.add(wrapMesh);
+            });
+        }
+
+        function drawCenterOfGravity(placed, truckL, truckW, truckH) {
+            if (placed.length === 0) return;
+
+            let totalWeight = 0;
+            let sumX = 0, sumY = 0, sumZ = 0;
+
+            placed.forEach(p => {
+                const weight = p.weight;
+                totalWeight += weight;
+                sumX += weight * (p.x + p.l / 2);
+                sumY += weight * (p.y + p.h / 2);
+                sumZ += weight * (p.z + p.w / 2);
+            });
+
+            const cogX = sumX / totalWeight;
+            const cogY = sumY / totalWeight;
+            const cogZ = sumZ / totalWeight;
+
+            // Visual marker for CoG
+            const sphereGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            sphere.position.set(cogX, cogY, cogZ);
+            cogGroup.add(sphere);
+
+            // Crosshair lines
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xdc2626, linewidth: 2 });
+            const points = [
+                new THREE.Vector3(cogX - 0.5, cogY, cogZ), new THREE.Vector3(cogX + 0.5, cogY, cogZ),
+                new THREE.Vector3(cogX, cogY - 0.5, cogZ), new THREE.Vector3(cogX, cogY + 0.5, cogZ),
+                new THREE.Vector3(cogX, cogY, cogZ - 0.5), new THREE.Vector3(cogX, cogY, cogZ + 0.5)
+            ];
+            cogGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), lineMat));
+
+            // Update UI
+            const cogPercent = (cogX / truckL) * 100;
+            document.getElementById('cogPercent').textContent = cogPercent.toFixed(1) + '%';
+            document.getElementById('cogMarker').style.left = cogPercent + '%';
+            
+            const cogBadge = document.getElementById('complianceBadge');
+            if (cogPercent < 40 || cogPercent > 60) {
+                cogBadge.className = "flex items-center gap-2 p-2 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium";
+                cogBadge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg><span>Внимание: Центр тяжести смещен!</span>`;
+            }
+        }
+
+        // --- Packing Algorithm ---
+        function calculatePacking(truckL, truckW, truckH, palletTypes, maxWeight) {
+            const placed = [];
+            let points = [{x: 0, y: 0, z: 0}];
+            let currentWeight = 0;
+            const epsilon = 0.001;
+
+            const palletsToPlace = [];
+            palletTypes.forEach((type, typeIndex) => {
+                for (let i = 0; i < type.quantity; i++) {
+                    palletsToPlace.push({ l: type.l, w: type.w, h: type.h, weight: type.weight, typeIndex, typeName: type.name });
+                }
+            });
+
+            palletsToPlace.sort((a, b) => (b.l * b.w * b.h) - (a.l * a.w * a.h));
+
+            for (const pallet of palletsToPlace) {
+                if (currentWeight + pallet.weight > maxWeight) break;
+
+                let placedThis = false;
+                points.sort((a, b) => {
+                    if (Math.abs(a.y - b.y) > epsilon) return a.y - b.y;
+                    if (Math.abs(a.z - b.z) > epsilon) return a.z - b.z;
+                    return a.x - b.x;
+                });
+
+                for (let i = 0; i < points.length; i++) {
+                    const pt = points[i];
+                    const orientations = [{l: pallet.l, w: pallet.w}, {l: pallet.w, w: pallet.l}];
+
+                    for (const orient of orientations) {
+                        if (pt.x + orient.l <= truckL + epsilon && pt.y + pallet.h <= truckH + epsilon && pt.z + orient.w <= truckW + epsilon) {
+                            let collision = false;
+                            for (const p of placed) {
+                                if (pt.x < p.x + p.l - epsilon && pt.x + orient.l > p.x + epsilon &&
+                                    pt.y < p.y + p.h - epsilon && pt.y + pallet.h > p.y + epsilon &&
+                                    pt.z < p.z + p.w - epsilon && pt.z + orient.w > p.z + epsilon) {
+                                    collision = true; break;
+                                }
+                            }
+                            if (!collision) {
+                                placed.push({ x: Math.max(0, pt.x), y: Math.max(0, pt.y), z: Math.max(0, pt.z), l: orient.l, w: orient.w, h: pallet.h, weight: pallet.weight, typeIndex: pallet.typeIndex, typeName: pallet.typeName });
+                                currentWeight += pallet.weight;
+                                points.push({x: pt.x + orient.l, y: pt.y, z: pt.z});
+                                points.push({x: pt.x, y: pt.y + pallet.h, z: pt.z});
+                                points.push({x: pt.x, y: pt.y, z: pt.z + orient.w});
+                                points.splice(i, 1);
+                                placedThis = true; break;
+                            }
+                        }
+                    }
+                    if (placedThis) break;
+                }
+            }
+            return { placed, totalWeight: currentWeight };
+        }
+
+        // --- UI Management ---
+        let palletTypes = [];
+        let nextTypeId = 1;
+
+        function addPalletType(name = '', l = 1.2, w = 0.8, h = 1.8, weight = 500, quantity = 10) {
+            const id = nextTypeId++;
+            palletTypes.push({ id, name: name || `Палета ${id}`, l, w, h, weight, quantity });
+            renderPalletTypesList();
+            updateLegend();
+        }
+
+        function removePalletType(id) {
+            palletTypes = palletTypes.filter(t => t.id !== id);
+            renderPalletTypesList();
+            updateLegend();
+        }
+
+        function updatePalletType(id, field, value) {
+            const type = palletTypes.find(t => t.id === id);
+            if (type) type[field] = field === 'name' ? value : (parseFloat(value) || 0);
+        }
+
+        function renderPalletTypesList() {
+            const list = document.getElementById('palletTypesList');
+            list.innerHTML = '';
+            palletTypes.forEach((type) => {
+                const card = document.createElement('div');
+                card.className = 'pallet-card bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <input type="text" value="${type.name}" data-id="${type.id}" data-field="name" class="pallet-input text-sm font-semibold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1 py-0.5 w-32">
+                        <button class="remove-type-btn text-red-500 hover:text-red-700 p-1" data-id="${type.id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="input-group"><label>Длина</label><input type="number" value="${type.l}" step="0.1" min="0.1" data-id="${type.id}" data-field="l" class="pallet-input"></div>
+                        <div class="input-group"><label>Ширина</label><input type="number" value="${type.w}" step="0.1" min="0.1" data-id="${type.id}" data-field="w" class="pallet-input"></div>
+                        <div class="input-group"><label>Высота</label><input type="number" value="${type.h}" step="0.1" min="0.1" data-id="${type.id}" data-field="h" class="pallet-input"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="input-group"><label>Вес (кг)</label><input type="number" value="${type.weight}" step="10" min="1" data-id="${type.id}" data-field="weight" class="pallet-input"></div>
+                        <div class="input-group"><label>Кол-во</label><input type="number" value="${type.quantity}" step="1" min="1" data-id="${type.id}" data-field="quantity" class="pallet-input"></div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            document.querySelectorAll('.pallet-input').forEach(input => {
+                input.addEventListener('change', (e) => updatePalletType(parseInt(e.target.dataset.id), e.target.dataset.field, e.target.value));
+            });
+            document.querySelectorAll('.remove-type-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => removePalletType(parseInt(e.currentTarget.dataset.id)));
+            });
+        }
+
+        function updateLegend() {
+            const legendList = document.getElementById('legendList');
+            legendList.innerHTML = '';
+            palletTypes.forEach((type, index) => {
+                const colorHex = palletTypeColors[index % palletTypeColors.length];
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 text-sm';
+                div.innerHTML = `<span class="color-preview" style="background-color: #${colorHex.toString(16).padStart(6, '0')}"></span><span class="text-gray-700 flex-1 font-medium">${type.name}</span><span class="text-gray-500 text-xs">${type.l}×${type.w}м, ${type.weight}кг</span>`;
+                legendList.appendChild(div);
+            });
+        }
+
+        const mpRules = {
+            ozon: { types: [{ name: 'Ozon Стандарт', l: 1.2, w: 0.8, h: 1.8, weight: 500, quantity: 10 }], text: "<strong>Ozon:</strong> 1200×800 мм, макс. 1.8 м, 500 кг", theme: "ozon-theme", bgColor: "bg-blue-50", borderColor: "border-blue-100", textColor: "text-blue-800" },
+            wb: { types: [{ name: 'WB Стандарт', l: 1.2, w: 0.8, h: 1.8, weight: 500, quantity: 10 }], text: "<strong>Wildberries:</strong> 1200×800 мм, макс. 1.8 м, 500 кг", theme: "wb-theme", bgColor: "bg-fuchsia-50", borderColor: "border-fuchsia-100", textColor: "text-fuchsia-800" },
+            custom: { types: [{ name: 'Палета A', l: 1.2, w: 0.8, h: 1.5, weight: 400, quantity: 10 }, { name: 'Палета B', l: 1.2, w: 1.0, h: 1.2, weight: 300, quantity: 5 }], text: "<strong>Custom:</strong> Задайте свои габариты и вес.", theme: "custom-theme", bgColor: "bg-gray-50", borderColor: "border-gray-200", textColor: "text-gray-700" }
+        };
+
+        function updateMarketplaceUI() {
+            const mp = document.getElementById('marketplace').value;
+            const rules = mpRules[mp];
+            palletTypes = []; nextTypeId = 1;
+            rules.types.forEach(t => addPalletType(t.name, t.l, t.w, t.h, t.weight, t.quantity));
+            const rulesDiv = document.getElementById('mpRules');
+            rulesDiv.innerHTML = rules.text;
+            rulesDiv.className = `text-xs p-3 rounded border ${rules.bgColor} ${rules.borderColor} ${rules.textColor} ${rules.theme}`;
+            calculate();
+        }
+
+        let viewMode = '3d';
+        function updateCameraView() {
+            const l = parseFloat(document.getElementById('truckL').value) || 13.6;
+            const w = parseFloat(document.getElementById('truckW').value) || 2.45;
+            const h = parseFloat(document.getElementById('truckH').value) || 2.7;
+
+            if (viewMode === 'map') {
+                activeCamera = orthoCamera;
+                const maxDim = Math.max(l, w) * 1.2;
+                const aspect = container.clientWidth / container.clientHeight;
+                orthoCamera.left = -maxDim * aspect / 2; orthoCamera.right = maxDim * aspect / 2;
+                orthoCamera.top = maxDim / 2; orthoCamera.bottom = -maxDim / 2;
+                orthoCamera.position.set(l / 2, 20, w / 2);
+                orthoCamera.lookAt(l / 2, 0, w / 2);
+                controls.minPolarAngle = Math.PI / 2; controls.maxPolarAngle = Math.PI / 2;
+            } else {
+                activeCamera = perspectiveCamera;
+                const maxDim = Math.max(l, w, h);
+                const dist = maxDim * 1.5;
+                perspectiveCamera.position.set(l * 0.8, dist * 0.7, w * 1.5);
+                perspectiveCamera.lookAt(l / 2, h / 3, w / 2);
+                controls.minPolarAngle = 0; controls.maxPolarAngle = Math.PI / 2 - 0.05;
+            }
+            controls.object = activeCamera;
+            orthoCamera.updateProjectionMatrix();
+            perspectiveCamera.updateProjectionMatrix();
+            controls.update();
+        }
+
+        let animationInterval = null;
+
+        function calculate() {
+            if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+            document.getElementById('animSlider').value = 100;
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+
+            setTimeout(() => {
+                const truckL = parseFloat(document.getElementById('truckL').value) || 13.6;
+                const truckW = parseFloat(document.getElementById('truckW').value) || 2.45;
+                const truckH = parseFloat(document.getElementById('truckH').value) || 2.7;
+                const maxTruckWeight = parseFloat(document.getElementById('maxTruckWeight').value) || 20000;
+
+                clearScene();
+                drawTruck(truckL, truckW, truckH);
+
+                const result = calculatePacking(truckL, truckW, truckH, palletTypes, maxTruckWeight);
+                allPlacedPallets = result.placed;
+                drawPallets(allPlacedPallets);
+                drawCenterOfGravity(allPlacedPallets, truckL, truckW, truckH);
+                updateCameraView();
+
+                const mp = document.getElementById('marketplace').value;
+                let isCompliant = true, warningText = "";
+                if (mp === 'ozon' || mp === 'wb') {
+                    for (const type of palletTypes) {
+                        if (type.h > 1.8) { isCompliant = false; warningText = `⚠️ ${type.name}: высота > 1.8 м!`; break; }
+                        if (type.weight > 500) { isCompliant = false; warningText = `⚠️ ${type.name}: вес > 500 кг!`; break; }
+                    }
+                }
+                if (result.totalWeight >= maxTruckWeight) warningText = warningText ? warningText + "<br>⚠️ Лимит веса!" : "⚠️ Лимит веса!";
+
+                const badge = document.getElementById('complianceBadge');
+                if (isCompliant && !warningText) {
+                    badge.className = "flex items-center gap-2 p-2 rounded bg-green-50 border border-green-200 text-green-800 text-sm font-medium";
+                    badge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Соответствует стандартам ${mp.toUpperCase()}</span>`;
+                } else {
+                    badge.className = "flex items-center gap-2 p-2 rounded bg-red-50 border border-red-200 text-red-800 text-sm font-medium";
+                    badge.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg><span>${warningText}</span>`;
+                }
+
+                const totalVolume = truckL * truckW * truckH;
+                const usedVolume = result.placed.reduce((sum, p) => sum + (p.l * p.w * p.h), 0);
+                const totalRequested = palletTypes.reduce((sum, t) => sum + t.quantity, 0);
+                
+                document.getElementById('resCount').textContent = result.placed.length;
+                document.getElementById('resRemaining').textContent = Math.max(0, totalRequested - result.placed.length);
+                document.getElementById('resWeight').textContent = result.totalWeight.toLocaleString('ru-RU') + ' кг';
+                document.getElementById('resEfficiency').textContent = totalVolume > 0 ? ((usedVolume / totalVolume) * 100).toFixed(1) + '%' : '0%';
+                document.getElementById('animSlider').max = result.placed.length;
+                document.getElementById('animSlider').value = result.placed.length;
+
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }, 50);
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('marketplace').addEventListener('change', updateMarketplaceUI);
+        document.getElementById('addPalletTypeBtn').addEventListener('click', () => addPalletType('', 1.2, 0.8, 1.5, 400, 5));
+        document.getElementById('calculateBtn').addEventListener('click', calculate);
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            if (!input.classList.contains('pallet-input')) input.addEventListener('change', calculate);
+        });
+
+        document.getElementById('view3dBtn').addEventListener('click', () => {
+            viewMode = '3d';
+            document.getElementById('view3dBtn').className = "flex-1 py-1.5 text-sm font-semibold rounded-md bg-white shadow text-gray-800 transition-all flex items-center justify-center gap-1";
+            document.getElementById('viewMapBtn').className = "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 transition-all flex items-center justify-center gap-1";
+            updateCameraView();
+        });
+
+        document.getElementById('viewMapBtn').addEventListener('click', () => {
+            viewMode = 'map';
+            document.getElementById('viewMapBtn').className = "flex-1 py-1.5 text-sm font-semibold rounded-md bg-white shadow text-gray-800 transition-all flex items-center justify-center gap-1";
+            document.getElementById('view3dBtn').className = "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 transition-all flex items-center justify-center gap-1";
+            updateCameraView();
+        });
+
+        document.getElementById('animSlider').addEventListener('input', (e) => {
+            if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+            drawPallets(allPlacedPallets, parseInt(e.target.value));
+        });
+
+        document.getElementById('playAnimBtn').addEventListener('click', () => {
+            if (animationInterval) clearInterval(animationInterval);
+            let current = 0;
+            const total = allPlacedPallets.length;
+            if (total === 0) return;
+            
+            animationInterval = setInterval(() => {
+                current++;
+                document.getElementById('animSlider').value = current;
+                drawPallets(allPlacedPallets, current);
+                if (current >= total) clearInterval(animationInterval);
+            }, 100); // 100ms per pallet
+        });
+
+        document.getElementById('resetAnimBtn').addEventListener('click', () => {
+            if (animationInterval) { clearInterval(animationInterval); animationInterval = null; }
+            document.getElementById('animSlider').value = allPlacedPallets.length;
+            drawPallets(allPlacedPallets);
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'pallet-loading-map.png';
+            link.href = renderer.domElement.toDataURL('image/png');
+            link.click();
+        });
+
+        window.addEventListener('resize', () => {
+            const l = parseFloat(document.getElementById('truckL').value) || 13.6;
+            const w = parseFloat(document.getElementById('truckW').value) || 2.45;
+            perspectiveCamera.aspect = container.clientWidth / container.clientHeight;
+            perspectiveCamera.updateProjectionMatrix();
+            const maxDim = Math.max(l, w) * 1.5;
+            const aspect = container.clientWidth / container.clientHeight;
+            orthoCamera.left = -maxDim * aspect / 2; orthoCamera.right = maxDim * aspect / 2;
+            orthoCamera.top = maxDim / 2; orthoCamera.bottom = -maxDim / 2;
+            orthoCamera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            updateCameraView();
+        });
+
+        initCameras(13.6, 2.45, 2.7);
+        updateMarketplaceUI();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, activeCamera);
+        }
+        animate();
+    </script>
 </body>
 </html>
