@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система загрузки палет - Pallet Loading System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 3px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            color: #2a5298;
+            border-bottom: 3px solid #2a5298;
+        }
+
+        .content {
+            padding: 30px;
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .vehicle-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .vehicle-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-color: #2a5298;
+        }
+
+        .vehicle-card h3 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .vehicle-card .specs {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .calculator {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .visualization {
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pallet {
+            position: absolute;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            border: 2px solid #654321;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .pallet.euro {
+            width: 120px;
+            height: 80px;
+        }
+
+        .pallet.fin {
+            width: 120px;
+            height: 100px;
+        }
+
+        .pallet.standard {
+            width: 120px;
+            height: 120px;
+        }
+
+        .checklist {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checklist-item:hover {
+            background: #e3f2fd;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .checklist-item.checked {
+            background: #c8e6c9;
+            text-decoration: line-through;
+            color: #666;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #155724;
+        }
+
+        .danger {
+            background: #f8d7da;
+            border-left: 5px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #721c24;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .tab {
+                min-width: 100%;
+            }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #2a5298;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚛 Система загрузки палет</h1>
+            <p>Профессиональный инструмент для оптимальной загрузки транспортных средств</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('vehicles')">📦 Типы автомобилей</button>
+            <button class="tab" onclick="showTab('calculator')">🧮 Калькулятор загрузки</button>
+            <button class="tab" onclick="showTab('visualization')">👁 Визуализация</button>
+            <button class="tab" onclick="showTab('checklist')">✅ Чек-лист</button>
+            <button class="tab" onclick="showTab('guidelines')">📋 Рекомендации</button>
+        </div>
+
+        <!-- Tab: Vehicle Types -->
+        <div id="vehicles" class="content active">
+            <h2>Выберите тип транспортного средства</h2>
+            <div class="vehicle-grid">
+                <div class="vehicle-card" onclick="selectVehicle('eurotrailer')">
+                    <h3>🚚 Еврофура (Тент)</h3>
+                    <div class="specs">
+                        <p>• Вместимость: до 33 европалет</p>
+                        <p>• Объем: 82-96 м³</p>
+                        <p>• Размеры: 13.6м x 2.45м x 2.65м</p>
+                        <p>• Грузоподъемность: до 24 тонн</p>
+                    </div>
+                </div>
+
+                <div class="vehicle-card" onclick="selectVehicle('refrigerator')">
+                    <h3>❄️ Рефрижератор</h3>
+                    <div class="specs">
+                        <p>• Вместимость: 26-30 европалет</p>
+                        <p>• Объем: 82-86 м³</p>
+                        <p>• Требуется циркуляция воздуха</p>
+                        <p>• Т-образный пол</p>
+                    </div>
+                </div>
+
+                <div class="vehicle-card" onclick="selectVehicle('gazelle')">
+                    <h3>🚐 Газель / LCV</h3>
+                    <div class="specs">
+                        <p>• Вместимость: 4-6 европалет</p>
+                        <p>• Объем: 10-18 м³</p>
+                        <p>• Колесные арки внутри</p>
+                        <p>• Грузоподъемность: 1.5-3 тонны</p>
+                    </div>
+                </div>
+
+                <div class="vehicle-card" onclick="selectVehicle('jumbo')">
+                    <h3>🚛 Jumbo / Мега</h3>
+                    <div class="specs">
+                        <p>• Вместимость: до 36 европалет</p>
+                        <p>• Объем: 100-110 м³</p>
+                        <p>• Пониженная палуба</p>
+                        <p>• "Гортань" спереди</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vehicle-details" class="info-box" style="display: none; margin-top: 20px;">
+                <h3 id="vehicle-title"></h3>
+                <p id="vehicle-desc"></p>
+            </div>
+        </div>
+
+        <!-- Tab: Calculator -->
+        <div id="calculator" class="content">
+            <h2>Калькулятор загрузки</h2>
+            <div class="calculator">
+                <div class="grid-2">
+                    <div>
+                        <h3>Параметры груза</h3>
+                        <div class="form-group">
+                            <label>Тип палеты:</label>
+                            <select id="palletType">
+                                <option value="euro">Европалета (800x1200 мм)</option>
+                                <option value="fin">Финпалета (1000x1200 мм)</option>
+                                <option value="standard">Стандарт (1200x1200 мм)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Вес одной палеты (кг):</label>
+                            <input type="number" id="palletWeight" placeholder="Например: 500" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Количество палет:</label>
+                            <input type="number" id="palletCount" placeholder="Например: 20" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Высота палеты с грузом (см):</label>
+                            <input type="number" id="palletHeight" placeholder="Например: 150" min="1">
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3>Параметры автомобиля</h3>
+                        <div class="form-group">
+                            <label>Тип ТС:</label>
+                            <select id="vehicleType">
+                                <option value="eurotrailer">Еврофура (82-96 м³)</option>
+                                <option value="refrigerator">Рефрижератор (82-86 м³)</option>
+                                <option value="gazelle">Газель (10-18 м³)</option>
+                                <option value="jumbo">Jumbo/Мега (100-110 м³)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Грузоподъемность (тонн):</label>
+                            <input type="number" id="vehicleCapacity" placeholder="Например: 20" min="1" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Длина кузова (м):</label>
+                            <input type="number" id="vehicleLength" placeholder="Например: 13.6" min="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="calculateLoading()" style="margin-top: 20px;">
+                    🧮 Рассчитать загрузку
+                </button>
+
+                <div id="calculationResult" class="result-box">
+                    <h3>📊 Результаты расчета</h3>
+                    <div id="resultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Visualization -->
+        <div id="visualization" class="content">
+            <h2>Визуализация схемы загрузки</h2>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Схема расстановки:</label>
+                <select id="layoutPattern" onchange="updateVisualization()">
+                    <option value="straight">Прямая (в ряд)</option>
+                    <option value="chess">Шахматная</option>
+                    <option value="pinwheel">Перевязка (Pinwheel)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Тип палеты:</label>
+                <select id="vizPalletType" onchange="updateVisualization()">
+                    <option value="euro">Европалета</option>
+                    <option value="fin">Финпалета</option>
+                    <option value="standard">Стандарт</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Количество палет:</label>
+                <input type="range" id="vizPalletCount" min="1" max="33" value="10" oninput="updateVisualization()">
+                <span id="palletCountDisplay">10</span>
+            </div>
+            
+            <div class="visualization" id="truckVisualization">
+                <!-- Pallets will be rendered here -->
+            </div>
+            
+            <div class="info-box" style="margin-top: 20px;">
+                <strong>💡 Подсказка:</strong> 
+                <span id="layoutTip">Прямая схема обеспечивает максимальное использование площади кузова</span>
+            </div>
+        </div>
+
+        <!-- Tab: Checklist -->
+        <div id="checklist" class="content">
+            <h2>Чек-лист перед отправкой</h2>
+            <div class="checklist">
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Груз не выступает за габариты кузова, двери закрываются</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Между верхом груза и потолком есть зазор (мин. 20 см)</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Общий вес не превышает грузоподъемность ТС</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Распределение веса по осям равномерное</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Все ремни натянуты и закреплены</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Противоскользящие листы уложены под палеты</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Воздушные пакеты надуты (если используются)</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Фактическое количество палет совпадает с документами</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Сделаны фото загрузки (4 стороны + двери)</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <input type="checkbox">
+                    <span>Для рефрижератора: обеспечена циркуляция воздуха</span>
+                </div>
+            </div>
+            
+            <div id="checklistProgress" style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 10px;">
+                <strong>Прогресс:</strong> <span id="progressPercent">0</span>% выполнено
+                <div style="background: #ddd; height: 20px; border-radius: 10px; margin-top: 10px; overflow: hidden;">
+                    <div id="progressBar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Guidelines -->
+        <div id="guidelines" class="content">
+            <h2>Рекомендации по загрузке</h2>
+            
+            <div class="info-box">
+                <h3>📐 Основные правила распределения веса</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Тяжелое — вниз, легкое — наверх</li>
+                    <li>Центр тяжести должен быть максимально низким</li>
+                    <li>Разница в весе между левой и правой сторонами не более 5-10%</li>
+                    <li>Для фуры: нагрузка на ССУ 10-12 тонн, на оси тележки — до 18-20 тонн</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h3>🔒 Способы крепления груза</h3>
+                <table>
+                    <tr>
+                        <th>Метод</th>
+                        <th>Описание</th>
+                        <th>Применение</th>
+                    </tr>
+                    <tr>
+                        <td>Противоскользящие коврики</td>
+                        <td>Увеличивают трение в 2-3 раза</td>
+                        <td>Под все палеты</td>
+                    </tr>
+                    <tr>
+                        <td>Стяжные ремни</td>
+                        <td>Усилие 250-500 даН</td>
+                        <td>Прямое и диагональное крепление</td>
+                    </tr>
+                    <tr>
+                        <td>Воздушные пакеты</td>
+                        <td>Заполняют пустоты</td>
+                        <td>Между палетами и стенами</td>
+                    </tr>
+                    <tr>
+                        <td>Перегородки</td>
+                        <td>Блокируют смещение</td>
+                        <td>При неполной загрузке</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Важно для рефрижераторов:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Оставлять зазор перед испарителем минимум 30-50 см</li>
+                    <li>Не ставить груз вплотную к стенам (мин. 15-20 см)</li>
+                    <li>Использовать схемы с вентиляционными каналами</li>
+                </ul>
+            </div>
+
+            <div class="success">
+                <strong>✅ Советы по оптимизации:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Используйте 3D-софт для точного расчета (EasyCargo, Cape Pack)</li>
+                    <li>При двухъярусной загрузке строго контролируйте вес на верхний ярус</li>
+                    <li>Всегда делайте фотофиксацию перед отправкой</li>
+                    <li>Обучайте грузчиков физике груза и правилам безопасности</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all contents
+            document.querySelectorAll('.content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Update visualization if switching to that tab
+            if (tabName === 'visualization') {
+                updateVisualization();
+            }
+        }
+
+        // Vehicle selection
+        function selectVehicle(vehicleType) {
+            const details = {
+                'eurotrailer': {
+                    title: 'Еврофура (Тент/Штора)',
+                    desc: 'Оптимальный выбор для большинства грузов. До 33 европалет. При неполной загрузке обязательно используйте перегородки или швартовочные ремни для предотвращения смещения груза.'
+                },
+                'refrigerator': {
+                    title: 'Рефрижератор',
+                    desc: 'Требует особой схемы загрузки для обеспечения циркуляции холодного воздуха. Обязательно оставляйте зазоры перед испарителем и по бокам. Используйте Т-образный пол для вентиляции.'
+                },
+                'gazelle': {
+                    title: 'Газель / LCV',
+                    desc: 'Учитывайте наличие колесных арок внутри кузова. Тяжелые палеты ставьте на дно (на арки), легкие — сверху. Обязательно используйте противоскользящие коврики.'
+                },
+                'jumbo': {
+                    title: 'Jumbo / Мегафура',
+                    desc: 'Имеет пониженную первую палубу и "гортань" спереди. Сначала загружается "гортань" (обычно 4 палеты в два яруса), затем основная площадка. Строгий расчет по высоте!'
+                }
+            };
+            
+            const vehicle = details[vehicleType];
+            document.getElementById('vehicle-title').textContent = vehicle.title;
+            document.getElementById('vehicle-desc').textContent = vehicle.desc;
+            document.getElementById('vehicle-details').style.display = 'block';
+        }
+
+        // Calculator
+        function calculateLoading() {
+            const palletType = document.getElementById('palletType').value;
+            const palletWeight = parseFloat(document.getElementById('palletWeight').value) || 0;
+            const palletCount = parseInt(document.getElementById('palletCount').value) || 0;
+            const palletHeight = parseFloat(document.getElementById('palletHeight').value) || 0;
+            const vehicleType = document.getElementById('vehicleType').value;
+            const vehicleCapacity = parseFloat(document.getElementById('vehicleCapacity').value) || 0;
+            
+            // Pallet dimensions
+            const dimensions = {
+                'euro': { width: 0.8, length: 1.2, name: 'Европалета' },
+                'fin': { width: 1.0, length: 1.2, name: 'Финпалета' },
+                'standard': { width: 1.2, length: 1.2, name: 'Стандарт' }
+            };
+            
+            // Vehicle capacities
+            const vehicles = {
+                'eurotrailer': { capacity: 33, volume: 86, name: 'Еврофура' },
+                'refrigerator': { capacity: 28, volume: 82, name: 'Рефрижератор' },
+                'gazelle': { capacity: 5, volume: 15, name: 'Газель' },
+                'jumbo': { capacity: 36, volume: 100, name: 'Jumbo' }
+            };
+            
+            const pallet = dimensions[palletType];
+            const vehicle = vehicles[vehicleType];
+            
+            // Calculations
+            const totalWeight = (palletWeight * palletCount) / 1000; // tons
+            const totalVolume = (pallet.width * pallet.length * (palletHeight/100)) * palletCount;
+            const weightUtilization = (totalWeight / vehicleCapacity) * 100;
+            const capacityUtilization = (palletCount / vehicle.capacity) * 100;
+            
+            // Determine layout
+            let layout = '';
+            let tips = [];
+            
+            if (palletCount <= vehicle.capacity * 0.5) {
+                layout = 'Прямая схема с креплением ремнями';
+                tips.push('⚠️ При загрузке менее 50% обязательно используйте перегородки');
+            } else if (palletType === 'euro' && vehicleType === 'eurotrailer') {
+                layout = 'Шахматная схема (оптимально для европалет)';
+                tips.push('✅ Шахматная укладка обеспечивает лучшую устойчивость');
+            } else {
+                layout = 'Перевязка (Pinwheel)';
+                tips.push('✅ Схема перевязки предотвращает смещение палет');
+            }
+            
+            if (vehicleType === 'refrigerator') {
+                tips.push('❄️ Оставьте зазор 30-50 см перед холодильной установкой');
+                tips.push('❄️ Не перекрывайте воздушные каналы по бокам');
+            }
+            
+            // Warnings
+            let warnings = [];
+            if (totalWeight > vehicleCapacity) {
+                warnings.push('🚨 ПРЕГРУЗ! Общий вес превышает грузоподъемность на ' + (totalWeight - vehicleCapacity).toFixed(2) + ' тонн');
+            }
+            if (palletCount > vehicle.capacity) {
+                warnings.push('🚨 Не помещается! Превышение на ' + (palletCount - vehicle.capacity) + ' палет');
+            }
+            if (weightUtilization > 90) {
+                warnings.push('⚠️ Загрузка близка к максимальной (90%+)');
+            }
+            
+            // Build result HTML
+            let resultHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                        <strong>Общий вес:</strong> ${totalWeight.toFixed(2)} тонн
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                        <strong>Объем груза:</strong> ${totalVolume.toFixed(2)} м³
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                        <strong>Загрузка по весу:</strong> ${weightUtilization.toFixed(1)}%
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                        <strong>Загрузка по количеству:</strong> ${capacityUtilization.toFixed(1)}%
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <strong>Рекомендуемая схема:</strong> ${layout}
+                </div>
+            `;
+            
+            if (warnings.length > 0) {
+                resultHTML += '<div class="danger">';
+                warnings.forEach(w => resultHTML += `<div>${w}</div>`);
+                resultHTML += '</div>';
+            } else {
+                resultHTML += '<div class="success">✅ Параметры загрузки в норме</div>';
+            }
+            
+            if (tips.length > 0) {
+                resultHTML += '<div class="info-box" style="background: rgba(255,255,255,0.9); margin-top: 15px;">';
+                resultHTML += '<strong>💡 Рекомендации:</strong><ul style="margin-left: 20px; margin-top: 10px;">';
+                tips.forEach(t => resultHTML += `<li>${t}</li>`);
+                resultHTML += '</ul></div>';
+            }
+            
+            document.getElementById('resultContent').innerHTML = resultHTML;
+            document.getElementById('calculationResult').classList.add('show');
+        }
+
+        // Visualization
+        function updateVisualization() {
+            const pattern = document.getElementById('layoutPattern').value;
+            const palletType = document.getElementById('vizPalletType').value;
+            const count = parseInt(document.getElementById('vizPalletCount').value);
+            
+            document.getElementById('palletCountDisplay').textContent = count;
+            
+            const container = document.getElementById('truckVisualization');
+            container.innerHTML = '';
+            
+            // Truck dimensions (scaled)
+            const truckWidth = container.offsetWidth - 40;
+            const truckLength = 500;
+            
+            // Pallet dimensions (scaled)
+            const palletDims = {
+                'euro': { w: 60, h: 40 },
+                'fin': { w: 60, h: 50 },
+                'standard': { w: 60, h: 60 }
+            };
+            
+            const pallet = palletDims[palletType];
+            const tips = {
+                'straight': 'Прямая схема обеспечивает максимальное использование площади кузова',
+                'chess': 'Шахматная схема улучшает устойчивость груза',
+                'pinwheel': 'Перевязка предотвращает смещение палет при транспортировке'
+            };
+            
+            document.getElementById('layoutTip').textContent = tips[pattern];
+            
+            let placed = 0;
+            const padding = 10;
+            
+            if (pattern === 'straight') {
+                // Straight layout
+                const cols = Math.floor((truckWidth + padding) / (pallet.w + padding));
+                const rows = Math.ceil(count / cols);
+                
+                for (let i = 0; i < count; i++) {
+                    const row = Math.floor(i / cols);
+                    const col = i % cols;
+                    const palletEl = createPallet(palletType, i + 1);
+                    palletEl.style.left = (col * (pallet.w + padding) + padding) + 'px';
+                    palletEl.style.top = (row * (pallet.h + padding) + padding) + 'px';
+                    container.appendChild(palletEl);
+                }
+            } else if (pattern === 'chess') {
+                // Chess layout
+                let x = padding, y = padding;
+                let row = 0;
+                
+                for (let i = 0; i < count; i++) {
+                    const palletEl = createPallet(palletType, i + 1);
+                    
+                    if (row % 2 === 1 && x + pallet.w > truckWidth - padding) {
+                        x = pallet.w / 2;
+                    }
+                    
+                    if (x + pallet.w > truckWidth - padding) {
+                        x = padding;
+                        y += pallet.h + padding;
+                        row++;
+                    }
+                    
+                    palletEl.style.left = x + 'px';
+                    palletEl.style.top = y + 'px';
+                    container.appendChild(palletEl);
+                    
+                    x += pallet.w + padding;
+                }
+            } else if (pattern === 'pinwheel') {
+                // Pinwheel layout (alternating rotation)
+                let x = padding, y = padding;
+                const palletW = palletType === 'euro' ? 40 : 60;
+                const palletH = palletType === 'euro' ? 60 : 60;
+                
+                for (let i = 0; i < count; i++) {
+                    const palletEl = createPallet(palletType, i + 1);
+                    
+                    if (i % 2 === 0) {
+                        palletEl.style.width = palletW + 'px';
+                        palletEl.style.height = palletH + 'px';
+                    }
+                    
+                    if (x + (i % 2 === 0 ? palletW : pallet.w) > truckWidth - padding) {
+                        x = padding;
+                        y += Math.max(palletH, pallet.h) + padding;
+                    }
+                    
+                    palletEl.style.left = x + 'px';
+                    palletEl.style.top = y + 'px';
+                    container.appendChild(palletEl);
+                    
+                    x += (i % 2 === 0 ? palletW : pallet.w) + padding;
+                }
+            }
+        }
+        
+        function createPallet(type, number) {
+            const div = document.createElement('div');
+            div.className = `pallet ${type}`;
+            div.textContent = number;
+            return div;
+        }
+
+        // Checklist
+        function toggleCheck(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                element.classList.add('checked');
+            } else {
+                element.classList.remove('checked');
+            }
+            
+            updateChecklistProgress();
+        }
+        
+        function updateChecklistProgress() {
+            const items = document.querySelectorAll('.checklist-item');
+            const checked = document.querySelectorAll('.checklist-item.checked');
+            const percent = Math.round((checked.length / items.length) * 100);
+            
+            document.getElementById('progressPercent').textContent = percent;
+            document.getElementById('progressBar').style.width = percent + '%';
+            
+            if (percent === 100) {
+                document.getElementById('checklistProgress').innerHTML += 
+                    '<div class="success" style="margin-top: 15px;">✅ Все пункты проверены! Можно отправлять груз!</div>';
+            }
+        }
+
+        // Initialize
+        window.onload = function() {
+            updateVisualization();
+        };
+    </script>
+</body>
+</html>
