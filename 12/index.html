@@ -2,151 +2,106 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBO Отгрузка v10.0 | Полная система + Этикетки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FBO Отгрузка v6.0 | WB + Ozon + Excel Отчёты</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
-        :root { --primary:#2563eb; --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --bg:#f1f5f9; --card:#fff; --border:#e2e8f0; --text:#1e293b; }
+        :root { --ozon:#005bff; --wb:#cb11ab; --bg:#f5f7fa; --card:#fff; --text:#222; --border:#e0e0e0; --success:#28a745; --danger:#dc3545; --warning:#ffc107; --info:#17a2b8; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 0; line-height: 1.5; font-size: 14px; }
+        body { background: var(--bg); color: var(--text); padding: 12px; line-height: 1.4; font-size: 13px; }
+        .grid { display: grid; grid-template-columns: 320px 1fr 360px; gap: 12px; max-width: 1500px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; border: 1px solid var(--border); }
+        h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; transition: 0.2s; }
+        input:focus, select:focus { outline: 2px solid var(--ozon); border-color: transparent; }
+        button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; }
+        button:hover { opacity: 0.95; } button:active { transform: scale(0.98); }
+        button.secondary { background: #6c757d; } button.danger { background: var(--danger); } button.warning { background: var(--warning); color: #333; } button.info { background: var(--info); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
+        .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; }
+        .scanner-input.success { border-color: var(--success); background: #e6ffe6; } .scanner-input.error { border-color: var(--danger); background: #ffe6e6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
+        th { background: #f8f9fa; font-weight: 600; }
+        .qty-btn { width: auto; padding: 3px 8px; margin: 0 2px; background: #e9ecef; color: #333; border: none; border-radius: 4px; cursor: pointer; }
+        .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px; border-radius: 6px; margin: 8px 0; font-size: 12px; font-weight: 600; border-left: 3px solid var(--ozon); }
+        .alert { padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .alert-error { background: #ffe6e6; color: #842029; border: 1px solid #ffcdd2; }
+        .alert-success { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .alert-info { background: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+        .log-box { background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; margin-top: 8px; max-height: 100px; overflow-y: auto; white-space: pre-wrap; }
+        .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 12px; position: relative; }
+        .pallet-item:hover { background: #e9ecef; } .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
+        .pallet-item .mp-tag { position: absolute; top: 5px; right: 8px; font-size: 9px; padding: 1px 4px; border-radius: 3px; color: #fff; font-weight: 700; }
+        .pallet-item .mp-tag.wb { background: var(--wb); } .pallet-item .mp-tag.ozon { background: var(--ozon); }
+        .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #ccc; font-size: 12px; }
+        .target-item.done { border-left-color: var(--success); opacity: 0.8; }
+        .progress-bar { height: 5px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(3px); }
+        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .mapping-select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; } .modal-actions button { flex: 1; min-width: 120px; }
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border: 1px solid var(--border); flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { margin-bottom: 0; padding: 8px; font-size: 12px; flex: 1; min-width: 120px; }
+        .filter-bar button { width: auto; padding: 8px 12px; margin: 0; font-size: 12px; flex: none; }
         
-        .header { background: linear-gradient(135deg, var(--primary), #1d4ed8); color: white; padding: 1rem 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header-content { max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem; }
-        .stats-bar { display: flex; gap: 2rem; font-size: 0.875rem; }
-        .stat { display: flex; flex-direction: column; align-items: flex-end; }
-        .stat-label { opacity: 0.9; font-size: 0.75rem; }
-        .stat-value { font-weight: 700; font-size: 1.1rem; }
+        /* ЭТИКЕТКИ */
+        .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 4mm; font-family: Arial, sans-serif; overflow: hidden; z-index: -1; line-height: 1.1; page-break-inside: avoid; }
+        .label-header { border-bottom: 2px solid #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
+        .label-title { font-size: 12pt; font-weight: 900; display: flex; align-items: center; gap: 5px; }
+        .label-title.wb { color: var(--wb); } .label-title.ozon { color: var(--ozon); }
+        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border-bottom: 1px dashed #888; padding-bottom: 1.5mm; }
+        .label-summary { font-size: 7.5pt; background: #f4f4f4; padding: 1mm 2mm; border-radius: 1.5mm; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border: 1px solid #ddd; }
+        .label-content { border-top: 1px solid #888; padding-top: 1.5mm; max-height: 32mm; }
+        .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; }
+        .label-content ul { list-style: none; padding: 0; }
+        .label-content li { margin-bottom: 1mm; padding-bottom: 1mm; border-bottom: 1px dotted #ccc; font-size: 7.5pt; display: flex; justify-content: space-between; }
+        .label-content li .bc { font-family: monospace; font-weight: 900; background: #eee; padding: 0 4px; border-radius: 2px; }
+        .label-content li .qty { font-weight: 800; font-size: 8pt; background: #000; color: #fff; padding: 0 5px; border-radius: 2px; min-width: 20px; text-align: center; }
+        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; }
+        .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; width: auto; }
+        .weight-box { font-size: 9pt; font-weight: 900; background: #000; color: #fff; padding: 1mm 4px; border-radius: 2px; }
+
+        /* ПАЛЕТ А4 */
+        .pallet-page { width: 210mm !important; height: 297mm !important; padding: 15mm !important; position: relative !important; left: 0 !important; top: 0 !important; visibility: visible !important; display: block !important; margin: 0 !important; box-shadow: none !important; border: 1px solid #000 !important; background: #fff !important; page-break-after: always; page-break-inside: avoid; }
+        .pallet-page:last-child { page-break-after: auto !important; }
+        .pallet-header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 5mm; margin-bottom: 5mm; }
+        .pallet-header h1 { font-size: 16pt; font-weight: 900; margin: 0 0 2mm 0; letter-spacing: 1px; }
+        .pallet-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; font-size: 9pt; margin-bottom: 5mm; }
+        .pallet-meta div { padding: 3mm; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
+        .pallet-meta strong { display: block; font-size: 8pt; color: #666; margin-bottom: 1mm; }
+        .boxes-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2mm; font-size: 8pt; margin: 4mm 0; }
+        .boxes-grid li { padding: 2mm; background: #f9f9f9; border: 1px solid #ddd; border-radius: 3px; text-align: center; break-inside: avoid; }
+        .boxes-grid .box-id { font-weight: 800; font-family: monospace; margin-bottom: 1mm; }
+        .page-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8pt; color: #666; text-align: center; border-top: 1px solid #ccc; padding-top: 2mm; }
         
-        .grid { display: grid; grid-template-columns: 350px 1fr 400px; gap: 1.5rem; max-width: 1600px; margin: 0 auto; padding: 1.5rem; }
-        .card { background: var(--card); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); }
-        h2 { font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--border); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-        
-        input, select, button { width: 100%; padding: 0.625rem 0.875rem; margin-bottom: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: white; transition: all 0.2s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        button { cursor: pointer; background: var(--primary); color: white; border: none; font-weight: 600; }
-        button:hover { background: #1d4ed8; }
-        button.secondary { background: #64748b; } button.secondary:hover { background: #475569; }
-        button.success { background: var(--success); } button.success:hover { background: #059669; }
-        button.warning { background: var(--warning); color: #000; } button.warning:hover { background: #d97706; }
-        button.danger { background: var(--danger); } button.danger:hover { background: #dc2626; }
-        button:disabled { background: #cbd5e1; cursor: not-allowed; }
-        
-        .row { display: flex; gap: 0.75rem; } .row > * { flex: 1; }
-        .scanner-input { background: #f8fafc; border: 2px dashed var(--primary); font-size: 1.125rem; text-align: center; font-family: monospace; font-weight: 600; }
-        .scanner-input.success { border-color: var(--success); background: #d1fae5; }
-        .scanner-input.error { border-color: var(--danger); background: #fee2e2; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.8125rem; }
-        th, td { text-align: left; padding: 0.625rem 0.5rem; border-bottom: 1px solid var(--border); }
-        th { background: #f8fafc; font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; }
-        tr:hover { background: #f8fafc; }
-        .qty-btn { width: auto; padding: 0.25rem 0.625rem; margin: 0 0.25rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-weight: 600; }
-        .qty-btn:hover { background: var(--primary); color: white; }
-        
-        .stats { display: flex; justify-content: space-between; background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 0.875rem 1rem; border-radius: 8px; margin: 0.75rem 0; font-size: 0.875rem; font-weight: 600; border-left: 4px solid var(--primary); }
-        
-        .alert { padding: 0.875rem 1rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.875rem; display: none; border-left: 4px solid; }
-        .alert-error { background: #fef2f2; color: #991b1b; border-color: var(--danger); display: block; }
-        .alert-success { background: #f0fdf4; color: #166534; border-color: var(--success); display: block; }
-        .alert-info { background: #f0f9ff; color: #075985; border-color: #06b6d4; display: block; }
-        
-        .log-box { background: #0f172a; color: #10b981; font-family: monospace; font-size: 0.75rem; padding: 0.875rem; border-radius: 8px; margin-top: 0.75rem; max-height: 120px; overflow-y: auto; }
-        
-        .pallet-item { background: #f8fafc; padding: 0.875rem; border-radius: 8px; margin-bottom: 0.625rem; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; position: relative; }
-        .pallet-item:hover { background: #f1f5f9; }
-        .pallet-item.active { border-color: var(--success); background: #f0fdf4; }
-        .pallet-item .mp-tag { position: absolute; top: 0.625rem; right: 0.875rem; font-size: 0.6875rem; padding: 0.1875rem 0.5rem; border-radius: 4px; color: white; font-weight: 700; }
-        .mp-tag.wb { background: #c026d3; } .mp-tag.ozon { background: #005bff; }
-        
-        .target-item { background: #f8fafc; padding: 0.875rem; border-radius: 8px; margin-bottom: 0.625rem; border-left: 4px solid var(--border); }
-        .target-item.done { border-left-color: var(--success); background: #f0fdf4; }
-        .progress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin: 0.5rem 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), #34d399); transition: width 0.3s; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 1.5rem; backdrop-filter: blur(4px); }
-        .modal { background: white; padding: 2rem; border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
-        .mapping-row { display: flex; align-items: center; margin-bottom: 0.875rem; gap: 0.875rem; }
-        .mapping-select { flex: 1; padding: 0.625rem; border: 1px solid var(--border); border-radius: 6px; }
-        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
-        .modal-actions button { flex: 1; }
-        
-        .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 0.875rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
-        .filter-bar select { margin-bottom: 0; padding: 0.5rem 0.75rem; font-size: 0.8125rem; flex: 1; min-width: 140px; }
-        .filter-bar button { width: auto; padding: 0.5rem 1rem; margin: 0; flex: none; }
-        
-        .badge { display: inline-flex; padding: 0.25rem 0.625rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
-        .badge.success { background: #d1fae5; color: #065f46; }
-        .badge.warning { background: #fef3c7; color: #92400e; }
-        .badge.info { background: #dbeafe; color: #1e40af; }
-        
-        .empty-state { text-align: center; color: #64748b; padding: 2rem 1rem; font-style: italic; }
-        
-        /* ===== ТОЧНЫЙ МАКЕТ ЭТИКЕТКИ 58×40 (КАК НА ФОТО) ===== */
-        #print-container { position: absolute; left: -9999px; top: 0; background: white; z-index: -1; }
-        
-        .label-58x40 {
-            width: 58mm; height: 40mm; border: 0.5px solid #000; padding: 2mm;
-            margin: 0 1mm 1mm 0; display: inline-block; vertical-align: top;
-            font-family: Arial, sans-serif; font-size: 7pt; line-height: 1.1;
-            overflow: hidden; position: relative; background: white;
+        /* ПЕЧАТЬ */
+        @media print { 
+            body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+            .no-print { display: none !important; } 
+            .label-area { visibility: visible !important; display: block !important; width: 120mm !important; height: 75mm !important; padding: 4mm !important; margin: 0 !important; position: relative !important; left: 0 !important; top: 0 !important; }
+            @page { size: 120mm 75mm; margin: 0; }
+            .label-content { max-height: none !important; overflow: visible !important; }
+            .label-content li { break-inside: avoid !important; }
         }
-        .label-58x40 .top-row {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 0.5px solid #000; padding-bottom: 1mm; margin-bottom: 1mm;
-        }
-        .label-58x40 .top-row .warning { font-weight: 900; font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.5px; }
-        .label-58x40 .top-row .counter { font-weight: bold; font-size: 7pt; white-space: nowrap; }
-        
-        .label-58x40 .main-area { display: flex; gap: 2mm; margin-bottom: 1mm; }
-        .label-58x40 .left-info { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; }
-        .label-58x40 .sku { font-weight: bold; font-size: 9pt; }
-        
-        .label-58x40 .right-barcode { flex: 1; display: flex; flex-direction: column; align-items: center; }
-        .label-58x40 .barcode-wrap { text-align: center; margin-bottom: 0.5mm; }
-        .label-58x40 .barcode-wrap svg { max-height: 13mm; max-width: 38mm; }
-        .label-58x40 .bc-number { font-size: 11pt; font-weight: 900; font-family: monospace; text-align: center; letter-spacing: 0.5px; margin-top: 0.5mm; }
-        
-        .label-58x40 .product-name { font-size: 6.5pt; margin-bottom: 1mm; line-height: 1.2; max-height: 7mm; overflow: hidden; }
-        
-        .label-58x40 .bottom-row {
-            display: flex; justify-content: space-between; border-top: 0.5px solid #000;
-            padding-top: 1mm; margin-top: 1mm; font-size: 7pt; font-weight: bold;
-        }
-        
-        @media print {
-            body * { visibility: hidden; }
-            #print-container, #print-container * { visibility: visible; }
-            #print-container { position: absolute; left: 0; top: 0; padding: 0; margin: 0; z-index: 9999; }
-            .label-58x40 { page-break-inside: avoid; margin: 0; }
-            @page { size: 58mm 40mm; margin: 0; }
-        }
-        
-        @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } .stats-bar { display: none; } }
+        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <header class="header no-print">
-        <div class="header-content">
-            <div class="logo"><span>📦</span><div><div style="font-size:0.75rem;opacity:0.9">FBO Отгрузка</div><div style="font-size:1.25rem">v10.0</div></div></div>
-            <div class="stats-bar">
-                <div class="stat"><span class="stat-label">SKU</span><span class="stat-value" id="stat-sku">0</span></div>
-                <div class="stat"><span class="stat-label">План</span><span class="stat-value" id="stat-plan">0 шт.</span></div>
-                <div class="stat"><span class="stat-label">Коробов</span><span class="stat-value" id="stat-boxes">0</span></div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Модальные окна -->
+    <!-- МОДАЛКИ -->
     <div class="modal-overlay no-print" id="mapping-modal">
         <div class="modal">
-            <h2>📋 Настройка колонок Excel</h2>
-            <p style="color:#64748b;margin-bottom:1rem"><span style="color:#ef4444">*</span> — обязательные поля</p>
+            <h3>📋 Настройка колонок Excel</h3>
+            <p style="font-size:12px; color:#666; margin-bottom:15px;">Сопоставьте колонки файла с полями системы. <span style="color:var(--danger)">*</span> обязательно.</p>
             <div id="mapping-fields"></div>
             <div class="modal-actions">
-                <button class="success" onclick="applyMapping()">✅ Применить</button>
+                <button onclick="applyMapping()">✅ Применить</button>
                 <button class="secondary" onclick="closeMappingModal()">❌ Отмена</button>
             </div>
         </div>
@@ -154,907 +109,448 @@
 
     <div class="modal-overlay no-print" id="report-modal">
         <div class="modal">
-            <h2> Отчёт: <span id="report-city">-</span></h2>
-            <p style="color:#64748b;margin-bottom:1rem">Дата: <b id="report-date">-</b> | МП: <b id="report-mp">-</b></p>
-            <div class="stats" id="report-stats"></div>
-            <div style="max-height:400px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;background:#f8fafc;margin:1rem 0" id="report-content"></div>
-            <div class="modal-actions">
-                <button class="success" onclick="window.print()">🖨 Печать</button>
-                <button class="warning" onclick="exportReportExcel()">📥 Excel</button>
-                <button class="secondary" onclick="document.getElementById('report-modal').style.display='none'">✕ Закрыть</button>
+            <h3>📊 Отчёт закрытия города: <span id="report-city-name">-</span></h3>
+            <p style="font-size:11px; color:#666; margin-bottom:12px">Сформирован: <span id="report-date">-</span> | МП: <span id="report-mp">-</span></p>
+            <div class="stats" id="report-summary"></div>
+            <div style="max-height: 400px; overflow-y: auto; border:1px solid var(--border); border-radius:6px; padding:10px; background:#fafafa; margin:10px 0">
+                <div id="report-content"></div>
             </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay no-print" id="labels-modal">
-        <div class="modal">
-            <h2>🏷️ Печать этикеток 58×40 мм</h2>
-            <div class="row" style="margin-bottom:1rem">
-                <div style="flex:2">
-                    <label style="display:block;margin-bottom:0.375rem;font-weight:600">Товар:</label>
-                    <select id="label-product-select"><option value="all">Все товары</option></select>
-                </div>
-                <div style="flex:1">
-                    <label style="display:block;margin-bottom:0.375rem;font-weight:600">Копий:</label>
-                    <input type="number" id="label-copies" value="1" min="1" max="100">
-                </div>
-            </div>
-            <div class="stats" id="label-stats" style="display:none"><span>📦 Товаров: <b id="label-count">0</b></span><span>️ Этикеток: <b id="label-total">0</b></span></div>
             <div class="modal-actions">
-                <button class="success" onclick="printLabels()">🖨️ Печать</button>
-                <button onclick="previewLabels()">👁️ Предпросмотр</button>
-                <button class="secondary" onclick="document.getElementById('labels-modal').style.display='none'"> Закрыть</button>
+                <button onclick="printReport()">🖨 Печать</button>
+                <button class="secondary" onclick="exportExcelReport()">📥 Скачать отчёт (Excel)</button>
+                <button class="danger" onclick="document.getElementById('report-modal').style.display='none'">✕ Закрыть</button>
             </div>
         </div>
     </div>
 
     <div class="grid no-print">
-        <!-- Левая колонка -->
         <div>
             <div class="card">
-                <h2>📂 Загрузка ТЗ <button id="voice-btn" class="secondary" style="width:auto;padding:0.375rem 0.625rem;font-size:0.75rem"></button></h2>
-                <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
-                <div id="upload-status"></div>
-                <div class="log-box" id="log">📡 Система готова...</div>
+                <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto;font-size:11px;padding:4px 8px;">🔊</button></h2>
+                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
+                <div id="upload-status" class="alert alert-success"></div>
+                <div id="debug-log" class="log-box">📡 Лог системы...</div>
             </div>
-            
-            <div class="card" id="order-card" style="display:none">
+            <div class="card" id="order-info" style="display:none;">
                 <h2>📋 Информация</h2>
-                <div class="alert alert-info"><b>📍 Город:</b> <span id="info-city">-</span></div>
-                <div class="stats"><span>📦 SKU: <b id="info-sku">0</b></span><span>📊 План: <b id="info-plan">0</b></span></div>
-                <div class="row">
-                    <button class="warning" onclick="printTZ()"> ТЗ</button>
-                    <button class="success" onclick="closeCity()">✅ Закрыть город</button>
+                <div class="alert alert-info">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
+                <div class="stats"><span>📦 SKU: <span id="loaded-count">0</span></span><span>📊 План: <span id="total-plan">0</span></span></div>
+                <div class="row mt-8">
+                    <button class="warning" onclick="generateTZReport()" style="flex:2">📋 Печать ТЗ (А4)</button>
+                    <button class="info" onclick="closeCity()" style="flex:1">✅ Закрыть город</button>
                 </div>
-                <button class="info" onclick="openLabelsModal()" style="margin-top:0.5rem;background:#06b6d4">🏷️ Этикетки 58×40</button>
             </div>
-            
             <div class="card">
                 <h2>🎛️ Параметры</h2>
-                <select id="marketplace"><option value="WB">🔴 Wildberries FBO</option><option value="OZON"> Ozon FBO</option></select>
-                <input type="text" id="city" placeholder="🏙 Город отгрузки" list="cities" onchange="updateUI()">
-                <datalist id="cities"><option value="Екатеринбург"><option value="Москва"><option value="Санкт-Петербург"><option value="Казань"><option value="Краснодар"></datalist>
-                <input type="text" id="pallet-display" placeholder="📦 Палет" readonly style="background:#f8fafc;font-weight:600">
-                <div id="error-msg" class="alert alert-error"></div>
+                <select id="marketplace" onchange="updateUI()"><option value="WB">🔴 Wildberries FBO</option><option value="OZON">🔵 Ozon FBO</option></select>
+                <input type="text" id="city" placeholder="🏙 Город отгрузки" list="cities-list" onchange="updateUI()">
+                <datalist id="cities-list"><option value="Екатеринбург"><option value="Москва"><option value="Санкт-Петербург"><option value="Казань"><option value="Краснодар"></datalist>
+                <input type="text" id="pallet-input" placeholder="📦 Текущий палет" readonly style="background:#f8f9fa">
+                <div class="alert alert-error" id="error-msg"></div>
             </div>
-            
             <div class="card">
                 <h2>🏗 Палеты</h2>
-                <div class="row" style="margin-bottom:0.75rem">
-                    <button class="success" onclick="createPallet()" style="flex:2">+ Создать</button>
-                    <button class="secondary" onclick="printPallet()" id="btn-print-pallet" disabled>🖨</button>
-                    <button class="info" onclick="exportPalletExcel()" id="btn-export-pallet" disabled style="flex:0 0 auto;width:auto;padding:0.625rem;background:#06b6d4">📥</button>
-                </div>
-                <div id="pallets-list" style="max-height:180px;overflow-y:auto"></div>
+                <div class="row" style="margin-bottom:8px"><button onclick="createPallet()" style="flex:2">+ Создать палет</button><button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨 Печать палета</button></div>
+                <div id="pallets-list" style="max-height:150px;overflow-y:auto"></div>
             </div>
         </div>
-
-        <!-- Центральная колонка -->
         <div>
             <div class="card">
                 <h2>📡 Сканирование</h2>
-                <input type="text" id="scanner" class="scanner-input" placeholder=" Введите или сканируйте ШК" autocomplete="off">
-                <div class="row" style="margin-top:0.75rem">
-                    <button class="secondary" id="btn-camera" onclick="toggleCamera()">📷 Камера</button>
+                <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или сканируйте ШК" autocomplete="off">
+                <div class="row" style="margin-top:8px">
+                    <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
+                    <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none">⏹ Стоп</button>
                 </div>
-                <div id="camera-view" style="width:100%;height:200px;background:#0f172a;border-radius:8px;overflow:hidden;display:none;margin-top:0.75rem;position:relative">
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:40%;border:3px solid #10b981;border-radius:4px;pointer-events:none"></div>
-                </div>
+                <div id="interactive" style="width:100%;height:180px;background:#000;border-radius:8px;overflow:hidden;display:none;margin-top:8px;position:relative"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:30%;border:2px solid var(--success);pointer-events:none"></div></div>
             </div>
-            
             <div class="card">
-                <h2>📦 Короб <span id="box-badge" class="badge info"># НОВАЯ</span></h2>
-                <div class="stats"><span>📦 Позиций: <b id="box-items">0</b></span><span>⚖️ Вес: <b id="box-weight">0.00</b> кг</span></div>
-                <div class="row">
-                    <button class="success" onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button>
-                    <button class="warning" onclick="reopenBox()" id="btn-reopen" disabled>↩️ Переоткрыть</button>
-                </div>
-                <button id="btn-retry" onclick="retryPrint()" style="display:none;background:#f59e0b;color:#000;margin-top:0.5rem">🔄 Повтор печати</button>
-                <button class="secondary danger" onclick="clearBox()" style="margin-top:0.5rem">🗑 Очистить</button>
+                <h2>📦 Короб <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px"># НОВАЯ</span></h2>
+                <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
+                <div class="row"><button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button><button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️ Переоткрыть</button></div>
+                <button id="retry-print-btn" onclick="retryPrint()" style="display:none;background:var(--warning);color:#333;margin-top:6px">🔄 Повтор печати</button>
+                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px">🗑 Очистить</button>
             </div>
-            
             <div class="card">
                 <h2>📋 Состав короба</h2>
                 <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
-                <div id="box-empty" class="empty-state">📭 Коробка пуста</div>
+                <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0">Коробка пуста</p>
             </div>
         </div>
-
-        <!-- Правая колонка -->
         <div>
             <div class="card">
                 <h2>🎯 План (ТЗ)</h2>
                 <div class="filter-bar">
                     <select id="filter-city" onchange="renderTargets()"><option value="">🏙 Все города</option></select>
-                    <select id="filter-mp" onchange="renderTargets()"><option value=""> Все МП</option><option value="WB">🔴 WB</option><option value="OZON">🔵 Ozon</option></select>
-                    <button class="secondary" onclick="resetFilters()" style="width:auto;margin:0">↺</button>
+                    <select id="filter-mp" onchange="renderTargets()"><option value="">🛒 Все МП</option><option value="WB">🔴 WB</option><option value="OZON">🔵 Ozon</option></select>
+                    <button class="secondary" onclick="resetFilters()">↺ Сброс</button>
                 </div>
-                <div id="targets-list" style="max-height:500px;overflow-y:auto"></div>
+                <div id="targets-list" style="max-height:450px;overflow-y:auto"></div>
             </div>
-            
             <div class="card">
-                <h2>💾 Экспорт</h2>
-                <button class="info" onclick="exportState()" style="background:#06b6d4">💾 Бэкап JSON</button>
+                <h2>📜 Экспорт и бэкап</h2>
+                <button class="info" onclick="exportState()">💾 Скачать бэкап JSON</button>
                 <input type="file" id="import-file" accept=".json" style="display:none" onchange="importState(event)">
-                <button class="warning" onclick="document.getElementById('import-file').click()" style="margin-top:0.5rem">📥 Восстановить</button>
-                <button class="danger" onclick="resetAll()" style="margin-top:0.5rem">🔄 Сброс</button>
+                <button class="warning" onclick="document.getElementById('import-file').click()" style="margin-top:6px">📥 Восстановить бэкап</button>
+                <button class="danger" onclick="resetAllData()" style="margin-top:6px">🔄 Полный сброс</button>
             </div>
         </div>
     </div>
 
-    <!-- Контейнер для печати -->
-    <div id="print-container"></div>
+    <!-- ЭТИКЕТКА КОРОБА -->
+    <div class="label-area" id="label-box">
+        <div class="label-header"><span class="label-title" id="lbl-mp-box">🔴 WB FBO</span><span style="font-size:7pt" id="lbl-date-box"></span></div>
+        <div class="label-info-row"><div>📍<b>Город:</b> <span id="lbl-city-box"></span></div><div>📦<b>Палет:</b> <span id="lbl-pallet-box"></span></div><div>🆔<b>Короб:</b> <span id="lbl-box-id-box"></span></div></div>
+        <div class="label-summary"><span>📦 Позиций: <b id="lbl-total-pos">0</b></span><span>🔢 Штук: <b id="lbl-total-qty">0</b></span><span>⚖️ Вес: <b id="lbl-weight-box"></b></span></div>
+        <div class="label-content"><h3>📋 Содержимое:</h3><ul id="lbl-items-list-box"></ul></div>
+        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg></div><div class="weight-box" id="lbl-weight-footer"></div></div>
+    </div>
+
+    <!-- КОНТЕЙНЕР ЭТИКЕТОК ПАЛЕТА -->
+    <div id="label-pallet-container" class="no-print"></div>
 
     <script>
-        const CONFIG = { version: '10.0', storageKey: 'fbo_v10' };
-        const FIELDS = { sku:['артикул','sku','код'], name:['наимен','название'], bc:['шк','barcode'], quant:['квант'], qty:['шт','количество','qty'], expiry:['годен','срок'] };
-        
-        let state = {
-            db: {}, targets: [], box: { items: {}, weight: 0 }, history: [], 
-            boxCounter: 1, pallets: {}, activePallet: null, filters: { city: '', mp: '' },
-            voice: true
+        const CONFIG = { version: '6.0', storageKey: 'fbo_v6', debounce: 500 };
+        const FIELD_KEYWORDS = {
+            sku: ['артикул вб','озон id','артикул','sku','код'],
+            name: ['наименование','составляющего','назв','name'],
+            bc: ['шк','barcode','шк производителя'],
+            bc_label: ['шк на этикетку','шк для печати'],
+            quant: ['квант','кол-во в упаковку','шт в спайке'],
+            qty_packs: ['итого к отгрузке спаек','спаек план'],
+            qty_units: ['итого, шт.','план шт','итого к отгрузке'],
+            expiry: ['годен до','годен','срок'],
+            boxes_plan: ['коробов','боксов'],
+            pcs_per_box: ['спаек в коробе','штук в коробе']
         };
-        
-        let tempData = [], tempHeaders = [], cameraActive = false;
-        let currentReport = null;
 
-        // Утилиты
-        function log(msg, type='i') {
-            const colors = { e: '#ef4444', s: '#10b981', i: '#06b6d4' };
-            const el = document.getElementById('log');
-            el.innerHTML += `<span style="color:${colors[type]}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
-            el.scrollTop = el.scrollHeight;
-        }
-        
-        function speak(text) {
-            if (!state.voice || !speechSynthesis) return;
-            speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ru-RU';
-            speechSynthesis.speak(u);
-        }
-        
-        function showStatus(msg, type='i') {
-            const el = document.getElementById('upload-status');
-            el.className = `alert alert-${type === 's' ? 'success' : type === 'e' ? 'error' : 'info'}`;
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 4000);
-        }
-        
-        function showError(msg) {
-            const el = document.getElementById('error-msg');
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 5000);
-            log(msg, 'e');
-        }
-        
-        function parseNum(v) { return parseInt(String(v).replace(/\D/g, '')) || 0; }
+        let S = {db:{}, targets:[], currentBox:{items:{},weight:0}, history:[], boxCounter:1, pallets:{}, activePallet:null, filters:{city:'',mp:''}, voice:true, lastPrint:null};
+        let tempData=[], tempHeaders=[], quaggaActive=false, scanLock=new Set();
+        let currentReportData = null; // Для Excel экспорта
+
+        const logEl = document.getElementById('debug-log');
+        function log(m, t='i') { const c=t==='e'?'#ff6b6b':t==='s'?'#51cf66':'#74c0fc'; logEl.innerHTML+=`<span style="color:${c}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`; logEl.scrollTop=logEl.scrollHeight; }
+        function speak(t) { if(!S.voice || !speechSynthesis || speechSynthesis.pending) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='ru-RU'; u.rate=1.1; speechSynthesis.speak(u); }
+        function toggleVoice() { S.voice=!S.voice; document.getElementById('voice-toggle').textContent=S.voice?'🔊 ВКЛ':'🔇 ВЫКЛ'; document.getElementById('voice-toggle').style.background=S.voice?'#6c757d':'#dc3545'; speak(S.voice?'Голос включен':'Голос выключен'); save(); }
+        function showStatus(m,t='i') { const el=document.getElementById('upload-status'); el.textContent=m; el.className=`alert alert-${t==='s'?'success':t==='e'?'error':'info'}`; el.style.display='block'; setTimeout(()=>el.style.display='none',4000); }
+        function showError(m) { const el=document.getElementById('error-msg'); el.textContent=m; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); log(m,'e'); }
+        function hideError() { document.getElementById('error-msg').style.display='none'; }
+        function parseNum(v) { return parseInt(String(v).replace(/[^0-9]/g, '')) || 0; }
         function cleanBC(v) { return String(v).replace(/[^\dA-Za-z]/g, '').trim(); }
-        function isSkipRow(row) {
-            const s = (row.slice(0,3) || []).join(' ').toLowerCase();
-            return /^(итого|заказ|наименование|артикул)/i.test(s) || !/\d/.test(s);
-        }
+        function isSkipRow(row) { const str = (row.slice(0,3)||[]).join(' ').toLowerCase(); return /^(итого|заказ|готовые|наименование|для меня|озон id|вб|артикул|отгрузка|короб|фадеев|тип поставки|заказчик)/i.test(str) || !/\d/.test(str); }
 
-        // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
             loadState();
             setupScanner();
+            renderPallets();
+            renderTargets();
             updateUI();
-            updateStats();
-            
-            document.getElementById('file-input').addEventListener('change', handleFile);
-            document.getElementById('voice-btn').onclick = () => {
-                state.voice = !state.voice;
-                document.getElementById('voice-btn').textContent = state.voice ? '🔊' : '🔇';
-                saveState();
-            };
-            
-            log('🚀 FBO Отгрузка v10.0 запущена');
+            document.getElementById('excel-upload').addEventListener('change', handleFile);
+            document.getElementById('voice-toggle').onclick = toggleVoice;
+            log('🚀 FBO Отгрузка v6.0 | WB+Ozon+Excel');
         });
 
-        // Загрузка файла
+        // 📥 ЗАГРУЗКА И МАППИНГ
         function handleFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            const f=e.target.files[0]; if(!f) return; log(`📥 Файл: ${f.name}`);
+            if(typeof XLSX==='undefined') return showError('❌ Библиотека XLSX не загрузилась.');
             
-            log(`📥 Файл: ${file.name}`);
-            
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const wb = XLSX.read(ev.target.result, { type: 'array' });
-                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-                    
-                    let hIdx = 0;
-                    for (let i = 0; i < Math.min(20, raw.length); i++) {
-                        if ((raw[i] || []).join(' ').toLowerCase().match(/артикул|наимен|шк/)) {
-                            hIdx = i;
-                            break;
-                        }
+            const r=new FileReader(); 
+            r.onload=ev=>{
+                try{
+                    const wb=XLSX.read(ev.target.result,{type:'array'});
+                    const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false});
+                    let hIdx=0; 
+                    for(let i=0;i<Math.min(20,raw.length);i++){
+                        if((raw[i]||[]).join(' ').toLowerCase().match(/артикул|наименование|шк/)) {hIdx=i; break;}
                     }
-                    
-                    tempHeaders = (raw[hIdx] || []).map(h => String(h || '').trim());
-                    tempData = raw.slice(hIdx + 1);
-                    
-                    log(` Колонок: ${tempHeaders.length}, Строк: ${tempData.length}`, 's');
-                    openMapping();
-                } catch (err) {
-                    showError('❌ Ошибка: ' + err.message);
-                    log(err.message, 'e');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-            e.target.value = '';
+                    tempHeaders=(raw[hIdx]||[]).map(x=>String(x||'').trim()).filter(x=>x);
+                    tempData=raw.slice(hIdx+1);
+                    const isOzon = tempHeaders.some(h=>/озон id|москва-пушкино|ростов|екатеринбург/i.test(h));
+                    log(`🔍 Формат: ${isOzon?'OZON':'WB'} (${tempData.length} строк)`, 's');
+                    openMapping(isOzon?'OZON':'WB');
+                }catch(err){ showError('❌ Ошибка чтения: '+err.message); log(err.message,'e'); }
+            }; 
+            r.readAsArrayBuffer(f); e.target.value='';
         }
 
-        function openMapping() {
-            const container = document.getElementById('mapping-fields');
-            container.innerHTML = '';
-            
-            Object.entries(FIELDS).forEach(([key, keywords]) => {
-                const row = document.createElement('div');
-                row.className = 'mapping-row';
-                
-                const label = document.createElement('div');
-                label.style.width = '150px';
-                label.style.fontWeight = '600';
-                label.textContent = key === 'sku' ? 'Артикул *' : 
-                                   key === 'name' ? 'Название *' : 
-                                   key === 'qty' ? 'Количество *' : keywords[0];
-                
-                const select = document.createElement('select');
-                select.className = 'mapping-select';
-                select.dataset.key = key;
-                select.dataset.req = ['sku', 'name', 'qty'].includes(key) ? 'true' : 'false';
-                
-                const def = document.createElement('option');
-                def.value = '';
-                def.textContent = ['sku', 'name', 'qty'].includes(key) ? '-- Выбрать --' : '-- Не использовать';
-                select.appendChild(def);
-                
-                tempHeaders.forEach((h, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.textContent = h;
-                    if (keywords.some(k => h.toLowerCase().includes(k))) opt.selected = true;
-                    select.appendChild(opt);
+        function openMapping(mpType){
+            const c=document.getElementById('mapping-fields'); c.innerHTML='';
+            Object.keys(FIELD_KEYWORDS).forEach(key => {
+                if(mpType==='WB' && key==='bc_label') return;
+                const r=document.createElement('div'); r.className='mapping-row';
+                const l=document.createElement('div'); l.style.width='160px'; l.textContent=(key==='sku'?'Артикул *':key==='name'?'Название *':key==='qty_units'?'ИТОГО шт. *':FIELD_KEYWORDS[key]?.[0]||key);
+                const s=document.createElement('select'); s.className='mapping-select'; s.dataset.key=key; s.dataset.req=['sku','name','qty_units'].includes(key)?'true':'false';
+                const def=document.createElement('option'); def.value=''; def.textContent=['sku','name','qty_units'].includes(key)?'-- Выбрать --':'-- Не использовать'; s.appendChild(def);
+                tempHeaders.forEach((h,i)=>{
+                    const o=document.createElement('option'); o.value=i; o.textContent=h;
+                    if(FIELD_KEYWORDS[key]?.some(kw=>h.toLowerCase().includes(kw))) o.selected=true;
+                    s.appendChild(o);
                 });
-                
-                row.appendChild(label);
-                row.appendChild(select);
-                container.appendChild(row);
+                r.appendChild(l); r.appendChild(s); c.appendChild(r);
             });
-            
-            document.getElementById('mapping-modal').style.display = 'flex';
+            document.getElementById('mapping-modal').style.display='flex';
         }
-        
-        function closeMappingModal() {
-            document.getElementById('mapping-modal').style.display = 'none';
-        }
-        
-        function applyMapping() {
-            const map = {};
-            let valid = true;
-            
-            document.querySelectorAll('.mapping-select').forEach(sel => {
-                if (sel.dataset.req === 'true' && !sel.value) {
-                    sel.style.borderColor = '#ef4444';
-                    valid = false;
-                } else if (sel.value) {
-                    map[sel.dataset.key] = parseInt(sel.value);
-                }
+        function closeMappingModal(){ document.getElementById('mapping-modal').style.display='none'; }
+        function applyMapping(){
+            const map={}; let ok=true;
+            document.querySelectorAll('.mapping-select').forEach(s=>{
+                if(s.dataset.req==='true'&&!s.value){s.style.borderColor='red';ok=false;}
+                else if(s.value) map[s.dataset.key]=parseInt(s.value);
             });
-            
-            if (!valid) return showError('⚠️ Заполните обязательные поля');
-            processData(map);
-            closeMappingModal();
+            if(!ok) return showError('⚠️ Заполните обязательные поля');
+            processData(map); closeMappingModal();
         }
 
+        // 🔄 ОБРАБОТКА ДАННЫХ
         function processData(map) {
-            state.db = {};
-            state.targets = [];
-            let total = 0;
+            S.db = {}; S.targets = []; let totalUnits = 0;
             const mp = document.getElementById('marketplace').value;
             
             tempData.forEach(row => {
-                if (isSkipRow(row)) return;
-                
+                if(isSkipRow(row)) return;
                 const sku = cleanBC(row[map.sku]);
-                if (!sku || !/\d/.test(sku)) return;
-                
-                const name = String(row[map.name] || `Товар ${sku}`).trim().substring(0, 70);
-                const quant = map.quant ? parseNum(row[map.quant]) || 1 : 1;
-                const qty = map.qty ? parseNum(row[map.qty]) : 0;
-                const expiry = map.expiry ? String(row[map.expiry] || '').trim() : '';
-                
-                if (qty <= 0) return;
-                
-                const bc = map.bc ? cleanBC(String(row[map.bc] || '')) : sku;
-                const item = {
-                    sku, name, mp, targetPcs: qty, packedPcs: 0, quant, expiry,
-                    city: document.getElementById('city').value || 'Не указан',
-                    bc: bc || sku
-                };
-                
-                total += qty;
-                state.targets.push(item);
-                state.db[bc || sku] = item;
+                if(!sku || !/\d/.test(sku)) return; 
+                const name = String(row[map.name] || `Товар ${sku}`).trim().substring(0, 50);
+                const quant = map.quant !== undefined ? parseNum(row[map.quant]) || 1 : 1;
+                const units = map.qty_units !== undefined ? parseNum(row[map.qty_units]) : 0;
+                const packs = map.qty_packs !== undefined ? parseNum(row[map.qty_packs]) : 0;
+                const expiry = map.expiry !== undefined ? String(row[map.expiry] || '').trim() : '';
+                if(units <= 0 && packs <= 0) return;
+
+                const p = { sku, name, mp, targetPcs: units>0?units:packs*quant, packedPcs:0, quant, expiry, city: document.getElementById('city').value.trim()||'Не указан' };
+                totalUnits += p.targetPcs; S.targets.push(p);
+
+                const barcodes = new Set();
+                [map.bc, map.bc_label].forEach(k => {
+                    if(k!==undefined) String(row[k]||'').split(/[;,\s\n]+/).forEach(b=>{ const cl=cleanBC(b); if(cl.length>5) barcodes.add(cl); });
+                });
+                if(barcodes.size===0) barcodes.add(sku);
+                barcodes.forEach(b => S.db[b] = p);
             });
-            
-            document.getElementById('order-card').style.display = 'block';
-            document.getElementById('info-sku').textContent = state.targets.length;
-            document.getElementById('info-plan').textContent = total.toLocaleString('ru');
-            document.getElementById('info-city').textContent = document.getElementById('city').value || 'Не указан';
-            
-            const cities = [...new Set(state.targets.map(t => t.city).filter(c => c))];
-            const sel = document.getElementById('filter-city');
-            sel.innerHTML = '<option value="">🏙 Все города</option>';
-            cities.sort().forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                sel.appendChild(opt);
-            });
-            
-            const labelSel = document.getElementById('label-product-select');
-            labelSel.innerHTML = '<option value="all">Все товары</option>';
-            state.targets.forEach((t, i) => {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = `${t.sku} | ${t.name.substring(0, 40)}... | ${t.targetPcs} шт.`;
-                labelSel.appendChild(opt);
-            });
-            
-            renderTargets();
-            updateStats();
-            saveState();
-            
-            log(`✅ Загружено: ${state.targets.length} SKU, ${total} шт.`, 's');
-            showStatus('✅ ТЗ загружено', 's');
-            speak('Загружено');
+
+            document.getElementById('order-info').style.display='block';
+            document.getElementById('loaded-count').textContent=S.targets.length;
+            document.getElementById('total-plan').textContent=`${totalUnits.toLocaleString('ru')} шт.`;
+            const cities=new Set(S.targets.map(t=>t.city).filter(c=>c&&c!=='Не указан'));
+            const sel=document.getElementById('filter-city'); sel.innerHTML='<option value="">🏙 Все города</option>';
+            [...cities].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+            renderTargets(); updateUI(); save();
+            log(`✅ Загружено: ${S.targets.length} SKU | ${totalUnits} шт.`, 's'); showStatus('✅ ТЗ обработано', 's'); speak('Загружено');
         }
 
-        function renderTargets() {
-            state.filters.city = document.getElementById('filter-city').value;
-            state.filters.mp = document.getElementById('filter-mp').value;
-            
-            const list = document.getElementById('targets-list');
-            list.innerHTML = '';
-            
-            const filtered = state.targets.filter(t => {
-                if (state.filters.city && t.city !== state.filters.city) return false;
-                if (state.filters.mp && t.mp !== state.filters.mp) return false;
-                return true;
+        // 🎯 РЕНДЕР И ФИЛЬТРЫ
+        function getFiltered(){ return S.targets.filter(t=>{ if(S.filters.city&&t.city!==S.filters.city) return false; if(S.filters.mp&&t.mp!==S.filters.mp) return false; return true; }); }
+        function renderTargets(){
+            S.filters.city=document.getElementById('filter-city')?.value||''; S.filters.mp=document.getElementById('filter-mp')?.value||'';
+            const list=document.getElementById('targets-list'); list.innerHTML=''; const data=getFiltered();
+            if(!data.length){list.innerHTML='<p style="color:#888;padding:10px">Нет данных</p>';return;}
+            data.forEach(p=>{
+                const pct=p.targetPcs>0?Math.min(100,Math.round(p.packedPcs/p.targetPcs*100)):0;
+                list.innerHTML+=`<div class="target-item ${p.packedPcs>=p.targetPcs?'done':''}"><b>${p.sku} | ${p.name}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:10px;color:#555">✅ ${p.packedPcs}/${p.targetPcs} шт. ${p.expiry?'| ⏰ '+p.expiry:''}</div></div>`;
+            }); save();
+        }
+        function resetFilters(){ document.getElementById('filter-city').value=''; document.getElementById('filter-mp').value=''; renderTargets(); }
+
+        // 📡 СКАНИРОВАНИЕ
+        function setupScanner(){ const inp=document.getElementById('scanner'); inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}}); inp.addEventListener('focus',()=>inp.select()); }
+        async function startCameraScan(){
+            if(!navigator.mediaDevices?.getUserMedia) return log('❌ Камера не поддерживается','e');
+            try{
+                document.getElementById('scanner').style.display='none'; document.getElementById('interactive').style.display='block';
+                document.getElementById('btn-camera-start').style.display='none'; document.getElementById('btn-camera-stop').style.display='block';
+                await new Promise((res,rej)=>Quagga.init({inputStream:{name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),constraints:{facingMode:"environment"}},decoder:{readers:["code_128_reader","ean_reader","ean_8_reader"]},locate:true},err=>err?rej(err):res()));
+                Quagga.start(); quaggaActive=true; log('📷 Камера активна','s');
+                Quagga.onDetected(res=>{
+                    if(scanLock.has(res.codeResult.code)) return; scanLock.add(res.codeResult.code); setTimeout(()=>scanLock.delete(res.codeResult.code), CONFIG.debounce);
+                    document.getElementById('scanner').classList.add('success'); handleScan(res.codeResult.code); setTimeout(()=>document.getElementById('scanner').classList.remove('success'),400);
+                });
+            }catch(err){ log('❌ Ошибка камеры: '+err.message,'e'); stopCameraScan(); }
+        }
+        function stopCameraScan(){ if(quaggaActive) Quagga.stop(); quaggaActive=false; document.getElementById('scanner').style.display='block'; document.getElementById('interactive').style.display='none'; document.getElementById('btn-camera-start').style.display='block'; document.getElementById('btn-camera-stop').style.display='none'; document.getElementById('scanner').focus(); }
+        function handleScan(bc){
+            hideError(); if(!Object.keys(S.db).length) return showError('⚠️ Загрузите ТЗ'); if(!S.activePallet) return showError('⚠️ Выберите палет');
+            let p=S.db[bc]; if(!p){const f=Object.keys(S.db).find(k=>k.includes(bc)||bc.includes(k)); if(f) p=S.db[f];}
+            if(!p) return showError(`❌ ШК "${bc}" не найден`); if(p.packedPcs>=p.targetPcs) return showError(`🚫 План: ${p.targetPcs}`);
+            S.currentBox.items[bc]=(S.currentBox.items[bc]||0)+1; S.currentBox.weight+=0.12; p.packedPcs++;
+            renderBox(); renderTargets(); updateUI(); log(`📦 ${bc}`,'s'); speak(p.targetPcs-p.packedPcs>0?`Осталось ${p.targetPcs-p.packedPcs}`:'Готово');
+        }
+
+        // 📦 КОРОБ И ПАЛЕТЫ
+        function closeBox(){
+            const city=document.getElementById('city').value.trim(); if(!city) return showError('⚠️ Укажите город'); if(!S.activePallet) return showError('⚠️ Выберите палет'); if(!Object.keys(S.currentBox.items).length) return showError('⚠️ Короб пуст');
+            const id=`BOX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(S.boxCounter).padStart(3,'0')}`;
+            const boxMP = S.db[Object.keys(S.currentBox.items)[0]]?.mp || document.getElementById('marketplace').value;
+            S.pallets[S.activePallet].boxes.push(id); S.pallets[S.activePallet].weight+=S.currentBox.weight; S.pallets[S.activePallet].mp=boxMP;
+            S.history.unshift({id, city, pallet:S.activePallet, mp:boxMP, items:{...S.currentBox.items}, weight:S.currentBox.weight, date:new Date().toISOString()});
+            S.boxCounter++; save(); generateBoxLabel(id); clearBoxUI(); renderTargets(); renderPallets(); speak('Короб закрыт'); triggerPrint('label-box');
+        }
+        function retryPrint(){ if(S.lastPrint) triggerPrint(S.lastPrint); }
+        function reopenLastBox(){
+            if(!S.history.length) return showError('Нет коробов'); const lb=S.history[0]; if(!confirm(`Переоткрыть ${lb.id}?`)) return;
+            for(const [bc,q] of Object.entries(lb.items)){S.currentBox.items[bc]=(S.currentBox.items[bc]||0)+q; if(S.db[bc]) S.db[bc].packedPcs-=q;}
+            S.currentBox.weight+=lb.weight; S.history.shift(); const p=S.pallets[lb.pallet]; if(p){p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}
+            save(); renderBox(); renderTargets(); renderPallets(); updateUI(); document.getElementById('retry-print-btn').style.display='none';
+        }
+        function clearBox(){ if(!Object.keys(S.currentBox.items).length||!confirm('Очистить?')) return; for(const [bc,q] of Object.entries(S.currentBox.items)) if(S.db[bc]) S.db[bc].packedPcs-=q; S.currentBox={items:{},weight:0}; renderBox(); updateUI(); }
+        function createPallet(){
+            const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`; if(S.pallets[id]) return showError('Палет существует');
+            S.pallets[id]={id, boxes:[], weight:0, mp: document.getElementById('marketplace').value}; S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; renderPallets(); updateUI(); save(); speak('Палет создан');
+        }
+        function selectPallet(id){ S.activePallet=id; document.getElementById('pallet-input').value=id; document.getElementById('btn-print-pallet').disabled=false; renderPallets(); updateUI(); }
+        function renderPallets(){
+            const l=document.getElementById('pallets-list'); l.innerHTML=''; 
+            if(!Object.keys(S.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}
+            Object.values(S.pallets).forEach(p=>{
+                const d=document.createElement('div'); d.className=`pallet-item ${p.id===S.activePallet?'active':''}`;
+                d.innerHTML=`<span class="mp-tag ${p.mp?.toLowerCase()||'wb'}">${p.mp||'WB'}</span><b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;
+                d.onclick=()=>selectPallet(p.id); l.appendChild(d);
             });
+        }
+        function renderBox(){
+            const tb=document.getElementById('box-tbody'); tb.innerHTML=''; const items=Object.entries(S.currentBox.items);
+            document.getElementById('empty-msg').style.display=items.length?'none':'block';
+            items.forEach(([bc,q])=>{const p=S.db[bc]||{sku:'?',name:'?'}; tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,15)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button> ${q} <button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px" onclick="removeItem('${bc}')">✕</button></td></tr>`;});
+        }
+        function changeQty(bc,d){if(d>0&&S.db[bc]&&S.db[bc].packedPcs>=S.db[bc].targetPcs) return showError('🚫 Лимит'); const o=S.currentBox.items[bc]||0; const n=Math.max(0,o+d); if(n===0) delete S.currentBox.items[bc]; else S.currentBox.items[bc]=n; if(S.db[bc]) S.db[bc].packedPcs+=(n-o); renderBox(); updateUI();}
+        function removeItem(bc){const q=S.currentBox.items[bc]||0; delete S.currentBox.items[bc]; if(S.db[bc]) S.db[bc].packedPcs-=q; renderBox(); updateUI();}
+        function updateUI(){
+            document.getElementById('items-count').textContent=Object.keys(S.currentBox.items).length;
+            document.getElementById('total-weight').textContent=S.currentBox.weight.toFixed(2);
+            const hi=Object.keys(S.currentBox.items).length>0;
+            document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim() && S.activePallet && hi);
+            document.getElementById('btn-reopen').disabled=!(S.history.length>0 && !hi);
+            document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';
+        }
+        function clearBoxUI(){S.currentBox={items:{},weight:0}; renderBox(); updateUI();}
+
+        // 🖨️ ПЕЧАТЬ И ОТЧЁТЫ
+        function generateBoxLabel(id){
+            const b=S.history[0]; const mp=b.mp||'WB';
+            document.getElementById('lbl-mp-box').className=`label-title ${mp==='WB'?'wb':'ozon'}`;
+            document.getElementById('lbl-mp-box').textContent=mp==='WB'?'🔴 WB FBO':'🔵 OZON FBO';
+            document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
+            document.getElementById('lbl-city-box').textContent=b.city; document.getElementById('lbl-pallet-box').textContent=b.pallet; document.getElementById('lbl-box-id-box').textContent=b.id;
+            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(1)+' кг'; document.getElementById('lbl-weight-footer').textContent='⚖️ '+b.weight.toFixed(1)+' кг';
+            let tq=0; document.getElementById('lbl-total-pos').textContent=Object.keys(b.items).length; Object.values(b.items).forEach(q=>tq+=q); document.getElementById('lbl-total-qty').textContent=tq;
+            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
+            Object.entries(b.items).forEach(([bc,q])=>{const p=S.db[bc]; ul.innerHTML+=`<li><span class="bc">${bc}</span><span class="qty">×${q}</span><div>${p?.name||'?'}</div></li>`;});
+            if(typeof JsBarcode!=='undefined') JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:12,displayValue:false});
+        }
+        function triggerPrint(type){ S.lastPrint=type; document.getElementById('retry-print-btn').style.display='block'; window.print(); setTimeout(()=>document.getElementById('retry-print-btn').style.display='none',1000); }
+        function printPalletLabel(){
+            if(!S.activePallet) return showError('Выберите палет');
+            const p=S.pallets[S.activePallet]; const city=document.getElementById('city').value.trim()||'Не указан'; const mp=p.mp||document.getElementById('marketplace').value;
+            const container=document.getElementById('label-pallet-container'); container.innerHTML='';
+            const boxesPer=60; const pages=Math.ceil(p.boxes.length/boxesPer);
+            const totalBoxes = p.boxes.length;
             
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="empty-state">Нет данных</div>';
-                return;
+            for(let i=0;i<pages;i++){
+                const slice=p.boxes.slice(i*boxesPer,(i+1)*boxesPer);
+                const page=document.createElement('div'); page.className='pallet-page label-area';
+                page.innerHTML=`<div class="pallet-header"><h1 class="label-title ${mp==='WB'?'wb':'ozon'}">${mp==='WB'?'🔴 WILDBERRIES FBO':'🔵 OZON FBO'}</h1><span style="font-size:10pt; font-weight:bold;">📦 Всего коробов: ${totalBoxes} шт.</span><span style="font-size:8pt">${new Date().toLocaleString('ru')}</span></div>
+                <div class="pallet-meta"><div><strong>📍 Город</strong>${city}</div><div><strong>🆔 Палет</strong>${p.id}</div><div><strong>📦 Коробов</strong><span style="font-size:18pt; font-weight:bold; color:#000;">${totalBoxes}</span></div></div>
+                <div style="text-align:center;font-size:10pt;margin-bottom:5mm">📄 Страница ${i+1} из ${pages}</div>
+                <ul class="boxes-grid">${slice.map((b,idx)=>`<li><div class="box-id">${b}</div><div style="color:#666">№ ${i*boxesPer+idx+1} из ${totalBoxes}</div></li>`).join('')}</ul>
+                <div class="page-footer">FBO Отгрузка • ${city} • ${mp} • Стр. ${i+1}/${pages}</div>`;
+                container.appendChild(page);
             }
+            setTimeout(()=>triggerPrint('label-pallet-container'), 200);
+        }
+        function generateTZReport(){
+            const data=getFiltered(); if(!data.length) return showError('Нет данных для печати');
+            const mp=document.getElementById('marketplace').value; const city=S.filters.city||'Все';
+            const win=window.open('','_blank','width=900,height=700');
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ТЗ Печать</title><style>@page{size:A4;margin:15mm}body{font-family:system-ui;font-size:10pt}.h{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left}th{background:#f0f0f0}.done{background:#e8f5e9}.partial{background:#fff3cd}</style></head><body>
+            <div class="h"><h1>📦 ТЕХНИЧЕСКОЕ ЗАДАНИЕ</h1><p>Дата: ${new Date().toLocaleDateString('ru')} | Город: ${city} | МП: ${mp}</p></div>
+            <table><thead><tr><th>№</th><th>МП</th><th>Артикул</th><th>Товар</th><th>План</th><th>Факт</th><th>Ост.</th><th>Статус</th></tr></thead><tbody>
+            ${data.map((t,i)=>{const r=t.targetPcs-t.packedPcs;const st=r===0?'✅ Готово':'🔴 В работе';const cl=r===0?'done':'partial';return `<tr class="${cl}"><td>${i+1}</td><td><b>${t.mp}</b></td><td>${t.sku}</td><td>${t.name.substring(0,40)}...</td><td>${t.targetPcs}</td><td>${t.packedPcs}</td><td>${r}</td><td>${st}</td></tr>`}).join('')}
+            </tbody></table><p style="margin-top:20px;text-align:center;font-size:8pt;color:#666">FBO Отгрузка v${CONFIG.version}</p></body></html>`);
+            win.document.close(); setTimeout(()=>win.print(), 500); speak('Подготовлено к печати');
+        }
+        function closeCity(){
+            const city=document.getElementById('city').value.trim(); if(!city) return showError('Укажите город');
+            const cityBoxes=S.history.filter(b=>b.city===city); if(!cityBoxes.length) return showError(`Нет коробов по городу "${city}"`);
             
-            filtered.forEach(t => {
-                const pct = t.targetPcs > 0 ? Math.round(t.packedPcs / t.targetPcs * 100) : 0;
-                const done = t.packedPcs >= t.targetPcs;
-                
-                const div = document.createElement('div');
-                div.className = `target-item ${done ? 'done' : ''}`;
-                div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;margin-bottom:0.375rem">
-                        <b>${t.sku}</b>
-                        <span class="badge ${done ? 'success' : 'warning'}">${t.packedPcs}/${t.targetPcs}</span>
-                    </div>
-                    <div style="font-size:0.8125rem;color:#64748b;margin-bottom:0.375rem">${t.name}</div>
-                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-                    <div style="font-size:0.75rem;color:#64748b">
-                        ${t.expiry ? `⏰ ${t.expiry} | ` : ''}${done ? '✅ Готово' : `⏳ Осталось: ${t.targetPcs - t.packedPcs}`}
-                    </div>
-                `;
-                list.appendChild(div);
+            const pallets={}; let totalW=0, totalBoxes=0;
+            cityBoxes.forEach(box => {
+                if(!pallets[box.pallet]) pallets[box.pallet] = { id:box.pallet, mp:box.mp, boxes:[], weight:0, items:{} };
+                pallets[box.pallet].boxes.push(box); pallets[box.pallet].weight+=box.weight; totalW+=box.weight; totalBoxes++;
+                Object.entries(box.items).forEach(([bc,qty])=>{ pallets[box.pallet].items[bc]=(pallets[box.pallet].items[bc]||0)+qty; });
             });
-        }
-        
-        function resetFilters() {
-            document.getElementById('filter-city').value = '';
-            document.getElementById('filter-mp').value = '';
-            renderTargets();
-        }
 
-        // Сканирование
-        function setupScanner() {
-            const inp = document.getElementById('scanner');
-            inp.addEventListener('keypress', e => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleScan(inp.value.trim());
-                    inp.value = '';
-                    setTimeout(() => inp.classList.remove('success', 'error'), 300);
-                }
-            });
-            inp.addEventListener('focus', () => inp.select());
-        }
-        
-        async function toggleCamera() {
-            if (cameraActive) {
-                Quagga.stop();
-                cameraActive = false;
-                document.getElementById('camera-view').style.display = 'none';
-                document.getElementById('btn-camera').textContent = '📷 Камера';
-            } else {
-                try {
-                    await new Promise((res, rej) => {
-                        Quagga.init({
-                            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#camera-view'), constraints: { facingMode: "environment" } },
-                            decoder: { readers: ["code_128_reader", "ean_reader"] }
-                        }, err => err ? rej(err) : res());
-                    });
-                    Quagga.start();
-                    cameraActive = true;
-                    document.getElementById('camera-view').style.display = 'block';
-                    document.getElementById('btn-camera').textContent = '⏹ Стоп';
-                    log('📷 Камера включена', 's');
-                    
-                    Quagga.onDetected(data => {
-                        handleScan(data.codeResult.code);
-                    });
-                } catch (err) {
-                    showError('❌ Ошибка камеры: ' + err.message);
-                }
-            }
-        }
-        
-        function handleScan(bc) {
-            if (Object.keys(state.db).length === 0) return showError('⚠️ Загрузите ТЗ');
-            if (!state.activePallet) return showError('⚠️ Выберите палет');
+            currentReportData = { city, date: new Date().toLocaleString('ru'), mp: pallets[Object.keys(pallets)[0]]?.mp, pallets, totalW, totalBoxes, uniqueSKU: new Set(cityBoxes.flatMap(b=>Object.keys(b.items))).size };
             
-            let item = state.db[bc];
-            if (!item) {
-                const found = Object.keys(state.db).find(k => k.includes(bc) || bc.includes(k));
-                if (found) item = state.db[found];
-            }
-            
-            if (!item) return showError(`❌ ШК не найден: ${bc}`);
-            if (item.packedPcs >= item.targetPcs) return showError(`🚫 План выполнен: ${item.targetPcs}`);
-            
-            state.box.items[bc] = (state.box.items[bc] || 0) + 1;
-            state.box.weight += 0.12;
-            item.packedPcs++;
-            
-            renderBox();
-            renderTargets();
-            updateUI();
-            updateStats();
-            log(`📦 ${bc} (${item.name.substring(0, 20)}...)`, 's');
-            speak(`Осталось ${item.targetPcs - item.packedPcs}`);
-        }
+            document.getElementById('report-city-name').textContent = currentReportData.city;
+            document.getElementById('report-date').textContent = currentReportData.date;
+            document.getElementById('report-mp').textContent = currentReportData.mp;
+            document.getElementById('report-summary').innerHTML = `<span>📦 Палет: <b>${Object.keys(pallets).length}</b></span><span>📦 Коробов: <b>${totalBoxes}</b></span><span>⚖️ Вес: <b>${totalW.toFixed(1)} кг</b></span><span>🔢 SKU: <b>${currentReportData.uniqueSKU}</b></span>`;
 
-        // Короб
-        function closeBox() {
-            const city = document.getElementById('city').value.trim();
-            if (!city) return showError('⚠️ Укажите город');
-            if (!state.activePallet) return showError('⚠️ Выберите палет');
-            if (Object.keys(state.box.items).length === 0) return showError('⚠️ Короб пуст');
-            
-            const id = `BOX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
-            const mp = state.db[Object.keys(state.box.items)[0]]?.mp || document.getElementById('marketplace').value;
-            
-            state.pallets[state.activePallet].boxes.push(id);
-            state.pallets[state.activePallet].weight += state.box.weight;
-            state.pallets[state.activePallet].mp = mp;
-            
-            state.history.unshift({
-                id, city, pallet: state.activePallet, mp,
-                items: { ...state.box.items },
-                weight: state.box.weight,
-                date: new Date().toISOString()
-            });
-            
-            state.boxCounter++;
-            saveState();
-            clearBoxUI();
-            renderPallets();
-            renderTargets();
-            updateStats();
-            speak('Короб закрыт');
-        }
-        
-        function reopenBox() {
-            if (state.history.length === 0) return;
-            const last = state.history[0];
-            if (!confirm(`Переоткрыть ${last.id}?`)) return;
-            
-            Object.entries(last.items).forEach(([bc, qty]) => {
-                state.box.items[bc] = (state.box.items[bc] || 0) + qty;
-                if (state.db[bc]) state.db[bc].packedPcs -= qty;
-            });
-            state.box.weight += last.weight;
-            state.history.shift();
-            
-            const pallet = state.pallets[last.pallet];
-            if (pallet) {
-                pallet.boxes = pallet.boxes.filter(b => b !== last.id);
-                pallet.weight -= last.weight;
-            }
-            
-            saveState();
-            renderBox();
-            renderTargets();
-            renderPallets();
-            updateUI();
-            updateStats();
-        }
-        
-        function clearBox() {
-            if (Object.keys(state.box.items).length === 0 || !confirm('Очистить короб?')) return;
-            Object.entries(state.box.items).forEach(([bc, qty]) => {
-                if (state.db[bc]) state.db[bc].packedPcs -= qty;
-            });
-            state.box = { items: {}, weight: 0 };
-            renderBox();
-            updateUI();
-        }
-        
-        function renderBox() {
-            const tbody = document.getElementById('box-tbody');
-            tbody.innerHTML = '';
-            const items = Object.entries(state.box.items);
-            
-            document.getElementById('box-empty').style.display = items.length ? 'none' : 'block';
-            
-            items.forEach(([bc, qty]) => {
-                const item = state.db[bc] || { sku: '?', name: '?' };
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-family:monospace;font-size:0.75rem">${bc}</td>
-                    <td>${item.sku}</td>
-                    <td>${item.name.substring(0, 20)}${item.name.length > 20 ? '...' : ''}</td>
-                    <td><button class="qty-btn" onclick="changeQty('${bc}',-1)">−</button> <b>${qty}</b> <button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td>
-                    <td><button class="danger" style="width:auto;padding:0.25rem 0.5rem" onclick="removeItem('${bc}')">✕</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-        
-        function changeQty(bc, delta) {
-            const current = state.box.items[bc] || 0;
-            const newVal = Math.max(0, current + delta);
-            
-            if (newVal === 0) delete state.box.items[bc];
-            else state.box.items[bc] = newVal;
-            
-            if (state.db[bc]) state.db[bc].packedPcs += (newVal - current);
-            renderBox();
-            updateUI();
-        }
-        
-        function removeItem(bc) {
-            const qty = state.box.items[bc] || 0;
-            delete state.box.items[bc];
-            if (state.db[bc]) state.db[bc].packedPcs -= qty;
-            renderBox();
-            updateUI();
-        }
-        
-        function updateUI() {
-            document.getElementById('box-items').textContent = Object.keys(state.box.items).length;
-            document.getElementById('box-weight').textContent = state.box.weight.toFixed(2);
-            
-            const hasItems = Object.keys(state.box.items).length > 0;
-            document.getElementById('btn-close').disabled = !(document.getElementById('city').value.trim() && state.activePallet && hasItems);
-            document.getElementById('btn-reopen').disabled = !(state.history.length > 0 && !hasItems);
-            
-            const badge = document.getElementById('box-badge');
-            badge.textContent = hasItems ? '# ТЕКУЩИЙ' : '# НОВАЯ';
-            badge.className = `badge ${hasItems ? 'warning' : 'info'}`;
-        }
-        
-        function clearBoxUI() {
-            state.box = { items: {}, weight: 0 };
-            renderBox();
-            updateUI();
-        }
-
-        // Палеты
-        function createPallet() {
-            const id = prompt('ID палета:') || `PAL-${Date.now().toString().slice(-5)}`;
-            if (state.pallets[id]) return showError('Палет существует');
-            
-            state.pallets[id] = { id, boxes: [], weight: 0, mp: document.getElementById('marketplace').value };
-            state.activePallet = id;
-            document.getElementById('pallet-display').value = id;
-            renderPallets();
-            updateUI();
-            saveState();
-            speak('Палет создан');
-        }
-        
-        function selectPallet(id) {
-            state.activePallet = id;
-            document.getElementById('pallet-display').value = id;
-            renderPallets();
-            updateUI();
-        }
-        
-        function renderPallets() {
-            const list = document.getElementById('pallets-list');
-            list.innerHTML = '';
-            
-            if (Object.keys(state.pallets).length === 0) {
-                list.innerHTML = '<div class="empty-state">Нет палетов</div>';
-                return;
-            }
-            
-            Object.values(state.pallets).forEach(p => {
-                const div = document.createElement('div');
-                div.className = `pallet-item ${p.id === state.activePallet ? 'active' : ''}`;
-                div.innerHTML = `
-                    <span class="mp-tag ${p.mp?.toLowerCase() || 'wb'}">${p.mp || 'WB'}</span>
-                    <b>📦 ${p.id}</b>
-                    <div style="margin-top:0.375rem;font-size:0.8125rem;color:#64748b">
-                        📦 ${p.boxes.length} кор. | ⚖️ ${p.weight.toFixed(1)} кг
-                    </div>
-                `;
-                div.onclick = () => selectPallet(p.id);
-                list.appendChild(div);
-            });
-        }
-
-        // ===== ЭТИКЕТКИ 58x40 (ТОЧНО КАК НА ФОТО) =====
-        function openLabelsModal() {
-            if (state.targets.length === 0) return showError('⚠️ Загрузите ТЗ');
-            document.getElementById('labels-modal').style.display = 'flex';
-            updateLabelStats();
-        }
-        
-        document.getElementById('label-product-select')?.addEventListener('change', updateLabelStats);
-        document.getElementById('label-copies')?.addEventListener('input', updateLabelStats);
-        
-        function updateLabelStats() {
-            const sel = document.getElementById('label-product-select').value;
-            const copies = parseInt(document.getElementById('label-copies').value) || 1;
-            
-            let total = 0;
-            if (sel === 'all') total = state.targets.reduce((sum, t) => sum + t.targetPcs, 0);
-            else total = state.targets[sel].targetPcs;
-            
-            document.getElementById('label-count').textContent = sel === 'all' ? state.targets.length : '1';
-            document.getElementById('label-total').textContent = total * copies;
-            document.getElementById('label-stats').style.display = 'flex';
-        }
-        
-        function printLabels() { generateLabels(false); }
-        function previewLabels() { generateLabels(true); }
-        
-        function generateLabels(previewOnly) {
-            const sel = document.getElementById('label-product-select').value;
-            const copies = parseInt(document.getElementById('label-copies').value) || 1;
-            const container = document.getElementById('print-container');
-            container.innerHTML = '';
-            
-            let items = sel === 'all' ? state.targets : [state.targets[sel]];
-            items = items.filter(t => t.targetPcs > 0);
-            if (items.length === 0) return showError('Нет товаров');
-            
-            let totalLabels = 0;
-            items.forEach(t => totalLabels += t.targetPcs * copies);
-            log(`🏷️ Генерация ${totalLabels} этикеток...`, 's');
-            
-            let labelNum = 1;
-            
-            items.forEach(product => {
-                for (let c = 0; c < copies; c++) {
-                    for (let i = 0; i < product.targetPcs; i++) {
-                        const div = document.createElement('div');
-                        div.className = 'label-58x40';
-                        
-                        const bc = product.bc || product.sku;
-                        const expiry = product.expiry ? `Годен: ${product.expiry}` : 'Годен: не указан';
-                        const quant = `Квант: ${product.quant}`;
-                        
-                        // ТОЧНЫЙ МАКЕТ КАК НА ФОТО
-                        div.innerHTML = `
-                            <div class="top-row">
-                                <span class="warning">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</span>
-                                <span class="counter">${labelNum} / ${totalLabels}</span>
-                            </div>
-                            <div class="main-area">
-                                <div class="left-info"><div class="sku">${product.sku}</div></div>
-                                <div class="right-barcode">
-                                    <div class="barcode-wrap"><svg id="bc-${labelNum}"></svg></div>
-                                    <div class="bc-number">${bc}</div>
-                                </div>
-                            </div>
-                            <div class="product-name">${product.name}</div>
-                            <div class="bottom-row">
-                                <span>${expiry}</span>
-                                <span>${quant}</span>
-                            </div>
-                        `;
-                        
-                        container.appendChild(div);
-                        
-                        setTimeout(() => {
-                            try {
-                                const format = /^\d{12,13}$/.test(bc) ? 'EAN13' : 'CODE128';
-                                JsBarcode(`#bc-${labelNum}`, bc, {
-                                    format: format, width: 1.8, height: 45,
-                                    displayValue: false, margin: 0
-                                });
-                            } catch (e) {
-                                log(`⚠️ Ошибка ШК ${bc}`, 'e');
-                            }
-                        }, labelNum * 10);
-                        
-                        labelNum++;
-                    }
-                }
-            });
-            
-            setTimeout(() => {
-                if (previewOnly) {
-                    container.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;background:white;padding:20px;overflow:auto;max-width:100vw;max-height:100vh;';
-                    log('👁️ Предпросмотр готов', 's');
-                } else {
-                    container.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;background:white;padding:10mm;';
-                    setTimeout(() => {
-                        log('🖨️ Печать...', 's');
-                        window.print();
-                        setTimeout(() => {
-                            container.style.cssText = 'position:absolute;left:-9999px;top:0;z-index:-1;';
-                        }, 1000);
-                    }, 500);
-                }
-            }, totalLabels * 10 + 500);
-        }
-
-        // Отчёты и печать
-        function printTZ() {
-            const data = state.targets.filter(t => {
-                if (state.filters.city && t.city !== state.filters.city) return false;
-                if (state.filters.mp && t.mp !== state.filters.mp) return false;
-                return true;
-            });
-            if (data.length === 0) return showError('Нет данных');
-            
-            const win = window.open('', '_blank');
-            win.document.write(`<!DOCTYPE html><html><head><title>ТЗ</title><style>@page{size:A4;margin:15mm}body{font-family:Arial;font-size:10pt}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left}th{background:#f0f0f0}</style></head><body><h1 style="text-align:center">📦 ТЕХНИЧЕСКОЕ ЗАДАНИЕ</h1><p>Дата: ${new Date().toLocaleDateString('ru')} | Город: ${state.filters.city||'Все'} | МП: ${state.filters.mp||'Все'}</p><table><thead><tr><th>№</th><th>МП</th><th>Артикул</th><th>Товар</th><th>План</th><th>Факт</th><th>Ост.</th></tr></thead><tbody>${data.map((t,i)=>`<tr><td>${i+1}</td><td>${t.mp}</td><td>${t.sku}</td><td>${t.name.substring(0,40)}</td><td>${t.targetPcs}</td><td>${t.packedPcs}</td><td>${t.targetPcs-t.packedPcs}</td></tr>`).join('')}</tbody></table></body></html>`);
-            win.document.close();
-            setTimeout(() => win.print(), 500);
-        }
-        
-        function closeCity() {
-            const city = document.getElementById('city').value.trim();
-            if (!city) return showError('Укажите город');
-            const boxes = state.history.filter(b => b.city === city);
-            if (boxes.length === 0) return showError(`Нет коробов: ${city}`);
-            
-            const pallets = {};
-            let totalWeight = 0;
-            boxes.forEach(box => {
-                if (!pallets[box.pallet]) pallets[box.pallet] = { id: box.pallet, mp: box.mp, boxes: [], weight: 0, items: {} };
-                pallets[box.pallet].boxes.push(box);
-                pallets[box.pallet].weight += box.weight;
-                totalWeight += box.weight;
-                Object.entries(box.items).forEach(([bc, qty]) => pallets[box.pallet].items[bc] = (pallets[box.pallet].items[bc] || 0) + qty);
-            });
-            
-            currentReport = { city, pallets, totalWeight, totalBoxes: boxes.length };
-            document.getElementById('report-city').textContent = city;
-            document.getElementById('report-date').textContent = new Date().toLocaleString('ru');
-            document.getElementById('report-mp').textContent = Object.values(pallets)[0]?.mp || '-';
-            document.getElementById('report-stats').innerHTML = `<span>📦 Палет: <b>${Object.keys(pallets).length}</b></span><span>📦 Коробов: <b>${boxes.length}</b></span><span>⚖️ Вес: <b>${totalWeight.toFixed(1)} кг</b></span>`;
-            
-            let html = '';
-            Object.values(pallets).forEach(p => {
-                const rows = Object.entries(p.items).map(([bc, qty]) => {
-                    const item = state.db[bc] || { sku: '?', name: '?' };
-                    return `<tr><td style="padding:4px;border:1px solid #ddd">${bc}</td><td style="padding:4px;border:1px solid #ddd">${item.sku}</td><td style="padding:4px;border:1px solid #ddd">${item.name.substring(0,30)}</td><td style="padding:4px;border:1px solid #ddd;text-align:center"><b>${qty}</b></td></tr>`;
+            let html=''; 
+            Object.values(pallets).sort((a,b)=>a.id.localeCompare(b.id)).forEach(p=>{
+                const rows = Object.entries(p.items).map(([bc,q])=>{
+                    const prod=S.db[bc]||{sku:'?',name:'Неизвестно'};
+                    return `<tr><td style="padding:4px;border:1px solid #ddd;font-family:monospace">${bc}</td><td style="padding:4px;border:1px solid #ddd">${prod.sku}</td><td style="padding:4px;border:1px solid #ddd">${prod.name.substring(0,30)}</td><td style="padding:4px;border:1px solid #ddd;text-align:center;font-weight:bold">${q}</td></tr>`;
                 }).join('');
-                html += `<div style="margin-bottom:15px"><div style="background:#d1fae5;padding:6px;border-radius:6px;margin-bottom:6px;font-weight:bold">📦 ${p.id} | ${p.boxes.length} кор. | ${p.weight.toFixed(1)} кг</div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f8fafc"><th style="padding:5px;border:1px solid #ddd">ШК</th><th style="padding:5px;border:1px solid #ddd">Артикул</th><th style="padding:5px;border:1px solid #ddd">Название</th><th style="padding:5px;border:1px solid #ddd">Кол-во</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                html+=`<div style="margin-bottom:15px"><div style="background:#e8f5e9;padding:6px;border-radius:6px;margin-bottom:6px;font-weight:bold">📦 Палет: ${p.id} | 📦 ${p.boxes.length} кор. | ⚖️ ${p.weight.toFixed(1)} кг | МП: ${p.mp}</div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f8f9fa"><th style="padding:5px;border:1px solid #ddd">ШК</th><th style="padding:5px;border:1px solid #ddd">Артикул</th><th style="padding:5px;border:1px solid #ddd">Название</th><th style="padding:5px;border:1px solid #ddd">Кол-во</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
             document.getElementById('report-content').innerHTML = html;
             document.getElementById('report-modal').style.display = 'flex';
-            speak('Отчёт готов');
+            speak('Отчёт сформирован');
         }
-        
-        function exportReportExcel() {
-            if (!currentReport) return;
-            const data = [['Палет', 'Короб', 'ШК', 'Артикул', 'Товар', 'Кол-во']];
-            Object.values(currentReport.pallets).forEach(p => {
-                p.boxes.forEach(box => {
-                    Object.entries(box.items).forEach(([bc, qty]) => {
-                        const item = state.db[bc] || { sku: '?', name: '?' };
-                        data.push([p.id, box.id, bc, item.sku, item.name, qty]);
+        function printReport(){
+            const modal=document.getElementById('report-modal');
+            modal.style.position='absolute';modal.style.top='0';modal.style.left='0';modal.style.background='#fff';modal.style.display='block';
+            window.print(); setTimeout(()=>{modal.style.position='fixed';modal.style.background='rgba(0,0,0,0.6)';},300);
+        }
+
+        // 📊 ЭКСПОРТ ОТЧЁТА В EXCEL
+        function exportExcelReport(){
+            if(!currentReportData) return showError('Нет данных для экспорта');
+            const {city, date, mp, pallets, totalW, totalBoxes, uniqueSKU} = currentReportData;
+            
+            // Лист 1: Сводка
+            const summary = [
+                ['ОТЧЁТ ЗАКРЫТИЯ ГОРОДА', ''],
+                ['Город', city],
+                ['Дата', date],
+                ['Маркетплейс', mp],
+                ['Палетов', Object.keys(pallets).length],
+                ['Коробов', totalBoxes],
+                ['Общий вес (кг)', totalW.toFixed(2)],
+                ['Уникальных SKU', uniqueSKU]
+            ];
+            const wsSummary = XLSX.utils.aoa_to_sheet(summary);
+            
+            // Лист 2: Детализация
+            const details = [['Палет', 'ID Короба', 'ШК', 'Артикул', 'Название', 'Кол-во']];
+            Object.values(pallets).sort((a,b)=>a.id.localeCompare(b.id)).forEach(p=>{
+                p.boxes.forEach(box=>{
+                    Object.entries(box.items).forEach(([bc, qty])=>{
+                        const prod=S.db[bc]||{sku:'?',name:'?'};
+                        details.push([p.id, box.id, bc, prod.sku, prod.name, qty]);
                     });
                 });
             });
-            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wsDetails = XLSX.utils.aoa_to_sheet(details);
+
+            // Сборка файла
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
-            XLSX.writeFile(wb, `FBO_${currentReport.city}_${new Date().toISOString().slice(0,10)}.xlsx`);
-        }
-        
-        function printPallet() {
-            if (!state.activePallet) return showError('Выберите палет');
-            const p = state.pallets[state.activePallet];
-            alert(`Печать палета ${p.id}. Всего коробов: ${p.boxes.length}. (Функция в разработке)`);
-        }
-        
-        function exportPalletExcel() {
-            if (!state.activePallet) return showError('Выберите палет');
-            const p = state.pallets[state.activePallet];
-            const data = [['Короб', 'ШК', 'Артикул', 'Товар', 'Кол-во']];
-            p.boxes.forEach(boxId => {
-                const box = state.history.find(b => b.id === boxId);
-                if (box) Object.entries(box.items).forEach(([bc, qty]) => {
-                    const item = state.db[bc] || { sku: '?', name: '?' };
-                    data.push([boxId, bc, item.sku, item.name, qty]);
-                });
-            });
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Палет');
-            XLSX.writeFile(wb, `PAL_${p.id}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Сводка');
+            XLSX.utils.book_append_sheet(wb, wsDetails, 'Детализация по коробам');
+            
+            const fileName = `FBO_Отчёт_${city}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            speak('Отчёт Excel скачан');
+            showStatus('✅ Excel отчёт сформирован', 's');
         }
 
-        // Сохранение
-        function updateStats() {
-            document.getElementById('stat-sku').textContent = state.targets.length;
-            const total = state.targets.reduce((sum, t) => sum + t.targetPcs, 0);
-            document.getElementById('stat-plan').textContent = total.toLocaleString('ru') + ' шт.';
-            document.getElementById('stat-boxes').textContent = state.history.length;
-        }
-        
-        function saveState() {
-            try { localStorage.setItem(CONFIG.storageKey, JSON.stringify({ targets: state.targets, history: state.history, boxCounter: state.boxCounter, pallets: state.pallets, activePallet: state.activePallet, filters: state.filters, voice: state.voice })); } catch(e){}
-        }
-        
-        function loadState() {
-            try {
-                const s = localStorage.getItem(CONFIG.storageKey);
-                if (s) {
-                    const d = JSON.parse(s);
-                    Object.assign(state, d);
-                    if (state.voice === false) document.getElementById('voice-btn').textContent = '🔇';
-                    renderPallets(); renderTargets(); updateUI(); updateStats();
-                    log('💾 Данные загружены', 's');
-                }
-            } catch(e) { log('️ Ошибка загрузки', 'e'); }
-        }
-        
-        function exportState() {
-            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `fbo_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-        }
-        
-        function importState(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const d = JSON.parse(ev.target.result);
-                    if (confirm('Загрузить бэкап?')) {
-                        Object.assign(state, d);
-                        renderPallets(); renderTargets(); updateUI(); updateStats(); saveState();
-                        showStatus('✅ Восстановлено', 's');
-                    }
-                } catch(err) { showError('❌ Ошибка бэкапа'); }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        }
-        
-        function resetAll() {
-            if (confirm('⚠️ Сбросить всё?')) {
-                localStorage.removeItem(CONFIG.storageKey);
-                location.reload();
-            }
-        }
+        // 💾 СОХРАНЕНИЕ
+        function save(){ try{localStorage.setItem(CONFIG.storageKey, JSON.stringify({targets:S.targets, history:S.history, boxCounter:S.boxCounter, pallets:S.pallets, activePallet:S.activePallet, filters:S.filters, voice:S.voice, city:document.getElementById('city').value, mp:document.getElementById('marketplace').value}));}catch(e){} }
+        function loadState(){ try{ const s=localStorage.getItem(CONFIG.storageKey); if(s){const d=JSON.parse(s); Object.assign(S,d); if(S.city) document.getElementById('city').value=S.city; if(S.mp) document.getElementById('marketplace').value=S.mp; if(S.voice===false) toggleVoice(); renderTargets(); renderPallets(); updateUI(); log('💾 Данные восстановлены','s');} }catch(e){log('⚠️ Ошибка загрузки','e');} }
+        function exportState(){ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download=`fbo_backup_${new Date().toISOString().slice(0,10)}.json`;a.click(); speak('Бэкап скачан'); }
+        function importState(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{ try{const d=JSON.parse(ev.target.result); if(confirm('Заменить данные бэкапом?')){Object.assign(S,d); if(S.city) document.getElementById('city').value=S.city; renderTargets(); renderPallets(); updateUI(); save(); showStatus('✅ Восстановлено','s');}}catch(err){showError('❌ Ошибка бэкапа')}}; r.readAsText(f); e.target.value=''; }
+        function resetAllData(){ if(confirm('⚠️ Полный сброс?')){localStorage.removeItem(CONFIG.storageKey);location.reload();} }
     </script>
 </body>
 </html>
