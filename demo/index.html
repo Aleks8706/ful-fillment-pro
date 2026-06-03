@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <title>WMS Pro - Приемка товара (Excel Edition)</title>
+    <title>WMS Pro - Маппинг колонок</title>
     
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <!-- SheetJS для работы с Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
@@ -252,6 +251,7 @@
         .btn-secondary { background: var(--card-light); color: var(--text); border: 1px solid var(--border); }
         .btn-excel { background: var(--excel); color: white; }
         .btn-lg { width: 100%; padding: 18px; font-size: 1.1rem; margin-top: 10px; }
+        .btn-block { width: 100%; }
 
         .file-zone {
             display: flex;
@@ -342,11 +342,13 @@
             background: var(--card);
             border-radius: 12px;
             padding: 25px;
-            max-width: 500px;
+            max-width: 900px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
         }
+
+        .modal-content.large { max-width: 900px; }
 
         .label-preview {
             background: white;
@@ -438,30 +440,6 @@
             cursor: pointer;
         }
 
-        .excel-preview {
-            background: var(--card-light);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-        }
-
-        .excel-row {
-            display: grid;
-            grid-template-columns: 1fr 2fr 0.5fr;
-            gap: 10px;
-            padding: 6px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .excel-row.header {
-            font-weight: bold;
-            color: var(--primary);
-            border-bottom: 2px solid var(--primary);
-        }
-
         .file-types {
             display: flex;
             gap: 8px;
@@ -481,11 +459,202 @@
         .badge-csv { background: #666; color: white; }
         .badge-json { background: #f39c12; color: white; }
 
+        /* ========== МАППИНГ КОЛОНОК ========== */
+        .mapping-header {
+            background: var(--card-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mapping-icon {
+            font-size: 2rem;
+            background: var(--primary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mapping-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+        }
+
+        .mapping-info p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .mapping-fields {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mapping-field {
+            background: var(--card-light);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+
+        .mapping-field.required {
+            border-color: var(--warning);
+        }
+
+        .mapping-field-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .mapping-field-label .required-mark {
+            color: var(--error);
+            font-size: 1.2em;
+        }
+
+        .mapping-field-label .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--warning);
+            color: #000;
+        }
+
+        .mapping-field-label .badge.required {
+            background: var(--error);
+            color: white;
+        }
+
+        .mapping-field select {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            color: var(--text);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .mapping-field select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .mapping-field select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mapping-field-description {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .preview-section {
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .preview-section h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .preview-table th {
+            background: var(--card);
+            color: var(--primary);
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .preview-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-table tr.highlighted td {
+            background: rgba(108, 99, 255, 0.1);
+            color: var(--text);
+            font-weight: bold;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--card-light);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        .mapping-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mapping-actions .btn {
+            flex: 1;
+            padding: 15px;
+        }
+
+        .auto-detect-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(0, 230, 118, 0.2);
+            color: var(--success);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        .highlight-col {
+            background: rgba(108, 99, 255, 0.3) !important;
+            color: var(--primary) !important;
+        }
+
         @media (max-width: 600px) {
             .stats { grid-template-columns: repeat(2, 1fr); }
             .settings-grid { grid-template-columns: 1fr; }
             .stat-value { font-size: 1.4rem; }
             .tab { font-size: 0.8rem; padding: 8px 4px; }
+            .modal-content { padding: 15px; }
+            .mapping-actions { flex-direction: column; }
         }
     </style>
 </head>
@@ -700,6 +869,42 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА: МАППИНГ КОЛОНОК -->
+    <div id="modalMapping" class="modal">
+        <div class="modal-content large">
+            <div class="mapping-header">
+                <div class="mapping-icon">🗂️</div>
+                <div class="mapping-info">
+                    <h4>Настройка колонок файла</h4>
+                    <p id="mappingFileInfo">Укажите, какие колонки соответствуют полям системы</p>
+                </div>
+            </div>
+
+            <div class="mapping-fields" id="mappingFields">
+                <!-- Заполняется динамически -->
+            </div>
+
+            <div class="preview-section">
+                <h4>📋 Превью данных (первые строки)</h4>
+                <div class="preview-info">
+                    <span>Всего строк в файле: <strong id="totalRows">0</strong></span>
+                    <span>Колонок: <strong id="totalCols">0</strong></span>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="preview-table" id="previewTable">
+                        <!-- Заполняется динамически -->
+                    </table>
+                </div>
+            </div>
+
+            <div class="mapping-actions">
+                <button class="btn btn-secondary" onclick="closeMappingModal()">❌ Отмена</button>
+                <button class="btn btn-primary" onclick="applyMapping()">✅ Применить и загрузить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА: ЭТИКЕТКА -->
     <div id="modalLabel" class="modal">
         <div class="modal-content">
             <h3>🏷️ Этикетка</h3>
@@ -738,26 +943,192 @@
             cameraActive: false,
             lastScan: null,
             audioCtx: null,
-            voices: []
+            voices: [],
+            // Данные для маппинга
+            pendingFile: null
         };
 
-        // ============ МАППИНГ КОЛОНОК EXCEL ============
-        // Автоматически находит нужные колонки по разным вариантам названий
-        const COLUMN_ALIASES = {
-            barcode: ['barcode', 'штрихкод', 'штрих-код', 'код', 'code', 'ean', 'ean13', 'артикул', 'sku'],
-            product: ['product', 'товар', 'наименование', 'название', 'name', 'item', 'описание', 'description'],
-            expected: ['expected', 'количество', 'qty', 'quantity', 'кол-во', 'план', 'шт', 'count', 'boxes']
-        };
+        // ============ ПОЛЯ ДЛЯ МАППИНГА ============
+        const MAPPING_FIELDS = [
+            {
+                key: 'barcode',
+                label: 'Штрихкод',
+                description: 'Уникальный идентификатор короба (обязательное поле)',
+                required: true,
+                aliases: ['barcode', 'штрихкод', 'штрих-код', 'код', 'code', 'ean', 'ean13', 'артикул', 'sku']
+            },
+            {
+                key: 'product',
+                label: 'Наименование товара',
+                description: 'Название товара или описание короба',
+                required: false,
+                aliases: ['product', 'товар', 'наименование', 'название', 'name', 'item', 'описание', 'description']
+            },
+            {
+                key: 'expected',
+                label: 'Количество (план)',
+                description: 'Ожидаемое количество коробов данного вида',
+                required: false,
+                aliases: ['expected', 'количество', 'qty', 'quantity', 'кол-во', 'план', 'шт', 'count', 'boxes']
+            }
+        ];
 
-        function findColumn(headers, field) {
-            const aliases = COLUMN_ALIASES[field] || [];
+        // ============ МАППИНГ КОЛОНОК ============
+        function findColumn(headers, aliases) {
             const normalizedHeaders = headers.map(h => String(h).toLowerCase().trim());
-            
             for (const alias of aliases) {
                 const idx = normalizedHeaders.indexOf(alias.toLowerCase());
                 if (idx !== -1) return idx;
             }
             return -1;
+        }
+
+        function showMappingModal(headers, rows, fileName, totalRows) {
+            STATE.pendingFile = { headers, rows, fileName, totalRows };
+            
+            document.getElementById('mappingFileInfo').textContent = 
+                `Файл: ${fileName} — ${headers.length} колонок, ${totalRows} строк`;
+            document.getElementById('totalRows').textContent = totalRows;
+            document.getElementById('totalCols').textContent = headers.length;
+            
+            // Генерируем селекторы для каждого поля
+            const fieldsContainer = document.getElementById('mappingFields');
+            fieldsContainer.innerHTML = MAPPING_FIELDS.map(field => {
+                // Автоматическое определение
+                const autoIdx = findColumn(headers, field.aliases);
+                const autoDetected = autoIdx !== -1;
+                
+                const options = [
+                    '<option value="-1">— Не выбрано —</option>',
+                    ...headers.map((h, idx) => 
+                        `<option value="${idx}" ${idx === autoIdx ? 'selected' : ''}>${h || `Колонка ${idx + 1}`}</option>`
+                    )
+                ].join('');
+                
+                return `
+                    <div class="mapping-field ${field.required ? 'required' : ''}" data-field="${field.key}">
+                        <div class="mapping-field-label">
+                            <span>${field.label}</span>
+                            <span class="badge ${field.required ? 'required' : ''}">${field.required ? 'Обязательно' : 'Опционально'}</span>
+                            ${autoDetected ? '<span class="auto-detect-badge">✨ Авто</span>' : ''}
+                        </div>
+                        <select onchange="updatePreviewHighlight('${field.key}', this.value)">
+                            ${options}
+                        </select>
+                        <div class="mapping-field-description">${field.description}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Генерируем таблицу превью
+            renderPreviewTable(headers, rows.slice(0, 5));
+            
+            document.getElementById('modalMapping').classList.add('active');
+        }
+
+        function renderPreviewTable(headers, rows) {
+            const table = document.getElementById('previewTable');
+            
+            const headerRow = '<tr>' + headers.map((h, i) => 
+                `<th class="preview-col-${i}">${h || `Кол. ${i + 1}`}</th>`
+            ).join('') + '</tr>';
+            
+            const bodyRows = rows.map(row => 
+                '<tr>' + headers.map((_, i) => 
+                    `<td class="preview-col-${i}">${row[i] !== undefined ? String(row[i]) : ''}</td>`
+                ).join('') + '</tr>'
+            ).join('');
+            
+            table.innerHTML = headerRow + bodyRows;
+        }
+
+        function updatePreviewHighlight(fieldKey, colIdx) {
+            // Убираем все подсветки
+            document.querySelectorAll('.highlight-col').forEach(el => el.classList.remove('highlight-col'));
+            
+            if (parseInt(colIdx) === -1) return;
+            
+            // Подсвечиваем выбранную колонку в таблице
+            document.querySelectorAll(`.preview-col-${colIdx}`).forEach(el => {
+                el.classList.add('highlight-col');
+            });
+        }
+
+        function closeMappingModal() {
+            document.getElementById('modalMapping').classList.remove('active');
+            STATE.pendingFile = null;
+            // Сбрасываем input файла, чтобы можно было выбрать тот же файл снова
+            document.getElementById('fileInput').value = '';
+        }
+
+        function applyMapping() {
+            if (!STATE.pendingFile) return;
+            
+            const mapping = {};
+            let hasRequired = true;
+            
+            MAPPING_FIELDS.forEach(field => {
+                const select = document.querySelector(`[data-field="${field.key}"] select`);
+                const value = parseInt(select.value);
+                
+                if (field.required && value === -1) {
+                    hasRequired = false;
+                    select.style.borderColor = 'var(--error)';
+                } else {
+                    select.style.borderColor = '';
+                    mapping[field.key] = value;
+                }
+            });
+            
+            if (!hasRequired) {
+                showError('Выберите колонку для обязательного поля "Штрихкод"!');
+                return;
+            }
+            
+            // Парсим данные с учетом маппинга
+            const { rows, fileName } = STATE.pendingFile;
+            const result = [];
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const barcode = mapping.barcode >= 0 ? String(row[mapping.barcode] || '').trim() : '';
+                if (!barcode || barcode === 'undefined') continue;
+                
+                const item = {
+                    barcode: barcode,
+                    product: mapping.product >= 0 ? String(row[mapping.product] || barcode).trim() : `Товар ${barcode}`,
+                    expected: mapping.expected >= 0 ? parseInt(row[mapping.expected]) || 1 : 1
+                };
+                
+                result.push(item);
+            }
+            
+            if (result.length === 0) {
+                showError('Не удалось извлечь данные. Проверьте выбор колонок.');
+                return;
+            }
+            
+            // Применяем
+            STATE.plan = result;
+            STATE.received = {};
+            STATE.errors = 0;
+            STATE.history = [];
+            
+            const totalBoxes = result.reduce((s, i) => s + (i.expected || 1), 0);
+            document.getElementById('planFileName').innerHTML = 
+                `✅ <strong>${fileName}</strong> — ${result.length} позиций, ${totalBoxes} коробов`;
+            
+            log(`Загружен файл с маппингом: ${fileName} (${result.length} позиций)`, 'success');
+            speak(`Загружен план: ожидается ${totalBoxes} коробов`, 'info');
+            
+            saveToStorage();
+            updateUI();
+            renderPlanList();
+            closeMappingModal();
+            switchTab('scan');
+            showToast(`Загружено: ${result.length} позиций`);
         }
 
         // ============ ИНИЦИАЛИЗАЦИЯ ============
@@ -779,7 +1150,7 @@
             }, 2000);
             
             document.getElementById('sessionId').textContent = STATE.sessionId;
-            log('Система готова. Поддерживаются: Excel, CSV, JSON', 'info');
+            log('Система готова. Поддерживаются: Excel, CSV, JSON с маппингом колонок', 'info');
         });
 
         function setupEventListeners() {
@@ -1008,7 +1379,7 @@
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        // ============ РАБОТА С ФАЙЛАМИ (С ПОДДЕРЖКОЙ EXCEL) ============
+        // ============ ЗАГРУЗКА ФАЙЛОВ С МАППИНГОМ ============
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1018,120 +1389,53 @@
             
             reader.onload = (event) => {
                 try {
-                    let data;
+                    let headers = [];
+                    let rows = [];
+                    let totalRows = 0;
+                    
                     if (ext === 'json') {
-                        data = JSON.parse(event.target.result);
+                        const data = JSON.parse(event.target.result);
+                        if (!Array.isArray(data) || data.length === 0) throw new Error('Пустой файл');
+                        // Для JSON - автоматический маппинг по ключам
+                        headers = Object.keys(data[0]);
+                        rows = [headers, ...data.map(item => headers.map(h => item[h]))];
+                        totalRows = data.length;
                     } else if (ext === 'csv') {
-                        data = parseCSV(event.target.result);
+                        const lines = event.target.result.trim().split('\n');
+                        if (lines.length < 2) throw new Error('Файл пуст');
+                        const sep = lines[0].includes(';') ? ';' : ',';
+                        rows = lines.map(line => line.split(sep).map(c => c.trim()));
+                        headers = rows[0];
+                        totalRows = lines.length - 1;
                     } else if (ext === 'xlsx' || ext === 'xls') {
-                        data = parseExcel(event.target.result);
+                        const workbook = XLSX.read(event.target.result, { type: 'array', cellDates: true });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                        if (rows.length < 2) throw new Error('Файл пуст');
+                        headers = rows[0].map(h => String(h).trim());
+                        totalRows = rows.length - 1;
                     } else {
                         throw new Error('Неподдерживаемый формат');
                     }
                     
-                    if (!Array.isArray(data) || data.length === 0) throw new Error('Нет данных');
+                    // Показываем модалку маппинга
+                    showMappingModal(headers, rows, file.name, totalRows);
                     
-                    // Валидация
-                    const validData = data.filter(item => item.barcode);
-                    if (validData.length === 0) throw new Error('Не найдена колонка со штрихкодами');
-                    
-                    STATE.plan = validData;
-                    STATE.received = {};
-                    STATE.errors = 0;
-                    STATE.history = [];
-                    
-                    const totalBoxes = validData.reduce((s, i) => s + (i.expected || 1), 0);
-                    document.getElementById('planFileName').innerHTML = 
-                        `✅ <strong>${file.name}</strong> — ${validData.length} позиций, ${totalBoxes} коробов`;
-                    
-                    log(`Загружен ${ext.toUpperCase()}: ${file.name} (${validData.length} позиций)`, 'success');
-                    speak(`Загружен план: ожидается ${totalBoxes} коробов`, 'info');
-                    
-                    saveToStorage();
-                    updateUI();
-                    renderPlanList();
-                    switchTab('scan');
-                    showToast(`Загружено: ${validData.length} позиций из ${ext.toUpperCase()}`);
                 } catch (err) {
                     showError('Ошибка чтения файла: ' + err.message);
                     log('Ошибка: ' + err.message, 'error');
+                    document.getElementById('fileInput').value = '';
                 }
             };
             
             if (ext === 'xlsx' || ext === 'xls') {
-                reader.readAsArrayBuffer(file); // Для Excel нужен ArrayBuffer
+                reader.readAsArrayBuffer(file);
             } else {
                 reader.readAsText(file);
             }
         }
 
-        // ПАРСИНГ EXCEL
-        function parseExcel(buffer) {
-            const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            
-            // Читаем как массив массивов
-            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-            
-            if (rows.length < 2) throw new Error('Файл пуст или имеет только заголовок');
-            
-            const headers = rows[0].map(h => String(h).trim());
-            
-            // Находим нужные колонки
-            const barcodeIdx = findColumn(headers, 'barcode');
-            const productIdx = findColumn(headers, 'product');
-            const expectedIdx = findColumn(headers, 'expected');
-            
-            if (barcodeIdx === -1) {
-                throw new Error(`Не найдена колонка со штрихкодами. Доступные: ${headers.join(', ')}`);
-            }
-            
-            log(`Excel: колонки → штрихкод: "${headers[barcodeIdx]}", товар: "${productIdx >= 0 ? headers[productIdx] : '—'}", кол-во: "${expectedIdx >= 0 ? headers[expectedIdx] : '—'}"`, 'info');
-            
-            const result = [];
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-                
-                const barcode = String(row[barcodeIdx] || '').trim();
-                if (!barcode || barcode === 'undefined') continue;
-                
-                const item = {
-                    barcode: barcode,
-                    product: productIdx >= 0 ? String(row[productIdx] || barcode).trim() : `Товар ${barcode}`,
-                    expected: expectedIdx >= 0 ? parseInt(row[expectedIdx]) || 1 : 1
-                };
-                
-                result.push(item);
-            }
-            
-            if (result.length === 0) throw new Error('Не удалось извлечь данные из файла');
-            
-            return result;
-        }
-
-        function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            const headers = lines[0].split(/[;,]/).map(h => h.trim());
-            const barcodeIdx = findColumn(headers, 'barcode');
-            const productIdx = findColumn(headers, 'product');
-            const expectedIdx = findColumn(headers, 'expected');
-            
-            if (barcodeIdx === -1) throw new Error('Не найдена колонка со штрихкодами');
-            
-            return lines.slice(1).filter(l => l.trim()).map(line => {
-                const values = line.split(/[;,]/);
-                const barcode = String(values[barcodeIdx] || '').trim();
-                return {
-                    barcode: barcode,
-                    product: productIdx >= 0 ? String(values[productIdx] || barcode).trim() : `Товар ${barcode}`,
-                    expected: expectedIdx >= 0 ? parseInt(values[expectedIdx]) || 1 : 1
-                };
-            }).filter(i => i.barcode);
-        }
-
-        // ГЕНЕРАЦИЯ EXCEL-ШАБЛОНА
         function downloadExcelTemplate() {
             const sampleData = [
                 ['Штрихкод', 'Товар', 'Количество'],
@@ -1139,26 +1443,18 @@
                 ['20002', 'Короб: Футболки Adidas', 10],
                 ['20003', 'Короб: Носки спортивные', 50],
                 ['20004', 'Короб: Мячи футбольные', 20],
-                ['20005', 'Короб: Рюкзаки', 15],
-                ['20006', 'Короб: Шапки зимние', 30]
+                ['20005', 'Короб: Рюкзаки', 15]
             ];
-            
             const ws = XLSX.utils.aoa_to_sheet(sampleData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'План поставки');
-            
-            // Ширина колонок
+            XLSX.utils.book_append_sheet(wb, ws, 'План');
             ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 12 }];
-            
             XLSX.writeFile(wb, 'шаблон_поставки.xlsx');
             showToast('Excel-шаблон скачан');
-            log('Сгенерирован шаблон Excel', 'info');
         }
 
-        // ЭКСПОРТ ПЛАНА В EXCEL
         function exportPlanExcel() {
             if (STATE.plan.length === 0) { showToast('Нет плана'); return; }
-            
             const data = [
                 ['Штрихкод', 'Товар', 'Ожидается', 'Принято', 'Статус'],
                 ...STATE.plan.map(item => {
@@ -1168,29 +1464,25 @@
                     return [item.barcode, item.product, expected, received, status];
                 })
             ];
-            
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
-            
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'План');
             XLSX.writeFile(wb, `план_${new Date().toISOString().split('T')[0]}.xlsx`);
             showToast('План выгружен в Excel');
         }
 
-        // ЭКСПОРТ ОТЧЕТА В EXCEL
         function exportReportExcel() {
             const received = Object.entries(STATE.received).map(([code, qty]) => {
                 const item = STATE.plan.find(p => p.barcode === code);
                 return [
                     code,
-                    item ? item.product : 'Неизвестный товар',
+                    item ? item.product : 'Неизвестный',
                     item ? (item.expected || 1) : qty,
                     qty,
                     item && qty >= (item.expected || 1) ? '✅ Норма' : '⚠️ Расхождение'
                 ];
             });
-            
             const data = [
                 ['Отчет о приемке', '', '', '', ''],
                 [`Дата: ${new Date().toLocaleString('ru-RU')}`, '', '', '', ''],
@@ -1205,24 +1497,19 @@
                     `Ошибок: ${STATE.errors}`
                 ]
             ];
-            
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 10 }, { wch: 10 }, { wch: 15 }];
-            
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Отчет');
             XLSX.writeFile(wb, `отчет_приемки_${Date.now()}.xlsx`);
             showToast('Отчет сформирован');
-            log('Отчет экспортирован в Excel', 'success');
         }
 
         function downloadSample() {
             const sample = [
                 { barcode: "20001", product: "Короб: Кроссовки Nike", expected: 5 },
                 { barcode: "20002", product: "Короб: Футболки Adidas", expected: 10 },
-                { barcode: "20003", product: "Короб: Носки спортивные", expected: 50 },
-                { barcode: "20004", product: "Короб: Мячи футбольные", expected: 20 },
-                { barcode: "20005", product: "Короб: Рюкзаки", expected: 15 }
+                { barcode: "20003", product: "Короб: Носки спортивные", expected: 50 }
             ];
             downloadFile('delivery_plan.json', JSON.stringify(sample, null, 2));
         }
@@ -1316,7 +1603,7 @@
         function renderPlanList() {
             const list = document.getElementById('planList');
             if (STATE.plan.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>План пуст. Загрузите Excel/CSV/JSON</p></div>';
+                list.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>План пуст</p></div>';
                 return;
             }
             list.innerHTML = STATE.plan.map(item => {
@@ -1493,7 +1780,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE = 'wms-v2';
+                const CACHE = 'wms-v3';
                 self.addEventListener('install', e => self.skipWaiting());
                 self.addEventListener('activate', e => self.clients.claim());
                 self.addEventListener('fetch', e => {
