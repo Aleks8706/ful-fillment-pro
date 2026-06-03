@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <title>WMS Pro - Маппинг колонок</title>
+    <title>WMS Pro - Приемка с голосом</title>
     
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -213,23 +213,73 @@
             overflow: hidden;
         }
 
+        /* ===== КРУПНЫЙ ЭКРАН ПРИЕМКИ ===== */
         .scan-result {
             text-align: center;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            padding: 30px 20px;
+            border-radius: 15px;
             margin-top: 15px;
-            min-height: 70px;
+            min-height: 150px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s;
         }
 
-        .scan-result.success { background: rgba(0, 230, 118, 0.15); color: var(--success); }
-        .scan-result.error { background: rgba(255, 82, 82, 0.15); color: var(--error); }
-        .scan-result.warning { background: rgba(255, 171, 64, 0.15); color: var(--warning); }
+        .scan-result.success { 
+            background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(0, 230, 118, 0.05)); 
+            border: 2px solid var(--success);
+        }
+        .scan-result.error { 
+            background: linear-gradient(135deg, rgba(255, 82, 82, 0.2), rgba(255, 82, 82, 0.05)); 
+            border: 2px solid var(--error);
+        }
+        .scan-result.warning { 
+            background: linear-gradient(135deg, rgba(255, 171, 64, 0.2), rgba(255, 171, 64, 0.05)); 
+            border: 2px solid var(--warning);
+        }
+
+        .scan-result .main-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .scan-result .counter-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .scan-result.success .counter-text { color: var(--success); }
+        .scan-result.error .counter-text { color: var(--error); }
+        .scan-result.warning .counter-text { color: var(--warning); }
+
+        .scan-result .product-name {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .scan-result .closed-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--success);
+            color: #000;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 10px;
+            animation: pulseClosed 1s infinite;
+        }
+
+        @keyframes pulseClosed {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
 
         .btn {
             padding: 12px 20px;
@@ -251,7 +301,6 @@
         .btn-secondary { background: var(--card-light); color: var(--text); border: 1px solid var(--border); }
         .btn-excel { background: var(--excel); color: white; }
         .btn-lg { width: 100%; padding: 18px; font-size: 1.1rem; margin-top: 10px; }
-        .btn-block { width: 100%; }
 
         .file-zone {
             display: flex;
@@ -459,7 +508,6 @@
         .badge-csv { background: #666; color: white; }
         .badge-json { background: #f39c12; color: white; }
 
-        /* ========== МАППИНГ КОЛОНОК ========== */
         .mapping-header {
             background: var(--card-light);
             padding: 15px;
@@ -481,22 +529,10 @@
             justify-content: center;
         }
 
-        .mapping-info h4 {
-            margin: 0 0 4px 0;
-            font-size: 1.1rem;
-        }
+        .mapping-info h4 { margin: 0 0 4px 0; font-size: 1.1rem; }
+        .mapping-info p { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
 
-        .mapping-info p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .mapping-fields {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+        .mapping-fields { display: grid; gap: 12px; margin-bottom: 20px; }
 
         .mapping-field {
             background: var(--card-light);
@@ -505,9 +541,7 @@
             border: 2px solid var(--border);
         }
 
-        .mapping-field.required {
-            border-color: var(--warning);
-        }
+        .mapping-field.required { border-color: var(--warning); }
 
         .mapping-field-label {
             display: flex;
@@ -515,11 +549,6 @@
             gap: 8px;
             margin-bottom: 8px;
             font-weight: 600;
-        }
-
-        .mapping-field-label .required-mark {
-            color: var(--error);
-            font-size: 1.2em;
         }
 
         .mapping-field-label .badge {
@@ -530,10 +559,7 @@
             color: #000;
         }
 
-        .mapping-field-label .badge.required {
-            background: var(--error);
-            color: white;
-        }
+        .mapping-field-label .badge.required { background: var(--error); color: white; }
 
         .mapping-field select {
             width: 100%;
@@ -546,15 +572,7 @@
             cursor: pointer;
         }
 
-        .mapping-field select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .mapping-field select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .mapping-field select:focus { outline: none; border-color: var(--primary); }
 
         .mapping-field-description {
             font-size: 0.8rem;
@@ -603,16 +621,9 @@
             text-overflow: ellipsis;
         }
 
-        .preview-table tr.highlighted td {
-            background: rgba(108, 99, 255, 0.1);
-            color: var(--text);
-            font-weight: bold;
-        }
-
         .preview-info {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 10px;
             background: var(--card-light);
             border-radius: 6px;
@@ -626,10 +637,7 @@
             margin-top: 20px;
         }
 
-        .mapping-actions .btn {
-            flex: 1;
-            padding: 15px;
-        }
+        .mapping-actions .btn { flex: 1; padding: 15px; }
 
         .auto-detect-badge {
             display: inline-flex;
@@ -655,6 +663,8 @@
             .tab { font-size: 0.8rem; padding: 8px 4px; }
             .modal-content { padding: 15px; }
             .mapping-actions { flex-direction: column; }
+            .scan-result .counter-text { font-size: 2rem; }
+            .scan-result .main-text { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -748,6 +758,7 @@
                 </div>
             </div>
 
+            <!-- УЛУЧШЕННЫЙ ЭКРАН РЕЗУЛЬТАТА -->
             <div id="scanResult" class="scan-result" style="display:none;"></div>
 
             <div class="card">
@@ -815,15 +826,23 @@
         <!-- НАСТРОЙКИ -->
         <div id="tab-settings" class="tab-content" style="display:none;">
             <div class="card">
-                <h3>Звук и голос</h3>
+                <h3>🔊 Звук и голос</h3>
                 <div class="settings-grid">
                     <div class="setting-item">
-                        <span>🔊 Звуковые сигналы</span>
+                        <span>🎵 Звуковые сигналы</span>
                         <div class="toggle active" id="toggleSound" onclick="toggleSetting('sound')"></div>
                     </div>
                     <div class="setting-item">
                         <span>🗣️ Голос</span>
                         <div class="toggle active" id="toggleVoice" onclick="toggleSetting('voice')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>🏷️ Озвучивать товар</span>
+                        <div class="toggle active" id="toggleSpeakProduct" onclick="toggleSetting('speakProduct')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>🔢 Цифры словами</span>
+                        <div class="toggle active" id="toggleNumbersAsWords" onclick="toggleSetting('numbersAsWords')"></div>
                     </div>
                     <div class="setting-item">
                         <span>📳 Вибрация</span>
@@ -869,7 +888,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА: МАППИНГ КОЛОНОК -->
+    <!-- МОДАЛКА: МАППИНГ -->
     <div id="modalMapping" class="modal">
         <div class="modal-content large">
             <div class="mapping-header">
@@ -880,26 +899,22 @@
                 </div>
             </div>
 
-            <div class="mapping-fields" id="mappingFields">
-                <!-- Заполняется динамически -->
-            </div>
+            <div class="mapping-fields" id="mappingFields"></div>
 
             <div class="preview-section">
                 <h4>📋 Превью данных (первые строки)</h4>
                 <div class="preview-info">
-                    <span>Всего строк в файле: <strong id="totalRows">0</strong></span>
+                    <span>Всего строк: <strong id="totalRows">0</strong></span>
                     <span>Колонок: <strong id="totalCols">0</strong></span>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table class="preview-table" id="previewTable">
-                        <!-- Заполняется динамически -->
-                    </table>
+                    <table class="preview-table" id="previewTable"></table>
                 </div>
             </div>
 
             <div class="mapping-actions">
                 <button class="btn btn-secondary" onclick="closeMappingModal()">❌ Отмена</button>
-                <button class="btn btn-primary" onclick="applyMapping()">✅ Применить и загрузить</button>
+                <button class="btn btn-primary" onclick="applyMapping()">✅ Применить</button>
             </div>
         </div>
     </div>
@@ -936,7 +951,9 @@
             history: [],
             settings: {
                 sound: true, voice: true, vibrate: true, flash: true,
-                sync: true, blind: false, sample: false, volume: 80
+                sync: true, blind: false, sample: false, 
+                speakProduct: true, numbersAsWords: true,
+                volume: 80
             },
             sessionId: 'sess_' + Math.random().toString(36).substr(2, 9),
             currentMethod: 'scanner',
@@ -944,9 +961,76 @@
             lastScan: null,
             audioCtx: null,
             voices: [],
-            // Данные для маппинга
             pendingFile: null
         };
+
+        // ============ ЧИСЛА СЛОВАМИ (РУССКИЙ) ============
+        function numberToWordsRu(num) {
+            if (num === 0) return 'ноль';
+            
+            const units = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять',
+                          'десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 
+                          'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+            const unitsFem = ['', 'одна', 'две'];
+            const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 
+                         'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+            const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 
+                             'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+            
+            function convertGroup(n, feminine = false) {
+                let result = '';
+                const h = Math.floor(n / 100);
+                const rest = n % 100;
+                
+                if (h > 0) result += hundreds[h] + ' ';
+                
+                if (rest >= 20) {
+                    result += tens[Math.floor(rest / 10)] + ' ';
+                    const u = rest % 10;
+                    if (u > 0) {
+                        result += (feminine && u <= 2 ? unitsFem[u] : units[u]) + ' ';
+                    }
+                } else if (rest > 0) {
+                    result += (feminine && rest <= 2 ? unitsFem[rest] : units[rest]) + ' ';
+                }
+                
+                return result.trim();
+            }
+            
+            function pluralForm(n, forms) {
+                const mod10 = n % 10;
+                const mod100 = n % 100;
+                if (mod100 >= 11 && mod100 <= 14) return forms[2];
+                if (mod10 === 1) return forms[0];
+                if (mod10 >= 2 && mod10 <= 4) return forms[1];
+                return forms[2];
+            }
+            
+            let result = '';
+            
+            if (num >= 1000) {
+                const thousands = Math.floor(num / 1000);
+                result += convertGroup(thousands, true) + ' ';
+                result += pluralForm(thousands, ['тысяча', 'тысячи', 'тысяч']) + ' ';
+                num %= 1000;
+            }
+            
+            if (num > 0) {
+                result += convertGroup(num, false);
+            }
+            
+            return result.trim();
+        }
+
+        // Плюральная форма для "штука"
+        function pluralItems(n) {
+            const mod10 = n % 10;
+            const mod100 = n % 100;
+            if (mod100 >= 11 && mod100 <= 14) return 'штук';
+            if (mod10 === 1) return 'штука';
+            if (mod10 >= 2 && mod10 <= 4) return 'штуки';
+            return 'штук';
+        }
 
         // ============ ПОЛЯ ДЛЯ МАППИНГА ============
         const MAPPING_FIELDS = [
@@ -973,7 +1057,6 @@
             }
         ];
 
-        // ============ МАППИНГ КОЛОНОК ============
         function findColumn(headers, aliases) {
             const normalizedHeaders = headers.map(h => String(h).toLowerCase().trim());
             for (const alias of aliases) {
@@ -991,10 +1074,8 @@
             document.getElementById('totalRows').textContent = totalRows;
             document.getElementById('totalCols').textContent = headers.length;
             
-            // Генерируем селекторы для каждого поля
             const fieldsContainer = document.getElementById('mappingFields');
             fieldsContainer.innerHTML = MAPPING_FIELDS.map(field => {
-                // Автоматическое определение
                 const autoIdx = findColumn(headers, field.aliases);
                 const autoDetected = autoIdx !== -1;
                 
@@ -1020,15 +1101,12 @@
                 `;
             }).join('');
             
-            // Генерируем таблицу превью
             renderPreviewTable(headers, rows.slice(0, 5));
-            
             document.getElementById('modalMapping').classList.add('active');
         }
 
         function renderPreviewTable(headers, rows) {
             const table = document.getElementById('previewTable');
-            
             const headerRow = '<tr>' + headers.map((h, i) => 
                 `<th class="preview-col-${i}">${h || `Кол. ${i + 1}`}</th>`
             ).join('') + '</tr>';
@@ -1043,12 +1121,8 @@
         }
 
         function updatePreviewHighlight(fieldKey, colIdx) {
-            // Убираем все подсветки
             document.querySelectorAll('.highlight-col').forEach(el => el.classList.remove('highlight-col'));
-            
             if (parseInt(colIdx) === -1) return;
-            
-            // Подсвечиваем выбранную колонку в таблице
             document.querySelectorAll(`.preview-col-${colIdx}`).forEach(el => {
                 el.classList.add('highlight-col');
             });
@@ -1057,7 +1131,6 @@
         function closeMappingModal() {
             document.getElementById('modalMapping').classList.remove('active');
             STATE.pendingFile = null;
-            // Сбрасываем input файла, чтобы можно было выбрать тот же файл снова
             document.getElementById('fileInput').value = '';
         }
 
@@ -1081,11 +1154,10 @@
             });
             
             if (!hasRequired) {
-                showError('Выберите колонку для обязательного поля "Штрихкод"!');
+                showError('Выберите колонку для "Штрихкод"!');
                 return;
             }
             
-            // Парсим данные с учетом маппинга
             const { rows, fileName } = STATE.pendingFile;
             const result = [];
             
@@ -1106,11 +1178,10 @@
             }
             
             if (result.length === 0) {
-                showError('Не удалось извлечь данные. Проверьте выбор колонок.');
+                showError('Не удалось извлечь данные.');
                 return;
             }
             
-            // Применяем
             STATE.plan = result;
             STATE.received = {};
             STATE.errors = 0;
@@ -1120,14 +1191,17 @@
             document.getElementById('planFileName').innerHTML = 
                 `✅ <strong>${fileName}</strong> — ${result.length} позиций, ${totalBoxes} коробов`;
             
-            log(`Загружен файл с маппингом: ${fileName} (${result.length} позиций)`, 'success');
-            speak(`Загружен план: ожидается ${totalBoxes} коробов`, 'info');
+            log(`Загружен файл: ${fileName} (${result.length} позиций)`, 'success');
+            
+            // ГОЛОСОВОЕ ПРИВЕТСТВИЕ ПРИ ЗАГРУЗКЕ
+            const totalWords = STATE.settings.numbersAsWords ? numberToWordsRu(totalBoxes) : totalBoxes;
+            speak(`Загружен план поставки. Ожидается ${totalWords} ${pluralItems(totalBoxes)}.`, 'info');
             
             saveToStorage();
             updateUI();
             renderPlanList();
             closeMappingModal();
-            switchTab('scan');
+            switchTab('scan', {target: document.querySelector('.tab.active')});
             showToast(`Загружено: ${result.length} позиций`);
         }
 
@@ -1150,7 +1224,7 @@
             }, 2000);
             
             document.getElementById('sessionId').textContent = STATE.sessionId;
-            log('Система готова. Поддерживаются: Excel, CSV, JSON с маппингом колонок', 'info');
+            log('Система готова. Голос: "Принято. Осталось X"', 'info');
         });
 
         function setupEventListeners() {
@@ -1189,7 +1263,7 @@
             const volume = STATE.settings.volume / 100;
             const frequencies = {
                 success: [880, 1320], error: [220, 180],
-                warning: [440], scan: [1000]
+                warning: [440], scan: [1000], closed: [1046, 1318, 1568]
             };
             const freqs = frequencies[type] || [1000];
             
@@ -1224,8 +1298,9 @@
             const ruVoice = STATE.voices.find(v => v.lang.startsWith('ru'));
             if (ruVoice) utter.voice = ruVoice;
             const configs = {
-                success: { rate: 1.0, pitch: 1.0 },
-                error: { rate: 1.3, pitch: 0.8 },
+                success: { rate: 1.0, pitch: 1.05 },
+                closed: { rate: 0.95, pitch: 1.15 },
+                error: { rate: 1.2, pitch: 0.85 },
                 warning: { rate: 1.1, pitch: 1.0 },
                 info: { rate: 1.0, pitch: 1.0 }
             };
@@ -1241,7 +1316,7 @@
             navigator.vibrate(pattern);
         }
 
-        // ============ СКАНИРОВАНИЕ ============
+        // ============ СКАНИРОВАНИЕ (С НОВОЙ ЛОГИКОЙ ГОЛОСА) ============
         function processScan(code) {
             code = String(code).trim();
             if (!code) return;
@@ -1264,36 +1339,164 @@
             if (item) {
                 const received = STATE.received[code] || 0;
                 const expected = item.expected || 1;
+                
                 if (received >= expected) {
-                    showError(`Превышен лимит: "${item.product}" (${received}/${expected})`);
+                    const errMsg = `Лимит превышен`;
+                    showError(errMsg, item.product, `${received}/${expected}`);
                     addToHistory(code, item, 'overscan');
                     return;
                 }
+                
                 STATE.received[code] = received + 1;
                 const remaining = expected - STATE.received[code];
                 
+                // Выборочный контроль
                 if (STATE.settings.sample && Math.random() < 0.1) {
-                    showWarning(`⚠️ ВЫБОРОЧНЫЙ КОНТРОЛЬ: "${item.product}"`);
+                    showWarning('ВНИМАНИЕ! Выборочный контроль. Вскройте короб.', item.product);
                     addToHistory(code, item, 'sample');
+                } else if (remaining === 0) {
+                    // ПОЗИЦИЯ ЗАКРЫТА ПОЛНОСТЬЮ
+                    showClosed(item.product);
+                    addToHistory(code, item, 'ok');
                 } else {
-                    let msg = `✅ Принято: ${item.product}`;
-                    if (remaining === 0) { msg += ' (закрыто)'; playBeep('success'); vibrate([100, 50, 100]); }
-                    showSuccess(msg);
+                    // ОБЫЧНОЕ ПРИНЯТИЕ
+                    showAccepted(item.product, remaining, expected);
                     addToHistory(code, item, 'ok');
                 }
             } else {
                 if (STATE.settings.blind) {
                     STATE.received[code] = (STATE.received[code] || 0) + 1;
-                    showWarning(`📦 Слепая приемка: ${code}`);
+                    showWarning('Слепая приемка неизвестного товара', code);
                     addToHistory(code, {product: 'Неизвестный', barcode: code}, 'blind');
                 } else {
-                    showError(`❌ Неизвестный код: ${code}`);
+                    showError('Неизвестный штрихкод', code);
                     addToHistory(code, null, 'unknown');
                 }
             }
+            
             saveToStorage();
             updateUI();
             renderPlanList();
+        }
+
+        // ============ НОВЫЕ ФУНКЦИИ ОТОБРАЖЕНИЯ И ОЗВУЧКИ ============
+        
+        function showAccepted(productName, remaining, total) {
+            const el = document.getElementById('scanResult');
+            el.style.display = 'flex';
+            el.className = 'scan-result success';
+            
+            // Текст на экране
+            el.innerHTML = `
+                <div class="main-text">✅ ПРИНЯТО</div>
+                <div class="counter-text">Осталось: ${remaining}</div>
+                <div class="product-name">${productName}</div>
+            `;
+            
+            // Голос
+            let voiceText = 'Принято.';
+            if (STATE.settings.speakProduct) {
+                voiceText += ` ${productName}.`;
+            }
+            if (STATE.settings.numbersAsWords) {
+                voiceText += ` Осталось ${numberToWordsRu(remaining)} ${pluralItems(remaining)}.`;
+            } else {
+                voiceText += ` Осталось ${remaining} ${pluralItems(remaining)}.`;
+            }
+            
+            playBeep('success');
+            vibrate(50);
+            speak(voiceText, 'success');
+            
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-success');
+                setTimeout(() => document.body.classList.remove('flash-success'), 700);
+            }
+            
+            log(`Принято: ${productName}. Осталось: ${remaining}/${total}`, 'success');
+        }
+        
+        function showClosed(productName) {
+            const el = document.getElementById('scanResult');
+            el.style.display = 'flex';
+            el.className = 'scan-result success';
+            
+            el.innerHTML = `
+                <div class="main-text">🎉 ОТЛИЧНО!</div>
+                <div class="counter-text">ПОЗИЦИЯ ЗАКРЫТА</div>
+                <div class="product-name">${productName}</div>
+                <div class="closed-badge">✓ Полностью принято</div>
+            `;
+            
+            let voiceText = 'Отлично! Позиция полностью принята.';
+            if (STATE.settings.speakProduct) {
+                voiceText += ` ${productName}.`;
+            }
+            
+            playBeep('closed'); // Торжественный аккорд
+            vibrate([50, 50, 50, 50, 100]);
+            speak(voiceText, 'closed');
+            
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-success');
+                setTimeout(() => document.body.classList.remove('flash-success'), 1000);
+            }
+            
+            log(`✅ ПОЗИЦИЯ ЗАКРЫТА: ${productName}`, 'success');
+        }
+        
+        function showError(message, detail = '', counter = '') {
+            const el = document.getElementById('scanResult');
+            el.style.display = 'flex';
+            el.className = 'scan-result error';
+            
+            el.innerHTML = `
+                <div class="main-text">❌ ${message}</div>
+                ${counter ? `<div class="counter-text">${counter}</div>` : ''}
+                <div class="product-name">${detail}</div>
+            `;
+            
+            STATE.errors++;
+            
+            let voiceText = `Ошибка. ${message}.`;
+            if (detail) voiceText += ` ${detail}.`;
+            
+            playBeep('error');
+            vibrate([100, 50, 100, 50, 100]);
+            speak(voiceText, 'error');
+            
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-error');
+                setTimeout(() => document.body.classList.remove('flash-error'), 700);
+            }
+            
+            log(`❌ Ошибка: ${message} ${detail}`, 'error');
+            updateUI();
+        }
+        
+        function showWarning(message, detail = '') {
+            const el = document.getElementById('scanResult');
+            el.style.display = 'flex';
+            el.className = 'scan-result warning';
+            
+            el.innerHTML = `
+                <div class="main-text">⚠️ ${message}</div>
+                <div class="product-name">${detail}</div>
+            `;
+            
+            let voiceText = `Внимание. ${message}.`;
+            if (detail) voiceText += ` ${detail}.`;
+            
+            playBeep('warning');
+            vibrate([50, 50, 50]);
+            speak(voiceText, 'warning');
+            
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-warning');
+                setTimeout(() => document.body.classList.remove('flash-warning'), 700);
+            }
+            
+            log(`⚠️ ${message} ${detail}`, 'warning');
         }
 
         function manualScan() {
@@ -1328,7 +1531,7 @@
                 );
                 STATE.cameraActive = true;
                 document.querySelector('#method-camera .btn').textContent = '⏸️ Остановить';
-            } catch (err) { showError('Ошибка камеры: ' + err.message); }
+            } catch (err) { showError('Ошибка камеры', err.message); }
         }
 
         async function stopCamera() {
@@ -1345,7 +1548,8 @@
                 const remaining = (item.expected || 1) - received;
                 if (remaining > 0) { STATE.received[item.barcode] = received + remaining; count += remaining; }
             });
-            showSuccess(`📡 RFID: принято ${count} коробов`);
+            const countText = STATE.settings.numbersAsWords ? numberToWordsRu(count) : count;
+            showWarning(`RFID проход: принято ${countText} ${pluralItems(count)}`);
             saveToStorage(); updateUI(); renderPlanList();
         }
 
@@ -1379,7 +1583,7 @@
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        // ============ ЗАГРУЗКА ФАЙЛОВ С МАППИНГОМ ============
+        // ============ ЗАГРУЗКА ФАЙЛОВ ============
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1396,7 +1600,6 @@
                     if (ext === 'json') {
                         const data = JSON.parse(event.target.result);
                         if (!Array.isArray(data) || data.length === 0) throw new Error('Пустой файл');
-                        // Для JSON - автоматический маппинг по ключам
                         headers = Object.keys(data[0]);
                         rows = [headers, ...data.map(item => headers.map(h => item[h]))];
                         totalRows = data.length;
@@ -1419,12 +1622,10 @@
                         throw new Error('Неподдерживаемый формат');
                     }
                     
-                    // Показываем модалку маппинга
                     showMappingModal(headers, rows, file.name, totalRows);
                     
                 } catch (err) {
-                    showError('Ошибка чтения файла: ' + err.message);
-                    log('Ошибка: ' + err.message, 'error');
+                    showError('Ошибка чтения файла', err.message);
                     document.getElementById('fileInput').value = '';
                 }
             };
@@ -1469,7 +1670,7 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'План');
             XLSX.writeFile(wb, `план_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showToast('План выгружен в Excel');
+            showToast('План выгружен');
         }
 
         function exportReportExcel() {
@@ -1542,45 +1743,6 @@
         }
 
         // ============ UI ============
-        function showSuccess(msg) {
-            displayResult(msg, 'success');
-            playBeep('success'); vibrate(50);
-            if (STATE.settings.flash) {
-                document.body.classList.add('flash-success');
-                setTimeout(() => document.body.classList.remove('flash-success'), 700);
-            }
-            speak(msg, 'success');
-        }
-
-        function showError(msg) {
-            displayResult(msg, 'error');
-            STATE.errors++;
-            playBeep('error'); vibrate([100, 50, 100, 50, 100]);
-            if (STATE.settings.flash) {
-                document.body.classList.add('flash-error');
-                setTimeout(() => document.body.classList.remove('flash-error'), 700);
-            }
-            speak(msg, 'error');
-            updateUI();
-        }
-
-        function showWarning(msg) {
-            displayResult(msg, 'warning');
-            playBeep('warning'); vibrate([50, 50, 50]);
-            if (STATE.settings.flash) {
-                document.body.classList.add('flash-warning');
-                setTimeout(() => document.body.classList.remove('flash-warning'), 700);
-            }
-            speak(msg, 'warning');
-        }
-
-        function displayResult(msg, type) {
-            const el = document.getElementById('scanResult');
-            el.style.display = 'flex';
-            el.className = `scan-result ${type}`;
-            el.textContent = msg;
-        }
-
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
@@ -1648,7 +1810,21 @@
             const toggle = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
             if (toggle) toggle.classList.toggle('active');
             saveToStorage();
-            showToast(`${key}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
+            
+            const names = {
+                sound: 'Звук', voice: 'Голос', vibrate: 'Вибрация', flash: 'Вспышки',
+                sync: 'Синхронизация', blind: 'Слепая приемка', sample: 'Выборочный контроль',
+                speakProduct: 'Озвучка товара', numbersAsWords: 'Цифры словами'
+            };
+            showToast(`${names[key]}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
+            
+            // Тестовая озвучка при включении
+            if (key === 'speakProduct' && STATE.settings.speakProduct) {
+                speak('Принято. Кроссовки Найк. Осталось пять штук.', 'success');
+            }
+            if (key === 'numbersAsWords') {
+                speak(STATE.settings.numbersAsWords ? 'Теперь числа произносятся словами' : 'Теперь числа произносятся цифрами', 'info');
+            }
         }
 
         function setVolume(val) {
@@ -1721,6 +1897,7 @@
                 saveToStorage();
                 updateUI();
                 renderPlanList();
+                document.getElementById('scanResult').style.display = 'none';
                 showToast('Сессия сброшена');
             }
         }
@@ -1780,7 +1957,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE = 'wms-v3';
+                const CACHE = 'wms-v4';
                 self.addEventListener('install', e => self.skipWaiting());
                 self.addEventListener('activate', e => self.clients.claim());
                 self.addEventListener('fetch', e => {
