@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletLoad Pro v4.0 Cinematic</title>
+    <title>PalletLoad Pro v4.1 (Исправлен поворот)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -145,7 +145,7 @@
 <div class="sidebar-left">
     <div class="logo">
         <h1><span>Pallet</span>Load Pro</h1>
-        <p>Cinematic v4.0</p>
+        <p>Cinematic v4.1</p>
     </div>
     <div class="nav">
         <div class="nav-section">Управление</div>
@@ -442,7 +442,7 @@ function createTruck() {
     scene.add(truckMesh);
 }
 
-// ===== ADVANCED BIN PACKING WITH ROTATION =====
+// ===== ADVANCED BIN PACKING WITH ROTATION (ИСПРАВЛЕНО) =====
 function calculatePositions() {
     const { length: L, width: W, height: H } = truckConfig;
     const positions = [];
@@ -455,7 +455,14 @@ function calculatePositions() {
     
     indexed.forEach(({ pallet, originalIndex }) => {
         const baseType = PALLET_TYPES[pallet.palletType];
-        const orientations = pallet.allowRotation ? [false, true] : [pallet.isRotated || false];
+        
+        // ИСПРАВЛЕНИЕ: Если пользователь явно развернул палету, пробуем развернутый вариант ПЕРВЫМ.
+        let orientations;
+        if (!pallet.allowRotation) {
+            orientations = [pallet.isRotated || false];
+        } else {
+            orientations = pallet.isRotated ? [true, false] : [false, true];
+        }
         
         let placed = false;
         
@@ -532,8 +539,6 @@ function getWeightColor(weight) {
 function createPalletMesh(pallet) {
     const group = new THREE.Group();
     const type = PALLET_TYPES[pallet.palletType];
-    // Always create with standard orientation (X = length, Z = width)
-    // Rotation will be handled by group.rotation.y
     const drawL = type.l;
     const drawW = type.w;
 
@@ -551,10 +556,9 @@ function createPalletMesh(pallet) {
     goods.castShadow = true;
     group.add(goods);
 
-    // Rotation indicator (white line)
     const indicator = new THREE.Mesh(new THREE.BoxGeometry(drawL - 80, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }));
     indicator.position.y = pallet.height - 5;
-    indicator.visible = false; // Will be toggled based on rotation
+    indicator.visible = false;
     indicator.name = 'rotIndicator';
     group.add(indicator);
 
@@ -562,7 +566,6 @@ function createPalletMesh(pallet) {
 }
 
 function updateMeshAppearance(mesh, pallet, pos) {
-    const type = PALLET_TYPES[pallet.palletType];
     const showHeatmap = document.getElementById('toggleHeatmap').checked;
     
     let baseColor = pallet.mp === 'ozon' ? 0x005BFF : 0x7B2D8E;
@@ -572,13 +575,11 @@ function updateMeshAppearance(mesh, pallet, pos) {
 
     const opacity = pos.overflow ? 0.3 : 0.85;
 
-    // Update goods color
     if (mesh.children[1] && mesh.children[1].material) {
         mesh.children[1].material.color.setHex(baseColor);
         mesh.children[1].material.opacity = opacity;
     }
 
-    // Update overflow visual
     if (pos.overflow) {
         mesh.traverse(c => { 
             if(c.isMesh) { 
@@ -589,7 +590,6 @@ function updateMeshAppearance(mesh, pallet, pos) {
         });
     }
 
-    // Update rotation indicator visibility
     const indicator = mesh.getObjectByName('rotIndicator');
     if (indicator) {
         indicator.visible = pos.isRotated;
@@ -601,14 +601,12 @@ function updateScene() {
     const activeIds = new Set(pallets.map(p => p.id));
     const explodedOffset = parseInt(document.getElementById('explodedSlider').value) * 30;
 
-    // 1. Mark existing meshes for potential removal
     for (let [id, mesh] of palletMeshMap) {
         if (!activeIds.has(id)) {
             mesh.userData.remove = true;
         }
     }
 
-    // 2. Update or Create meshes
     pallets.forEach((pallet, i) => {
         const pos = positions[i];
         if (!pos) return;
@@ -622,7 +620,6 @@ function updateScene() {
 
         let mesh = palletMeshMap.get(pallet.id);
         if (!mesh) {
-            // Create new
             mesh = createPalletMesh(pallet);
             mesh.position.set(targetPos.x, targetPos.y, targetPos.z);
             mesh.rotation.y = targetRotY;
@@ -631,13 +628,11 @@ function updateScene() {
             mesh.userData.palletIndex = i;
             mesh.userData.id = pallet.id;
             
-            // Animate entrance
             mesh.scale.set(0.1, 0.1, 0.1);
             
             scene.add(mesh);
             palletMeshMap.set(pallet.id, mesh);
         } else {
-            // Update existing
             mesh.userData.targetPos = { ...targetPos };
             mesh.userData.targetRotY = targetRotY;
             mesh.userData.palletIndex = i;
@@ -656,41 +651,34 @@ function animate() {
     requestAnimationFrame(animate);
     controls.update();
 
-    // Smooth animation logic
     const toRemove = [];
     for (let mesh of palletMeshMap.values()) {
         if (mesh.userData.remove) {
-            // Shrink animation for removal
             mesh.scale.multiplyScalar(0.85);
             if (mesh.scale.x < 0.05) {
                 toRemove.push(mesh);
             }
         } else {
-            // Entrance animation
             if (mesh.scale.x < 1.0) {
                 mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, 1.0, 0.2);
                 mesh.scale.y = THREE.MathUtils.lerp(mesh.scale.y, 1.0, 0.2);
                 mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, 1.0, 0.2);
             }
 
-            // Position lerp
             if (mesh.userData.targetPos) {
                 mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, mesh.userData.targetPos.x, 0.15);
                 mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, mesh.userData.targetPos.y, 0.15);
                 mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, mesh.userData.targetPos.z, 0.15);
             }
 
-            // Rotation lerp
             if (mesh.userData.targetRotY !== undefined) {
                 mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, mesh.userData.targetRotY, 0.15);
             }
         }
     }
 
-    // Cleanup removed meshes
     toRemove.forEach(mesh => {
         scene.remove(mesh);
-        // Dispose geometries and materials to prevent memory leaks
         mesh.traverse(child => {
             if (child.isMesh) {
                 child.geometry.dispose();
@@ -716,7 +704,6 @@ function onMouseMove(event) {
 
     raycaster.setFromCamera(mouse, camera);
     
-    // Get all meshes from the map
     const meshes = Array.from(palletMeshMap.values());
     const intersects = raycaster.intersectObjects(meshes, true);
     const tooltip = document.getElementById('tooltip3d');
@@ -729,7 +716,7 @@ function onMouseMove(event) {
         
         if (obj.userData.palletIndex !== undefined) {
             const idx = obj.userData.palletIndex;
-            hoveredPalletIndex = idx; // Set for hotkey
+            hoveredPalletIndex = idx;
             const p = pallets[idx];
             const pos = calculatePositions()[idx];
             const type = PALLET_TYPES[p.palletType];
@@ -781,7 +768,6 @@ function updateUI() {
     renderList();
     runValidation(weight);
     
-    // Update CoG
     if (document.getElementById('toggleCoG').checked && weight > 0) {
         let sumX = 0, sumY = 0, sumZ = 0;
         const positions = calculatePositions();
@@ -914,7 +900,6 @@ function addQuick(mp, count) {
 }
 
 function removePallet(idx) { 
-    // The animate loop will handle the smooth removal
     pallets.splice(idx, 1); 
     updateScene(); 
 }
@@ -929,7 +914,7 @@ function clearAll() {
 function toggleRotation(idx) {
     pallets[idx].isRotated = !pallets[idx].isRotated;
     pallets[idx].allowRotation = true;
-    updateScene(); // Triggers smooth animation to new target
+    updateScene();
 }
 
 function massRotate(type) {
@@ -943,7 +928,6 @@ function massRotate(type) {
     });
     if (changed) {
         updateScene();
-        // Visual feedback
         const btn = event.currentTarget;
         const originalText = btn.innerHTML;
         btn.innerHTML = '✅ Применено';
@@ -980,7 +964,6 @@ function highlightPallet(idx) {
     const mesh = Array.from(palletMeshMap.values()).find(m => m.userData.palletIndex === idx);
     if (!mesh) return;
     
-    // Jump animation
     const originalY = mesh.userData.targetPos ? mesh.userData.targetPos.y : mesh.position.y;
     mesh.userData.targetPos.y = originalY + 300;
     setTimeout(() => {
@@ -1088,12 +1071,12 @@ function draw2DSchema() {
 
 // ===== DATA MANAGEMENT =====
 function saveSession() {
-    localStorage.setItem('palletLoadPro_v40', JSON.stringify({ pallets, truckConfig, nextId }));
+    localStorage.setItem('palletLoadPro_v41', JSON.stringify({ pallets, truckConfig, nextId }));
     alert('План сохранён в браузере!');
 }
 
 function loadSession(silent = false) {
-    const data = localStorage.getItem('palletLoadPro_v40');
+    const data = localStorage.getItem('palletLoadPro_v41');
     if (data) {
         const parsed = JSON.parse(data);
         pallets = parsed.pallets || [];
