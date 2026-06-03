@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletLoad Pro Enterprise v3.2</title>
+    <title>PalletLoad Pro v4.0 Cinematic</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -47,7 +47,7 @@
         .content { flex: 1; display: flex; overflow: hidden; }
 
         .viewport { flex: 1; position: relative; min-width: 0; background: #0a0c10; }
-        #canvas3d { width: 100%; height: 100%; display: block; }
+        #canvas3d { width: 100%; height: 100%; display: block; cursor: crosshair; }
         .viewport-controls { position: absolute; bottom: 15px; left: 15px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 300px; }
         .viewport-controls button { width: 36px; height: 36px; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
         .viewport-controls button:hover, .viewport-controls button.active { background: var(--ozon); border-color: var(--ozon); color: #fff; }
@@ -58,11 +58,13 @@
         #tooltip3d {
             position: absolute; background: rgba(26,29,39,0.95); border: 1px solid var(--ozon);
             padding: 10px; border-radius: 6px; font-size: 11px; pointer-events: none; display: none; z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 140px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 150px; transition: opacity 0.2s;
         }
         #tooltip3d .tt-title { font-weight: 700; color: #fff; margin-bottom: 4px; font-size: 12px; }
         #tooltip3d .tt-row { display: flex; justify-content: space-between; margin: 2px 0; }
         #tooltip3d .tt-val { color: var(--text-dim); }
+        .hotkey-hint { position: absolute; bottom: 60px; left: 15px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 11px; color: var(--text-dim); border: 1px solid var(--border); }
+        .hotkey-hint kbd { background: var(--panel2); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--text); font-family: monospace; }
 
         .panel-right { width: 380px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
@@ -81,7 +83,7 @@
         .btn-primary { background: var(--ozon); color: #fff; }
         .btn-primary:hover { background: #004ae6; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .btn-outline:hover { border-color: var(--ozon); }
+        .btn-outline:hover { border-color: var(--ozon); background: var(--panel2); }
         .btn-full { width: 100%; }
         .btn-sm { padding: 5px 10px; font-size: 11px; }
         .btn-danger { background: rgba(231,76,60,0.2); color: var(--danger); border: 1px solid var(--danger); }
@@ -143,7 +145,7 @@
 <div class="sidebar-left">
     <div class="logo">
         <h1><span>Pallet</span>Load Pro</h1>
-        <p>Enterprise v3.2 (Исправлено)</p>
+        <p>Cinematic v4.0</p>
     </div>
     <div class="nav">
         <div class="nav-section">Управление</div>
@@ -183,6 +185,7 @@
         <!-- 3D VIEWPORT -->
         <div class="viewport">
             <canvas id="canvas3d"></canvas>
+            <div class="hotkey-hint">Наведите на палету и нажмите <kbd>R</kbd> для поворота</div>
             <div id="tooltip3d">
                 <div class="tt-title" id="ttTitle">Палета #1</div>
                 <div class="tt-row"><span>Вес:</span> <span class="tt-val" id="ttWeight">0 кг</span></div>
@@ -270,7 +273,13 @@
                     <span>Список (<span id="palletListCount">0</span>)</span>
                     <span class="text-dim">↕ Drag & Drop</span>
                 </div>
-                <div id="palletListContainer" style="max-height: 600px; overflow-y: auto;"></div>
+                <div id="palletListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                
+                <div class="section-title">Массовые действия</div>
+                <div class="gap-8">
+                    <button class="btn btn-outline" style="flex:1" onclick="massRotate('euro')">🔄 Все Евро</button>
+                    <button class="btn btn-outline" style="flex:1" onclick="massRotate('fin')">🔄 Все Финские</button>
+                </div>
             </div>
 
             <!-- TAB: VALIDATE -->
@@ -287,7 +296,7 @@
                 </div>
             </div>
 
-            <!-- TAB: TRUCK (ИСПРАВЛЕНО: был panel-settings) -->
+            <!-- TAB: TRUCK -->
             <div class="panel-content" id="panel-truck">
                 <div class="section-title">🚛 Конфигурация кузова и 3D</div>
                 
@@ -339,10 +348,11 @@
 // ===== STATE =====
 let pallets = [];
 let scene, camera, renderer, controls, raycaster, mouse;
-let truckMesh, palletMeshes = [], cogMesh;
-let palletMeshMap = new Map();
+let truckMesh, cogMesh;
+let palletMeshMap = new Map(); // ID -> Mesh
 let autoRotate = false;
 let nextId = 1;
+let hoveredPalletIndex = null;
 
 let truckConfig = { length: 13600, width: 2450, height: 2700, payload: 22000 };
 const PALLET_TYPES = { euro: { l: 1200, w: 800, name: 'Евро' }, fin: { l: 1200, w: 1000, name: 'Финская' } };
@@ -384,7 +394,18 @@ function init3D() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
     canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('mouseleave', () => document.getElementById('tooltip3d').style.display = 'none');
+    canvas.addEventListener('mouseleave', () => {
+        document.getElementById('tooltip3d').style.display = 'none';
+        hoveredPalletIndex = null;
+    });
+
+    // Hotkey for rotation
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if ((e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') && hoveredPalletIndex !== null) {
+            toggleRotation(hoveredPalletIndex);
+        }
+    });
 
     createTruck();
     animate();
@@ -501,108 +522,189 @@ function calculatePositions() {
     return positions;
 }
 
-// ===== 3D RENDERING =====
+// ===== 3D RENDERING & ANIMATION =====
 function getWeightColor(weight) {
     if (weight < 300) return 0x2ecc71;
     if (weight < 450) return 0xf39c12;
     return 0xe74c3c;
 }
 
-function updateScene() {
-    palletMeshes.forEach(m => scene.remove(m));
-    palletMeshes = [];
-    palletMeshMap.clear();
-    if (cogMesh) { scene.remove(cogMesh); cogMesh = null; }
+function createPalletMesh(pallet) {
+    const group = new THREE.Group();
+    const type = PALLET_TYPES[pallet.palletType];
+    // Always create with standard orientation (X = length, Z = width)
+    // Rotation will be handled by group.rotation.y
+    const drawL = type.l;
+    const drawW = type.w;
 
-    const positions = calculatePositions();
+    let baseColor = pallet.mp === 'ozon' ? 0x005BFF : 0x7B2D8E;
+    if (pallet.isCold) baseColor = 0x00d2ff;
+    if (pallet.isAdr) baseColor = 0xff4444;
+
+    const base = new THREE.Mesh(new THREE.BoxGeometry(drawL - 40, 20, drawW - 40), new THREE.MeshStandardMaterial({ color: 0xc4a265 }));
+    base.position.y = 10;
+    group.add(base);
+
+    const goodsH = pallet.height - 150;
+    const goods = new THREE.Mesh(new THREE.BoxGeometry(drawL - 60, goodsH, drawW - 60), new THREE.MeshStandardMaterial({ color: baseColor, transparent: true, opacity: 0.85 }));
+    goods.position.y = 20 + goodsH / 2;
+    goods.castShadow = true;
+    group.add(goods);
+
+    // Rotation indicator (white line)
+    const indicator = new THREE.Mesh(new THREE.BoxGeometry(drawL - 80, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }));
+    indicator.position.y = pallet.height - 5;
+    indicator.visible = false; // Will be toggled based on rotation
+    indicator.name = 'rotIndicator';
+    group.add(indicator);
+
+    return group;
+}
+
+function updateMeshAppearance(mesh, pallet, pos) {
+    const type = PALLET_TYPES[pallet.palletType];
     const showHeatmap = document.getElementById('toggleHeatmap').checked;
+    
+    let baseColor = pallet.mp === 'ozon' ? 0x005BFF : 0x7B2D8E;
+    if (pallet.isCold) baseColor = 0x00d2ff;
+    if (pallet.isAdr) baseColor = 0xff4444;
+    if (showHeatmap && !pallet.isCold && !pallet.isAdr) baseColor = getWeightColor(pallet.weight);
+
+    const opacity = pos.overflow ? 0.3 : 0.85;
+
+    // Update goods color
+    if (mesh.children[1] && mesh.children[1].material) {
+        mesh.children[1].material.color.setHex(baseColor);
+        mesh.children[1].material.opacity = opacity;
+    }
+
+    // Update overflow visual
+    if (pos.overflow) {
+        mesh.traverse(c => { 
+            if(c.isMesh) { 
+                c.material = c.material.clone(); 
+                c.material.color.setHex(0xff0000); 
+                c.material.opacity = 0.5;
+            }
+        });
+    }
+
+    // Update rotation indicator visibility
+    const indicator = mesh.getObjectByName('rotIndicator');
+    if (indicator) {
+        indicator.visible = pos.isRotated;
+    }
+}
+
+function updateScene() {
+    const positions = calculatePositions();
+    const activeIds = new Set(pallets.map(p => p.id));
     const explodedOffset = parseInt(document.getElementById('explodedSlider').value) * 30;
 
-    let totalWeight = 0, sumX = 0, sumY = 0, sumZ = 0;
+    // 1. Mark existing meshes for potential removal
+    for (let [id, mesh] of palletMeshMap) {
+        if (!activeIds.has(id)) {
+            mesh.userData.remove = true;
+        }
+    }
 
+    // 2. Update or Create meshes
     pallets.forEach((pallet, i) => {
         const pos = positions[i];
         if (!pos) return;
 
-        const group = new THREE.Group();
-        const type = PALLET_TYPES[pallet.palletType];
-        const isRotated = pos.isRotated;
-        
-        const drawL = isRotated ? type.w : type.l;
-        const drawW = isRotated ? type.l : type.w;
+        const targetRotY = pos.isRotated ? Math.PI / 2 : 0;
+        const targetPos = { 
+            x: pos.x, 
+            y: pos.y + (pos.layer > 0 ? explodedOffset : 0), 
+            z: pos.z 
+        };
 
-        let baseColor = pallet.mp === 'ozon' ? 0x005BFF : 0x7B2D8E;
-        if (pallet.isCold) baseColor = 0x00d2ff;
-        if (pallet.isAdr) baseColor = 0xff4444;
-        if (showHeatmap && !pallet.isCold && !pallet.isAdr) baseColor = getWeightColor(pallet.weight);
-
-        const opacity = pos.overflow ? 0.3 : 0.85;
-
-        const base = new THREE.Mesh(new THREE.BoxGeometry(drawL - 40, 20, drawW - 40), new THREE.MeshStandardMaterial({ color: 0xc4a265 }));
-        base.position.y = 10;
-        group.add(base);
-
-        const goodsH = pallet.height - 150;
-        const goods = new THREE.Mesh(new THREE.BoxGeometry(drawL - 60, goodsH, drawW - 60), new THREE.MeshStandardMaterial({ color: baseColor, transparent: true, opacity }));
-        goods.position.y = 20 + goodsH / 2;
-        goods.castShadow = true;
-        goods.userData = { palletIndex: i };
-        group.add(goods);
-
-        if (isRotated) {
-            const indicator = new THREE.Mesh(new THREE.BoxGeometry(drawL - 80, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-            indicator.position.y = pallet.height - 5;
-            group.add(indicator);
-        }
-
-        const yPos = pos.y + (pos.layer > 0 ? explodedOffset : 0);
-        group.position.set(pos.x, yPos, pos.z);
-
-        if (pos.overflow) {
-            group.traverse(c => { if(c.isMesh) { c.material = c.material.clone(); c.material.color.setHex(0xff0000); }});
-        }
-
-        scene.add(group);
-        palletMeshes.push(group);
-        palletMeshMap.set(i, group);
-
-        if (!pos.overflow) {
-            const pWeight = pallet.weight;
-            totalWeight += pWeight;
-            sumX += pos.x * pWeight;
-            sumY += (yPos + pallet.height/2) * pWeight;
-            sumZ += pos.z * pWeight;
+        let mesh = palletMeshMap.get(pallet.id);
+        if (!mesh) {
+            // Create new
+            mesh = createPalletMesh(pallet);
+            mesh.position.set(targetPos.x, targetPos.y, targetPos.z);
+            mesh.rotation.y = targetRotY;
+            mesh.userData.targetPos = { ...targetPos };
+            mesh.userData.targetRotY = targetRotY;
+            mesh.userData.palletIndex = i;
+            mesh.userData.id = pallet.id;
+            
+            // Animate entrance
+            mesh.scale.set(0.1, 0.1, 0.1);
+            
+            scene.add(mesh);
+            palletMeshMap.set(pallet.id, mesh);
+        } else {
+            // Update existing
+            mesh.userData.targetPos = { ...targetPos };
+            mesh.userData.targetRotY = targetRotY;
+            mesh.userData.palletIndex = i;
+            mesh.userData.remove = false;
+            
+            updateMeshAppearance(mesh, pallet, pos);
         }
     });
 
-    if (document.getElementById('toggleCoG').checked && totalWeight > 0) {
-        const cogX = sumX / totalWeight;
-        const cogY = sumY / totalWeight;
-        const cogZ = sumZ / totalWeight;
-        
-        document.getElementById('cogX').textContent = Math.round(cogX);
-        document.getElementById('cogY').textContent = Math.round(cogY);
-        document.getElementById('cogZ').textContent = Math.round(cogZ);
-
-        const xDeviation = Math.abs(cogX) / (truckConfig.length / 2);
-        const zDeviation = Math.abs(cogZ) / (truckConfig.width / 2);
-        const isBalanced = xDeviation < 0.3 && zDeviation < 0.3;
-
-        document.getElementById('cogStatus').textContent = isBalanced ? 'OK' : 'СМЕЩЁН';
-        document.getElementById('cogBadge').className = 'stat-badge ' + (isBalanced ? 'cog-ok' : 'cog-warn');
-
-        const cogGeo = new THREE.SphereGeometry(150, 16, 16);
-        const cogMat = new THREE.MeshBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c, transparent: true, opacity: 0.6 });
-        cogMesh = new THREE.Mesh(cogGeo, cogMat);
-        cogMesh.position.set(cogX, cogY, cogZ);
-        
-        const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(cogGeo), new THREE.LineBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c }));
-        cogMesh.add(wireframe);
-        scene.add(cogMesh);
-    }
-
     updateUI();
     draw2DSchema();
+}
+
+// ===== ANIMATION LOOP =====
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+
+    // Smooth animation logic
+    const toRemove = [];
+    for (let mesh of palletMeshMap.values()) {
+        if (mesh.userData.remove) {
+            // Shrink animation for removal
+            mesh.scale.multiplyScalar(0.85);
+            if (mesh.scale.x < 0.05) {
+                toRemove.push(mesh);
+            }
+        } else {
+            // Entrance animation
+            if (mesh.scale.x < 1.0) {
+                mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, 1.0, 0.2);
+                mesh.scale.y = THREE.MathUtils.lerp(mesh.scale.y, 1.0, 0.2);
+                mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, 1.0, 0.2);
+            }
+
+            // Position lerp
+            if (mesh.userData.targetPos) {
+                mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, mesh.userData.targetPos.x, 0.15);
+                mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, mesh.userData.targetPos.y, 0.15);
+                mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, mesh.userData.targetPos.z, 0.15);
+            }
+
+            // Rotation lerp
+            if (mesh.userData.targetRotY !== undefined) {
+                mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, mesh.userData.targetRotY, 0.15);
+            }
+        }
+    }
+
+    // Cleanup removed meshes
+    toRemove.forEach(mesh => {
+        scene.remove(mesh);
+        // Dispose geometries and materials to prevent memory leaks
+        mesh.traverse(child => {
+            if (child.isMesh) {
+                child.geometry.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+        });
+        palletMeshMap.delete(mesh.userData.id);
+    });
+
+    renderer.render(scene, camera);
 }
 
 // ===== INTERACTION =====
@@ -613,7 +715,10 @@ function onMouseMove(event) {
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(palletMeshes, true);
+    
+    // Get all meshes from the map
+    const meshes = Array.from(palletMeshMap.values());
+    const intersects = raycaster.intersectObjects(meshes, true);
     const tooltip = document.getElementById('tooltip3d');
 
     if (intersects.length > 0) {
@@ -624,6 +729,7 @@ function onMouseMove(event) {
         
         if (obj.userData.palletIndex !== undefined) {
             const idx = obj.userData.palletIndex;
+            hoveredPalletIndex = idx; // Set for hotkey
             const p = pallets[idx];
             const pos = calculatePositions()[idx];
             const type = PALLET_TYPES[p.palletType];
@@ -651,7 +757,8 @@ function onMouseMove(event) {
         }
     }
     tooltip.style.display = 'none';
-    canvas.style.cursor = 'default';
+    canvas.style.cursor = 'crosshair';
+    hoveredPalletIndex = null;
 }
 
 // ===== UI & LOGIC =====
@@ -673,6 +780,52 @@ function updateUI() {
 
     renderList();
     runValidation(weight);
+    
+    // Update CoG
+    if (document.getElementById('toggleCoG').checked && weight > 0) {
+        let sumX = 0, sumY = 0, sumZ = 0;
+        const positions = calculatePositions();
+        pallets.forEach((p, i) => {
+            const pos = positions[i];
+            if (pos && !pos.overflow) {
+                const explodedOffset = parseInt(document.getElementById('explodedSlider').value) * 30;
+                const yPos = pos.y + (pos.layer > 0 ? explodedOffset : 0);
+                sumX += pos.x * p.weight;
+                sumY += (yPos + p.height/2) * p.weight;
+                sumZ += pos.z * p.weight;
+            }
+        });
+        
+        const cogX = sumX / weight;
+        const cogY = sumY / weight;
+        const cogZ = sumZ / weight;
+        
+        document.getElementById('cogX').textContent = Math.round(cogX);
+        document.getElementById('cogY').textContent = Math.round(cogY);
+        document.getElementById('cogZ').textContent = Math.round(cogZ);
+
+        const xDeviation = Math.abs(cogX) / (truckConfig.length / 2);
+        const zDeviation = Math.abs(cogZ) / (truckConfig.width / 2);
+        const isBalanced = xDeviation < 0.3 && zDeviation < 0.3;
+
+        document.getElementById('cogStatus').textContent = isBalanced ? 'OK' : 'СМЕЩЁН';
+        document.getElementById('cogBadge').className = 'stat-badge ' + (isBalanced ? 'cog-ok' : 'cog-warn');
+
+        if (!cogMesh) {
+            const cogGeo = new THREE.SphereGeometry(150, 16, 16);
+            const cogMat = new THREE.MeshBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c, transparent: true, opacity: 0.6 });
+            cogMesh = new THREE.Mesh(cogGeo, cogMat);
+            const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(cogGeo), new THREE.LineBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c }));
+            cogMesh.add(wireframe);
+            scene.add(cogMesh);
+        }
+        cogMesh.material.color.setHex(isBalanced ? 0x2ecc71 : 0xe74c3c);
+        cogMesh.children[0].material.color.setHex(isBalanced ? 0x2ecc71 : 0xe74c3c);
+        cogMesh.position.set(cogX, cogY, cogZ);
+    } else if (cogMesh) {
+        scene.remove(cogMesh);
+        cogMesh = null;
+    }
 }
 
 function renderList() {
@@ -760,13 +913,42 @@ function addQuick(mp, count) {
     updateScene();
 }
 
-function removePallet(idx) { pallets.splice(idx, 1); updateScene(); }
-function clearAll() { if(confirm('Удалить всё?')) { pallets = []; updateScene(); } }
+function removePallet(idx) { 
+    // The animate loop will handle the smooth removal
+    pallets.splice(idx, 1); 
+    updateScene(); 
+}
+
+function clearAll() { 
+    if(confirm('Удалить всё?')) { 
+        pallets = []; 
+        updateScene(); 
+    } 
+}
 
 function toggleRotation(idx) {
     pallets[idx].isRotated = !pallets[idx].isRotated;
     pallets[idx].allowRotation = true;
-    updateScene();
+    updateScene(); // Triggers smooth animation to new target
+}
+
+function massRotate(type) {
+    let changed = false;
+    pallets.forEach(p => {
+        if (p.palletType === type) {
+            p.isRotated = !p.isRotated;
+            p.allowRotation = true;
+            changed = true;
+        }
+    });
+    if (changed) {
+        updateScene();
+        // Visual feedback
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Применено';
+        setTimeout(() => btn.innerHTML = originalText, 1000);
+    }
 }
 
 function autoBalance() {
@@ -795,10 +977,15 @@ function onDrop(e) {
 function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.pallet-item').forEach(el => el.classList.remove('drag-over')); draggedIdx = null; }
 
 function highlightPallet(idx) {
-    const mesh = palletMeshMap.get(idx);
+    const mesh = Array.from(palletMeshMap.values()).find(m => m.userData.palletIndex === idx);
     if (!mesh) return;
-    mesh.scale.setScalar(1.15);
-    setTimeout(() => mesh.scale.setScalar(1), 300);
+    
+    // Jump animation
+    const originalY = mesh.userData.targetPos ? mesh.userData.targetPos.y : mesh.position.y;
+    mesh.userData.targetPos.y = originalY + 300;
+    setTimeout(() => {
+        if (mesh.userData.targetPos) mesh.userData.targetPos.y = originalY;
+    }, 300);
 }
 
 function updateExplodedView(val) {
@@ -901,12 +1088,12 @@ function draw2DSchema() {
 
 // ===== DATA MANAGEMENT =====
 function saveSession() {
-    localStorage.setItem('palletLoadPro_v32', JSON.stringify({ pallets, truckConfig, nextId }));
+    localStorage.setItem('palletLoadPro_v40', JSON.stringify({ pallets, truckConfig, nextId }));
     alert('План сохранён в браузере!');
 }
 
 function loadSession(silent = false) {
-    const data = localStorage.getItem('palletLoadPro_v32');
+    const data = localStorage.getItem('palletLoadPro_v40');
     if (data) {
         const parsed = JSON.parse(data);
         pallets = parsed.pallets || [];
@@ -930,6 +1117,7 @@ function importCSV(input) {
     Papa.parse(file, {
         header: true,
         complete: function(results) {
+            let count = 0;
             results.data.forEach(row => {
                 if (row.mp && row.weight) {
                     pallets.push({
@@ -944,10 +1132,11 @@ function importCSV(input) {
                         isCold: row.cold === 'true' || row.cold === 'да',
                         isAdr: row.adr === 'true' || row.adr === 'да'
                     });
+                    count++;
                 }
             });
             updateScene();
-            alert(`Импортировано ${results.data.filter(r => r.mp).length} палет`);
+            alert(`Импортировано ${count} палет`);
         }
     });
     input.value = '';
@@ -997,7 +1186,6 @@ function switchTab(e, tab) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (e?.currentTarget) e.currentTarget.classList.add('active');
     
-    // Синхронизация бокового меню с правыми вкладками
     if (tab === 'settings') {
         switchPanel(null, 'truck');
     } else if (tab === 'schema2d') {
@@ -1014,7 +1202,6 @@ function switchPanel(e, panel) {
     if (e?.currentTarget) {
         e.currentTarget.classList.add('active');
     } else {
-        // Программное переключение (из бокового меню)
         const tabs = document.querySelectorAll('.panel-tab');
         tabs.forEach(tab => {
             if (tab.getAttribute('onclick')?.includes(`'${panel}'`)) {
@@ -1051,12 +1238,6 @@ function onResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
     draw2DSchema();
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
 }
 
 // Start
