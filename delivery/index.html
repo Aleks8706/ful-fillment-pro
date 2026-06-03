@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletLoad Pro v4.1 (Исправлен поворот)</title>
+    <title>PalletLoad Pro v4.2 Interactive</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -17,7 +17,7 @@
             --text-dim: #8b8fa3; --success: #2ecc71; --danger: #e74c3c;
             --warning: #f39c12; --cold: #00d2ff; --adr: #ff4444;
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; user-select: none; }
 
         .sidebar-left { width: 260px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
         .logo { padding: 20px; border-bottom: 1px solid var(--border); }
@@ -63,8 +63,8 @@
         #tooltip3d .tt-title { font-weight: 700; color: #fff; margin-bottom: 4px; font-size: 12px; }
         #tooltip3d .tt-row { display: flex; justify-content: space-between; margin: 2px 0; }
         #tooltip3d .tt-val { color: var(--text-dim); }
-        .hotkey-hint { position: absolute; bottom: 60px; left: 15px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 11px; color: var(--text-dim); border: 1px solid var(--border); }
-        .hotkey-hint kbd { background: var(--panel2); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--text); font-family: monospace; }
+        .hotkey-hint { position: absolute; bottom: 60px; left: 15px; background: rgba(0,0,0,0.7); padding: 6px 10px; border-radius: 4px; font-size: 11px; color: var(--text); border: 1px solid var(--border); display: flex; gap: 10px; }
+        .hotkey-hint kbd { background: var(--panel2); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--ozon); font-family: monospace; font-weight: bold; }
 
         .panel-right { width: 380px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
@@ -102,6 +102,7 @@
         .pallet-color.wb { background: var(--wb); }
         .pallet-color.cold { background: var(--cold); }
         .pallet-color.adr { background: var(--adr); }
+        .pallet-color.manual { background: var(--warning); }
         .pallet-info { flex: 1; min-width: 0; }
         .pallet-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
         .pallet-meta { font-size: 10px; color: var(--text-dim); }
@@ -117,6 +118,7 @@
         .badge-adr { background: rgba(255,68,68,0.2); color: var(--adr); }
         .badge-layer { background: var(--panel); color: var(--text-dim); border: 1px solid var(--border); }
         .badge-rot { background: rgba(243,156,18,0.2); color: var(--warning); border: 1px solid var(--warning); }
+        .badge-manual { background: rgba(243,156,18,0.2); color: var(--warning); border: 1px solid var(--warning); }
 
         .validation-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 12px; }
         .validation-item.ok { background: rgba(46,204,113,0.1); color: var(--success); }
@@ -145,7 +147,7 @@
 <div class="sidebar-left">
     <div class="logo">
         <h1><span>Pallet</span>Load Pro</h1>
-        <p>Cinematic v4.1</p>
+        <p>Interactive v4.2</p>
     </div>
     <div class="nav">
         <div class="nav-section">Управление</div>
@@ -185,7 +187,10 @@
         <!-- 3D VIEWPORT -->
         <div class="viewport">
             <canvas id="canvas3d"></canvas>
-            <div class="hotkey-hint">Наведите на палету и нажмите <kbd>R</kbd> для поворота</div>
+            <div class="hotkey-hint">
+                <span>🖱️ <kbd>ЛКМ</kbd> + тянуть для перемещения</span>
+                <span>⌨️ <kbd>R</kbd> для поворота</span>
+            </div>
             <div id="tooltip3d">
                 <div class="tt-title" id="ttTitle">Палета #1</div>
                 <div class="tt-row"><span>Вес:</span> <span class="tt-val" id="ttWeight">0 кг</span></div>
@@ -280,6 +285,7 @@
                     <button class="btn btn-outline" style="flex:1" onclick="massRotate('euro')">🔄 Все Евро</button>
                     <button class="btn btn-outline" style="flex:1" onclick="massRotate('fin')">🔄 Все Финские</button>
                 </div>
+                <button class="btn btn-outline btn-full mt-10" onclick="resetManualPositions()">📍 Сбросить ручные позиции</button>
             </div>
 
             <!-- TAB: VALIDATE -->
@@ -354,6 +360,14 @@ let autoRotate = false;
 let nextId = 1;
 let hoveredPalletIndex = null;
 
+// Drag & Drop State
+let isDragging = false;
+let draggedPallet = null;
+let draggedMesh = null;
+let dragStartPos = { x: 0, y: 0, z: 0 };
+let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let dragOffset = { x: 0, z: 0 };
+
 let truckConfig = { length: 13600, width: 2450, height: 2700, payload: 22000 };
 const PALLET_TYPES = { euro: { l: 1200, w: 800, name: 'Евро' }, fin: { l: 1200, w: 1000, name: 'Финская' } };
 const GAP = 50;
@@ -393,10 +407,15 @@ function init3D() {
 
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
-    canvas.addEventListener('mousemove', onMouseMove);
+    
+    // Mouse events for Drag & Drop
+    canvas.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMoveGlobal);
+    window.addEventListener('mouseup', onMouseUpGlobal);
+    
     canvas.addEventListener('mouseleave', () => {
         document.getElementById('tooltip3d').style.display = 'none';
-        hoveredPalletIndex = null;
+        if (!isDragging) hoveredPalletIndex = null;
     });
 
     // Hotkey for rotation
@@ -442,7 +461,205 @@ function createTruck() {
     scene.add(truckMesh);
 }
 
-// ===== ADVANCED BIN PACKING WITH ROTATION (ИСПРАВЛЕНО) =====
+// ===== DRAG & DROP LOGIC =====
+function onMouseDown(event) {
+    if (event.button !== 0) return; // Только ЛКМ
+    const canvas = document.getElementById('canvas3d');
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(Array.from(palletMeshMap.values()), true);
+    
+    if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj.parent && obj.userData.palletIndex === undefined && obj.parent.type !== 'Scene') {
+            obj = obj.parent;
+        }
+        
+        if (obj.userData.palletIndex !== undefined) {
+            isDragging = true;
+            draggedMesh = obj;
+            draggedPallet = pallets[obj.userData.palletIndex];
+            controls.enabled = false; // Отключаем вращение камеры
+            
+            dragPlane.constant = -obj.position.y;
+            dragStartPos = { x: obj.position.x, y: obj.position.y, z: obj.position.z };
+            
+            const intersectPoint = new THREE.Vector3();
+            raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+            dragOffset = {
+                x: intersectPoint.x - obj.position.x,
+                z: intersectPoint.z - obj.position.z
+            };
+            
+            obj.scale.setScalar(1.1);
+            document.getElementById('canvas3d').style.cursor = 'grabbing';
+        }
+    }
+}
+
+function onMouseMoveGlobal(event) {
+    const canvas = document.getElementById('canvas3d');
+    const rect = canvas.getBoundingClientRect();
+    
+    // Tooltip logic when not dragging
+    if (!isDragging) {
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(Array.from(palletMeshMap.values()), true);
+        const tooltip = document.getElementById('tooltip3d');
+
+        if (intersects.length > 0) {
+            let obj = intersects[0].object;
+            while (obj.parent && obj.userData.palletIndex === undefined && obj.parent.type !== 'Scene') obj = obj.parent;
+            
+            if (obj.userData.palletIndex !== undefined) {
+                hoveredPalletIndex = obj.userData.palletIndex;
+                const p = pallets[hoveredPalletIndex];
+                const pos = calculatePositions()[hoveredPalletIndex];
+                const type = PALLET_TYPES[p.palletType];
+                const dim = pos?.isRotated ? `${type.w}×${type.l}` : `${type.l}×${type.w}`;
+
+                document.getElementById('ttTitle').textContent = `Палета #${hoveredPalletIndex + 1} (${p.mp.toUpperCase()})`;
+                document.getElementById('ttWeight').textContent = p.weight + ' кг';
+                document.getElementById('ttHeight').textContent = p.height + ' мм';
+                document.getElementById('ttSize').textContent = dim + (pos?.isRotated ? ' 🔄' : '');
+                document.getElementById('ttPriority').textContent = p.priority;
+                
+                const specialEl = document.getElementById('ttSpecial');
+                if (p.isCold || p.isAdr) {
+                    specialEl.style.display = 'block';
+                    specialEl.textContent = (p.isCold ? '❄️ Реф ' : '') + (p.isAdr ? '⚠️ ADR' : '');
+                } else {
+                    specialEl.style.display = 'none';
+                }
+
+                tooltip.style.display = 'block';
+                tooltip.style.left = (event.clientX - rect.left + 15) + 'px';
+                tooltip.style.top = (event.clientY - rect.top + 15) + 'px';
+                canvas.style.cursor = 'pointer';
+                return;
+            }
+        }
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'crosshair';
+        hoveredPalletIndex = null;
+    }
+
+    // Drag logic
+    if (isDragging && draggedMesh) {
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        
+        const intersectPoint = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(dragPlane, intersectPoint)) {
+            let newX = intersectPoint.x - dragOffset.x;
+            let newZ = intersectPoint.z - dragOffset.z;
+            
+            // Snap to grid
+            const type = PALLET_TYPES[draggedPallet.palletType];
+            const sX = draggedPallet.isRotated ? (type.w + GAP) : (type.l + GAP);
+            const sZ = draggedPallet.isRotated ? (type.l + GAP) : (type.w + GAP);
+            
+            const startX = -truckConfig.length / 2 + sX / 2;
+            const startZ = -truckConfig.width / 2 + sZ / 2;
+            
+            const col = Math.round((newX - startX) / sX);
+            const row = Math.round((newZ - startZ) / sZ);
+            
+            newX = startX + col * sX;
+            newZ = startZ + row * sZ;
+            
+            // Boundaries
+            const maxX = truckConfig.length / 2 - sX / 2 + GAP;
+            const maxZ = truckConfig.width / 2 - sZ / 2 + GAP;
+            const minX = -truckConfig.length / 2 + sX / 2 - GAP;
+            const minZ = -truckConfig.width / 2 + sZ / 2 - GAP;
+            
+            newX = Math.max(minX, Math.min(maxX, newX));
+            newZ = Math.max(minZ, Math.min(maxZ, newZ));
+            
+            draggedMesh.position.x = newX;
+            draggedMesh.position.z = newZ;
+        }
+    }
+}
+
+function onMouseUpGlobal() {
+    if (isDragging && draggedMesh) {
+        isDragging = false;
+        controls.enabled = true;
+        draggedMesh.scale.setScalar(1.0);
+        document.getElementById('canvas3d').style.cursor = 'crosshair';
+        
+        const isValid = checkPositionValidity(draggedPallet, draggedMesh.position.x, draggedMesh.position.z, draggedMesh.position.y);
+        
+        if (isValid) {
+            draggedPallet.isManual = true;
+            draggedPallet.manualX = draggedMesh.position.x;
+            draggedPallet.manualZ = draggedMesh.position.z;
+            draggedPallet.manualLayer = draggedMesh.position.y > 500 ? 1 : 0;
+            updateScene();
+        } else {
+            animateMeshTo(draggedMesh, dragStartPos.x, dragStartPos.y, dragStartPos.z);
+        }
+        
+        draggedPallet = null;
+        draggedMesh = null;
+    }
+}
+
+function checkPositionValidity(pallet, x, z, y) {
+    const type = PALLET_TYPES[pallet.palletType];
+    const pL = pallet.isRotated ? type.w : type.l;
+    const pW = pallet.isRotated ? type.l : type.w;
+    
+    if (x < -truckConfig.length/2 + pL/2 - 10 || x > truckConfig.length/2 - pL/2 + 10) return false;
+    if (z < -truckConfig.width/2 + pW/2 - 10 || z > truckConfig.width/2 - pW/2 + 10) return false;
+    
+    for (let other of pallets) {
+        if (other.id === pallet.id) continue;
+        if (!other.isManual) continue; // Проверяем коллизии только с другими ручными палетами
+        
+        const otherType = PALLET_TYPES[other.palletType];
+        const oL = other.isRotated ? otherType.w : otherType.l;
+        const oW = other.isRotated ? otherType.l : otherType.w;
+        
+        const dx = Math.abs(x - other.manualX);
+        const dz = Math.abs(z - other.manualZ);
+        const minDx = (pL + oL) / 2 + GAP / 2;
+        const minDz = (pW + oW) / 2 + GAP / 2;
+        
+        if (dx < minDx && dz < minDz) return false;
+    }
+    return true;
+}
+
+function animateMeshTo(mesh, tx, ty, tz) {
+    const startX = mesh.position.x;
+    const startY = mesh.position.y;
+    const startZ = mesh.position.z;
+    let progress = 0;
+    
+    function step() {
+        progress += 0.08;
+        if (progress >= 1) {
+            mesh.position.set(tx, ty, tz);
+            return;
+        }
+        mesh.position.x = startX + (tx - startX) * progress;
+        mesh.position.y = startY + (ty - startY) * progress;
+        mesh.position.z = startZ + (tz - startZ) * progress;
+        requestAnimationFrame(step);
+    }
+    step();
+}
+
+// ===== ADVANCED BIN PACKING =====
 function calculatePositions() {
     const { length: L, width: W, height: H } = truckConfig;
     const positions = [];
@@ -451,12 +668,39 @@ function calculatePositions() {
     indexed.sort((a, b) => a.pallet.priority - b.pallet.priority);
 
     const slots = [];
+    
+    // 1. Занимаем слоты ручными палетами
+    pallets.forEach(p => {
+        if (p.isManual) {
+            const type = PALLET_TYPES[p.palletType];
+            slots.push({
+                x: p.manualX,
+                z: p.manualZ,
+                layer: p.manualLayer || 0,
+                pL: p.isRotated ? type.w : type.l,
+                pW: p.isRotated ? type.l : type.w,
+                pallet: p
+            });
+        }
+    });
+
     const stepX = 1200 + GAP;
     
+    // 2. Размещаем остальные
     indexed.forEach(({ pallet, originalIndex }) => {
+        if (pallet.isManual) {
+            positions[originalIndex] = { 
+                x: pallet.manualX,
+                y: (pallet.manualLayer || 0) === 0 ? 0 : 1800, 
+                z: pallet.manualZ,
+                layer: pallet.manualLayer || 0,
+                overflow: false,
+                isRotated: pallet.isRotated
+            };
+            return;
+        }
+
         const baseType = PALLET_TYPES[pallet.palletType];
-        
-        // ИСПРАВЛЕНИЕ: Если пользователь явно развернул палету, пробуем развернутый вариант ПЕРВЫМ.
         let orientations;
         if (!pallet.allowRotation) {
             orientations = [pallet.isRotated || false];
@@ -471,7 +715,6 @@ function calculatePositions() {
             
             const pL = rotated ? baseType.w : baseType.l;
             const pW = rotated ? baseType.l : baseType.w;
-            
             const startX = pallet.isAdr ? (L/2 - pL/2 - GAP) : (L/2 - pL/2 - GAP);
             
             for (let layer = 0; layer < 2 && !placed; layer++) {
@@ -591,9 +834,7 @@ function updateMeshAppearance(mesh, pallet, pos) {
     }
 
     const indicator = mesh.getObjectByName('rotIndicator');
-    if (indicator) {
-        indicator.visible = pos.isRotated;
-    }
+    if (indicator) indicator.visible = pos.isRotated;
 }
 
 function updateScene() {
@@ -602,9 +843,7 @@ function updateScene() {
     const explodedOffset = parseInt(document.getElementById('explodedSlider').value) * 30;
 
     for (let [id, mesh] of palletMeshMap) {
-        if (!activeIds.has(id)) {
-            mesh.userData.remove = true;
-        }
+        if (!activeIds.has(id)) mesh.userData.remove = true;
     }
 
     pallets.forEach((pallet, i) => {
@@ -627,9 +866,7 @@ function updateScene() {
             mesh.userData.targetRotY = targetRotY;
             mesh.userData.palletIndex = i;
             mesh.userData.id = pallet.id;
-            
             mesh.scale.set(0.1, 0.1, 0.1);
-            
             scene.add(mesh);
             palletMeshMap.set(pallet.id, mesh);
         } else {
@@ -637,7 +874,6 @@ function updateScene() {
             mesh.userData.targetRotY = targetRotY;
             mesh.userData.palletIndex = i;
             mesh.userData.remove = false;
-            
             updateMeshAppearance(mesh, pallet, pos);
         }
     });
@@ -655,22 +891,18 @@ function animate() {
     for (let mesh of palletMeshMap.values()) {
         if (mesh.userData.remove) {
             mesh.scale.multiplyScalar(0.85);
-            if (mesh.scale.x < 0.05) {
-                toRemove.push(mesh);
-            }
+            if (mesh.scale.x < 0.05) toRemove.push(mesh);
         } else {
             if (mesh.scale.x < 1.0) {
                 mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, 1.0, 0.2);
                 mesh.scale.y = THREE.MathUtils.lerp(mesh.scale.y, 1.0, 0.2);
                 mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, 1.0, 0.2);
             }
-
             if (mesh.userData.targetPos) {
                 mesh.position.x = THREE.MathUtils.lerp(mesh.position.x, mesh.userData.targetPos.x, 0.15);
                 mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, mesh.userData.targetPos.y, 0.15);
                 mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, mesh.userData.targetPos.z, 0.15);
             }
-
             if (mesh.userData.targetRotY !== undefined) {
                 mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, mesh.userData.targetRotY, 0.15);
             }
@@ -682,70 +914,14 @@ function animate() {
         mesh.traverse(child => {
             if (child.isMesh) {
                 child.geometry.dispose();
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
-                } else {
-                    child.material.dispose();
-                }
+                if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                else child.material.dispose();
             }
         });
         palletMeshMap.delete(mesh.userData.id);
     });
 
     renderer.render(scene, camera);
-}
-
-// ===== INTERACTION =====
-function onMouseMove(event) {
-    const canvas = document.getElementById('canvas3d');
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-    
-    const meshes = Array.from(palletMeshMap.values());
-    const intersects = raycaster.intersectObjects(meshes, true);
-    const tooltip = document.getElementById('tooltip3d');
-
-    if (intersects.length > 0) {
-        let obj = intersects[0].object;
-        while (obj.parent && obj.userData.palletIndex === undefined && obj.parent.type !== 'Scene') {
-            obj = obj.parent;
-        }
-        
-        if (obj.userData.palletIndex !== undefined) {
-            const idx = obj.userData.palletIndex;
-            hoveredPalletIndex = idx;
-            const p = pallets[idx];
-            const pos = calculatePositions()[idx];
-            const type = PALLET_TYPES[p.palletType];
-            const dim = pos?.isRotated ? `${type.w}×${type.l}` : `${type.l}×${type.w}`;
-
-            document.getElementById('ttTitle').textContent = `Палета #${idx + 1} (${p.mp.toUpperCase()})`;
-            document.getElementById('ttWeight').textContent = p.weight + ' кг';
-            document.getElementById('ttHeight').textContent = p.height + ' мм';
-            document.getElementById('ttSize').textContent = dim + (pos?.isRotated ? ' 🔄' : '');
-            document.getElementById('ttPriority').textContent = p.priority;
-            
-            const specialEl = document.getElementById('ttSpecial');
-            if (p.isCold || p.isAdr) {
-                specialEl.style.display = 'block';
-                specialEl.textContent = (p.isCold ? '❄️ Реф ' : '') + (p.isAdr ? '⚠️ ADR' : '');
-            } else {
-                specialEl.style.display = 'none';
-            }
-
-            tooltip.style.display = 'block';
-            tooltip.style.left = (event.clientX - rect.left + 15) + 'px';
-            tooltip.style.top = (event.clientY - rect.top + 15) + 'px';
-            canvas.style.cursor = 'pointer';
-            return;
-        }
-    }
-    tooltip.style.display = 'none';
-    canvas.style.cursor = 'crosshair';
-    hoveredPalletIndex = null;
 }
 
 // ===== UI & LOGIC =====
@@ -782,27 +958,19 @@ function updateUI() {
             }
         });
         
-        const cogX = sumX / weight;
-        const cogY = sumY / weight;
-        const cogZ = sumZ / weight;
-        
+        const cogX = sumX / weight, cogY = sumY / weight, cogZ = sumZ / weight;
         document.getElementById('cogX').textContent = Math.round(cogX);
         document.getElementById('cogY').textContent = Math.round(cogY);
         document.getElementById('cogZ').textContent = Math.round(cogZ);
 
-        const xDeviation = Math.abs(cogX) / (truckConfig.length / 2);
-        const zDeviation = Math.abs(cogZ) / (truckConfig.width / 2);
-        const isBalanced = xDeviation < 0.3 && zDeviation < 0.3;
-
+        const isBalanced = (Math.abs(cogX) / (truckConfig.length / 2)) < 0.3 && (Math.abs(cogZ) / (truckConfig.width / 2)) < 0.3;
         document.getElementById('cogStatus').textContent = isBalanced ? 'OK' : 'СМЕЩЁН';
         document.getElementById('cogBadge').className = 'stat-badge ' + (isBalanced ? 'cog-ok' : 'cog-warn');
 
         if (!cogMesh) {
             const cogGeo = new THREE.SphereGeometry(150, 16, 16);
-            const cogMat = new THREE.MeshBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c, transparent: true, opacity: 0.6 });
-            cogMesh = new THREE.Mesh(cogGeo, cogMat);
-            const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(cogGeo), new THREE.LineBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c }));
-            cogMesh.add(wireframe);
+            cogMesh = new THREE.Mesh(cogGeo, new THREE.MeshBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c, transparent: true, opacity: 0.6 }));
+            cogMesh.add(new THREE.LineSegments(new THREE.WireframeGeometry(cogGeo), new THREE.LineBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c })));
             scene.add(cogMesh);
         }
         cogMesh.material.color.setHex(isBalanced ? 0x2ecc71 : 0xe74c3c);
@@ -826,12 +994,13 @@ function renderList() {
         const layerBadge = pos && pos.layer > 0 ? `<span class="badge badge-layer">Слой ${pos.layer+1}</span>` : '';
         const overflowBadge = pos && pos.overflow ? `<span class="badge badge-err">ВНЕ</span>` : '';
         const rotBadge = pos && pos.isRotated ? `<span class="badge badge-rot">🔄 90°</span>` : '';
+        const manualBadge = p.isManual ? `<span class="badge badge-manual">📌 Ручная</span>` : '';
         const colorClass = p.isAdr ? 'adr' : p.isCold ? 'cold' : p.mp;
         
         return `<div class="pallet-item" draggable="true" data-index="${i}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onclick="highlightPallet(${i})">
             <div class="pallet-color ${colorClass}"></div>
             <div class="pallet-info">
-                <div class="pallet-name">#${i+1} <span class="badge badge-${p.mp}">${p.mp.toUpperCase()}</span> ${rotBadge} ${layerBadge} ${overflowBadge}</div>
+                <div class="pallet-name">#${i+1} <span class="badge badge-${p.mp}">${p.mp.toUpperCase()}</span> ${manualBadge} ${rotBadge} ${layerBadge} ${overflowBadge}</div>
                 <div class="pallet-meta">${p.height}мм • ${p.weight}кг • Приор: ${p.priority} ${p.isCold?'❄️':''} ${p.isAdr?'⚠️':''}</div>
             </div>
             <div class="pallet-actions">
@@ -852,10 +1021,8 @@ function runValidation(totalWeight) {
         if (p.weight > 500) items.push({ type: 'error', text: `#${i+1}: Вес ${p.weight} > 500кг` });
         if (p.mp === 'wb' && p.palletType !== 'euro') items.push({ type: 'error', text: `#${i+1} (WB): Только европалеты!` });
         if (positions[i]?.overflow) items.push({ type: 'error', text: `#${i+1}: Не помещается в кузов!` });
-        
-        if (p.isAdr && positions[i]) {
-            const rearLimit = truckConfig.length / 2 - 2000;
-            if (positions[i].x < rearLimit) items.push({ type: 'warn', text: `#${i+1} (ADR): Должен быть в задней части кузова` });
+        if (p.isAdr && positions[i] && positions[i].x < truckConfig.length / 2 - 2000) {
+            items.push({ type: 'warn', text: `#${i+1} (ADR): Должен быть в задней части кузова` });
         }
     });
 
@@ -888,28 +1055,19 @@ function addPallet() {
     if (mp === 'wb' && type !== 'euro') { alert('WB принимает только европалеты!'); return; }
     if (h > 1800) { alert('Макс. высота 1800мм!'); return; }
 
-    pallets.push({ id: nextId++, mp, palletType: type, height: h, weight: w, priority, allowRotate, isRotated: false, isCold, isAdr });
+    pallets.push({ id: nextId++, mp, palletType: type, height: h, weight: w, priority, allowRotate, isRotated: false, isManual: false, isCold, isAdr });
     updateScene();
 }
 
 function addQuick(mp, count) {
     for (let i = 0; i < count; i++) {
-        pallets.push({ id: nextId++, mp, palletType: 'euro', height: 1400+Math.random()*300|0, weight: 250+Math.random()*200|0, priority: Math.random()*5+1|0, allowRotate: true, isRotated: false, isCold: false, isAdr: false });
+        pallets.push({ id: nextId++, mp, palletType: 'euro', height: 1400+Math.random()*300|0, weight: 250+Math.random()*200|0, priority: Math.random()*5+1|0, allowRotate: true, isRotated: false, isManual: false, isCold: false, isAdr: false });
     }
     updateScene();
 }
 
-function removePallet(idx) { 
-    pallets.splice(idx, 1); 
-    updateScene(); 
-}
-
-function clearAll() { 
-    if(confirm('Удалить всё?')) { 
-        pallets = []; 
-        updateScene(); 
-    } 
-}
+function removePallet(idx) { pallets.splice(idx, 1); updateScene(); }
+function clearAll() { if(confirm('Удалить всё?')) { pallets = []; updateScene(); } }
 
 function toggleRotation(idx) {
     pallets[idx].isRotated = !pallets[idx].isRotated;
@@ -935,6 +1093,16 @@ function massRotate(type) {
     }
 }
 
+function resetManualPositions() {
+    pallets.forEach(p => {
+        p.isManual = false;
+        delete p.manualX;
+        delete p.manualZ;
+        delete p.manualLayer;
+    });
+    updateScene();
+}
+
 function autoBalance() {
     pallets.sort((a, b) => b.weight - a.weight);
     pallets.forEach((p, i) => { p.priority = i + 1; p.allowRotation = true; });
@@ -943,7 +1111,7 @@ function autoBalance() {
     alert('Авто-балансировка и оптимизация поворотов применены');
 }
 
-// Drag & Drop
+// Drag & Drop (List)
 let draggedIdx = null;
 function onDragStart(e) { draggedIdx = +e.currentTarget.dataset.index; e.currentTarget.classList.add('dragging'); }
 function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
@@ -963,12 +1131,9 @@ function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); document.q
 function highlightPallet(idx) {
     const mesh = Array.from(palletMeshMap.values()).find(m => m.userData.palletIndex === idx);
     if (!mesh) return;
-    
     const originalY = mesh.userData.targetPos ? mesh.userData.targetPos.y : mesh.position.y;
     mesh.userData.targetPos.y = originalY + 300;
-    setTimeout(() => {
-        if (mesh.userData.targetPos) mesh.userData.targetPos.y = originalY;
-    }, 300);
+    setTimeout(() => { if (mesh.userData.targetPos) mesh.userData.targetPos.y = originalY; }, 300);
 }
 
 function updateExplodedView(val) {
@@ -1010,16 +1175,12 @@ function draw2DSchema() {
     const drawW = W - padding * 2;
     const drawH = H - padding * 2;
     
-    const scaleX = drawW / truckConfig.length;
-    const scaleY = drawH / truckConfig.width;
-    const scale = Math.min(scaleX, scaleY);
-    
+    const scale = Math.min(drawW / truckConfig.length, drawH / truckConfig.width);
     const offsetX = (W - truckConfig.length * scale) / 2;
     const offsetY = (H - truckConfig.width * scale) / 2;
 
     ctx.fillStyle = '#232635';
     ctx.fillRect(0, 0, W, H);
-
     ctx.strokeStyle = '#8b8fa3';
     ctx.lineWidth = 2;
     ctx.strokeRect(offsetX, offsetY, truckConfig.length * scale, truckConfig.width * scale);
@@ -1051,8 +1212,8 @@ function draw2DSchema() {
         }
         
         ctx.fillRect(px, py, pw, ph);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = p.isManual ? '#f39c12' : '#fff';
+        ctx.lineWidth = p.isManual ? 2 : 1;
         ctx.strokeRect(px, py, pw, ph);
 
         ctx.fillStyle = '#fff';
@@ -1066,17 +1227,20 @@ function draw2DSchema() {
             ctx.font = `bold ${Math.max(8, 10 * scale * 2)}px Arial`;
             ctx.fillText('↻', px + pw - 8, py + ph - 6);
         }
+        if (p.isManual) {
+            ctx.fillText('📌', px + 8, py + 10);
+        }
     });
 }
 
 // ===== DATA MANAGEMENT =====
 function saveSession() {
-    localStorage.setItem('palletLoadPro_v41', JSON.stringify({ pallets, truckConfig, nextId }));
+    localStorage.setItem('palletLoadPro_v42', JSON.stringify({ pallets, truckConfig, nextId }));
     alert('План сохранён в браузере!');
 }
 
 function loadSession(silent = false) {
-    const data = localStorage.getItem('palletLoadPro_v41');
+    const data = localStorage.getItem('palletLoadPro_v42');
     if (data) {
         const parsed = JSON.parse(data);
         pallets = parsed.pallets || [];
@@ -1112,6 +1276,7 @@ function importCSV(input) {
                         priority: parseInt(row.priority) || 1,
                         allowRotate: row.rotate !== 'false' && row.rotate !== 'нет',
                         isRotated: row.rotated === 'true' || row.rotated === 'да',
+                        isManual: false,
                         isCold: row.cold === 'true' || row.cold === 'да',
                         isAdr: row.adr === 'true' || row.adr === 'да'
                     });
@@ -1148,7 +1313,7 @@ async function exportPDF() {
         return [
             i + 1, p.mp.toUpperCase(), dim, 
             `${p.height}мм`, `${p.weight}кг`, p.priority, 
-            (p.isCold ? '❄️ ' : '') + (p.isAdr ? '⚠️ ' : '')
+            (p.isManual ? '📌 ' : '') + (p.isCold ? '❄️ ' : '') + (p.isAdr ? '⚠️ ' : '')
         ];
     });
 
@@ -1168,34 +1333,22 @@ async function exportPDF() {
 function switchTab(e, tab) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (e?.currentTarget) e.currentTarget.classList.add('active');
-    
-    if (tab === 'settings') {
-        switchPanel(null, 'truck');
-    } else if (tab === 'schema2d') {
-        switchPanel(null, 'schema2d');
-    }
-    
-    if (tab === 'schema2d') { setTimeout(draw2DSchema, 100); }
+    if (tab === 'settings') switchPanel(null, 'truck');
+    else if (tab === 'schema2d') switchPanel(null, 'schema2d');
+    if (tab === 'schema2d') setTimeout(draw2DSchema, 100);
 }
 
 function switchPanel(e, panel) {
     document.querySelectorAll('.panel-tab').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.panel-content').forEach(el => el.classList.remove('active'));
-    
-    if (e?.currentTarget) {
-        e.currentTarget.classList.add('active');
-    } else {
-        const tabs = document.querySelectorAll('.panel-tab');
-        tabs.forEach(tab => {
-            if (tab.getAttribute('onclick')?.includes(`'${panel}'`)) {
-                tab.classList.add('active');
-            }
+    if (e?.currentTarget) e.currentTarget.classList.add('active');
+    else {
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            if (tab.getAttribute('onclick')?.includes(`'${panel}'`)) tab.classList.add('active');
         });
     }
-    
     const target = document.getElementById('panel-' + panel);
     if (target) target.classList.add('active');
-    
     if (panel === 'schema2d') setTimeout(draw2DSchema, 100);
 }
 
