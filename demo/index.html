@@ -3,528 +3,1507 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка | Стабильная печать</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <meta name="theme-color" content="#121212">
+    <title>WMS Pro - Приемка товара</title>
+    
+    <!-- Библиотека для сканирования камерой -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
     <style>
-        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.4; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 12px; max-width: 1400px; margin: 0 auto; }
-        .card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; }
-        h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-        
-        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
-        input:focus, select:focus { outline: 2px solid var(--ozon); border-color: transparent; }
-        button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; transition: 0.15s; }
-        button:hover { opacity: 0.95; } button:active { transform: scale(0.98); }
-        button.secondary { background: #6c757d; } button.danger { background: var(--danger); }
-        button.warning { background: var(--warning); color: #333; }
-        button:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; transform: none !important; }
-        .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
-        
-        .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; transition: 0.2s; }
-        .scanner-input:focus { outline: none; border-color: var(--success); background: #fff; }
-        .scanner-input.success { border-color: var(--success); background: #e6ffe6; animation: pulse 0.3s; }
-        .scanner-input.error { border-color: var(--danger); background: #ffe6e6; animation: shake 0.3s; }
-        
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-        th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
-        th { background: #f8f9fa; font-weight: 600; }
-        .qty-btn { width: auto; padding: 3px 10px; margin: 0 2px; background: #e9ecef; color: #333; font-size: 12px; border-radius: 4px; border: none; }
-        
-        .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 13px; font-weight: 600; }
-        .alert { padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; }
-        .alert-error { background: #ffe6e6; color: #a00; border: 1px solid #ffcdd2; }
-        .alert-success { background: #e6ffe6; color: #060; border: 1px solid #c8e6c9; }
-        .info-box { background: #fff3cd; color: #856404; padding: 8px 10px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; border-left: 4px solid #ffc107; }
-
-        .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .pallet-item:hover { background: #e9ecef; }
-        .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
-        .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
-        
-        .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
-        .target-item.done { border-left-color: var(--success); opacity: 0.75; }
-        .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
-        .tz-note { font-size: 10px; color: #666; margin-top: 4px; font-style: italic; line-height: 1.3; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #eee; }
-        .progress-bar { height: 5px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
-        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
-        .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
-        .quant-badge { display: inline-block; background: #e6f0ff; color: var(--ozon); padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-left: 5px; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 10px; }
-        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .modal h3 { margin-bottom: 15px; font-size: 17px; }
-        .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
-        .mapping-label { width: 100%; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
-        .mapping-select { flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-
-        /* 🔴 ЭТИКЕТКИ (Скрыты на экране, показываются при печати) */
-        .label-area { 
-            position: absolute; left: -9999px; top: 0; 
-            width: 120mm; height: 75mm; background: #fff; 
-            border: 1px solid #000; padding: 3mm; 
-            font-family: 'Arial', 'Segoe UI', sans-serif; 
-            overflow: hidden; z-index: -1; line-height: 1.1;
+        :root {
+            --bg: #0a0e27;
+            --card: #151935;
+            --card-light: #1e2347;
+            --text: #ffffff;
+            --text-muted: #8892b0;
+            --success: #00e676;
+            --error: #ff5252;
+            --warning: #ffab40;
+            --primary: #6c63ff;
+            --secondary: #00bcd4;
+            --border: #2a2f5a;
         }
-        
-        .label-header { border-bottom: 2px solid #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
-        .label-title { font-size: 12pt; font-weight: 900; letter-spacing: 0.5px; }
-        .label-date { font-size: 7pt; color: #444; }
-        
-        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 2mm; border-bottom: 1px dashed #888; padding-bottom: 1.5mm; }
-        .label-info-row div { flex: 1; }
-        .label-info-row strong { font-weight: 800; }
-        
-        .label-summary { font-size: 7.5pt; background: #f4f4f4; padding: 1mm 2mm; border-radius: 1.5mm; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border: 1px solid #ddd; }
-        
-        .label-content { border-top: 1px solid #888; padding-top: 1.5mm; max-height: 32mm; }
-        .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; text-transform: uppercase; color: #333; }
-        .label-content ul { list-style: none; margin: 0; padding: 0; }
-        .label-content li { margin-bottom: 1mm; padding: 0.8mm 0; border-bottom: 1px dotted #ccc; font-size: 7.5pt; }
-        .label-content li .bc { display: inline-block; font-family: monospace; font-weight: 900; font-size: 8.5pt; background: #eee; padding: 0 3px; border-radius: 2px; margin-right: 4px; }
-        .label-content li .name { display: block; font-weight: 600; font-size: 7pt; margin-top: 1px; }
-        .label-content li .qty { float: right; font-weight: 800; font-size: 8pt; margin-top: -16px; }
-        
-        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; }
-        .barcode-wrap { flex: 1; text-align: center; }
-        .barcode-wrap svg { height: 10mm; width: auto; }
-        .weight-box { font-size: 9pt; font-weight: 900; background: #000; color: #fff; padding: 1mm 3mm; border-radius: 2mm; }
 
-        #retry-print-btn { display: none; margin-top: 8px; background: var(--warning); color: #333; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            transition: background-color 0.4s;
+            overflow-x: hidden;
+        }
 
-        /* Камера */
-        #camera-section { margin-top: 10px; }
-        #interactive { width: 100%; border-radius: 8px; overflow: hidden; background: #000; display: none; position: relative; min-height: 180px; }
-        #interactive video { width: 100%; height: 100%; object-fit: cover; display: block; }
-        #interactive canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .camera-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 25%; border: 3px solid var(--success); border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); background: rgba(0, 91, 255, 0.08); }
-        .scan-hint { font-size: 11px; color: #fff; background: rgba(0,0,0,0.75); padding: 5px 10px; border-radius: 4px; margin-top: 6px; text-align: center; }
-        #camera-toggle { display: flex; gap: 8px; margin-top: 8px; }
-        #camera-toggle button { flex: 1; padding: 9px; }
-        .camera-permission { font-size: 11px; color: #666; margin-top: 5px; text-align: center; }
-        .camera-active { border-color: var(--success) !important; background: #e6ffe6 !important; }
-        .scan-status { font-size: 11px; text-align: center; margin-top: 5px; min-height: 18px; font-weight: 500; }
-        .scan-status.detecting { color: var(--warning); } .scan-status.found { color: var(--success); font-weight: bold; } .scan-status.error { color: var(--danger); }
+        body.flash-success { animation: flashG 0.7s; }
+        body.flash-error { animation: flashR 0.7s; }
+        body.flash-warning { animation: flashY 0.7s; }
 
-        /* 🔴 КРИТИЧЕСКИ ВАЖНЫЕ СТИЛИ ПЕЧАТИ */
-        @media print { 
-            body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-            .no-print { display: none !important; } 
-            .label-area { 
-                position: relative !important; left: 0 !important; top: 0 !important; 
-                width: 120mm !important; height: 75mm !important; padding: 3mm !important; 
-                border: 1px solid #000 !important; margin: 0 !important; 
-                visibility: visible !important; display: block !important; 
-                page-break-after: always; page-break-inside: avoid;
+        @keyframes flashG { 0%,100%{background:var(--bg);} 50%{background:#00c853;} }
+        @keyframes flashR { 0%,100%{background:var(--bg);} 50%{background:#d50000;} }
+        @keyframes flashY { 0%,100%{background:var(--bg);} 50%{background:#ff6d00;} }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 15px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .connection-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .online { background: rgba(0, 230, 118, 0.2); color: var(--success); }
+        .offline { background: rgba(255, 82, 82, 0.2); color: var(--error); }
+        .badge-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: var(--card);
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .stat {
+            background: var(--card-light);
+            padding: 12px 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .s-plan .stat-value { color: var(--primary); }
+        .s-done .stat-value { color: var(--success); }
+        .s-err .stat-value { color: var(--error); }
+        .s-prog .stat-value { color: var(--warning); }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--card-light);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            transition: width 0.4s;
+        }
+
+        .input-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .method-btn {
+            padding: 15px;
+            background: var(--card-light);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .method-btn.active {
+            border-color: var(--primary);
+            background: rgba(108, 99, 255, 0.15);
+        }
+
+        .method-btn:hover { border-color: var(--primary); }
+
+        .input-section { display: none; }
+        .input-section.active { display: block; }
+
+        #scannerInput {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: #000;
+            color: #0f0;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        #cameraReader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .scan-result {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 15px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .scan-result.success { background: rgba(0, 230, 118, 0.15); color: var(--success); }
+        .scan-result.error { background: rgba(255, 82, 82, 0.15); color: var(--error); }
+        .scan-result.warning { background: rgba(255, 171, 64, 0.15); color: var(--warning); }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-secondary { background: var(--card-light); color: var(--text); border: 1px solid var(--border); }
+        .btn-lg { width: 100%; padding: 18px; font-size: 1.1rem; margin-top: 10px; }
+
+        .file-zone {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input[type="file"] { display: none; }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--card-light);
+            border-radius: 8px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            background: #333;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active { background: var(--primary); }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+
+        .toggle.active::after { transform: translateX(22px); }
+
+        .log-container {
+            background: #000;
+            border-radius: 8px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-left: 3px solid transparent;
+            margin-bottom: 4px;
+        }
+
+        .log-entry.success { border-color: var(--success); color: var(--success); }
+        .log-entry.error { border-color: var(--error); color: var(--error); }
+        .log-entry.info { border-color: var(--primary); color: var(--text-muted); }
+        .log-entry.warning { border-color: var(--warning); color: var(--warning); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            padding: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .label-preview {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+
+        .label-preview .barcode {
+            font-size: 2rem;
+            letter-spacing: 2px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            .label-preview, .label-preview * { visibility: visible; }
+            .label-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
             }
-            .label-area:last-child { page-break-after: auto; }
-            /* Скрываем этикетку, которая не активна в данный момент */
-            .label-area.hide-during-print { display: none !important; visibility: hidden !important; }
-            
-            .label-content { max-height: none !important; overflow: visible !important; }
-            .label-content li { break-inside: avoid !important; margin-bottom: 1mm !important; }
-            .label-content li .bc { background: #ddd !important; }
-            @page { size: 120mm 75mm; margin: 0; } 
         }
-        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .mapping-row { flex-direction: column; align-items: stretch; } .mapping-label { width: 100%; } #interactive { max-height: 220px; } }
+
+        .recent-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--card-light);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .icon { font-size: 1.2em; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 10px; opacity: 0.5; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--card);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s;
+            z-index: 999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--card-light);
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .settings-grid { grid-template-columns: 1fr; }
+            .stat-value { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="modal-overlay no-print" id="mapping-modal">
-        <div class="modal">
-            <h3>📋 Настройка колонок</h3>
-            <p style="font-size:12px; color:#666; margin-bottom:15px;">Выберите соответствие колонок из вашего файла.</p>
-            <div id="mapping-fields"></div>
-            <div class="modal-actions">
-                <button onclick="applyMapping()">✅ Применить</button>
-                <button class="secondary" onclick="closeMappingModal()">❌ Отмена</button>
+    <div class="container">
+        <header>
+            <div class="logo">📦 WMS Pro</div>
+            <div id="connectionBadge" class="connection-badge online">
+                <span class="badge-dot"></span>
+                <span id="connStatus">Online</span>
             </div>
-        </div>
-    </div>
+        </header>
 
-    <div class="grid no-print">
-        <div>
-            <div class="card">
-                <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto;font-size:12px;padding:4px 8px;">🔊 ВКЛ</button></h2>
-                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
-                <div id="upload-status" class="alert alert-success"></div>
-            </div>
-            <div class="card" id="order-info" style="display:none;">
-                <h2>📋 Информация</h2>
-                <div class="info-box">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
-                <div class="stats"><span>📦 SKU: <span id="loaded-count">0</span></span><span>📊 План: <span id="total-plan">0</span></span></div>
-            </div>
-            <div class="card">
-                <h2>🎛️ Параметры</h2>
-                <select id="marketplace"><option value="WB" selected>Wildberries FBO</option><option value="OZON">Ozon FBO</option></select>
-                <input type="text" id="city" placeholder="⚠️ Город вручную">
-                <input type="text" id="pallet-input" placeholder="📦 Палет" readonly>
-                <div class="alert alert-error" id="error-msg"></div>
-            </div>
-            <div class="card">
-                <h2>🏗 Палеты</h2>
-                <div class="row" style="margin-bottom:8px;">
-                    <button onclick="createPallet()" style="flex:2;">+ Палет</button>
-                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨</button>
-                </div>
-                <div id="pallets-list" style="max-height:160px;overflow-y:auto;"></div>
-            </div>
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('scan')">📷 Сканирование</button>
+            <button class="tab" onclick="switchTab('plan')">📋 План</button>
+            <button class="tab" onclick="switchTab('history')">📊 История</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ Настройки</button>
         </div>
-        <div>
+
+        <!-- ВКЛАДКА: СКАНИРОВАНИЕ -->
+        <div id="tab-scan" class="tab-content">
+            <!-- Статистика -->
             <div class="card">
-                <h2>📡 Сканирование</h2>
-                <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или сканируйте ШК" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                <div id="camera-section">
-                    <div class="row" id="camera-toggle">
-                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
-                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none;">⏹ Стоп</button>
+                <h3>Текущая поставка</h3>
+                <div class="stats">
+                    <div class="stat s-plan">
+                        <div class="stat-label">Всего</div>
+                        <div class="stat-value" id="statPlan">0</div>
                     </div>
-                    <div id="interactive"><div class="camera-overlay"></div></div>
-                    <div class="scan-hint">🎯 Наведите рамку на штрихкод</div>
-                    <div id="scan-status" class="scan-status"></div>
-                    <p class="camera-permission">💡 Требуется HTTPS или localhost</p>
+                    <div class="stat s-done">
+                        <div class="stat-label">Принято</div>
+                        <div class="stat-value" id="statDone">0</div>
+                    </div>
+                    <div class="stat s-err">
+                        <div class="stat-label">Ошибки</div>
+                        <div class="stat-value" id="statErrors">0</div>
+                    </div>
+                    <div class="stat s-prog">
+                        <div class="stat-label">Прогресс</div>
+                        <div class="stat-value" id="statProgress">0%</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                 </div>
             </div>
+
+            <!-- Выбор метода -->
             <div class="card">
-                <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
-                <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
-                <div class="row">
-                    <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button>
-                    <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️</button>
+                <h3>Метод ввода</h3>
+                <div class="input-methods">
+                    <button class="method-btn active" data-method="scanner" onclick="setInputMethod('scanner')">
+                        <span class="icon">⌨️</span> Сканер
+                    </button>
+                    <button class="method-btn" data-method="camera" onclick="setInputMethod('camera')">
+                        <span class="icon">📷</span> Камера
+                    </button>
+                    <button class="method-btn" data-method="manual" onclick="setInputMethod('manual')">
+                        <span class="icon">✍️</span> Вручную
+                    </button>
+                    <button class="method-btn" data-method="rfid" onclick="setInputMethod('rfid')">
+                        <span class="icon">📡</span> RFID (демо)
+                    </button>
                 </div>
-                <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати</button>
-                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;">🗑 Очистить</button>
             </div>
+
+            <!-- Метод: Сканер -->
+            <div id="method-scanner" class="input-section active card">
+                <h3>Физический сканер штрихкодов</h3>
+                <input type="text" id="scannerInput" placeholder="Сканируйте или введите код..." autocomplete="off">
+                <button class="btn btn-primary btn-lg" onclick="manualScan()">⚡ ПРИНЯТЬ КОРОБ</button>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px; text-align: center;">
+                    💡 Подключите USB/Bluetooth сканер. Он работает как клавиатура — автоматически вводит код и нажимает Enter.
+                </p>
+            </div>
+
+            <!-- Метод: Камера -->
+            <div id="method-camera" class="input-section card">
+                <h3>Сканирование камерой</h3>
+                <div id="cameraReader"></div>
+                <button class="btn btn-primary btn-lg" onclick="toggleCamera()">📸 Включить камеру</button>
+            </div>
+
+            <!-- Метод: Ручной ввод -->
+            <div id="method-manual" class="input-section card">
+                <h3>Ручной ввод штрихкода</h3>
+                <input type="text" id="manualInput" placeholder="Введите штрихкод..." 
+                    style="width:100%; padding:15px; font-size:1.2rem; background:#000; color:#fff; border:2px solid var(--border); border-radius:8px;">
+                <button class="btn btn-primary btn-lg" onclick="processManual()">✅ Подтвердить</button>
+            </div>
+
+            <!-- Метод: RFID (демо) -->
+            <div id="method-rfid" class="input-section card">
+                <h3>RFID считыватель (демо-режим)</h3>
+                <div class="empty-state">
+                    <span class="icon">📡</span>
+                    <p>RFID позволяет принимать целые паллеты за секунды без прямой видимости меток.</p>
+                    <button class="btn btn-secondary" onclick="simulateRfid()">Симулировать проход через RFID-ворота</button>
+                </div>
+            </div>
+
+            <!-- Результат сканирования -->
+            <div id="scanResult" class="scan-result" style="display:none;"></div>
+
+            <!-- Быстрые действия -->
             <div class="card">
-                <h2>📋 Состав</h2>
-                <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
-                <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0;">Коробка пуста</p>
+                <h3>Быстрые действия</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="printLabel()">🏷️ Печать этикетки</button>
+                    <button class="btn btn-secondary" onclick="connectBluetooth()">🖨️ BT-принтер</button>
+                    <button class="btn btn-secondary" onclick="undoLast()">↩️ Отменить</button>
+                    <button class="btn btn-danger" onclick="resetSession()">🔄 Сброс</button>
+                </div>
             </div>
         </div>
-        <div>
+
+        <!-- ВКЛАДКА: ПЛАН ПОСТАВКИ -->
+        <div id="tab-plan" class="tab-content" style="display:none;">
             <div class="card">
-                <h2>🎯 План (ТЗ)</h2>
-                <div id="targets-list" style="max-height:580px;overflow-y:auto;"></div>
+                <h3>Загрузка плана (ASN)</h3>
+                <div class="file-zone">
+                    <label for="fileInput" class="btn btn-primary">📂 Загрузить JSON/CSV</label>
+                    <input type="file" id="fileInput" accept=".json,.csv">
+                    <button class="btn btn-secondary" onclick="downloadSample()">⬇️ Пример плана</button>
+                    <button class="btn btn-secondary" onclick="exportPlan()">💾 Экспорт плана</button>
+                </div>
+                <p id="planFileName" style="color: var(--text-muted); margin-top: 10px;">Файл не загружен</p>
             </div>
+
             <div class="card">
-                <h2>📜 Экспорт</h2>
-                <button class="secondary" onclick="exportCSV()">📤 CSV</button>
-                <button class="secondary danger" onclick="resetAllData()" style="margin-top:6px;">🔄 Сброс</button>
+                <h3>Позиции в плане</h3>
+                <div id="planList"></div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: ИСТОРИЯ -->
+        <div id="tab-history" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>Журнал операций</h3>
+                <div class="log-container" id="log"></div>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="exportReport()">📄 Экспорт отчета</button>
+                    <button class="btn btn-danger" onclick="clearLog()">🗑️ Очистить</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Недавние поставки</h3>
+                <div id="recentDeliveries" class="recent-list"></div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: НАСТРОЙКИ -->
+        <div id="tab-settings" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>Звук и голос</h3>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <span>🔊 Звуковые сигналы</span>
+                        <div class="toggle active" id="toggleSound" onclick="toggleSetting('sound')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>🗣️ Голосовое сопровождение</span>
+                        <div class="toggle active" id="toggleVoice" onclick="toggleSetting('voice')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>📳 Вибрация</span>
+                        <div class="toggle active" id="toggleVibrate" onclick="toggleSetting('vibrate')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>💡 Вспышки экрана</span>
+                        <div class="toggle active" id="toggleFlash" onclick="toggleSetting('flash')"></div>
+                    </div>
+                </div>
+                <div class="volume-control">
+                    <span>🔈</span>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+                    <span id="volumeLabel">80%</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Синхронизация</h3>
+                <div class="setting-item" style="margin-bottom: 10px;">
+                    <span>👥 Общий режим (между вкладками)</span>
+                    <div class="toggle active" id="toggleSync" onclick="toggleSetting('sync')"></div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">
+                    При включении несколько сотрудников могут одновременно принимать одну поставку с разных устройств в одной сети.
+                </p>
+                <div style="margin-top: 10px; padding: 10px; background: var(--card-light); border-radius: 8px;">
+                    <strong>ID сессии:</strong> <span id="sessionId"></span><br>
+                    <strong>Активных устройств:</strong> <span id="activeDevices">1</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Режимы работы</h3>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <span>🙈 Слепая приемка</span>
+                        <div class="toggle" id="toggleBlind" onclick="toggleSetting('blind')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span>✅ Выборочный контроль</span>
+                        <div class="toggle" id="toggleSample" onclick="toggleSetting('sample')"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 🔴 ЭТИКЕТКА НА КОРОБ -->
-    <div class="label-area" id="label-box">
-        <div class="label-header"><span class="label-title" id="lbl-mp-box">🔴 WB FBO</span><span class="label-date" id="lbl-date-box"></span></div>
-        <div class="label-info-row"><div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div><div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div><div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div></div>
-        <div class="label-summary"><span>📦 Позиций: <b id="lbl-total-pos">0</b></span><span>🔢 Штук: <b id="lbl-total-qty">0</b></span><span>⚖️ Вес: <b id="lbl-weight-box"></b></span></div>
-        <div class="label-content"><h3>📋 Содержимое:</h3><ul id="lbl-items-list-box"></ul></div>
-        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg><div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-box"></div></div><div class="weight-box" id="lbl-weight-footer"></div></div>
+    <!-- Модальные окна -->
+    <div id="modalLabel" class="modal">
+        <div class="modal-content">
+            <h3>🏷️ Предпросмотр этикетки</h3>
+            <div class="label-preview" id="labelPreview">
+                <div style="font-size: 0.8rem;">СКЛАД "ЦЕНТРАЛЬНЫЙ"</div>
+                <div style="font-size: 1.5rem; font-weight: bold; margin: 10px 0;">КОРОБ #<span id="labelId">001</span></div>
+                <div class="barcode" id="labelBarcode">||||| |||| |||||</div>
+                <div id="labelProduct" style="margin: 10px 0;">Название товара</div>
+                <div style="font-size: 0.8rem; border-top: 1px dashed #000; padding-top: 10px;">
+                    Ячейка: <strong id="labelCell">A-01-01</strong><br>
+                    Дата: <span id="labelDate"></span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" style="flex:1;" onclick="window.print()">🖨️ Печать</button>
+                <button class="btn btn-secondary" onclick="closeModal('modalLabel')">Закрыть</button>
+            </div>
+        </div>
     </div>
 
-    <!-- 🔴 ЭТИКЕТКА ПАЛЕТА -->
-    <div class="label-area" id="label-pallet">
-        <div class="label-header"><span class="label-title" id="lbl-mp-pal">🔴 WB FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
-        <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-pal"></span></div><div>🆔<b>Палет:</b><span id="lbl-pal-id"></span></div><div>📦<b>Коробов:</b><span id="lbl-pal-count"></span></div></div>
-        <div class="label-content"><h3>📦 Состав палета:</h3><ul id="lbl-pal-boxes-list"></ul></div>
-        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-pal"></svg><div style="font-size:5pt" id="lbl-barcode-text-pal"></div></div><div class="weight-box">⚖️<span id="lbl-pal-weight"></span></div></div>
-    </div>
+    <!-- Toast уведомления -->
+    <div id="toast" class="toast"></div>
 
     <script>
-        const MAPPING_CONFIG = [
-            {key:'sku',label:'Артикул / Код товара *',required:true},
-            {key:'name',label:'Название товара *',required:true},
-            {key:'barcode_orig',label:'ШК исходный',required:false},
-            {key:'barcode_wb',label:'ШК на этикетку WB',required:false},
-            {key:'qty_total',label:'ИТОГО к отгрузке (шт.) *',required:true},
-            {key:'quant',label:'Квант спайки',required:false},
-            {key:'tz_note',label:'ТЗ / Требования',required:false},
-            {key:'boxes_plan',label:'Коробов план',required:false},
-            {key:'pcs_per_box',label:'Штук в коробе',required:false},
-            {key:'expiry',label:'Годен до',required:false}
-        ];
+        // ============ СОСТОЯНИЕ ПРИЛОЖЕНИЯ ============
+        const STATE = {
+            plan: [],
+            received: {},
+            errors: 0,
+            history: [],
+            settings: {
+                sound: true,
+                voice: true,
+                vibrate: true,
+                flash: true,
+                sync: true,
+                blind: false,
+                sample: false,
+                volume: 80
+            },
+            sessionId: 'sess_' + Math.random().toString(36).substr(2, 9),
+            currentMethod: 'scanner',
+            cameraActive: false,
+            lastScan: null,
+            audioCtx: null,
+            bluetoothDevice: null,
+            voices: []
+        };
 
-        let state = {db:{},targets:[],currentBox:{items:{},weight:0},history:[],boxCounter:1,orderMeta:{},pallets:{},activePallet:null};
-        let tempExcelData=null,tempHeaders=[],lastPrintedLabelId=null;
-        let quaggaActive=false,scanDebounce=false,scanTimeout=null;
+        // ============ ИНИЦИАЛИЗАЦИЯ ============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateUI();
+            setupEventListeners();
+            setupAudio();
+            loadVoices();
+            updateConnectionStatus();
+            
+            // Синхронизация между вкладками
+            window.addEventListener('storage', handleStorageSync);
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+            
+            setInterval(() => {
+                document.getElementById('activeDevices').textContent = 
+                    localStorage.getItem('wms_active_devices') || '1';
+            }, 2000);
+            
+            document.getElementById('sessionId').textContent = STATE.sessionId;
+            log('Система инициализирована. Сессия: ' + STATE.sessionId, 'info');
+        });
 
-        let voiceEnabled=true,maleVoice=null;
-        const synth=window.speechSynthesis;
-        function initVoices(){const v=synth.getVoices().filter(x=>x.lang.startsWith('ru'));maleVoice=v.find(x=>/male|pavel|yuri|dmitry/i.test(x.name))||v[0];}
-        function speak(t){if(!voiceEnabled||!synth||synth.pending)return;synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=1.1;u.pitch=0.9;if(maleVoice)u.voice=maleVoice;synth.speak(u);}
-        document.getElementById('voice-toggle').onclick=function(){voiceEnabled=!voiceEnabled;this.textContent=voiceEnabled?'🔊 ВКЛ':'🔇 ВЫКЛ';this.style.background=voiceEnabled?'#6c757d':'#dc3545';if(voiceEnabled)speak('Голос включен');};
-        if(synth){synth.onvoiceschanged=initVoices;initVoices();}
-
-        document.addEventListener('DOMContentLoaded',()=>{loadState();setupScanner();renderPallets();renderTargets();updateUI();document.getElementById('excel-upload').addEventListener('change',handleFileSelect);document.getElementById('city').addEventListener('input',updateUI);document.getElementById('scanner').focus();checkCameraSupport();});
-
-        function checkCameraSupport(){if(!navigator.mediaDevices?.getUserMedia){document.getElementById('btn-camera-start').disabled=true;document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';document.querySelector('.camera-permission').textContent='❌ Камера недоступна (нужен HTTPS)';}}
-
-        async function startCameraScan(){
-            if(!navigator.mediaDevices?.getUserMedia){showError('❌ Камера не поддерживается');return;}
-            try{
-                document.getElementById('scanner').style.display='none';
-                document.getElementById('interactive').style.display='block';
-                document.getElementById('btn-camera-start').style.display='none';
-                document.getElementById('btn-camera-stop').style.display='block';
-                document.getElementById('scanner').classList.add('camera-active');
-                setStatus('🔍 Запуск...', 'detecting');
-                scanDebounce=false;
-                if(window._quagga) Quagga.stop();
-                await new Promise((resolve,reject)=>{
-                    Quagga.init({
-                        inputStream:{name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),constraints:{facingMode:"environment",width:{min:640},height:{min:480}},area:{top:"37%",right:"8%",left:"8%",bottom:"37%"}},
-                        locator:{patchSize:"medium",halfSample:true},
-                        numOfWorkers:navigator.hardwareConcurrency>1?2:1,
-                        decoder:{readers:[{format:"code_128_reader",config:{}},{format:"ean_reader",config:{}},{format:"ean_8_reader",config:{}},{format:"upc_reader",config:{}},{format:"code_39_reader",config:{}},{format:"codabar_reader",config:{}}],multiple:false},
-                        locate:true
-                    },err=>err?reject(err):resolve());
-                });
-                Quagga.start(); quaggaActive=true; window._quagga=true;
-                setStatus('📷 Наведите на штрихкод','detecting');
-                speak('Камера включена');
-                Quagga.onDetected(result=>{
-                    if(scanDebounce)return;
-                    const code=result.codeResult?.code?.trim();
-                    if(!code||code.length<3||code.length>50)return;
-                    setStatus(`✅ ${code}`,'found');
-                    document.getElementById('scanner').classList.add('success');
-                    if(navigator.vibrate)navigator.vibrate([40,30,40]);
-                    scanDebounce=true; if(scanTimeout)clearTimeout(scanTimeout); scanTimeout=setTimeout(()=>{scanDebounce=false;},1500);
-                    handleScan(code);
-                    setTimeout(()=>{document.getElementById('scanner').classList.remove('success');if(quaggaActive)setStatus('📷 Наведите на штрихкод','detecting');},1000);
-                });
-            }catch(err){console.error(err);showError('❌ Ошибка камеры');setStatus('❌ Ошибка','error');stopCameraScan();}
-        }
-
-        function stopCameraScan(){if(quaggaActive){Quagga.stop();quaggaActive=false;}if(window._quagga)window._quagga=false;if(scanTimeout)clearTimeout(scanTimeout);document.getElementById('scanner').style.display='block';document.getElementById('interactive').style.display='none';document.getElementById('btn-camera-start').style.display='block';document.getElementById('btn-camera-stop').style.display='none';document.getElementById('scanner').classList.remove('camera-active');setStatus('','');document.getElementById('scanner').focus();}
-        function setStatus(text,cls){const el=document.getElementById('scan-status');el.textContent=text;el.className='scan-status'+(cls?' '+cls:'');}
-
-        function setupScanner(){const inp=document.getElementById('scanner');inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}});inp.addEventListener('focus',()=>inp.select());}
-
-        function handleFileSelect(e){
-            const file=e.target.files[0]; if(!file){showError('⚠️ Файл не выбран');return;}
-            if(typeof XLSX==='undefined'){showError('❌ Библиотека Excel не загружена');return;}
-            const reader=new FileReader();
-            reader.onerror=()=>showError('❌ Ошибка чтения файла');
-            reader.onload=ev=>{
-                try{
-                    const wb=XLSX.read(ev.target.result,{type:'array'});
-                    if(!wb.SheetNames.length) throw new Error('В файле нет листов');
-                    const sheet=wb.Sheets[wb.SheetNames[0]];
-                    const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
-                    if(!data||data.length===0) throw new Error('Файл пуст');
-                    let headerRowIdx=-1;
-                    const searchTerms=['артикул','шк','наименование','код','товар','barcode','sku','qty','name','fbo','кол'];
-                    for(let i=0;i<Math.min(30,data.length);i++){
-                        const rowStr=(data[i]||[]).join(' ').toLowerCase(); if(!rowStr)continue;
-                        let m=0; searchTerms.forEach(t=>{if(rowStr.includes(t))m++;});
-                        if(m>=2||rowStr.includes('артикул')||rowStr.includes('barcode')){headerRowIdx=i;break;}
-                    }
-                    if(headerRowIdx===-1)headerRowIdx=0;
-                    tempHeaders=(data[headerRowIdx]||[]).map(h=>String(h||'').trim()).filter(h=>h);
-                    if(tempHeaders.length===0) throw new Error('Не удалось прочитать заголовки');
-                    tempExcelData=data.slice(headerRowIdx+1);
-                    openMappingModal();
-                }catch(err){console.error('File Error:',err);showError('❌ '+err.message);speak('Ошибка файла');}
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function openMappingModal(){
-            const c=document.getElementById('mapping-fields');c.innerHTML='';
-            MAPPING_CONFIG.forEach(f=>{
-                const r=document.createElement('div');r.className='mapping-row';
-                const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;
-                const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;
-                const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);
-                tempHeaders.forEach((h,idx)=>{
-                    const o=document.createElement('option');o.value=idx;o.textContent=h;
-                    const hl=h.toLowerCase();
-                    if(f.key==='sku'&&(hl.includes('артикул')||hl.includes('код')||hl.includes('sku')))o.selected=true;
-                    if(f.key==='name'&&(hl.includes('наименование')||hl.includes('назв')||hl.includes('name')))o.selected=true;
-                    if(f.key==='barcode_orig'&&hl.includes('шк')&&hl.includes('исх'))o.selected=true;
-                    if(f.key==='barcode_wb'&&hl.includes('этикетк')&&hl.includes('шк'))o.selected=true;
-                    if(f.key==='qty_total'&&(hl.includes('итого')||hl.includes('кол')||hl.includes('qty')))o.selected=true;
-                    if(f.key==='quant'&&hl.includes('квант'))o.selected=true;
-                    if(f.key==='tz_note'&&hl.includes('тз'))o.selected=true;
-                    if(f.key==='boxes_plan'&&hl.includes('короб'))o.selected=true;
-                    if(f.key==='pcs_per_box'&&hl.includes('штук')&&hl.includes('короб'))o.selected=true;
-                    if(f.key==='expiry'&&hl.includes('годен'))o.selected=true;
-                    s.appendChild(o);
-                });
-                r.appendChild(l);r.appendChild(s);c.appendChild(r);
-            });
-            document.getElementById('mapping-modal').style.display='flex';
-        }
-        function closeMappingModal(){document.getElementById('mapping-modal').style.display='none';document.getElementById('excel-upload').value='';}
-        function applyMapping(){
-            const sels=document.querySelectorAll('.mapping-select');const map={};let ok=true;
-            sels.forEach(sel=>{if(sel.dataset.required==='true'&&sel.value===''){sel.style.borderColor='red';ok=false;}else{sel.style.borderColor='';if(sel.value!=='')map[sel.dataset.key]=parseInt(sel.value);}});
-            if(!ok){showError('⚠️ Заполните обязательные поля');return;}
-            processDataWithMapping(map);closeMappingModal();
-        }
-
-        function processDataWithMapping(mapping){
-            try{
-                state.db={};state.targets=[];let total=0;
-                document.getElementById('excel-route-display').textContent=state.orderMeta.route||'Не определено';
-                document.getElementById('city').value='';
-                for(let i=0;i<tempExcelData.length;i++){
-                    const r=tempExcelData[i]; const sku=String(r[mapping.sku]||'').trim();
-                    if(!sku||sku==='undefined'||isNaN(sku.replace(/\D/g,'')))continue;
-                    const tp=parseInt(String(r[mapping.qty_total]||'0').replace(/[,\s]/g,''));
-                    if(!tp||tp<=0)continue;
-                    const prod={sku,name:String(r[mapping.name]||'Без названия').trim(),targetPcs:tp,packedPcs:0,quant:mapping.quant!==undefined?parseInt(String(r[mapping.quant]||1).replace(/[,\s]/g,'')):1,boxesPlan:mapping.boxes_plan!==undefined?parseInt(String(r[mapping.boxes_plan]||0).replace(/[,\s]/g,'')):0,pcsPerBox:mapping.pcs_per_box!==undefined?parseInt(String(r[mapping.pcs_per_box]||0).replace(/[,\s]/g,'')):0,tz:mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',expiry:mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''};
-                    total+=tp;state.targets.push(prod);
-                    const bcs=new Set();
-                    const bcOrig=mapping.barcode_orig!==undefined?String(r[mapping.barcode_orig]||''):'';
-                    const bcWb=mapping.barcode_wb!==undefined?String(r[mapping.barcode_wb]||''):'';
-                    bcOrig.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
-                    bcWb.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});
-                    if(bcs.size===0)bcs.add(sku);
-                    bcs.forEach(b=>{state.db[b]=prod;});
+        function setupEventListeners() {
+            const scannerInput = document.getElementById('scannerInput');
+            scannerInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processScan(scannerInput.value);
+                    scannerInput.value = '';
                 }
-                document.getElementById('order-info').style.display='block';
-                document.getElementById('loaded-count').textContent=state.targets.length;
-                document.getElementById('total-plan').textContent=total.toLocaleString('ru');
-                renderTargets();showSuccess(`✅ Загружено ${state.targets.length} поз.`);saveState();speak('Файл загружен');
-            }catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}
-        }
-
-        function handleScan(bc){
-            hideError();const inp=document.getElementById('scanner');
-            if(!Object.keys(state.db).length){showError('⚠️ Загрузите ТЗ');inp.classList.add('error');speak('Загрузите файл');return;}
-            if(!state.activePallet){showError('⚠️ Выберите палет');inp.classList.add('error');speak('Выберите палет');return;}
-            let p=state.db[bc];
-            if(!p){const found=Object.keys(state.db).find(key=>key.includes(bc)||bc.includes(key));if(found)p=state.db[found];}
-            if(!p){showError(`❌ ШК ${bc} не найден`);inp.classList.add('error');speak('Не найдено');return;}
-            if(p.packedPcs>=p.targetPcs){showError(`🚫 Лимит: ${p.targetPcs} шт.`);inp.classList.add('error');speak(`Стоп. План выполнен`);setTimeout(()=>inp.classList.remove('error'),500);return;}
-            state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+1;state.currentBox.weight+=0.12;p.packedPcs++;
-            renderBox();renderTargets();inp.classList.add('success');
-            const rem=p.targetPcs-p.packedPcs;const qt=p.quant>1?`Квант ${p.quant}. `:'';const rt=rem>0?`Осталось ${rem}`:'Готово';
-            speak(`${qt}${rt}`);setTimeout(()=>inp.classList.remove('success'),400);
-        }
-
-        // 🔴 ИСПРАВЛЕННАЯ ПЕЧАТЬ С ГАРАНТИЕЙ ВЫВОДА СПИСКА
-        function triggerPrint(labelId) {
-            const box = document.getElementById('label-box');
-            const pal = document.getElementById('label-pallet');
+            });
             
-            // Скрываем неактивную этикетку перед печатью
-            if (labelId === 'label-box') { box.classList.remove('hide-during-print'); pal.classList.add('hide-during-print'); }
-            else { pal.classList.remove('hide-during-print'); box.classList.add('hide-during-print'); }
+            document.getElementById('manualInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processManual();
+                }
+            });
             
-            lastPrintedLabelId = labelId;
-            document.getElementById('retry-print-btn').style.display = 'block';
-
-            // Гарантируем рендеринг DOM и SVG перед вызовом диалога печати
-            requestAnimationFrame(() => {
-                window.print();
-                setTimeout(() => {
-                    box.classList.remove('hide-during-print');
-                    pal.classList.remove('hide-during-print');
-                    document.getElementById('retry-print-btn').style.display = 'none';
-                }, 800);
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            
+            // Автофокус
+            scannerInput.focus();
+            document.body.addEventListener('click', () => {
+                if (STATE.currentMethod === 'scanner') scannerInput.focus();
             });
         }
 
-        function closeBox(){
-            const city=document.getElementById('city').value.trim();if(!city)return showError('⚠️ Введите город');
-            if(!state.activePallet)return showError('⚠️ Выберите палет');
-            if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');
-            const now=new Date();const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;
-            const palId=state.activePallet;
-            const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};
-            state.pallets[palId].boxes.push(boxId);state.pallets[palId].weight+=boxData.weight;state.history.unshift(boxData);state.boxCounter++;
-            saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();
-            speak('Короб закрыт. Печать');
-            triggerPrint('label-box'); // Вызов исправленной печати
+        // ============ АУДИО СИСТЕМА ============
+        function setupAudio() {
+            try {
+                STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error('Web Audio API не поддерживается');
+            }
         }
 
-        function retryPrint(){if(lastPrintedLabelId)triggerPrint(lastPrintedLabelId);else showError('Нет этикетки');}
-        
-        function reopenLastBox(){
-            if(!state.history.length)return showError('Нет коробов');const lb=state.history[0];if(!confirm(`Переоткрыть ${lb.id}?`))return;
-            for(const[bc,q]of Object.entries(lb.items)){state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;if(state.db[bc])state.db[bc].packedPcs-=q;}
-            state.currentBox.weight+=lb.weight;state.history.shift();
-            if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}
-            saveState();renderBox();renderTargets();renderPallets();updateUI();speak(`Переоткрыто ${lb.id}`);document.getElementById('retry-print-btn').style.display='none';document.getElementById('scanner').focus();
-        }
-        function clearBox(){if(Object.keys(state.currentBox.items).length&&!confirm('Очистить?'))return;for(const[bc,q]of Object.entries(state.currentBox.items)){if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox={items:{},weight:0};updateUI();renderBox();renderTargets();speak('Очищено');}
-        function renderBox(){const tb=document.getElementById('box-tbody');tb.innerHTML='';const items=Object.entries(state.currentBox.items);document.getElementById('empty-msg').style.display=items.length?'none':'block';items.forEach(([bc,q])=>{const p=state.db[bc]||{sku:'?',name:'?'};tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,15)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;});updateUI();}
-        function changeQty(bc,d){if(d>0&&state.db[bc]&&state.db[bc].packedPcs>=state.db[bc].targetPcs){showError(`🚫 Лимит: ${state.db[bc].targetPcs}`);speak(`Лимит`);return;}const o=state.currentBox.items[bc]||0;const n=Math.max(0,o+d);if(n===0)delete state.currentBox.items[bc];else state.currentBox.items[bc]=n;if(state.db[bc])state.db[bc].packedPcs+=(n-o);updWeight();renderBox();renderTargets();}
-        function removeItem(bc){const q=state.currentBox.items[bc]||0;delete state.currentBox.items[bc];if(state.db[bc])state.db[bc].packedPcs-=q;updWeight();renderBox();renderTargets();}
-        function updWeight(){let w=0;for(const q of Object.values(state.currentBox.items))w+=0.12*q;state.currentBox.weight=w;}
-        function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';}
-        function clearBoxUI(){state.currentBox={items:{},weight:0};renderBox();updateUI();}
-        function createPallet(){const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;if(state.pallets[id])return showError('Существует');state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();speak('Палет создан');saveState();}
-        function selectPallet(id){state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();}
-        function renderPallets(){const l=document.getElementById('pallets-list');l.innerHTML='';if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}Object.values(state.pallets).forEach(p=>{const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;d.onclick=()=>selectPallet(p.id);l.appendChild(d);});}
-        function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,25)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,80)}...</div>`:''}</div>`;}).join('');}
-        
-        // 🔴 ИСПРАВЛЕННАЯ ГЕНЕРАЦИЯ ЭТИКЕТКИ
-        function generateBoxLabel(b){
-            document.getElementById('lbl-mp-box').textContent='🔴 WB FBO';
-            document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
-            document.getElementById('lbl-city-box').textContent=b.city;
-            document.getElementById('lbl-pallet-box').textContent=b.pallet;
-            document.getElementById('lbl-box-id-box').textContent=b.id;
-            document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(1)+' кг';
-            document.getElementById('lbl-weight-footer').textContent='⚖️ '+b.weight.toFixed(1)+' кг';
-            document.getElementById('lbl-barcode-text-box').textContent=b.id;
+        function playBeep(type = 'success') {
+            if (!STATE.settings.sound || !STATE.audioCtx) return;
             
-            let totalQty=0; const posCount=Object.keys(b.items).length;
-            Object.values(b.items).forEach(q=>totalQty+=q);
-            document.getElementById('lbl-total-pos').textContent=posCount;
-            document.getElementById('lbl-total-qty').textContent=totalQty;
+            // Resume context если был suspended
+            if (STATE.audioCtx.state === 'suspended') {
+                STATE.audioCtx.resume();
+            }
             
-            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
-            Object.entries(b.items).forEach(([bc,q])=>{
-                const p=state.db[bc]; const name=p?.name||'Без названия'; const sku=p?.sku||'-';
-                // Формат точно как в PDF, но без обрезки
-                ul.innerHTML += `<li>
-                    <span class="bc">${bc}</span>
-                    <span class="qty">×${q}</span>
-                    <div class="name">${name}</div>
-                    <div style="font-size:6pt; color:#666;">Арт: ${sku}</div>
-                </li>`;
+            const now = STATE.audioCtx.currentTime;
+            const volume = STATE.settings.volume / 100;
+            
+            const frequencies = {
+                success: [880, 1320],
+                error: [220, 180],
+                warning: [440],
+                scan: [1000]
+            };
+            
+            const freqs = frequencies[type] || [1000];
+            
+            freqs.forEach((freq, i) => {
+                const osc = STATE.audioCtx.createOscillator();
+                const gain = STATE.audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(STATE.audioCtx.destination);
+                
+                osc.frequency.value = freq;
+                osc.type = type === 'error' ? 'sawtooth' : 'sine';
+                
+                gain.gain.setValueAtTime(0, now + i * 0.1);
+                gain.gain.linearRampToValueAtTime(volume * 0.3, now + i * 0.1 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.15);
+                
+                osc.start(now + i * 0.1);
+                osc.stop(now + i * 0.1 + 0.15);
             });
-            JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
         }
 
-        function printPalletLabel(){
-            if(!state.activePallet)return showError('⚠️ Выберите палет');
-            const p=state.pallets[state.activePallet];const city=document.getElementById('city').value.trim()||'ЕКБ';
-            document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO';
-            document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
-            document.getElementById('lbl-city-pal').textContent=city;
-            document.getElementById('lbl-pal-id').textContent=p.id;
-            document.getElementById('lbl-pal-count').textContent=p.boxes.length;
-            document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(1)+' кг';
-            const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';p.boxes.forEach(bx=>ul.innerHTML+=`<li style="margin-bottom:0.5mm; padding-bottom:0.5mm; border-bottom:1px dotted #aaa;">${bx}</li>`);
-            document.getElementById('lbl-barcode-text-pal').textContent=p.id;
-            JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});
-            triggerPrint('label-pallet');
-            speak('Печать палета');
+        // ============ ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ ============
+        function loadVoices() {
+            STATE.voices = window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    STATE.voices = window.speechSynthesis.getVoices();
+                };
+            }
         }
 
-        function exportCSV(){if(!state.history.length)return showError('Нет данных');let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';state.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]||{};csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${(p.name||'').replace(/"/g,'""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;}));const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fbo_report.csv`;a.click();speak('Готово');}
-        function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
-        function hideError(){document.getElementById('error-msg').style.display='none';}
-        function showSuccess(m){const s=document.getElementById('upload-status');s.textContent=m;s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
-        function saveState(){localStorage.setItem('fbo_v5',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
-        function loadState(){const s=localStorage.getItem('fbo_v5');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
-        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v5');location.reload();}}
-        window.addEventListener('beforeunload',()=>{if(quaggaActive)Quagga.stop();});
+        function speak(text, type = 'info') {
+            if (!STATE.settings.voice || !('speechSynthesis' in window)) return;
+            
+            window.speechSynthesis.cancel(); // Отменить предыдущие
+            
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'ru-RU';
+            
+            const ruVoice = STATE.voices.find(v => v.lang.startsWith('ru'));
+            if (ruVoice) utter.voice = ruVoice;
+            
+            const configs = {
+                success: { rate: 1.0, pitch: 1.0 },
+                error: { rate: 1.3, pitch: 0.8 },
+                warning: { rate: 1.1, pitch: 1.0 },
+                info: { rate: 1.0, pitch: 1.0 }
+            };
+            
+            const cfg = configs[type] || configs.info;
+            utter.rate = cfg.rate;
+            utter.pitch = cfg.pitch;
+            utter.volume = STATE.settings.volume / 100;
+            
+            window.speechSynthesis.speak(utter);
+        }
+
+        function vibrate(pattern) {
+            if (!STATE.settings.vibrate || !navigator.vibrate) return;
+            navigator.vibrate(pattern);
+        }
+
+        // ============ СКАНИРОВАНИЕ ============
+        function processScan(code) {
+            code = code.trim();
+            if (!code) return;
+            
+            // Проверка на двойное сканирование (анти-дабл)
+            const now = Date.now();
+            if (STATE.lastScan && STATE.lastScan.code === code && (now - STATE.lastScan.time) < 2000) {
+                showWarning('Дублирующее сканирование проигнорировано');
+                return;
+            }
+            STATE.lastScan = { code, time: now };
+            
+            playBeep('scan');
+            
+            if (STATE.plan.length === 0) {
+                showError('Сначала загрузите план поставки!');
+                return;
+            }
+            
+            const item = STATE.plan.find(p => p.barcode === code);
+            
+            if (item) {
+                const received = STATE.received[code] || 0;
+                const expected = item.expected || 1;
+                
+                if (received >= expected) {
+                    showError(`Превышен лимит! "${item.product}" уже принято ${received}/${expected}`);
+                    addToHistory(code, item, 'overscan');
+                    return;
+                }
+                
+                STATE.received[code] = received + 1;
+                const remaining = expected - STATE.received[code];
+                
+                // Выборочный контроль
+                if (STATE.settings.sample && Math.random() < 0.1) {
+                    showWarning(`⚠️ ВЫБОРОЧНЫЙ КОНТРОЛЬ: Вскройте короб "${item.product}" и проверьте содержимое!`);
+                    addToHistory(code, item, 'sample');
+                } else {
+                    let msg = `✅ Принято: ${item.product}`;
+                    if (remaining === 0) {
+                        msg += ' (позиция закрыта)';
+                        playBeep('success');
+                        vibrate([100, 50, 100]);
+                    }
+                    showSuccess(msg);
+                    addToHistory(code, item, 'ok');
+                }
+            } else {
+                if (STATE.settings.blind) {
+                    // Слепая приемка - добавляем неизвестный товар
+                    STATE.received[code] = (STATE.received[code] || 0) + 1;
+                    showWarning(`📦 Слепая приемка неизвестного товара: ${code}`);
+                    addToHistory(code, {product: 'Неизвестный товар', barcode: code}, 'blind');
+                } else {
+                    showError(`❌ Неизвестный штрихкод: ${code}. Товар отсутствует в плане!`);
+                    addToHistory(code, null, 'unknown');
+                }
+            }
+            
+            saveToStorage();
+            updateUI();
+            renderPlanList();
+        }
+
+        function manualScan() {
+            const input = document.getElementById('scannerInput');
+            processScan(input.value);
+            input.value = '';
+            input.focus();
+        }
+
+        function processManual() {
+            const input = document.getElementById('manualInput');
+            processScan(input.value);
+            input.value = '';
+            input.focus();
+        }
+
+        // ============ КАМЕРА ============
+        let html5QrCode = null;
+        
+        async function toggleCamera() {
+            if (STATE.cameraActive) {
+                await stopCamera();
+            } else {
+                await startCamera();
+            }
+        }
+
+        async function startCamera() {
+            try {
+                html5QrCode = new Html5Qrcode("cameraReader");
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText) => {
+                        processScan(decodedText);
+                    },
+                    (error) => {}
+                );
+                STATE.cameraActive = true;
+                document.querySelector('#method-camera .btn').textContent = '⏸️ Остановить камеру';
+                log('Камера активирована', 'info');
+            } catch (err) {
+                showError('Не удалось запустить камеру: ' + err.message);
+            }
+        }
+
+        async function stopCamera() {
+            if (html5QrCode) {
+                await html5QrCode.stop();
+                html5QrCode.clear();
+            }
+            STATE.cameraActive = false;
+            document.querySelector('#method-camera .btn').textContent = '📸 Включить камеру';
+        }
+
+        // ============ RFID (ДЕМО) ============
+        function simulateRfid() {
+            if (STATE.plan.length === 0) {
+                showError('Сначала загрузите план поставки!');
+                return;
+            }
+            
+            // Принимаем все не принятые короба
+            let count = 0;
+            STATE.plan.forEach(item => {
+                const received = STATE.received[item.barcode] || 0;
+                const expected = item.expected || 1;
+                const remaining = expected - received;
+                if (remaining > 0) {
+                    STATE.received[item.barcode] = received + remaining;
+                    count += remaining;
+                }
+            });
+            
+            showSuccess(`📡 RFID: Принято ${count} коробов автоматически!`);
+            log(`RFID-проход: принято ${count} коробов`, 'success');
+            saveToStorage();
+            updateUI();
+            renderPlanList();
+        }
+
+        // ============ BLUETOOTH ПРИНТЕР ============
+        async function connectBluetooth() {
+            if (!navigator.bluetooth) {
+                showToast('Web Bluetooth не поддерживается в этом браузере. Используйте Chrome.');
+                log('Web Bluetooth API недоступен', 'warning');
+                return;
+            }
+            
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+                });
+                
+                STATE.bluetoothDevice = device;
+                showToast(`🖨️ Подключено: ${device.name || 'Принтер'}`);
+                log(`Bluetooth устройство подключено: ${device.name}`, 'success');
+            } catch (err) {
+                if (err.name !== 'NotFoundError') {
+                    log('Ошибка Bluetooth: ' + err.message, 'error');
+                }
+            }
+        }
+
+        // ============ ПЕЧАТЬ ЭТИКЕТКИ ============
+        function printLabel() {
+            const lastCode = Object.keys(STATE.received).pop();
+            const item = STATE.plan.find(p => p.barcode === lastCode) || { product: 'Товар', barcode: 'N/A' };
+            
+            const cell = generateCell();
+            
+            document.getElementById('labelId').textContent = String(Object.keys(STATE.received).length).padStart(3, '0');
+            document.getElementById('labelBarcode').textContent = item.barcode;
+            document.getElementById('labelProduct').textContent = item.product;
+            document.getElementById('labelCell').textContent = cell;
+            document.getElementById('labelDate').textContent = new Date().toLocaleString('ru-RU');
+            
+            document.getElementById('modalLabel').classList.add('active');
+        }
+
+        function generateCell() {
+            const letters = ['A', 'B', 'C', 'D'];
+            const letter = letters[Math.floor(Math.random() * letters.length)];
+            const row = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
+            const col = String(Math.floor(Math.random() * 50) + 1).padStart(2, '0');
+            return `${letter}-${row}-${col}`;
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // ============ РАБОТА С ФАЙЛАМИ ============
+        function downloadSample() {
+            const sample = [
+                { barcode: "20001", product: "Короб: Кроссовки Nike", expected: 5 },
+                { barcode: "20002", product: "Короб: Футболки Adidas", expected: 10 },
+                { barcode: "20003", product: "Короб: Носки спортивные", expected: 50 },
+                { barcode: "20004", product: "Короб: Мячи футбольные", expected: 20 },
+                { barcode: "20005", product: "Короб: Рюкзаки", expected: 15 },
+                { barcode: "20006", product: "Короб: Шапки зимние", expected: 30 },
+                { barcode: "20007", product: "Короб: Перчатки", expected: 25 }
+            ];
+            
+            downloadFile('delivery_plan.json', JSON.stringify(sample, null, 2));
+            showToast('Тестовый план скачан');
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    let data;
+                    if (file.name.endsWith('.csv')) {
+                        data = parseCSV(event.target.result);
+                    } else {
+                        data = JSON.parse(event.target.result);
+                    }
+                    
+                    if (!Array.isArray(data)) throw new Error('Ожидается массив');
+                    
+                    STATE.plan = data;
+                    STATE.received = {};
+                    STATE.errors = 0;
+                    STATE.history = [];
+                    
+                    const totalBoxes = data.reduce((s, i) => s + (i.expected || 1), 0);
+                    document.getElementById('planFileName').textContent = 
+                        `✅ Загружен: ${file.name} (${data.length} позиций, ${totalBoxes} коробов)`;
+                    
+                    log(`План поставки загружен: ${file.name}`, 'success');
+                    speak(`Загружен план: ожидается ${totalBoxes} коробов`, 'info');
+                    
+                    saveToStorage();
+                    updateUI();
+                    renderPlanList();
+                    switchTab('scan');
+                    showToast('План поставки загружен!');
+                } catch (err) {
+                    showError('Ошибка чтения файла: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const obj = {};
+                headers.forEach((h, i) => {
+                    obj[h] = isNaN(values[i]) ? values[i] : Number(values[i]);
+                });
+                return obj;
+            });
+        }
+
+        function exportPlan() {
+            if (STATE.plan.length === 0) {
+                showToast('Нет плана для экспорта');
+                return;
+            }
+            downloadFile('plan_export.json', JSON.stringify(STATE.plan, null, 2));
+        }
+
+        function exportReport() {
+            const report = {
+                sessionId: STATE.sessionId,
+                date: new Date().toISOString(),
+                plan: STATE.plan,
+                received: STATE.received,
+                errors: STATE.errors,
+                history: STATE.history
+            };
+            downloadFile(`report_${Date.now()}.json`, JSON.stringify(report, null, 2));
+        }
+
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============ UI ИНДИКАЦИЯ ============
+        function showSuccess(msg) {
+            displayResult(msg, 'success');
+            playBeep('success');
+            vibrate(50);
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-success');
+                setTimeout(() => document.body.classList.remove('flash-success'), 700);
+            }
+            speak(msg, 'success');
+        }
+
+        function showError(msg) {
+            displayResult(msg, 'error');
+            STATE.errors++;
+            playBeep('error');
+            vibrate([100, 50, 100, 50, 100]);
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-error');
+                setTimeout(() => document.body.classList.remove('flash-error'), 700);
+            }
+            speak(msg, 'error');
+            updateUI();
+        }
+
+        function showWarning(msg) {
+            displayResult(msg, 'warning');
+            playBeep('warning');
+            vibrate([50, 50, 50]);
+            if (STATE.settings.flash) {
+                document.body.classList.add('flash-warning');
+                setTimeout(() => document.body.classList.remove('flash-warning'), 700);
+            }
+            speak(msg, 'warning');
+        }
+
+        function displayResult(msg, type) {
+            const el = document.getElementById('scanResult');
+            el.style.display = 'flex';
+            el.className = `scan-result ${type}`;
+            el.textContent = msg;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ============ ОБНОВЛЕНИЕ UI ============
+        function updateUI() {
+            const totalExpected = STATE.plan.reduce((s, i) => s + (i.expected || 1), 0);
+            const totalReceived = Object.values(STATE.received).reduce((s, c) => s + c, 0);
+            const progress = totalExpected > 0 ? Math.round((totalReceived / totalExpected) * 100) : 0;
+            
+            document.getElementById('statPlan').textContent = totalExpected;
+            document.getElementById('statDone').textContent = totalReceived;
+            document.getElementById('statErrors').textContent = STATE.errors;
+            document.getElementById('statProgress').textContent = progress + '%';
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function renderPlanList() {
+            const list = document.getElementById('planList');
+            if (STATE.plan.length === 0) {
+                list.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>План пуст. Загрузите файл поставки.</p></div>';
+                return;
+            }
+            
+            list.innerHTML = STATE.plan.map(item => {
+                const received = STATE.received[item.barcode] || 0;
+                const expected = item.expected || 1;
+                const done = received >= expected;
+                return `
+                    <div class="recent-item" style="${done ? 'opacity:0.5;' : ''}">
+                        <div>
+                            <div style="font-weight:bold;">${done ? '✅' : '⏳'} ${item.product}</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Код: ${item.barcode}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:1.3rem;font-weight:bold;">${received}/${expected}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============ ВКЛАДКИ ============
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).style.display = 'block';
+            event.target.classList.add('active');
+            
+            if (tab === 'plan') renderPlanList();
+            if (tab === 'history') renderHistory();
+        }
+
+        function setInputMethod(method) {
+            STATE.currentMethod = method;
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-method="${method}"]`).classList.add('active');
+            
+            document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('method-' + method).classList.add('active');
+            
+            if (method === 'scanner') {
+                document.getElementById('scannerInput').focus();
+            }
+            if (method !== 'camera' && STATE.cameraActive) {
+                stopCamera();
+            }
+        }
+
+        // ============ НАСТРОЙКИ ============
+        function toggleSetting(key) {
+            STATE.settings[key] = !STATE.settings[key];
+            const toggle = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+            toggle.classList.toggle('active');
+            saveToStorage();
+            
+            const names = {
+                sound: 'Звуковые сигналы',
+                voice: 'Голосовое сопровождение',
+                vibrate: 'Вибрация',
+                flash: 'Вспышки экрана',
+                sync: 'Синхронизация',
+                blind: 'Слепая приемка',
+                sample: 'Выборочный контроль'
+            };
+            showToast(`${names[key]}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
+        }
+
+        function setVolume(val) {
+            STATE.settings.volume = parseInt(val);
+            document.getElementById('volumeLabel').textContent = val + '%';
+            saveToStorage();
+        }
+
+        // ============ ЛОГИ ============
+        function log(text, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString('ru-RU');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${time}] ${text}`;
+            logDiv.prepend(entry);
+            
+            STATE.history.unshift({ time, text, type });
+            if (STATE.history.length > 500) STATE.history.pop();
+        }
+
+        function addToHistory(code, item, status) {
+            const msg = `${item ? item.product : code} - ${
+                status === 'ok' ? 'Принято' :
+                status === 'error' ? 'Ошибка' :
+                status === 'unknown' ? 'Неизвестный' :
+                status === 'overscan' ? 'Превышение' :
+                status === 'sample' ? 'Выборочный контроль' :
+                status === 'blind' ? 'Слепая приемка' : status
+            }`;
+            log(msg, status === 'ok' ? 'success' : (status === 'unknown' || status === 'overscan' ? 'error' : 'warning'));
+        }
+
+        function renderHistory() {
+            const recent = document.getElementById('recentDeliveries');
+            if (STATE.history.length === 0) {
+                recent.innerHTML = '<div class="empty-state"><p>Нет операций</p></div>';
+                return;
+            }
+            
+            recent.innerHTML = STATE.history.slice(0, 20).map(h => `
+                <div class="recent-item">
+                    <div>
+                        <div>${h.text}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);">${h.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearLog() {
+            if (confirm('Очистить журнал?')) {
+                STATE.history = [];
+                document.getElementById('log').innerHTML = '';
+                saveToStorage();
+            }
+        }
+
+        // ============ ДЕЙСТВИЯ ============
+        function undoLast() {
+            const lastCode = Object.keys(STATE.received).pop();
+            if (!lastCode) {
+                showToast('Нечего отменять');
+                return;
+            }
+            STATE.received[lastCode]--;
+            if (STATE.received[lastCode] <= 0) delete STATE.received[lastCode];
+            log(`Отменено сканирование: ${lastCode}`, 'warning');
+            showWarning('Отменено последнее сканирование');
+            saveToStorage();
+            updateUI();
+        }
+
+        function resetSession() {
+            if (confirm('Сбросить всю текущую сессию?')) {
+                STATE.received = {};
+                STATE.errors = 0;
+                STATE.history = [];
+                saveToStorage();
+                updateUI();
+                renderPlanList();
+                showToast('Сессия сброшена');
+            }
+        }
+
+        // ============ ХРАНИЛИЩЕ И СИНХРОНИЗАЦИЯ ============
+        function saveToStorage() {
+            const data = {
+                plan: STATE.plan,
+                received: STATE.received,
+                errors: STATE.errors,
+                history: STATE.history,
+                settings: STATE.settings,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('wms_session', JSON.stringify(data));
+            
+            // Событие для других вкладок
+            if (STATE.settings.sync) {
+                localStorage.setItem('wms_sync_' + Date.now(), JSON.stringify({
+                    type: 'update',
+                    data: data,
+                    sender: STATE.sessionId
+                }));
+            }
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('wms_session');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    STATE.plan = data.plan || [];
+                    STATE.received = data.received || {};
+                    STATE.errors = data.errors || 0;
+                    STATE.history = data.history || [];
+                    STATE.settings = { ...STATE.settings, ...data.settings };
+                    
+                    // Применить настройки к UI
+                    Object.keys(STATE.settings).forEach(key => {
+                        const toggle = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+                        if (toggle) toggle.classList.toggle('active', STATE.settings[key]);
+                    });
+                    
+                    document.getElementById('volumeSlider').value = STATE.settings.volume;
+                    document.getElementById('volumeLabel').textContent = STATE.settings.volume + '%';
+                    
+                    log('Восстановлена предыдущая сессия', 'info');
+                } catch (e) {}
+            }
+        }
+
+        function handleStorageSync(e) {
+            if (!STATE.settings.sync) return;
+            
+            if (e.key === 'wms_session') {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    if (data && data.timestamp !== STATE.lastSyncTimestamp) {
+                        STATE.plan = data.plan;
+                        STATE.received = data.received;
+                        STATE.errors = data.errors;
+                        STATE.lastSyncTimestamp = data.timestamp;
+                        updateUI();
+                        renderPlanList();
+                    }
+                } catch (err) {}
+            }
+            
+            if (e.key && e.key.startsWith('wms_sync_')) {
+                try {
+                    const msg = JSON.parse(e.newValue);
+                    if (msg.sender !== STATE.sessionId) {
+                        const devices = new Set();
+                        devices.add(STATE.sessionId);
+                        devices.add(msg.sender);
+                        localStorage.setItem('wms_active_devices', devices.size);
+                    }
+                } catch (err) {}
+                
+                setTimeout(() => localStorage.removeItem(e.key), 5000);
+            }
+        }
+
+        function updateConnectionStatus() {
+            const badge = document.getElementById('connectionBadge');
+            const status = document.getElementById('connStatus');
+            if (navigator.onLine) {
+                badge.className = 'connection-badge online';
+                status.textContent = 'Online';
+            } else {
+                badge.className = 'connection-badge offline';
+                status.textContent = 'Offline';
+            }
+        }
+
+        // ============ PWA ============
+        // Регистрация Service Worker для офлайн режима
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE = 'wms-v1';
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => self.clients.claim());
+                self.addEventListener('fetch', e => {
+                    e.respondWith(
+                        caches.open(CACHE).then(cache => 
+                            cache.match(e.request).then(resp => 
+                                resp || fetch(e.request).then(fetchResp => {
+                                    if (e.request.url.startsWith('http')) {
+                                        cache.put(e.request, fetchResp.clone());
+                                    }
+                                    return fetchResp;
+                                }).catch(() => new Response('Offline', {status: 503}))
+                            )
+                        )
+                    );
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+
+        // Предупреждение о закрытии при активной сессии
+        window.addEventListener('beforeunload', (e) => {
+            const received = Object.values(STATE.received).reduce((s, c) => s + c, 0);
+            if (received > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        // Глобальные горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F2') setInputMethod('scanner');
+            if (e.key === 'F3') setInputMethod('camera');
+            if (e.key === 'F4') setInputMethod('manual');
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoLast(); }
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+            }
+        });
     </script>
 </body>
 </html>
