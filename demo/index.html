@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <title>WMS Pro - Приемка товара</title>
+    <title>WMS Pro - Приемка товара (Excel Edition)</title>
     
-    <!-- Библиотека для сканирования камерой -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- SheetJS для работы с Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,6 +25,7 @@
             --primary: #6c63ff;
             --secondary: #00bcd4;
             --border: #2a2f5a;
+            --excel: #217346;
         }
 
         body {
@@ -80,10 +82,7 @@
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0%,100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         .card {
             background: var(--card);
@@ -120,12 +119,10 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 0.9rem;
         }
 
-        .tab.active {
-            background: var(--primary);
-            color: white;
-        }
+        .tab.active { background: var(--primary); color: white; }
 
         .stats {
             display: grid;
@@ -146,11 +143,7 @@
             text-transform: uppercase;
         }
 
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-top: 4px;
-        }
+        .stat-value { font-size: 1.8rem; font-weight: bold; margin-top: 4px; }
 
         .s-plan .stat-value { color: var(--primary); }
         .s-done .stat-value { color: var(--success); }
@@ -197,8 +190,6 @@
             border-color: var(--primary);
             background: rgba(108, 99, 255, 0.15);
         }
-
-        .method-btn:hover { border-color: var(--primary); }
 
         .input-section { display: none; }
         .input-section.active { display: block; }
@@ -259,6 +250,7 @@
         .btn-success { background: var(--success); color: #000; }
         .btn-danger { background: var(--error); color: white; }
         .btn-secondary { background: var(--card-light); color: var(--text); border: 1px solid var(--border); }
+        .btn-excel { background: var(--excel); color: white; }
         .btn-lg { width: 100%; padding: 18px; font-size: 1.1rem; margin-top: 10px; }
 
         .file-zone {
@@ -293,6 +285,7 @@
             border-radius: 13px;
             cursor: pointer;
             transition: background 0.3s;
+            flex-shrink: 0;
         }
 
         .toggle.active { background: var(--primary); }
@@ -383,10 +376,7 @@
             }
         }
 
-        .recent-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
+        .recent-list { max-height: 300px; overflow-y: auto; }
 
         .recent-item {
             display: flex;
@@ -448,10 +438,54 @@
             cursor: pointer;
         }
 
+        .excel-preview {
+            background: var(--card-light);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+
+        .excel-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 0.5fr;
+            gap: 10px;
+            padding: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .excel-row.header {
+            font-weight: bold;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .file-types {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .file-type-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .badge-xlsx { background: var(--excel); color: white; }
+        .badge-xls { background: #1a5c38; color: white; }
+        .badge-csv { background: #666; color: white; }
+        .badge-json { background: #f39c12; color: white; }
+
         @media (max-width: 600px) {
             .stats { grid-template-columns: repeat(2, 1fr); }
             .settings-grid { grid-template-columns: 1fr; }
             .stat-value { font-size: 1.4rem; }
+            .tab { font-size: 0.8rem; padding: 8px 4px; }
         }
     </style>
 </head>
@@ -465,17 +499,15 @@
             </div>
         </header>
 
-        <!-- Вкладки -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('scan')">📷 Сканирование</button>
-            <button class="tab" onclick="switchTab('plan')">📋 План</button>
-            <button class="tab" onclick="switchTab('history')">📊 История</button>
-            <button class="tab" onclick="switchTab('settings')">⚙️ Настройки</button>
+            <button class="tab active" onclick="switchTab('scan', event)">📷 Сканирование</button>
+            <button class="tab" onclick="switchTab('plan', event)">📋 План</button>
+            <button class="tab" onclick="switchTab('history', event)">📊 История</button>
+            <button class="tab" onclick="switchTab('settings', event)">⚙️ Настройки</button>
         </div>
 
-        <!-- ВКЛАДКА: СКАНИРОВАНИЕ -->
+        <!-- СКАНИРОВАНИЕ -->
         <div id="tab-scan" class="tab-content">
-            <!-- Статистика -->
             <div class="card">
                 <h3>Текущая поставка</h3>
                 <div class="stats">
@@ -501,7 +533,6 @@
                 </div>
             </div>
 
-            <!-- Выбор метода -->
             <div class="card">
                 <h3>Метод ввода</h3>
                 <div class="input-methods">
@@ -515,50 +546,41 @@
                         <span class="icon">✍️</span> Вручную
                     </button>
                     <button class="method-btn" data-method="rfid" onclick="setInputMethod('rfid')">
-                        <span class="icon">📡</span> RFID (демо)
+                        <span class="icon">📡</span> RFID
                     </button>
                 </div>
             </div>
 
-            <!-- Метод: Сканер -->
             <div id="method-scanner" class="input-section active card">
-                <h3>Физический сканер штрихкодов</h3>
+                <h3>Физический сканер</h3>
                 <input type="text" id="scannerInput" placeholder="Сканируйте или введите код..." autocomplete="off">
                 <button class="btn btn-primary btn-lg" onclick="manualScan()">⚡ ПРИНЯТЬ КОРОБ</button>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px; text-align: center;">
-                    💡 Подключите USB/Bluetooth сканер. Он работает как клавиатура — автоматически вводит код и нажимает Enter.
-                </p>
             </div>
 
-            <!-- Метод: Камера -->
             <div id="method-camera" class="input-section card">
                 <h3>Сканирование камерой</h3>
                 <div id="cameraReader"></div>
                 <button class="btn btn-primary btn-lg" onclick="toggleCamera()">📸 Включить камеру</button>
             </div>
 
-            <!-- Метод: Ручной ввод -->
             <div id="method-manual" class="input-section card">
-                <h3>Ручной ввод штрихкода</h3>
+                <h3>Ручной ввод</h3>
                 <input type="text" id="manualInput" placeholder="Введите штрихкод..." 
                     style="width:100%; padding:15px; font-size:1.2rem; background:#000; color:#fff; border:2px solid var(--border); border-radius:8px;">
                 <button class="btn btn-primary btn-lg" onclick="processManual()">✅ Подтвердить</button>
             </div>
 
-            <!-- Метод: RFID (демо) -->
             <div id="method-rfid" class="input-section card">
-                <h3>RFID считыватель (демо-режим)</h3>
+                <h3>RFID считыватель</h3>
                 <div class="empty-state">
                     <span class="icon">📡</span>
-                    <p>RFID позволяет принимать целые паллеты за секунды без прямой видимости меток.</p>
-                    <button class="btn btn-secondary" onclick="simulateRfid()">Симулировать проход через RFID-ворота</button>
+                    <p>Массовое считывание паллет</p>
+                    <button class="btn btn-secondary" onclick="simulateRfid()">Симулировать проход</button>
                 </div>
             </div>
 
-            <!-- Результат сканирования -->
             <div id="scanResult" class="scan-result" style="display:none;"></div>
 
-            <!-- Быстрые действия -->
             <div class="card">
                 <h3>Быстрые действия</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -570,17 +592,31 @@
             </div>
         </div>
 
-        <!-- ВКЛАДКА: ПЛАН ПОСТАВКИ -->
+        <!-- ПЛАН -->
         <div id="tab-plan" class="tab-content" style="display:none;">
             <div class="card">
-                <h3>Загрузка плана (ASN)</h3>
+                <h3>Загрузка плана поставки</h3>
                 <div class="file-zone">
-                    <label for="fileInput" class="btn btn-primary">📂 Загрузить JSON/CSV</label>
-                    <input type="file" id="fileInput" accept=".json,.csv">
-                    <button class="btn btn-secondary" onclick="downloadSample()">⬇️ Пример плана</button>
-                    <button class="btn btn-secondary" onclick="exportPlan()">💾 Экспорт плана</button>
+                    <label for="fileInput" class="btn btn-primary">📂 Загрузить файл</label>
+                    <input type="file" id="fileInput" accept=".json,.csv,.xlsx,.xls">
+                    <button class="btn btn-excel" onclick="downloadExcelTemplate()">📊 Excel-шаблон</button>
+                    <button class="btn btn-secondary" onclick="downloadSample()">⬇️ JSON-пример</button>
+                </div>
+                <div class="file-types">
+                    <span class="file-type-badge badge-xlsx">XLSX</span>
+                    <span class="file-type-badge badge-xls">XLS</span>
+                    <span class="file-type-badge badge-csv">CSV</span>
+                    <span class="file-type-badge badge-json">JSON</span>
                 </div>
                 <p id="planFileName" style="color: var(--text-muted); margin-top: 10px;">Файл не загружен</p>
+            </div>
+
+            <div class="card">
+                <h3>Экспорт</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-excel" onclick="exportPlanExcel()">📊 Выгрузить план в Excel</button>
+                    <button class="btn btn-secondary" onclick="exportPlan()">💾 JSON</button>
+                </div>
             </div>
 
             <div class="card">
@@ -589,24 +625,25 @@
             </div>
         </div>
 
-        <!-- ВКЛАДКА: ИСТОРИЯ -->
+        <!-- ИСТОРИЯ -->
         <div id="tab-history" class="tab-content" style="display:none;">
             <div class="card">
                 <h3>Журнал операций</h3>
                 <div class="log-container" id="log"></div>
-                <div style="margin-top: 10px; display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="exportReport()">📄 Экспорт отчета</button>
+                <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-excel" onclick="exportReportExcel()">📊 Отчет в Excel</button>
+                    <button class="btn btn-secondary" onclick="exportReport()">💾 JSON</button>
                     <button class="btn btn-danger" onclick="clearLog()">🗑️ Очистить</button>
                 </div>
             </div>
 
             <div class="card">
-                <h3>Недавние поставки</h3>
+                <h3>Недавние операции</h3>
                 <div id="recentDeliveries" class="recent-list"></div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА: НАСТРОЙКИ -->
+        <!-- НАСТРОЙКИ -->
         <div id="tab-settings" class="tab-content" style="display:none;">
             <div class="card">
                 <h3>Звук и голос</h3>
@@ -616,7 +653,7 @@
                         <div class="toggle active" id="toggleSound" onclick="toggleSetting('sound')"></div>
                     </div>
                     <div class="setting-item">
-                        <span>🗣️ Голосовое сопровождение</span>
+                        <span>🗣️ Голос</span>
                         <div class="toggle active" id="toggleVoice" onclick="toggleSetting('voice')"></div>
                     </div>
                     <div class="setting-item">
@@ -624,7 +661,7 @@
                         <div class="toggle active" id="toggleVibrate" onclick="toggleSetting('vibrate')"></div>
                     </div>
                     <div class="setting-item">
-                        <span>💡 Вспышки экрана</span>
+                        <span>💡 Вспышки</span>
                         <div class="toggle active" id="toggleFlash" onclick="toggleSetting('flash')"></div>
                     </div>
                 </div>
@@ -638,12 +675,9 @@
             <div class="card">
                 <h3>Синхронизация</h3>
                 <div class="setting-item" style="margin-bottom: 10px;">
-                    <span>👥 Общий режим (между вкладками)</span>
+                    <span>👥 Общий режим</span>
                     <div class="toggle active" id="toggleSync" onclick="toggleSetting('sync')"></div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">
-                    При включении несколько сотрудников могут одновременно принимать одну поставку с разных устройств в одной сети.
-                </p>
                 <div style="margin-top: 10px; padding: 10px; background: var(--card-light); border-radius: 8px;">
                     <strong>ID сессии:</strong> <span id="sessionId"></span><br>
                     <strong>Активных устройств:</strong> <span id="activeDevices">1</span>
@@ -666,15 +700,14 @@
         </div>
     </div>
 
-    <!-- Модальные окна -->
     <div id="modalLabel" class="modal">
         <div class="modal-content">
-            <h3>🏷️ Предпросмотр этикетки</h3>
+            <h3>🏷️ Этикетка</h3>
             <div class="label-preview" id="labelPreview">
-                <div style="font-size: 0.8rem;">СКЛАД "ЦЕНТРАЛЬНЫЙ"</div>
+                <div style="font-size: 0.8rem;">СКЛАД</div>
                 <div style="font-size: 1.5rem; font-weight: bold; margin: 10px 0;">КОРОБ #<span id="labelId">001</span></div>
                 <div class="barcode" id="labelBarcode">||||| |||| |||||</div>
-                <div id="labelProduct" style="margin: 10px 0;">Название товара</div>
+                <div id="labelProduct" style="margin: 10px 0;">Название</div>
                 <div style="font-size: 0.8rem; border-top: 1px dashed #000; padding-top: 10px;">
                     Ячейка: <strong id="labelCell">A-01-01</strong><br>
                     Дата: <span id="labelDate"></span>
@@ -687,34 +720,45 @@
         </div>
     </div>
 
-    <!-- Toast уведомления -->
     <div id="toast" class="toast"></div>
 
     <script>
-        // ============ СОСТОЯНИЕ ПРИЛОЖЕНИЯ ============
+        // ============ СОСТОЯНИЕ ============
         const STATE = {
             plan: [],
             received: {},
             errors: 0,
             history: [],
             settings: {
-                sound: true,
-                voice: true,
-                vibrate: true,
-                flash: true,
-                sync: true,
-                blind: false,
-                sample: false,
-                volume: 80
+                sound: true, voice: true, vibrate: true, flash: true,
+                sync: true, blind: false, sample: false, volume: 80
             },
             sessionId: 'sess_' + Math.random().toString(36).substr(2, 9),
             currentMethod: 'scanner',
             cameraActive: false,
             lastScan: null,
             audioCtx: null,
-            bluetoothDevice: null,
             voices: []
         };
+
+        // ============ МАППИНГ КОЛОНОК EXCEL ============
+        // Автоматически находит нужные колонки по разным вариантам названий
+        const COLUMN_ALIASES = {
+            barcode: ['barcode', 'штрихкод', 'штрих-код', 'код', 'code', 'ean', 'ean13', 'артикул', 'sku'],
+            product: ['product', 'товар', 'наименование', 'название', 'name', 'item', 'описание', 'description'],
+            expected: ['expected', 'количество', 'qty', 'quantity', 'кол-во', 'план', 'шт', 'count', 'boxes']
+        };
+
+        function findColumn(headers, field) {
+            const aliases = COLUMN_ALIASES[field] || [];
+            const normalizedHeaders = headers.map(h => String(h).toLowerCase().trim());
+            
+            for (const alias of aliases) {
+                const idx = normalizedHeaders.indexOf(alias.toLowerCase());
+                if (idx !== -1) return idx;
+            }
+            return -1;
+        }
 
         // ============ ИНИЦИАЛИЗАЦИЯ ============
         document.addEventListener('DOMContentLoaded', () => {
@@ -725,7 +769,6 @@
             loadVoices();
             updateConnectionStatus();
             
-            // Синхронизация между вкладками
             window.addEventListener('storage', handleStorageSync);
             window.addEventListener('online', updateConnectionStatus);
             window.addEventListener('offline', updateConnectionStatus);
@@ -736,7 +779,7 @@
             }, 2000);
             
             document.getElementById('sessionId').textContent = STATE.sessionId;
-            log('Система инициализирована. Сессия: ' + STATE.sessionId, 'info');
+            log('Система готова. Поддерживаются: Excel, CSV, JSON', 'info');
         });
 
         function setupEventListeners() {
@@ -750,102 +793,75 @@
             });
             
             document.getElementById('manualInput').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    processManual();
-                }
+                if (e.key === 'Enter') { e.preventDefault(); processManual(); }
             });
             
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             
-            // Автофокус
             scannerInput.focus();
             document.body.addEventListener('click', () => {
                 if (STATE.currentMethod === 'scanner') scannerInput.focus();
             });
         }
 
-        // ============ АУДИО СИСТЕМА ============
+        // ============ АУДИО ============
         function setupAudio() {
-            try {
-                STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.error('Web Audio API не поддерживается');
-            }
+            try { STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } 
+            catch (e) {}
         }
 
         function playBeep(type = 'success') {
             if (!STATE.settings.sound || !STATE.audioCtx) return;
-            
-            // Resume context если был suspended
-            if (STATE.audioCtx.state === 'suspended') {
-                STATE.audioCtx.resume();
-            }
+            if (STATE.audioCtx.state === 'suspended') STATE.audioCtx.resume();
             
             const now = STATE.audioCtx.currentTime;
             const volume = STATE.settings.volume / 100;
-            
             const frequencies = {
-                success: [880, 1320],
-                error: [220, 180],
-                warning: [440],
-                scan: [1000]
+                success: [880, 1320], error: [220, 180],
+                warning: [440], scan: [1000]
             };
-            
             const freqs = frequencies[type] || [1000];
             
             freqs.forEach((freq, i) => {
                 const osc = STATE.audioCtx.createOscillator();
                 const gain = STATE.audioCtx.createGain();
-                
                 osc.connect(gain);
                 gain.connect(STATE.audioCtx.destination);
-                
                 osc.frequency.value = freq;
                 osc.type = type === 'error' ? 'sawtooth' : 'sine';
-                
                 gain.gain.setValueAtTime(0, now + i * 0.1);
                 gain.gain.linearRampToValueAtTime(volume * 0.3, now + i * 0.1 + 0.02);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.15);
-                
                 osc.start(now + i * 0.1);
                 osc.stop(now + i * 0.1 + 0.15);
             });
         }
 
-        // ============ ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ ============
+        // ============ ГОЛОС ============
         function loadVoices() {
             STATE.voices = window.speechSynthesis.getVoices();
             if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = () => {
-                    STATE.voices = window.speechSynthesis.getVoices();
-                };
+                window.speechSynthesis.onvoiceschanged = () => { STATE.voices = window.speechSynthesis.getVoices(); };
             }
         }
 
         function speak(text, type = 'info') {
             if (!STATE.settings.voice || !('speechSynthesis' in window)) return;
-            
-            window.speechSynthesis.cancel(); // Отменить предыдущие
-            
+            window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'ru-RU';
-            
             const ruVoice = STATE.voices.find(v => v.lang.startsWith('ru'));
             if (ruVoice) utter.voice = ruVoice;
-            
             const configs = {
                 success: { rate: 1.0, pitch: 1.0 },
                 error: { rate: 1.3, pitch: 0.8 },
                 warning: { rate: 1.1, pitch: 1.0 },
                 info: { rate: 1.0, pitch: 1.0 }
             };
-            
             const cfg = configs[type] || configs.info;
             utter.rate = cfg.rate;
             utter.pitch = cfg.pitch;
             utter.volume = STATE.settings.volume / 100;
-            
             window.speechSynthesis.speak(utter);
         }
 
@@ -856,17 +872,15 @@
 
         // ============ СКАНИРОВАНИЕ ============
         function processScan(code) {
-            code = code.trim();
+            code = String(code).trim();
             if (!code) return;
             
-            // Проверка на двойное сканирование (анти-дабл)
             const now = Date.now();
             if (STATE.lastScan && STATE.lastScan.code === code && (now - STATE.lastScan.time) < 2000) {
-                showWarning('Дублирующее сканирование проигнорировано');
+                showWarning('Дублирующее сканирование');
                 return;
             }
             STATE.lastScan = { code, time: now };
-            
             playBeep('scan');
             
             if (STATE.plan.length === 0) {
@@ -874,47 +888,38 @@
                 return;
             }
             
-            const item = STATE.plan.find(p => p.barcode === code);
+            const item = STATE.plan.find(p => String(p.barcode) === code);
             
             if (item) {
                 const received = STATE.received[code] || 0;
                 const expected = item.expected || 1;
-                
                 if (received >= expected) {
-                    showError(`Превышен лимит! "${item.product}" уже принято ${received}/${expected}`);
+                    showError(`Превышен лимит: "${item.product}" (${received}/${expected})`);
                     addToHistory(code, item, 'overscan');
                     return;
                 }
-                
                 STATE.received[code] = received + 1;
                 const remaining = expected - STATE.received[code];
                 
-                // Выборочный контроль
                 if (STATE.settings.sample && Math.random() < 0.1) {
-                    showWarning(`⚠️ ВЫБОРОЧНЫЙ КОНТРОЛЬ: Вскройте короб "${item.product}" и проверьте содержимое!`);
+                    showWarning(`⚠️ ВЫБОРОЧНЫЙ КОНТРОЛЬ: "${item.product}"`);
                     addToHistory(code, item, 'sample');
                 } else {
                     let msg = `✅ Принято: ${item.product}`;
-                    if (remaining === 0) {
-                        msg += ' (позиция закрыта)';
-                        playBeep('success');
-                        vibrate([100, 50, 100]);
-                    }
+                    if (remaining === 0) { msg += ' (закрыто)'; playBeep('success'); vibrate([100, 50, 100]); }
                     showSuccess(msg);
                     addToHistory(code, item, 'ok');
                 }
             } else {
                 if (STATE.settings.blind) {
-                    // Слепая приемка - добавляем неизвестный товар
                     STATE.received[code] = (STATE.received[code] || 0) + 1;
-                    showWarning(`📦 Слепая приемка неизвестного товара: ${code}`);
-                    addToHistory(code, {product: 'Неизвестный товар', barcode: code}, 'blind');
+                    showWarning(`📦 Слепая приемка: ${code}`);
+                    addToHistory(code, {product: 'Неизвестный', barcode: code}, 'blind');
                 } else {
-                    showError(`❌ Неизвестный штрихкод: ${code}. Товар отсутствует в плане!`);
+                    showError(`❌ Неизвестный код: ${code}`);
                     addToHistory(code, null, 'unknown');
                 }
             }
-            
             saveToStorage();
             updateUI();
             renderPlanList();
@@ -936,13 +941,9 @@
 
         // ============ КАМЕРА ============
         let html5QrCode = null;
-        
         async function toggleCamera() {
-            if (STATE.cameraActive) {
-                await stopCamera();
-            } else {
-                await startCamera();
-            }
+            if (STATE.cameraActive) await stopCamera();
+            else await startCamera();
         }
 
         async function startCamera() {
@@ -951,180 +952,283 @@
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText) => {
-                        processScan(decodedText);
-                    },
-                    (error) => {}
+                    (decodedText) => processScan(decodedText),
+                    () => {}
                 );
                 STATE.cameraActive = true;
-                document.querySelector('#method-camera .btn').textContent = '⏸️ Остановить камеру';
-                log('Камера активирована', 'info');
-            } catch (err) {
-                showError('Не удалось запустить камеру: ' + err.message);
-            }
+                document.querySelector('#method-camera .btn').textContent = '⏸️ Остановить';
+            } catch (err) { showError('Ошибка камеры: ' + err.message); }
         }
 
         async function stopCamera() {
-            if (html5QrCode) {
-                await html5QrCode.stop();
-                html5QrCode.clear();
-            }
+            if (html5QrCode) { await html5QrCode.stop(); html5QrCode.clear(); }
             STATE.cameraActive = false;
             document.querySelector('#method-camera .btn').textContent = '📸 Включить камеру';
         }
 
-        // ============ RFID (ДЕМО) ============
         function simulateRfid() {
-            if (STATE.plan.length === 0) {
-                showError('Сначала загрузите план поставки!');
-                return;
-            }
-            
-            // Принимаем все не принятые короба
+            if (STATE.plan.length === 0) { showError('Сначала загрузите план!'); return; }
             let count = 0;
             STATE.plan.forEach(item => {
                 const received = STATE.received[item.barcode] || 0;
-                const expected = item.expected || 1;
-                const remaining = expected - received;
-                if (remaining > 0) {
-                    STATE.received[item.barcode] = received + remaining;
-                    count += remaining;
-                }
+                const remaining = (item.expected || 1) - received;
+                if (remaining > 0) { STATE.received[item.barcode] = received + remaining; count += remaining; }
             });
-            
-            showSuccess(`📡 RFID: Принято ${count} коробов автоматически!`);
-            log(`RFID-проход: принято ${count} коробов`, 'success');
-            saveToStorage();
-            updateUI();
-            renderPlanList();
+            showSuccess(`📡 RFID: принято ${count} коробов`);
+            saveToStorage(); updateUI(); renderPlanList();
         }
 
-        // ============ BLUETOOTH ПРИНТЕР ============
         async function connectBluetooth() {
-            if (!navigator.bluetooth) {
-                showToast('Web Bluetooth не поддерживается в этом браузере. Используйте Chrome.');
-                log('Web Bluetooth API недоступен', 'warning');
-                return;
-            }
-            
+            if (!navigator.bluetooth) { showToast('Web Bluetooth не поддерживается'); return; }
             try {
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
                 });
-                
-                STATE.bluetoothDevice = device;
                 showToast(`🖨️ Подключено: ${device.name || 'Принтер'}`);
-                log(`Bluetooth устройство подключено: ${device.name}`, 'success');
-            } catch (err) {
-                if (err.name !== 'NotFoundError') {
-                    log('Ошибка Bluetooth: ' + err.message, 'error');
-                }
-            }
+            } catch (err) {}
         }
 
-        // ============ ПЕЧАТЬ ЭТИКЕТКИ ============
         function printLabel() {
             const lastCode = Object.keys(STATE.received).pop();
             const item = STATE.plan.find(p => p.barcode === lastCode) || { product: 'Товар', barcode: 'N/A' };
-            
             const cell = generateCell();
-            
             document.getElementById('labelId').textContent = String(Object.keys(STATE.received).length).padStart(3, '0');
             document.getElementById('labelBarcode').textContent = item.barcode;
             document.getElementById('labelProduct').textContent = item.product;
             document.getElementById('labelCell').textContent = cell;
             document.getElementById('labelDate').textContent = new Date().toLocaleString('ru-RU');
-            
             document.getElementById('modalLabel').classList.add('active');
         }
 
         function generateCell() {
             const letters = ['A', 'B', 'C', 'D'];
-            const letter = letters[Math.floor(Math.random() * letters.length)];
-            const row = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
-            const col = String(Math.floor(Math.random() * 50) + 1).padStart(2, '0');
-            return `${letter}-${row}-${col}`;
+            return `${letters[Math.floor(Math.random() * letters.length)]}-${String(Math.floor(Math.random() * 20) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 50) + 1).padStart(2, '0')}`;
         }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        // ============ РАБОТА С ФАЙЛАМИ ============
-        function downloadSample() {
-            const sample = [
-                { barcode: "20001", product: "Короб: Кроссовки Nike", expected: 5 },
-                { barcode: "20002", product: "Короб: Футболки Adidas", expected: 10 },
-                { barcode: "20003", product: "Короб: Носки спортивные", expected: 50 },
-                { barcode: "20004", product: "Короб: Мячи футбольные", expected: 20 },
-                { barcode: "20005", product: "Короб: Рюкзаки", expected: 15 },
-                { barcode: "20006", product: "Короб: Шапки зимние", expected: 30 },
-                { barcode: "20007", product: "Короб: Перчатки", expected: 25 }
-            ];
-            
-            downloadFile('delivery_plan.json', JSON.stringify(sample, null, 2));
-            showToast('Тестовый план скачан');
-        }
-
+        // ============ РАБОТА С ФАЙЛАМИ (С ПОДДЕРЖКОЙ EXCEL) ============
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             
+            const ext = file.name.split('.').pop().toLowerCase();
             const reader = new FileReader();
+            
             reader.onload = (event) => {
                 try {
                     let data;
-                    if (file.name.endsWith('.csv')) {
-                        data = parseCSV(event.target.result);
-                    } else {
+                    if (ext === 'json') {
                         data = JSON.parse(event.target.result);
+                    } else if (ext === 'csv') {
+                        data = parseCSV(event.target.result);
+                    } else if (ext === 'xlsx' || ext === 'xls') {
+                        data = parseExcel(event.target.result);
+                    } else {
+                        throw new Error('Неподдерживаемый формат');
                     }
                     
-                    if (!Array.isArray(data)) throw new Error('Ожидается массив');
+                    if (!Array.isArray(data) || data.length === 0) throw new Error('Нет данных');
                     
-                    STATE.plan = data;
+                    // Валидация
+                    const validData = data.filter(item => item.barcode);
+                    if (validData.length === 0) throw new Error('Не найдена колонка со штрихкодами');
+                    
+                    STATE.plan = validData;
                     STATE.received = {};
                     STATE.errors = 0;
                     STATE.history = [];
                     
-                    const totalBoxes = data.reduce((s, i) => s + (i.expected || 1), 0);
-                    document.getElementById('planFileName').textContent = 
-                        `✅ Загружен: ${file.name} (${data.length} позиций, ${totalBoxes} коробов)`;
+                    const totalBoxes = validData.reduce((s, i) => s + (i.expected || 1), 0);
+                    document.getElementById('planFileName').innerHTML = 
+                        `✅ <strong>${file.name}</strong> — ${validData.length} позиций, ${totalBoxes} коробов`;
                     
-                    log(`План поставки загружен: ${file.name}`, 'success');
+                    log(`Загружен ${ext.toUpperCase()}: ${file.name} (${validData.length} позиций)`, 'success');
                     speak(`Загружен план: ожидается ${totalBoxes} коробов`, 'info');
                     
                     saveToStorage();
                     updateUI();
                     renderPlanList();
                     switchTab('scan');
-                    showToast('План поставки загружен!');
+                    showToast(`Загружено: ${validData.length} позиций из ${ext.toUpperCase()}`);
                 } catch (err) {
                     showError('Ошибка чтения файла: ' + err.message);
+                    log('Ошибка: ' + err.message, 'error');
                 }
             };
-            reader.readAsText(file);
+            
+            if (ext === 'xlsx' || ext === 'xls') {
+                reader.readAsArrayBuffer(file); // Для Excel нужен ArrayBuffer
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        // ПАРСИНГ EXCEL
+        function parseExcel(buffer) {
+            const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Читаем как массив массивов
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            
+            if (rows.length < 2) throw new Error('Файл пуст или имеет только заголовок');
+            
+            const headers = rows[0].map(h => String(h).trim());
+            
+            // Находим нужные колонки
+            const barcodeIdx = findColumn(headers, 'barcode');
+            const productIdx = findColumn(headers, 'product');
+            const expectedIdx = findColumn(headers, 'expected');
+            
+            if (barcodeIdx === -1) {
+                throw new Error(`Не найдена колонка со штрихкодами. Доступные: ${headers.join(', ')}`);
+            }
+            
+            log(`Excel: колонки → штрихкод: "${headers[barcodeIdx]}", товар: "${productIdx >= 0 ? headers[productIdx] : '—'}", кол-во: "${expectedIdx >= 0 ? headers[expectedIdx] : '—'}"`, 'info');
+            
+            const result = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const barcode = String(row[barcodeIdx] || '').trim();
+                if (!barcode || barcode === 'undefined') continue;
+                
+                const item = {
+                    barcode: barcode,
+                    product: productIdx >= 0 ? String(row[productIdx] || barcode).trim() : `Товар ${barcode}`,
+                    expected: expectedIdx >= 0 ? parseInt(row[expectedIdx]) || 1 : 1
+                };
+                
+                result.push(item);
+            }
+            
+            if (result.length === 0) throw new Error('Не удалось извлечь данные из файла');
+            
+            return result;
         }
 
         function parseCSV(text) {
             const lines = text.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-            return lines.slice(1).map(line => {
-                const values = line.split(',');
-                const obj = {};
-                headers.forEach((h, i) => {
-                    obj[h] = isNaN(values[i]) ? values[i] : Number(values[i]);
-                });
-                return obj;
+            const headers = lines[0].split(/[;,]/).map(h => h.trim());
+            const barcodeIdx = findColumn(headers, 'barcode');
+            const productIdx = findColumn(headers, 'product');
+            const expectedIdx = findColumn(headers, 'expected');
+            
+            if (barcodeIdx === -1) throw new Error('Не найдена колонка со штрихкодами');
+            
+            return lines.slice(1).filter(l => l.trim()).map(line => {
+                const values = line.split(/[;,]/);
+                const barcode = String(values[barcodeIdx] || '').trim();
+                return {
+                    barcode: barcode,
+                    product: productIdx >= 0 ? String(values[productIdx] || barcode).trim() : `Товар ${barcode}`,
+                    expected: expectedIdx >= 0 ? parseInt(values[expectedIdx]) || 1 : 1
+                };
+            }).filter(i => i.barcode);
+        }
+
+        // ГЕНЕРАЦИЯ EXCEL-ШАБЛОНА
+        function downloadExcelTemplate() {
+            const sampleData = [
+                ['Штрихкод', 'Товар', 'Количество'],
+                ['20001', 'Короб: Кроссовки Nike', 5],
+                ['20002', 'Короб: Футболки Adidas', 10],
+                ['20003', 'Короб: Носки спортивные', 50],
+                ['20004', 'Короб: Мячи футбольные', 20],
+                ['20005', 'Короб: Рюкзаки', 15],
+                ['20006', 'Короб: Шапки зимние', 30]
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'План поставки');
+            
+            // Ширина колонок
+            ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 12 }];
+            
+            XLSX.writeFile(wb, 'шаблон_поставки.xlsx');
+            showToast('Excel-шаблон скачан');
+            log('Сгенерирован шаблон Excel', 'info');
+        }
+
+        // ЭКСПОРТ ПЛАНА В EXCEL
+        function exportPlanExcel() {
+            if (STATE.plan.length === 0) { showToast('Нет плана'); return; }
+            
+            const data = [
+                ['Штрихкод', 'Товар', 'Ожидается', 'Принято', 'Статус'],
+                ...STATE.plan.map(item => {
+                    const received = STATE.received[item.barcode] || 0;
+                    const expected = item.expected || 1;
+                    const status = received >= expected ? '✅ Закрыто' : (received > 0 ? `⏳ ${received}/${expected}` : '❌ Не принято');
+                    return [item.barcode, item.product, expected, received, status];
+                })
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'План');
+            XLSX.writeFile(wb, `план_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('План выгружен в Excel');
+        }
+
+        // ЭКСПОРТ ОТЧЕТА В EXCEL
+        function exportReportExcel() {
+            const received = Object.entries(STATE.received).map(([code, qty]) => {
+                const item = STATE.plan.find(p => p.barcode === code);
+                return [
+                    code,
+                    item ? item.product : 'Неизвестный товар',
+                    item ? (item.expected || 1) : qty,
+                    qty,
+                    item && qty >= (item.expected || 1) ? '✅ Норма' : '⚠️ Расхождение'
+                ];
             });
+            
+            const data = [
+                ['Отчет о приемке', '', '', '', ''],
+                [`Дата: ${new Date().toLocaleString('ru-RU')}`, '', '', '', ''],
+                [`Сессия: ${STATE.sessionId}`, '', '', '', ''],
+                ['', '', '', '', ''],
+                ['Штрихкод', 'Товар', 'План', 'Факт', 'Статус'],
+                ...received,
+                ['', '', '', '', ''],
+                ['ИТОГО:', '', 
+                    STATE.plan.reduce((s, i) => s + (i.expected || 1), 0),
+                    Object.values(STATE.received).reduce((s, c) => s + c, 0),
+                    `Ошибок: ${STATE.errors}`
+                ]
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 10 }, { wch: 10 }, { wch: 15 }];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Отчет');
+            XLSX.writeFile(wb, `отчет_приемки_${Date.now()}.xlsx`);
+            showToast('Отчет сформирован');
+            log('Отчет экспортирован в Excel', 'success');
+        }
+
+        function downloadSample() {
+            const sample = [
+                { barcode: "20001", product: "Короб: Кроссовки Nike", expected: 5 },
+                { barcode: "20002", product: "Короб: Футболки Adidas", expected: 10 },
+                { barcode: "20003", product: "Короб: Носки спортивные", expected: 50 },
+                { barcode: "20004", product: "Короб: Мячи футбольные", expected: 20 },
+                { barcode: "20005", product: "Короб: Рюкзаки", expected: 15 }
+            ];
+            downloadFile('delivery_plan.json', JSON.stringify(sample, null, 2));
         }
 
         function exportPlan() {
-            if (STATE.plan.length === 0) {
-                showToast('Нет плана для экспорта');
-                return;
-            }
+            if (STATE.plan.length === 0) { showToast('Нет плана'); return; }
             downloadFile('plan_export.json', JSON.stringify(STATE.plan, null, 2));
         }
 
@@ -1150,11 +1254,10 @@
             URL.revokeObjectURL(url);
         }
 
-        // ============ UI ИНДИКАЦИЯ ============
+        // ============ UI ============
         function showSuccess(msg) {
             displayResult(msg, 'success');
-            playBeep('success');
-            vibrate(50);
+            playBeep('success'); vibrate(50);
             if (STATE.settings.flash) {
                 document.body.classList.add('flash-success');
                 setTimeout(() => document.body.classList.remove('flash-success'), 700);
@@ -1165,8 +1268,7 @@
         function showError(msg) {
             displayResult(msg, 'error');
             STATE.errors++;
-            playBeep('error');
-            vibrate([100, 50, 100, 50, 100]);
+            playBeep('error'); vibrate([100, 50, 100, 50, 100]);
             if (STATE.settings.flash) {
                 document.body.classList.add('flash-error');
                 setTimeout(() => document.body.classList.remove('flash-error'), 700);
@@ -1177,8 +1279,7 @@
 
         function showWarning(msg) {
             displayResult(msg, 'warning');
-            playBeep('warning');
-            vibrate([50, 50, 50]);
+            playBeep('warning'); vibrate([50, 50, 50]);
             if (STATE.settings.flash) {
                 document.body.classList.add('flash-warning');
                 setTimeout(() => document.body.classList.remove('flash-warning'), 700);
@@ -1200,7 +1301,6 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // ============ ОБНОВЛЕНИЕ UI ============
         function updateUI() {
             const totalExpected = STATE.plan.reduce((s, i) => s + (i.expected || 1), 0);
             const totalReceived = Object.values(STATE.received).reduce((s, c) => s + c, 0);
@@ -1216,10 +1316,9 @@
         function renderPlanList() {
             const list = document.getElementById('planList');
             if (STATE.plan.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>План пуст. Загрузите файл поставки.</p></div>';
+                list.innerHTML = '<div class="empty-state"><span class="icon">📋</span><p>План пуст. Загрузите Excel/CSV/JSON</p></div>';
                 return;
             }
-            
             list.innerHTML = STATE.plan.map(item => {
                 const received = STATE.received[item.barcode] || 0;
                 const expected = item.expected || 1;
@@ -1238,13 +1337,11 @@
             }).join('');
         }
 
-        // ============ ВКЛАДКИ ============
-        function switchTab(tab) {
+        function switchTab(tab, e) {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tab).style.display = 'block';
-            event.target.classList.add('active');
-            
+            if (e && e.target) e.target.classList.add('active');
             if (tab === 'plan') renderPlanList();
             if (tab === 'history') renderHistory();
         }
@@ -1253,35 +1350,18 @@
             STATE.currentMethod = method;
             document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`[data-method="${method}"]`).classList.add('active');
-            
             document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
             document.getElementById('method-' + method).classList.add('active');
-            
-            if (method === 'scanner') {
-                document.getElementById('scannerInput').focus();
-            }
-            if (method !== 'camera' && STATE.cameraActive) {
-                stopCamera();
-            }
+            if (method === 'scanner') document.getElementById('scannerInput').focus();
+            if (method !== 'camera' && STATE.cameraActive) stopCamera();
         }
 
-        // ============ НАСТРОЙКИ ============
         function toggleSetting(key) {
             STATE.settings[key] = !STATE.settings[key];
             const toggle = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
-            toggle.classList.toggle('active');
+            if (toggle) toggle.classList.toggle('active');
             saveToStorage();
-            
-            const names = {
-                sound: 'Звуковые сигналы',
-                voice: 'Голосовое сопровождение',
-                vibrate: 'Вибрация',
-                flash: 'Вспышки экрана',
-                sync: 'Синхронизация',
-                blind: 'Слепая приемка',
-                sample: 'Выборочный контроль'
-            };
-            showToast(`${names[key]}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
+            showToast(`${key}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
         }
 
         function setVolume(val) {
@@ -1290,7 +1370,6 @@
             saveToStorage();
         }
 
-        // ============ ЛОГИ ============
         function log(text, type = 'info') {
             const logDiv = document.getElementById('log');
             const time = new Date().toLocaleTimeString('ru-RU');
@@ -1298,7 +1377,6 @@
             entry.className = `log-entry ${type}`;
             entry.textContent = `[${time}] ${text}`;
             logDiv.prepend(entry);
-            
             STATE.history.unshift({ time, text, type });
             if (STATE.history.length > 500) STATE.history.pop();
         }
@@ -1306,11 +1384,10 @@
         function addToHistory(code, item, status) {
             const msg = `${item ? item.product : code} - ${
                 status === 'ok' ? 'Принято' :
-                status === 'error' ? 'Ошибка' :
                 status === 'unknown' ? 'Неизвестный' :
                 status === 'overscan' ? 'Превышение' :
                 status === 'sample' ? 'Выборочный контроль' :
-                status === 'blind' ? 'Слепая приемка' : status
+                status === 'blind' ? 'Слепая' : status
             }`;
             log(msg, status === 'ok' ? 'success' : (status === 'unknown' || status === 'overscan' ? 'error' : 'warning'));
         }
@@ -1321,7 +1398,6 @@
                 recent.innerHTML = '<div class="empty-state"><p>Нет операций</p></div>';
                 return;
             }
-            
             recent.innerHTML = STATE.history.slice(0, 20).map(h => `
                 <div class="recent-item">
                     <div>
@@ -1340,23 +1416,18 @@
             }
         }
 
-        // ============ ДЕЙСТВИЯ ============
         function undoLast() {
             const lastCode = Object.keys(STATE.received).pop();
-            if (!lastCode) {
-                showToast('Нечего отменять');
-                return;
-            }
+            if (!lastCode) { showToast('Нечего отменять'); return; }
             STATE.received[lastCode]--;
             if (STATE.received[lastCode] <= 0) delete STATE.received[lastCode];
-            log(`Отменено сканирование: ${lastCode}`, 'warning');
             showWarning('Отменено последнее сканирование');
             saveToStorage();
             updateUI();
         }
 
         function resetSession() {
-            if (confirm('Сбросить всю текущую сессию?')) {
+            if (confirm('Сбросить сессию?')) {
                 STATE.received = {};
                 STATE.errors = 0;
                 STATE.history = [];
@@ -1367,26 +1438,12 @@
             }
         }
 
-        // ============ ХРАНИЛИЩЕ И СИНХРОНИЗАЦИЯ ============
         function saveToStorage() {
             const data = {
-                plan: STATE.plan,
-                received: STATE.received,
-                errors: STATE.errors,
-                history: STATE.history,
-                settings: STATE.settings,
-                timestamp: Date.now()
+                plan: STATE.plan, received: STATE.received, errors: STATE.errors,
+                history: STATE.history, settings: STATE.settings, timestamp: Date.now()
             };
             localStorage.setItem('wms_session', JSON.stringify(data));
-            
-            // Событие для других вкладок
-            if (STATE.settings.sync) {
-                localStorage.setItem('wms_sync_' + Date.now(), JSON.stringify({
-                    type: 'update',
-                    data: data,
-                    sender: STATE.sessionId
-                }));
-            }
         }
 
         function loadFromStorage() {
@@ -1399,50 +1456,26 @@
                     STATE.errors = data.errors || 0;
                     STATE.history = data.history || [];
                     STATE.settings = { ...STATE.settings, ...data.settings };
-                    
-                    // Применить настройки к UI
                     Object.keys(STATE.settings).forEach(key => {
                         const toggle = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
                         if (toggle) toggle.classList.toggle('active', STATE.settings[key]);
                     });
-                    
                     document.getElementById('volumeSlider').value = STATE.settings.volume;
                     document.getElementById('volumeLabel').textContent = STATE.settings.volume + '%';
-                    
-                    log('Восстановлена предыдущая сессия', 'info');
                 } catch (e) {}
             }
         }
 
         function handleStorageSync(e) {
             if (!STATE.settings.sync) return;
-            
             if (e.key === 'wms_session') {
                 try {
                     const data = JSON.parse(e.newValue);
-                    if (data && data.timestamp !== STATE.lastSyncTimestamp) {
-                        STATE.plan = data.plan;
-                        STATE.received = data.received;
-                        STATE.errors = data.errors;
-                        STATE.lastSyncTimestamp = data.timestamp;
-                        updateUI();
-                        renderPlanList();
+                    if (data) {
+                        STATE.plan = data.plan; STATE.received = data.received;
+                        STATE.errors = data.errors; updateUI(); renderPlanList();
                     }
                 } catch (err) {}
-            }
-            
-            if (e.key && e.key.startsWith('wms_sync_')) {
-                try {
-                    const msg = JSON.parse(e.newValue);
-                    if (msg.sender !== STATE.sessionId) {
-                        const devices = new Set();
-                        devices.add(STATE.sessionId);
-                        devices.add(msg.sender);
-                        localStorage.setItem('wms_active_devices', devices.size);
-                    }
-                } catch (err) {}
-                
-                setTimeout(() => localStorage.removeItem(e.key), 5000);
             }
         }
 
@@ -1458,11 +1491,9 @@
             }
         }
 
-        // ============ PWA ============
-        // Регистрация Service Worker для офлайн режима
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE = 'wms-v1';
+                const CACHE = 'wms-v2';
                 self.addEventListener('install', e => self.skipWaiting());
                 self.addEventListener('activate', e => self.clients.claim());
                 self.addEventListener('fetch', e => {
@@ -1470,9 +1501,7 @@
                         caches.open(CACHE).then(cache => 
                             cache.match(e.request).then(resp => 
                                 resp || fetch(e.request).then(fetchResp => {
-                                    if (e.request.url.startsWith('http')) {
-                                        cache.put(e.request, fetchResp.clone());
-                                    }
+                                    if (e.request.url.startsWith('http')) cache.put(e.request, fetchResp.clone());
                                     return fetchResp;
                                 }).catch(() => new Response('Offline', {status: 503}))
                             )
@@ -1481,20 +1510,16 @@
                 });
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(swUrl).catch(() => {});
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
         }
 
-        // Предупреждение о закрытии при активной сессии
         window.addEventListener('beforeunload', (e) => {
-            const received = Object.values(STATE.received).reduce((s, c) => s + c, 0);
-            if (received > 0) {
+            if (Object.values(STATE.received).reduce((s, c) => s + c, 0) > 0) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         });
 
-        // Глобальные горячие клавиши
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F2') setInputMethod('scanner');
             if (e.key === 'F3') setInputMethod('camera');
