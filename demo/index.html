@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <title>WMS Pro - Приемка с голосом</title>
+    <title>WMS Pro - Голос по штрихкоду</title>
     
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -213,7 +213,6 @@
             overflow: hidden;
         }
 
-        /* ===== КРУПНЫЙ ЭКРАН ПРИЕМКИ ===== */
         .scan-result {
             text-align: center;
             padding: 30px 20px;
@@ -247,11 +246,22 @@
             color: var(--text);
         }
 
-        .scan-result .counter-text {
-            font-size: 2.5rem;
+        .scan-result .barcode-display {
+            font-size: 3rem;
             font-weight: 900;
             margin: 10px 0;
-            letter-spacing: 1px;
+            letter-spacing: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .scan-result.success .barcode-display { color: var(--success); }
+        .scan-result.error .barcode-display { color: var(--error); }
+        .scan-result.warning .barcode-display { color: var(--warning); }
+
+        .scan-result .counter-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 5px 0;
         }
 
         .scan-result.success .counter-text { color: var(--success); }
@@ -259,19 +269,19 @@
         .scan-result.warning .counter-text { color: var(--warning); }
 
         .scan-result .product-name {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
             margin-top: 5px;
         }
 
         .scan-result .closed-badge {
             display: inline-block;
-            padding: 5px 15px;
+            padding: 8px 20px;
             background: var(--success);
             color: #000;
-            border-radius: 20px;
+            border-radius: 25px;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 1.1rem;
             margin-top: 10px;
             animation: pulseClosed 1s infinite;
         }
@@ -656,6 +666,22 @@
             color: var(--primary) !important;
         }
 
+        .barcode-digits-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--card-light);
+            border-radius: 8px;
+        }
+
+        .barcode-digits-selector label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
         @media (max-width: 600px) {
             .stats { grid-template-columns: repeat(2, 1fr); }
             .settings-grid { grid-template-columns: 1fr; }
@@ -663,7 +689,8 @@
             .tab { font-size: 0.8rem; padding: 8px 4px; }
             .modal-content { padding: 15px; }
             .mapping-actions { flex-direction: column; }
-            .scan-result .counter-text { font-size: 2rem; }
+            .scan-result .barcode-display { font-size: 2.5rem; }
+            .scan-result .counter-text { font-size: 1.5rem; }
             .scan-result .main-text { font-size: 1.2rem; }
         }
     </style>
@@ -758,7 +785,6 @@
                 </div>
             </div>
 
-            <!-- УЛУЧШЕННЫЙ ЭКРАН РЕЗУЛЬТАТА -->
             <div id="scanResult" class="scan-result" style="display:none;"></div>
 
             <div class="card">
@@ -837,10 +863,6 @@
                         <div class="toggle active" id="toggleVoice" onclick="toggleSetting('voice')"></div>
                     </div>
                     <div class="setting-item">
-                        <span>🏷️ Озвучивать товар</span>
-                        <div class="toggle active" id="toggleSpeakProduct" onclick="toggleSetting('speakProduct')"></div>
-                    </div>
-                    <div class="setting-item">
                         <span>🔢 Цифры словами</span>
                         <div class="toggle active" id="toggleNumbersAsWords" onclick="toggleSetting('numbersAsWords')"></div>
                     </div>
@@ -852,6 +874,13 @@
                         <span>💡 Вспышки</span>
                         <div class="toggle active" id="toggleFlash" onclick="toggleSetting('flash')"></div>
                     </div>
+                </div>
+                <div class="barcode-digits-selector">
+                    <strong>🔢 Цифр в озвучке:</strong>
+                    <label><input type="radio" name="barcodeDigits" value="2" onchange="setBarcodeDigits(2)"> 2</label>
+                    <label><input type="radio" name="barcodeDigits" value="3" onchange="setBarcodeDigits(3)"> 3</label>
+                    <label><input type="radio" name="barcodeDigits" value="4" checked onchange="setBarcodeDigits(4)"> 4</label>
+                    <label><input type="radio" name="barcodeDigits" value="5" onchange="setBarcodeDigits(5)"> 5</label>
                 </div>
                 <div class="volume-control">
                     <span>🔈</span>
@@ -952,7 +981,7 @@
             settings: {
                 sound: true, voice: true, vibrate: true, flash: true,
                 sync: true, blind: false, sample: false, 
-                speakProduct: true, numbersAsWords: true,
+                numbersAsWords: true, barcodeDigits: 4,
                 volume: 80
             },
             sessionId: 'sess_' + Math.random().toString(36).substr(2, 9),
@@ -963,6 +992,12 @@
             voices: [],
             pendingFile: null
         };
+
+        // ============ ИЗВЛЕЧЕНИЕ ПОСЛЕДНИХ ЦИФР ============
+        function getLastDigits(barcode, count = 4) {
+            const digits = String(barcode).replace(/\D/g, ''); // Только цифры
+            return digits.slice(-count) || digits;
+        }
 
         // ============ ЧИСЛА СЛОВАМИ (РУССКИЙ) ============
         function numberToWordsRu(num) {
@@ -1022,7 +1057,14 @@
             return result.trim();
         }
 
-        // Плюральная форма для "штука"
+        // Произношение цифр по отдельности (для штрихкода)
+        function speakDigits(digits) {
+            return digits.split('').map(d => {
+                const num = parseInt(d);
+                return numberToWordsRu(num);
+            }).join(' ');
+        }
+
         function pluralItems(n) {
             const mod10 = n % 10;
             const mod100 = n % 100;
@@ -1193,7 +1235,6 @@
             
             log(`Загружен файл: ${fileName} (${result.length} позиций)`, 'success');
             
-            // ГОЛОСОВОЕ ПРИВЕТСТВИЕ ПРИ ЗАГРУЗКЕ
             const totalWords = STATE.settings.numbersAsWords ? numberToWordsRu(totalBoxes) : totalBoxes;
             speak(`Загружен план поставки. Ожидается ${totalWords} ${pluralItems(totalBoxes)}.`, 'info');
             
@@ -1224,7 +1265,7 @@
             }, 2000);
             
             document.getElementById('sessionId').textContent = STATE.sessionId;
-            log('Система готова. Голос: "Принято. Осталось X"', 'info');
+            log('Система готова. Голос озвучивает последние цифры штрихкода', 'info');
         });
 
         function setupEventListeners() {
@@ -1316,21 +1357,21 @@
             navigator.vibrate(pattern);
         }
 
-        // ============ СКАНИРОВАНИЕ (С НОВОЙ ЛОГИКОЙ ГОЛОСА) ============
+        // ============ СКАНИРОВАНИЕ ============
         function processScan(code) {
             code = String(code).trim();
             if (!code) return;
             
             const now = Date.now();
             if (STATE.lastScan && STATE.lastScan.code === code && (now - STATE.lastScan.time) < 2000) {
-                showWarning('Дублирующее сканирование');
+                showWarning('Дублирующее сканирование', code);
                 return;
             }
             STATE.lastScan = { code, time: now };
             playBeep('scan');
             
             if (STATE.plan.length === 0) {
-                showError('Сначала загрузите план поставки!');
+                showError('Сначала загрузите план поставки!', code);
                 return;
             }
             
@@ -1342,7 +1383,7 @@
                 
                 if (received >= expected) {
                     const errMsg = `Лимит превышен`;
-                    showError(errMsg, item.product, `${received}/${expected}`);
+                    showError(errMsg, code, `${received}/${expected}`);
                     addToHistory(code, item, 'overscan');
                     return;
                 }
@@ -1350,17 +1391,14 @@
                 STATE.received[code] = received + 1;
                 const remaining = expected - STATE.received[code];
                 
-                // Выборочный контроль
                 if (STATE.settings.sample && Math.random() < 0.1) {
-                    showWarning('ВНИМАНИЕ! Выборочный контроль. Вскройте короб.', item.product);
+                    showWarning('ВНИМАНИЕ! Выборочный контроль', code);
                     addToHistory(code, item, 'sample');
                 } else if (remaining === 0) {
-                    // ПОЗИЦИЯ ЗАКРЫТА ПОЛНОСТЬЮ
-                    showClosed(item.product);
+                    showClosed(code);
                     addToHistory(code, item, 'ok');
                 } else {
-                    // ОБЫЧНОЕ ПРИНЯТИЕ
-                    showAccepted(item.product, remaining, expected);
+                    showAccepted(code, remaining, expected);
                     addToHistory(code, item, 'ok');
                 }
             } else {
@@ -1379,28 +1417,30 @@
             renderPlanList();
         }
 
-        // ============ НОВЫЕ ФУНКЦИИ ОТОБРАЖЕНИЯ И ОЗВУЧКИ ============
+        // ============ НОВЫЕ ФУНКЦИИ ОТОБРАЖЕНИЯ (С ЦИФРАМИ ШТРИХКОДА) ============
         
-        function showAccepted(productName, remaining, total) {
+        function showAccepted(barcode, remaining, total) {
             const el = document.getElementById('scanResult');
             el.style.display = 'flex';
             el.className = 'scan-result success';
             
-            // Текст на экране
+            const lastDigits = getLastDigits(barcode, STATE.settings.barcodeDigits);
+            const productName = STATE.plan.find(p => p.barcode === barcode)?.product || '';
+            
             el.innerHTML = `
                 <div class="main-text">✅ ПРИНЯТО</div>
+                <div class="barcode-display">${lastDigits}</div>
                 <div class="counter-text">Осталось: ${remaining}</div>
                 <div class="product-name">${productName}</div>
             `;
             
-            // Голос
+            // Голос: "Принято. 0 0 0 1. Осталось пять штук."
             let voiceText = 'Принято.';
-            if (STATE.settings.speakProduct) {
-                voiceText += ` ${productName}.`;
-            }
             if (STATE.settings.numbersAsWords) {
+                voiceText += ` ${speakDigits(lastDigits)}.`;
                 voiceText += ` Осталось ${numberToWordsRu(remaining)} ${pluralItems(remaining)}.`;
             } else {
+                voiceText += ` ${lastDigits}.`;
                 voiceText += ` Осталось ${remaining} ${pluralItems(remaining)}.`;
             }
             
@@ -1413,27 +1453,33 @@
                 setTimeout(() => document.body.classList.remove('flash-success'), 700);
             }
             
-            log(`Принято: ${productName}. Осталось: ${remaining}/${total}`, 'success');
+            log(`Принято: ${barcode} (${lastDigits}). Осталось: ${remaining}/${total}`, 'success');
         }
         
-        function showClosed(productName) {
+        function showClosed(barcode) {
             const el = document.getElementById('scanResult');
             el.style.display = 'flex';
             el.className = 'scan-result success';
             
+            const lastDigits = getLastDigits(barcode, STATE.settings.barcodeDigits);
+            const productName = STATE.plan.find(p => p.barcode === barcode)?.product || '';
+            
             el.innerHTML = `
                 <div class="main-text">🎉 ОТЛИЧНО!</div>
-                <div class="counter-text">ПОЗИЦИЯ ЗАКРЫТА</div>
+                <div class="barcode-display">${lastDigits}</div>
+                <div class="counter-text">ЗАКРЫТО ПОЛНОСТЬЮ</div>
                 <div class="product-name">${productName}</div>
                 <div class="closed-badge">✓ Полностью принято</div>
             `;
             
-            let voiceText = 'Отлично! Позиция полностью принята.';
-            if (STATE.settings.speakProduct) {
-                voiceText += ` ${productName}.`;
+            let voiceText = 'Отлично!';
+            if (STATE.settings.numbersAsWords) {
+                voiceText += ` ${speakDigits(lastDigits)} закрыт полностью.`;
+            } else {
+                voiceText += ` ${lastDigits} закрыт полностью.`;
             }
             
-            playBeep('closed'); // Торжественный аккорд
+            playBeep('closed');
             vibrate([50, 50, 50, 50, 100]);
             speak(voiceText, 'closed');
             
@@ -1442,24 +1488,32 @@
                 setTimeout(() => document.body.classList.remove('flash-success'), 1000);
             }
             
-            log(`✅ ПОЗИЦИЯ ЗАКРЫТА: ${productName}`, 'success');
+            log(`✅ ПОЗИЦИЯ ЗАКРЫТА: ${barcode} (${lastDigits})`, 'success');
         }
         
-        function showError(message, detail = '', counter = '') {
+        function showError(message, barcode = '', counter = '') {
             const el = document.getElementById('scanResult');
             el.style.display = 'flex';
             el.className = 'scan-result error';
             
+            const lastDigits = barcode ? getLastDigits(barcode, STATE.settings.barcodeDigits) : '';
+            
             el.innerHTML = `
                 <div class="main-text">❌ ${message}</div>
+                ${lastDigits ? `<div class="barcode-display">${lastDigits}</div>` : ''}
                 ${counter ? `<div class="counter-text">${counter}</div>` : ''}
-                <div class="product-name">${detail}</div>
             `;
             
             STATE.errors++;
             
             let voiceText = `Ошибка. ${message}.`;
-            if (detail) voiceText += ` ${detail}.`;
+            if (barcode) {
+                if (STATE.settings.numbersAsWords) {
+                    voiceText += ` ${speakDigits(lastDigits)}.`;
+                } else {
+                    voiceText += ` ${lastDigits}.`;
+                }
+            }
             
             playBeep('error');
             vibrate([100, 50, 100, 50, 100]);
@@ -1470,22 +1524,30 @@
                 setTimeout(() => document.body.classList.remove('flash-error'), 700);
             }
             
-            log(`❌ Ошибка: ${message} ${detail}`, 'error');
+            log(`❌ Ошибка: ${message} ${barcode}`, 'error');
             updateUI();
         }
         
-        function showWarning(message, detail = '') {
+        function showWarning(message, barcode = '') {
             const el = document.getElementById('scanResult');
             el.style.display = 'flex';
             el.className = 'scan-result warning';
             
+            const lastDigits = barcode ? getLastDigits(barcode, STATE.settings.barcodeDigits) : '';
+            
             el.innerHTML = `
                 <div class="main-text">⚠️ ${message}</div>
-                <div class="product-name">${detail}</div>
+                ${lastDigits ? `<div class="barcode-display">${lastDigits}</div>` : ''}
             `;
             
             let voiceText = `Внимание. ${message}.`;
-            if (detail) voiceText += ` ${detail}.`;
+            if (barcode) {
+                if (STATE.settings.numbersAsWords) {
+                    voiceText += ` ${speakDigits(lastDigits)}.`;
+                } else {
+                    voiceText += ` ${lastDigits}.`;
+                }
+            }
             
             playBeep('warning');
             vibrate([50, 50, 50]);
@@ -1496,7 +1558,7 @@
                 setTimeout(() => document.body.classList.remove('flash-warning'), 700);
             }
             
-            log(`⚠️ ${message} ${detail}`, 'warning');
+            log(`⚠️ ${message} ${barcode}`, 'warning');
         }
 
         function manualScan() {
@@ -1531,7 +1593,7 @@
                 );
                 STATE.cameraActive = true;
                 document.querySelector('#method-camera .btn').textContent = '⏸️ Остановить';
-            } catch (err) { showError('Ошибка камеры', err.message); }
+            } catch (err) { showError('Ошибка камеры', '', err.message); }
         }
 
         async function stopCamera() {
@@ -1625,7 +1687,7 @@
                     showMappingModal(headers, rows, file.name, totalRows);
                     
                 } catch (err) {
-                    showError('Ошибка чтения файла', err.message);
+                    showError('Ошибка чтения файла', '', err.message);
                     document.getElementById('fileInput').value = '';
                 }
             };
@@ -1772,11 +1834,12 @@
                 const received = STATE.received[item.barcode] || 0;
                 const expected = item.expected || 1;
                 const done = received >= expected;
+                const lastDigits = getLastDigits(item.barcode, STATE.settings.barcodeDigits);
                 return `
                     <div class="recent-item" style="${done ? 'opacity:0.5;' : ''}">
                         <div>
                             <div style="font-weight:bold;">${done ? '✅' : '⏳'} ${item.product}</div>
-                            <div style="font-size:0.8rem;color:var(--text-muted);">Код: ${item.barcode}</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Код: ${item.barcode} (…${lastDigits})</div>
                         </div>
                         <div style="text-align:right;">
                             <div style="font-size:1.3rem;font-weight:bold;">${received}/${expected}</div>
@@ -1814,17 +1877,21 @@
             const names = {
                 sound: 'Звук', voice: 'Голос', vibrate: 'Вибрация', flash: 'Вспышки',
                 sync: 'Синхронизация', blind: 'Слепая приемка', sample: 'Выборочный контроль',
-                speakProduct: 'Озвучка товара', numbersAsWords: 'Цифры словами'
+                numbersAsWords: 'Цифры словами'
             };
             showToast(`${names[key]}: ${STATE.settings[key] ? 'вкл' : 'выкл'}`);
             
-            // Тестовая озвучка при включении
-            if (key === 'speakProduct' && STATE.settings.speakProduct) {
-                speak('Принято. Кроссовки Найк. Осталось пять штук.', 'success');
-            }
             if (key === 'numbersAsWords') {
                 speak(STATE.settings.numbersAsWords ? 'Теперь числа произносятся словами' : 'Теперь числа произносятся цифрами', 'info');
             }
+        }
+
+        function setBarcodeDigits(count) {
+            STATE.settings.barcodeDigits = count;
+            saveToStorage();
+            showToast(`Озвучивается ${count} последних цифр`);
+            // Тестовая озвучка
+            speak(`Тест. ${STATE.settings.numbersAsWords ? speakDigits('12345'.slice(-count)) : '12345'.slice(-count)}`, 'info');
         }
 
         function setVolume(val) {
@@ -1845,7 +1912,8 @@
         }
 
         function addToHistory(code, item, status) {
-            const msg = `${item ? item.product : code} - ${
+            const lastDigits = getLastDigits(code, STATE.settings.barcodeDigits);
+            const msg = `…${lastDigits} - ${
                 status === 'ok' ? 'Принято' :
                 status === 'unknown' ? 'Неизвестный' :
                 status === 'overscan' ? 'Превышение' :
@@ -1884,7 +1952,7 @@
             if (!lastCode) { showToast('Нечего отменять'); return; }
             STATE.received[lastCode]--;
             if (STATE.received[lastCode] <= 0) delete STATE.received[lastCode];
-            showWarning('Отменено последнее сканирование');
+            showWarning('Отменено последнее сканирование', lastCode);
             saveToStorage();
             updateUI();
         }
@@ -1926,6 +1994,9 @@
                     });
                     document.getElementById('volumeSlider').value = STATE.settings.volume;
                     document.getElementById('volumeLabel').textContent = STATE.settings.volume + '%';
+                    // Восстановить выбор количества цифр
+                    const radio = document.querySelector(`input[name="barcodeDigits"][value="${STATE.settings.barcodeDigits}"]`);
+                    if (radio) radio.checked = true;
                 } catch (e) {}
             }
         }
@@ -1957,7 +2028,7 @@
 
         if ('serviceWorker' in navigator) {
             const swCode = `
-                const CACHE = 'wms-v4';
+                const CACHE = 'wms-v5';
                 self.addEventListener('install', e => self.skipWaiting());
                 self.addEventListener('activate', e => self.clients.claim());
                 self.addEventListener('fetch', e => {
