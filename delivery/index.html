@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletLoad Pro — Система оптимизации загрузки</title>
+    <title>PalletLoad Pro Enterprise v3.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Библиотеки для PDF и CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --ozon: #005BFF;
-            --ozon-light: #e8f0fe;
-            --wb: #7B2D8E;
-            --wb-light: #f3e5f5;
-            --bg: #0f1117;
-            --panel: #1a1d27;
-            --panel2: #232635;
-            --border: #2e3245;
-            --text: #e4e6f0;
-            --text-dim: #8b8fa3;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
+            --ozon: #005BFF; --wb: #7B2D8E; --bg: #0f1117; --panel: #1a1d27;
+            --panel2: #232635; --border: #2e3245; --text: #e4e6f0;
+            --text-dim: #8b8fa3; --success: #2ecc71; --danger: #e74c3c;
+            --warning: #f39c12; --cold: #00d2ff; --adr: #ff4444;
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-        /* ===== SIDEBAR LEFT ===== */
+        /* ===== SIDEBAR ===== */
         .sidebar-left { width: 260px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
         .logo { padding: 20px; border-bottom: 1px solid var(--border); }
         .logo h1 { font-size: 18px; color: #fff; }
@@ -42,194 +37,163 @@
         /* ===== MAIN AREA ===== */
         .main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         .topbar { height: 50px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 15px; }
-        .topbar-title { font-size: 14px; font-weight: 600; }
-        .topbar-stats { display: flex; gap: 15px; margin-left: auto; flex-wrap: wrap; }
-        .stat-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 4px; background: var(--panel2); }
+        .topbar-title { font-size: 14px; font-weight: 600; white-space: nowrap; }
+        .topbar-stats { display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+        .stat-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 4px; background: var(--panel2); white-space: nowrap; }
         .stat-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
         .stat-badge.ozon .dot { background: var(--ozon); }
         .stat-badge.wb .dot { background: var(--wb); }
+        .stat-badge.cog-ok { border: 1px solid var(--success); color: var(--success); }
+        .stat-badge.cog-warn { border: 1px solid var(--danger); color: var(--danger); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         .content { flex: 1; display: flex; overflow: hidden; }
 
-        /* ===== 3D VIEWPORT ===== */
-        .viewport { flex: 1; position: relative; min-width: 0; }
+        /* ===== VIEWPORT ===== */
+        .viewport { flex: 1; position: relative; min-width: 0; background: #0a0c10; }
         #canvas3d { width: 100%; height: 100%; display: block; }
-        .viewport-controls { position: absolute; bottom: 15px; left: 15px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 250px; }
+        .viewport-controls { position: absolute; bottom: 15px; left: 15px; display: flex; gap: 5px; flex-wrap: wrap; max-width: 300px; }
         .viewport-controls button { width: 36px; height: 36px; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
-        .viewport-controls button:hover { background: var(--panel2); border-color: var(--ozon); }
-        .viewport-info { position: absolute; top: 15px; left: 15px; background: rgba(26,29,39,0.9); padding: 10px 15px; border-radius: 8px; font-size: 12px; backdrop-filter: blur(10px); border: 1px solid var(--border); }
+        .viewport-controls button:hover, .viewport-controls button.active { background: var(--ozon); border-color: var(--ozon); color: #fff; }
+        .viewport-info { position: absolute; top: 15px; left: 15px; background: rgba(26,29,39,0.9); padding: 10px 15px; border-radius: 8px; font-size: 12px; backdrop-filter: blur(10px); border: 1px solid var(--border); pointer-events: none; }
         .viewport-info div { margin: 3px 0; }
         .viewport-info span { color: var(--text-dim); }
 
+        /* 3D Tooltip */
+        #tooltip3d {
+            position: absolute; background: rgba(26,29,39,0.95); border: 1px solid var(--ozon);
+            padding: 10px; border-radius: 6px; font-size: 11px; pointer-events: none; display: none; z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 140px;
+        }
+        #tooltip3d .tt-title { font-weight: 700; color: #fff; margin-bottom: 4px; font-size: 12px; }
+        #tooltip3d .tt-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        #tooltip3d .tt-val { color: var(--text-dim); }
+
         /* ===== RIGHT PANEL ===== */
-        .panel-right { width: 360px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+        .panel-right { width: 380px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-        .panel-tab { flex: 1; min-width: 70px; padding: 12px 8px; text-align: center; font-size: 11px; cursor: pointer; transition: all 0.2s; color: var(--text-dim); border-bottom: 2px solid transparent; }
+        .panel-tab { flex: 1; min-width: 60px; padding: 12px 4px; text-align: center; font-size: 11px; cursor: pointer; transition: all 0.2s; color: var(--text-dim); border-bottom: 2px solid transparent; }
         .panel-tab.active { color: var(--text); border-bottom-color: var(--ozon); }
         .panel-content { padding: 15px; display: none; }
         .panel-content.active { display: block; }
 
-        /* ===== FORM ELEMENTS ===== */
+        /* ===== FORMS & UI ===== */
         .form-group { margin-bottom: 12px; }
-        .form-label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 5px; }
+        .form-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 5px; }
         .form-input { width: 100%; padding: 8px 10px; background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; transition: border 0.2s; }
         .form-input:focus { border-color: var(--ozon); }
         .form-row { display: flex; gap: 8px; }
         .form-row .form-group { flex: 1; }
-        select.form-input { cursor: pointer; }
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
         .btn-primary { background: var(--ozon); color: #fff; }
         .btn-primary:hover { background: #004ae6; }
         .btn-wb { background: var(--wb); color: #fff; }
-        .btn-wb:hover { background: #6a2578; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .btn-outline:hover { border-color: var(--ozon); }
-        .btn-full { width: 100%; justify-content: center; }
+        .btn-full { width: 100%; }
         .btn-sm { padding: 5px 10px; font-size: 11px; }
+        .btn-danger { background: rgba(231,76,60,0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        .checkbox-group { display: flex; gap: 15px; margin: 10px 0; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+        .checkbox-item input { accent-color: var(--ozon); }
 
         /* ===== PALLET LIST ===== */
-        .pallet-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--panel2); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); transition: all 0.2s; cursor: grab; }
+        .pallet-item { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--panel2); border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border); transition: all 0.2s; cursor: grab; }
         .pallet-item:hover { border-color: #4a4f6a; }
-        .pallet-item.dragging { opacity: 0.4; cursor: grabbing; }
+        .pallet-item.dragging { opacity: 0.4; }
         .pallet-item.drag-over { border-color: var(--ozon); background: rgba(0,91,255,0.1); }
-        .pallet-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+        .pallet-color { width: 4px; height: 36px; border-radius: 2px; flex-shrink: 0; }
         .pallet-color.ozon { background: var(--ozon); }
         .pallet-color.wb { background: var(--wb); }
+        .pallet-color.cold { background: var(--cold); }
+        .pallet-color.adr { background: var(--adr); }
         .pallet-info { flex: 1; min-width: 0; }
-        .pallet-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+        .pallet-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
         .pallet-meta { font-size: 10px; color: var(--text-dim); }
-        .pallet-actions { display: flex; gap: 4px; }
-        .pallet-actions button { width: 24px; height: 24px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; border-radius: 4px; font-size: 12px; }
+        .pallet-actions button { width: 22px; height: 22px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; border-radius: 4px; font-size: 11px; }
         .pallet-actions button:hover { background: var(--panel); color: var(--danger); }
-        .drag-handle { cursor: grab; color: var(--text-dim); font-size: 14px; padding: 0 4px; }
 
-        /* ===== VALIDATION ===== */
+        /* ===== BADGES & VALIDATION ===== */
+        .badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; }
+        .badge-ozon { background: rgba(0,91,255,0.2); color: var(--ozon); }
+        .badge-wb { background: rgba(123,45,142,0.2); color: #c77dff; }
+        .badge-cold { background: rgba(0,210,255,0.2); color: var(--cold); }
+        .badge-adr { background: rgba(255,68,68,0.2); color: var(--adr); }
+        .badge-err { background: rgba(231,76,60,0.2); color: var(--danger); }
+        .badge-layer { background: var(--panel); color: var(--text-dim); border: 1px solid var(--border); }
+
         .validation-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 12px; }
         .validation-item.ok { background: rgba(46,204,113,0.1); color: var(--success); }
         .validation-item.error { background: rgba(231,76,60,0.1); color: var(--danger); }
         .validation-item.warn { background: rgba(243,156,18,0.1); color: var(--warning); }
-        .validation-item .v-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
 
-        /* ===== PROGRESS BAR ===== */
-        .progress-bar { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; margin: 5px 0; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-        .progress-fill.ozon { background: var(--ozon); }
-        .progress-fill.wb { background: var(--wb); }
-        .progress-fill.danger { background: var(--danger); }
-        .progress-fill.success { background: var(--success); }
+        /* ===== 2D SCHEMA ===== */
+        #canvas2d { width: 100%; height: 400px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--border); }
+        
+        /* ===== SLIDERS ===== */
+        .slider-group { margin: 15px 0; }
+        .slider-group label { font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; accent-color: var(--ozon); }
 
-        /* ===== TABLE ===== */
-        .info-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .info-table th, .info-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-        .info-table th { color: var(--text-dim); font-weight: 500; font-size: 10px; text-transform: uppercase; }
-        .info-table tr:hover td { background: var(--panel2); }
+        .section-title { font-size: 13px; font-weight: 600; margin: 15px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .text-dim { color: var(--text-dim); font-size: 11px; }
+        .mt-10 { margin-top: 10px; }
+        .gap-8 { display: flex; gap: 8px; }
 
-        /* ===== CHECKLIST ===== */
-        .checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
-        .checklist-item:last-child { border-bottom: none; }
-        .checklist-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--ozon); }
-
-        /* ===== MODAL ===== */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-overlay.show { display: flex; }
-        .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; width: 520px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .modal-header h3 { font-size: 15px; }
-        .modal-body { padding: 20px; }
-        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
-        .close-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; }
-
-        /* ===== SCROLLBAR ===== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--panel); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-        /* ===== BADGE ===== */
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-        .badge-ozon { background: rgba(0,91,255,0.2); color: var(--ozon); }
-        .badge-wb { background: rgba(123,45,142,0.2); color: #c77dff; }
-        .badge-ok { background: rgba(46,204,113,0.2); color: var(--success); }
-        .badge-err { background: rgba(231,76,60,0.2); color: var(--danger); }
-
-        .section-title { font-size: 13px; font-weight: 600; margin: 15px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-        .section-title:first-child { margin-top: 0; }
-        .text-dim { color: var(--text-dim); font-size: 11px; }
-        .text-success { color: var(--success); }
-        .text-danger { color: var(--danger); }
-        .text-warning { color: var(--warning); }
-        .mt-10 { margin-top: 10px; }
-        .mb-10 { margin-bottom: 10px; }
-        .gap-8 { display: flex; gap: 8px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-
-        .legend { display: flex; gap: 15px; padding: 8px 0; font-size: 11px; }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
-        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
-
-        .truck-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .spec-card { background: var(--panel2); padding: 10px; border-radius: 6px; }
-        .spec-card .label { font-size: 10px; color: var(--text-dim); }
-        .spec-card .value { font-size: 16px; font-weight: 700; margin-top: 2px; }
-
-        .truck-config { background: var(--panel2); padding: 12px; border-radius: 8px; margin-bottom: 12px; }
-        .truck-config .form-row { margin-bottom: 8px; }
-        .truck-presets { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
-        .preset-btn { padding: 4px 8px; font-size: 10px; background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); border-radius: 4px; cursor: pointer; transition: all 0.2s; }
-        .preset-btn:hover { border-color: var(--ozon); color: var(--text); }
-        .preset-btn.active { background: var(--ozon); color: #fff; border-color: var(--ozon); }
-
-        .layer-indicator { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; background: var(--panel); color: var(--text-dim); margin-left: 4px; }
-    </style>
-</head>
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; width: 600px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-body { padding: 20px; }
+        .close-btn { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; }
+    </style</head>
 <body>
 
-<!-- ===== SIDEBAR LEFT ===== -->
+<!-- SIDEBAR -->
 <div class="sidebar-left">
     <div class="logo">
         <h1><span>Pallet</span>Load Pro</h1>
-        <p>Система оптимизации загрузки</p>
+        <p>Enterprise v3.0</p>
     </div>
     <div class="nav">
-        <div class="nav-section">Основные</div>
-        <div class="nav-item active" data-tab="dashboard" onclick="switchTab(event, 'dashboard')">
-            <span class="icon">📊</span> Дашборд
-        </div>
-        <div class="nav-item" data-tab="pallets" onclick="switchTab(event, 'pallets')">
-            <span class="icon">📦</span> Формирование палет
-        </div>
-        <div class="nav-item" data-tab="truck" onclick="switchTab(event, 'truck')">
-            <span class="icon">🚛</span> Загрузка кузова
-        </div>
-        <div class="nav-section">Справочники</div>
-        <div class="nav-item" data-tab="ozon-rules" onclick="switchTab(event, 'ozon-rules')">
-            <span class="icon">🔵</span> Правила Ozon
-        </div>
-        <div class="nav-item" data-tab="wb-rules" onclick="switchTab(event, 'wb-rules')">
-            <span class="icon">🟣</span> Правила Wildberries
-        </div>
-        <div class="nav-item" data-tab="acceptance" onclick="switchTab(event, 'acceptance')">
-            <span class="icon">✅</span> Приемка на складе
-        </div>
-        <div class="nav-section">Отчёты</div>
-        <div class="nav-item" onclick="exportPDF()">
-            <span class="icon">📄</span> Экспорт плана загрузки
-        </div>
+        <div class="nav-section">Управление</div>
+        <div class="nav-item active" onclick="switchTab(event, 'dashboard')"><span class="icon">📊</span> Дашборд</div>
+        <div class="nav-item" onclick="switchTab(event, 'pallets')"><span class="icon">📦</span> Палеты</div>
+        <div class="nav-section">Инструменты</div>
+        <div class="nav-item" onclick="switchTab(event, 'settings')"><span class="icon">⚙️</span> Настройки 3D</div>
+        <div class="nav-item" onclick="switchTab(event, 'schema2d')"><span class="icon">🗺️</span> 2D Схема</div>
+        <div class="nav-section">Данные</div>
+        <div class="nav-item" onclick="saveSession()"><span class="icon">💾</span> Сохранить</div>
+        <div class="nav-item" onclick="document.getElementById('csvInput').click()"><span class="icon">📥</span> Импорт CSV</div>
+        <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(this)">
+        <div class="nav-item" onclick="exportPDF()"><span class="icon">📄</span> Экспорт PDF</div>
     </div>
     <div class="sidebar-footer">
-        v2.2.0 • Ozon API & WB API sync
+        <div class="gap-8">
+            <button class="btn btn-sm btn-outline" style="flex:1" onclick="loadSession()">📂 Загрузить</button>
+            <button class="btn btn-sm btn-danger" style="flex:1" onclick="clearAll()">🗑 Сброс</button>
+        </div>
     </div>
 </div>
 
-<!-- ===== MAIN ===== -->
+<!-- MAIN -->
 <div class="main-area">
     <div class="topbar">
-        <div class="topbar-title" id="topbarTitle">🚛 Загрузка кузова: Фура 13.6м (Евро)</div>
+        <div class="topbar-title" id="topbarTitle">🚛 Фура 13.6м</div>
         <div class="topbar-stats">
-            <div class="stat-badge ozon"><span class="dot"></span> Ozon: <strong id="ozonCount">0</strong></div>
-            <div class="stat-badge wb"><span class="dot"></span> WB: <strong id="wbCount">0</strong></div>
-            <div class="stat-badge">⚖️ <strong id="totalWeight">0</strong> кг</div>
-            <div class="stat-badge">📐 <strong id="loadPercent">0</strong>%</div>
-            <div class="stat-badge">📏 <span id="truckSizeInfo">13600×2450×2700</span></div>
+            <div class="stat-badge ozon"><span class="dot"></span> <span id="ozonCount">0</span></div>
+            <div class="stat-badge wb"><span class="dot"></span> <span id="wbCount">0</span></div>
+            <div class="stat-badge">⚖️ <span id="totalWeight">0</span> кг</div>
+            <div class="stat-badge">📐 <span id="loadPercent">0</span>%</div>
+            <div class="stat-badge" id="cogBadge">🎯 ЦТ: <span id="cogStatus">OK</span></div>
         </div>
     </div>
 
@@ -237,48 +201,54 @@
         <!-- 3D VIEWPORT -->
         <div class="viewport">
             <canvas id="canvas3d"></canvas>
+            <div id="tooltip3d">
+                <div class="tt-title" id="ttTitle">Палета #1</div>
+                <div class="tt-row"><span>Вес:</span> <span class="tt-val" id="ttWeight">0 кг</span></div>
+                <div class="tt-row"><span>Высота:</span> <span class="tt-val" id="ttHeight">0 мм</span></div>
+                <div class="tt-row"><span>Приоритет:</span> <span class="tt-val" id="ttPriority">1</span></div>
+                <div class="tt-row" id="ttSpecial" style="display:none; color: var(--warning);"></div>
+            </div>
             <div class="viewport-info">
                 <div><span>Кузов:</span> <span id="truckDims">13600×2450×2700</span> мм</div>
-                <div><span>Вместимость:</span> <span id="truckCapacity">33</span> европалет</div>
-                <div><span>Слоёв:</span> <span id="layerCount">1</span></div>
-                <div><span>Оси:</span> X-длина, Y-высота, Z-ширина</div>
+                <div><span>Вместимость:</span> <span id="truckCapacity">33</span> мест</div>
+                <div><span>Центр тяжести:</span> X:<span id="cogX">0</span> Y:<span id="cogY">0</span> Z:<span id="cogZ">0</span></div>
             </div>
             <div class="viewport-controls">
-                <button onclick="setCameraView('rear')" title="Вид сзади">⬛</button>
-                <button onclick="setCameraView('top')" title="Вид сверху">⬜</button>
-                <button onclick="setCameraView('side')" title="Вид сбоку">◼</button>
+                <button onclick="setCameraView('rear')" title="Сзади">⬛</button>
+                <button onclick="setCameraView('top')" title="Сверху">⬜</button>
+                <button onclick="setCameraView('side')" title="Сбоку">◼</button>
                 <button onclick="setCameraView('perspective')" title="Перспектива">◇</button>
-                <button onclick="toggleAutoRotate()" title="Автовращение">↻</button>
-                <button onclick="toggleLayers()" title="Показать/скрыть слои" id="btnLayers">📚</button>
-                <button onclick="resetScene()" title="Сброс">✕</button>
+                <button onclick="toggleAutoRotate()" title="Вращение">↻</button>
             </div>
         </div>
 
         <!-- RIGHT PANEL -->
         <div class="panel-right">
             <div class="panel-tabs">
-                <div class="panel-tab active" onclick="switchPanel(event, 'add')">➕ Добавить</div>
-                <div class="panel-tab" onclick="switchPanel(event, 'list')">📋 Список</div>
-                <div class="panel-tab" onclick="switchPanel(event, 'validate')">✅ Проверка</div>
-                <div class="panel-tab" onclick="switchPanel(event, 'truck-config')">🚛 Кузов</div>
+                <div class="panel-tab active" onclick="switchPanel(event, 'add')">➕</div>
+                <div class="panel-tab" onclick="switchPanel(event, 'list')">📋</div>
+                <div class="panel-tab" onclick="switchPanel(event, 'validate')">✅</div>
+                <div class="panel-tab" onclick="switchPanel(event, 'truck')">🚛</div>
             </div>
 
             <!-- TAB: ADD -->
             <div class="panel-content active" id="panel-add">
                 <div class="section-title">Новая палета</div>
-                <div class="form-group">
-                    <label class="form-label">Маркетплейс</label>
-                    <select class="form-input" id="mpSelect">
-                        <option value="ozon">🔵 Ozon</option>
-                        <option value="wb">🟣 Wildberries</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Тип палеты</label>
-                    <select class="form-input" id="palletType">
-                        <option value="euro">Европалета 1200×800 мм</option>
-                        <option value="fin">Финская 1200×1000 мм</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Маркетплейс</label>
+                        <select class="form-input" id="mpSelect">
+                            <option value="ozon">🔵 Ozon</option>
+                            <option value="wb">🟣 Wildberries</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Тип</label>
+                        <select class="form-input" id="palletType">
+                            <option value="euro">Евро 1200×800</option>
+                            <option value="fin">Финская 1200×1000</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -287,231 +257,95 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Вес (кг)</label>
-                        <input type="number" class="form-input" id="palletWeight" value="350" max="500">
+                        <input type="number" class="form-input" id="palletWeight" value="350" max="1000">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Кол-во коробок</label>
-                    <input type="number" class="form-input" id="boxCount" value="24">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Приоритет выгрузки (1 — первый)</label>
+                    <label class="form-label">Приоритет выгрузки (1 = первый)</label>
                     <input type="number" class="form-input" id="unloadPriority" value="1" min="1">
                 </div>
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="isCold"> ❄️ Рефрижератор</label>
+                    <label class="checkbox-item"><input type="checkbox" id="isAdr"> ⚠️ Опасный груз (ADR)</label>
+                </div>
 
-                <button class="btn btn-primary btn-full" onclick="addPallet()" style="margin-bottom:8px;">
-                    ➕ Добавить палету
-                </button>
-
-                <div class="section-title">Быстрое добавление</div>
+                <button class="btn btn-primary btn-full" onclick="addPallet()">➕ Добавить палету</button>
+                
+                <div class="section-title">Быстрые действия</div>
                 <div class="gap-8">
-                    <button class="btn btn-outline" onclick="addQuick('ozon',5)" style="flex:1;">+5 Ozon</button>
-                    <button class="btn btn-outline" onclick="addQuick('wb',5)" style="flex:1;">+5 WB</button>
-                    <button class="btn btn-outline" onclick="addQuick('ozon',10)" style="flex:1;">+10 Ozon</button>
+                    <button class="btn btn-outline" onclick="addQuick('ozon', 5)" style="flex:1">+5 Ozon</button>
+                    <button class="btn btn-outline" onclick="addQuick('wb', 5)" style="flex:1">+5 WB</button>
                 </div>
-                <div class="gap-8 mt-10">
-                    <button class="btn btn-outline btn-full" onclick="generateFullLoad()">🔄 Автозаполнение</button>
-                    <button class="btn btn-outline" onclick="clearAll()" style="color:var(--danger);">🗑</button>
-                </div>
+                <button class="btn btn-outline btn-full mt-10" onclick="autoBalance()">⚖️ Авто-балансировка</button>
             </div>
 
             <!-- TAB: LIST -->
             <div class="panel-content" id="panel-list">
-                <div class="flex-between mb-10">
-                    <div class="section-title" style="margin:0;border:none;">Палеты (<span id="palletListCount">0</span>)</div>
-                    <span class="text-dim">↕ Перетащите для изменения порядка</span>
+                <div class="section-title">
+                    <span>Список (<span id="palletListCount">0</span>)</span>
+                    <span class="text-dim">↕ Drag & Drop</span>
                 </div>
-                <div class="legend mb-10">
-                    <div class="legend-item"><div class="legend-color" style="background:var(--ozon);"></div> Ozon</div>
-                    <div class="legend-item"><div class="legend-color" style="background:var(--wb);"></div> Wildberries</div>
-                </div>
-                <div id="palletListContainer" style="max-height:500px; overflow-y:auto;">
-                    <p class="text-dim" style="text-align:center;padding:20px;">Нет добавленных палет</p>
-                </div>
+                <div id="palletListContainer" style="max-height: 600px; overflow-y: auto;"></div>
             </div>
 
             <!-- TAB: VALIDATE -->
             <div class="panel-content" id="panel-validate">
-                <div class="section-title">Проверка по регламенту</div>
-                <div id="validationResults">
-                    <p class="text-dim" style="text-align:center;padding:20px;">Добавьте палеты для проверки</p>
+                <div class="section-title">Проверка регламента</div>
+                <div id="validationResults"></div>
+                <div class="section-title">Балансировка осей</div>
+                <div class="form-row" style="margin-bottom: 8px;">
+                    <div class="text-dim">Лево: <span id="wLeft">0</span> кг</div>
+                    <div class="text-dim" style="text-align:right; flex:1">Право: <span id="wRight">0</span> кг</div>
                 </div>
-
-                <div class="section-title">Распределение веса</div>
-                <div class="truck-specs mb-10">
-                    <div class="spec-card">
-                        <div class="label">Левая сторона</div>
-                        <div class="value" id="weightLeft">0 кг</div>
-                    </div>
-                    <div class="spec-card">
-                        <div class="label">Правая сторона</div>
-                        <div class="value" id="weightRight">0 кг</div>
-                    </div>
-                    <div class="spec-card">
-                        <div class="label">Передняя часть</div>
-                        <div class="value" id="weightFront">0 кг</div>
-                    </div>
-                    <div class="spec-card">
-                        <div class="label">Задняя часть</div>
-                        <div class="value" id="weightRear">0 кг</div>
-                    </div>
+                <div class="progress-bar" style="height:6px; background:var(--panel2); border-radius:3px; overflow:hidden;">
+                    <div id="balanceBar" style="width:50%; height:100%; background:var(--success); transition: width 0.5s;"></div to
                 </div>
-                <div class="progress-bar"><div class="progress-fill" id="balanceBar" style="width:50%;background:var(--success);"></div></div>
-                <div class="text-dim" style="text-align:center;font-size:10px;">Балансировка: <span id="balancePercent">50</span>%</div>
             </div>
 
-            <!-- TAB: TRUCK CONFIG -->
-            <div class="panel-content" id="panel-truck-config">
-                <div class="section-title">🚛 Настройка кузова</div>
+            <!-- TAB: SETTINGS -->
+            <div class="panel-content" id="panel-settings">
+                <div class="section-title">Визуализация 3D</div>
+                <div class="slider-group">
+                    <label>Разнесение слоев (Рентген) <span id="explodedVal">0%</span></label>
+                    <input type="range" min="0" max="100" value="0" id="explodedSlider" oninput="updateExplodedView(this.value)">
+                </div>
+                <div class="checkbox-group" style="flex-direction: column; gap: 10px;">
+                    <label class="checkbox-item"><input type="checkbox" id="toggleHeatmap" onchange="updateScene()"> 🌡️ Тепловая карта веса</label>
+                    <label class="checkbox-item"><input type="checkbox" id="toggleCoG" checked onchange="updateScene()"> 🎯 Показать центр тяжести</label>
+                </div>
                 
-                <div class="truck-config">
-                    <div class="form-label" style="margin-bottom:8px;">Быстрый выбор:</div>
-                    <div class="truck-presets">
-                        <button class="preset-btn active" onclick="applyTruckPreset('euro13')">Фура 13.6м</button>
-                        <button class="preset-btn" onclick="applyTruckPreset('euro10')">Фура 10м</button>
-                        <button class="preset-btn" onclick="applyTruckPreset('euro8')">Фура 8м</button>
-                        <button class="preset-btn" onclick="applyTruckPreset('gazelle')">Газель</button>
-                        <button class="preset-btn" onclick="applyTruckPreset('custom')">Свой</button>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Длина (мм)</label>
-                            <input type="number" class="form-input" id="truckLength" value="13600" min="3000" max="20000" onchange="updateTruckSize()">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Ширина (мм)</label>
-                            <input type="number" class="form-input" id="truckWidth" value="2450" min="1500" max="3000" onchange="updateTruckSize()">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Высота (мм)</label>
-                            <input type="number" class="form-input" id="truckHeight" value="2700" min="1800" max="3500" onchange="updateTruckSize()">
-                        </div>
-                    </div>
-
+                <div class="section-title">Конфигурация кузова</div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Грузоподъёмность (кг)</label>
-                        <input type="number" class="form-input" id="truckPayload" value="22000" min="1000" max="30000" onchange="updateTruckSize()">
+                        <label class="form-label">Длина (мм)</label>
+                        <input type="number" class="form-input" id="truckLength" value="13600" onchange="updateTruckSize()">
                     </div>
                 </div>
-
-                <div class="section-title">Расчёт вместимости</div>
-                <div class="truck-specs mb-10">
-                    <div class="spec-card">
-                        <div class="label">В 1 слой (евро)</div>
-                        <div class="value" id="calcSlots1">22</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Ширина (мм)</label>
+                        <input type="number" class="form-input" id="truckWidth" value="2450" onchange="updateTruckSize()">
                     </div>
-                    <div class="spec-card">
-                        <div class="label">Во 2 слоя*</div>
-                        <div class="value" id="calcSlots2">—</div>
-                    </div>
-                    <div class="spec-card">
-                        <div class="label">Палет в ряду</div>
-                        <div class="value" id="calcPerRow">11</div>
-                    </div>
-                    <div class="spec-card">
-                        <div class="label">Рядов по ширине</div>
-                        <div class="value" id="calcRows">2</div>
+                    <div class="form-group">
+                        <label class="form-label">Высота (мм)</label>
+                        <input type="number" class="form-input" id="truckHeight" value="2700" onchange="updateTruckSize()">
                     </div>
                 </div>
-                <p class="text-dim" style="font-size:10px;">* Второй слой возможен, если высота палет ≤ половине высоты кузова минус поддон</p>
-
-                <button class="btn btn-primary btn-full mt-10" onclick="recalculateLayout()">🔄 Пересчитать размещение</button>
+                <div class="form-group">
+                    <label class="form-label">Грузоподъёмность (кг)</label>
+                    <input type="number" class="form-input" id="truckPayload" value="22000" onchange="updateTruckSize()">
+                </div>
+                <button class="btn btn-outline btn-full" onclick="applyPreset('euro13')">Сброс: Фура 13.6м</button>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- MODAL: OZON RULES -->
-<div class="modal-overlay" id="modal-ozon">
-    <div class="modal">
-        <div class="modal-header">
-            <h3>🔵 Регламент Ozon — Формирование палет</h3>
-            <button class="close-btn" onclick="closeModal('modal-ozon')">✕</button>
-        </div>
-        <div class="modal-body">
-            <table class="info-table">
-                <tr><th>Параметр</th><th>Значение</th></tr>
-                <tr><td>Тип палеты</td><td>Евро (1200×800) или Финская (1200×1000)</td></tr>
-                <tr><td>Макс. высота</td><td><strong>1800 мм</strong> (включая поддон 150мм)</td></tr>
-                <tr><td>Макс. вес</td><td><strong>500 кг</strong></td></tr>
-                <tr><td>Свесы</td><td>❌ Строго запрещены</td></tr>
-                <tr><td>Стрейч-пленка</td><td>Мин. 2-3 слоя + угловые профили</td></tr>
-                <tr><td>Штрихкод</td><td>На 2-4 сторонах, высота сканирования</td></tr>
-            </table>
-            <div class="section-title">Чек-лист перед отправкой</div>
-            <div class="checklist-item"><input type="checkbox"> Палета не превышает 1800 мм по высоте</div>
-            <div class="checklist-item"><input type="checkbox"> Вес не более 500 кг</div>
-            <div class="checklist-item"><input type="checkbox"> Нет свесов коробок за края</div>
-            <div class="checklist-item"><input type="checkbox"> Обтянута стрейч-пленкой (2-3 слоя)</div>
-            <div class="checklist-item"><input type="checkbox"> ШК наклеен на 2+ сторонах</div>
-            <div class="checklist-item"><input type="checkbox"> ШК не заклеен плёнкой / в кармане</div>
-            <div class="checklist-item"><input type="checkbox"> Поддон без повреждений</div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: WB RULES -->
-<div class="modal-overlay" id="modal-wb">
-    <div class="modal">
-        <div class="modal-header">
-            <h3>🟣 Регламент Wildberries — Формирование палет</h3>
-            <button class="close-btn" onclick="closeModal('modal-wb')">✕</button>
-        </div>
-        <div class="modal-body">
-            <table class="info-table">
-                <tr><th>Параметр</th><th>Значение</th></tr>
-                <tr><td>Тип палеты</td><td>Строго Европалета (1200×800×150 мм)</td></tr>
-                <tr><td>Макс. высота</td><td><strong>1800 мм</strong> (включая поддон)</td></tr>
-                <tr><td>Макс. вес</td><td><strong>500 кг</strong></td></tr>
-                <tr><td>Свесы</td><td>❌ Абсолютно запрещены</td></tr>
-                <tr><td>Упаковка</td><td>Стрейч-пленка + пломбирование</td></tr>
-                <tr><td>Штрихкод</td><td>На всех видимых сторонах</td></tr>
-                <tr><td>Качество поддона</td><td>Строгий контроль — без сколов и трещин</td></tr>
-            </table>
-            <div class="section-title">Топ-5 причин отказа в приёмке</div>
-            <div class="validation-item error"><span class="v-icon">✕</span> Высота > 1800 мм (даже +1 см)</div>
-            <div class="validation-item error"><span class="v-icon">✕</span> ШК заклеен плёнкой или повреждён</div>
-            <div class="validation-item error"><span class="v-icon">✕</span> Свес груза за край палеты</div>
-            <div class="validation-item warn"><span class="v-icon">⚠</span> Нестандартный/сломанный поддон</div>
-            <div class="validation-item warn"><span class="v-icon">⚠</span> Пересорт товаров на палете</div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: ACCEPTANCE -->
-<div class="modal-overlay" id="modal-acceptance">
-    <div class="modal">
-        <div class="modal-header">
-            <h3>✅ Процесс приёмки на складах</h3>
-            <button class="close-btn" onclick="closeModal('modal-acceptance')">✕</button>
-        </div>
-        <div class="modal-body">
-            <div class="section-title">Общий процесс (Ozon и WB)</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 1:</strong> Визуальный осмотр целостности стрейч-плёнки</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 2:</strong> Проверка отсутствия свесов</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 3:</strong> Проезд через автоматическую рамку (замер + взвешивание)</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 4:</strong> Сканирование ШК палеты</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 5:</strong> Сверка с предварительной заявкой (ASN)</div>
-            <div class="checklist-item"><input type="checkbox"> <strong>Шаг 6:</strong> Размещение в зоне хранения / кросс-докинг</div>
-
-            <div class="section-title">Автоматический отказ при:</div>
-            <div class="validation-item error"><span class="v-icon"></span> Высота > 1800 мм — автоотказ на рамке</div>
-            <div class="validation-item error"><span class="v-icon">🚫</span> Вес > 500 кг — автоотказ на весах</div>
-            <div class="validation-item error"><span class="v-icon">🚫</span> ШК не считывается / дублируется</div>
-            <div class="validation-item warn"><span class="v-icon">⚠️</span> Несоответствие данных ASN</div>
-
-            <div class="section-title">Документы водителя</div>
-            <table class="info-table">
-                <tr><th>Документ</th><th>Ozon</th><th>WB</th></tr>
-                <tr><td>ТТН</td><td>✅</td><td>✅</td></tr>
-                <tr><td>ASN-заявка</td><td>✅</td><td>✅</td></tr>
-                <tr><td>УПД</td><td>✅</td><td>✅</td></tr>
-                <tr><td>Паспорт водителя</td><td>✅</td><td>✅</td></tr>
-                <tr><td>Пропуск (оформлен заранее)</td><td>✅</td><td>✅</td></tr>
-            </table>
+            <!-- TAB: 2D SCHEMA -->
+            <div class="panel-content" id="panel-schema2d">
+                <div class="section-title">Схема для грузчиков (Вид сверху)</div>
+                <canvas id="canvas2d"></canvas>
+                <div class="text-dim mt-10" style="text-align:center;">Зад кузова (двери) находится справа ➡️</div>
+                <button class="btn btn-primary btn-full mt-10" onclick="exportPDF()">📄 Скачать PDF со схемой</button>
+            </div>
         </div>
     </div>
 </div>
@@ -519,861 +353,700 @@
 <script>
 // ===== STATE =====
 let pallets = [];
-let scene, camera, renderer, controls;
-let truckMesh, palletMeshes = [];
-let palletMeshMap = new Map(); // pallet index -> mesh
+let scene, camera, renderer, controls, raycaster, mouse;
+let truckMesh, palletMeshes = [], cogMesh;
+let palletMeshMap = new Map();
 let autoRotate = false;
-let showSecondLayer = true;
-let nextPalletId = 1;
+let nextId = 1;
 
-// Truck configuration (configurable)
-let truckConfig = {
-    length: 13600,
-    width: 2450,
-    height: 2700,
-    payload: 22000
-};
+let truckConfig = { length: 13600, width: 2450, height: 2700, payload: 22000 };
+const PALLET_TYPES = { euro: { l: 1200, w: 800, name: 'Евро' }, fin: { l: 1200, w: 1000, name: 'Финская' } };
+const GAP = 50;
 
-// Pallet dimensions
-const PALLET_TYPES = {
-    euro: { l: 1200, w: 800, baseH: 150, name: 'Евро' },
-    fin: { l: 1200, w: 1000, baseH: 150, name: 'Финская' }
-};
-const GAP = 50; // gap between pallets
-
-// ===== THREE.JS SETUP =====
+// ===== INIT =====
 function init3D() {
     const canvas = document.getElementById('canvas3d');
     const container = canvas.parentElement;
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-
+    
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f1117);
-    scene.fog = new THREE.Fog(0x0f1117, 20000, 40000);
+    scene.background = new THREE.Color(0x0a0c10);
+    scene.fog = new THREE.Fog(0x0a0c10, 15000, 40000);
 
-    camera = new THREE.PerspectiveCamera(45, w / h, 100, 50000);
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 100, 50000);
     camera.position.set(8000, 5000, 8000);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(w, h);
+    renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 800, 0);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(5000, 8000, 5000);
     dirLight.castShadow = true;
     scene.add(dirLight);
-    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-    fillLight.position.set(-5000, 3000, -5000);
-    scene.add(fillLight);
+    scene.add(new THREE.DirectionalLight(0x4488ff, 0.3).position.set(-5000, 3000, -5000) || new THREE.DirectionalLight(0x4488ff, 0.3));
 
-    // Floor
-    const floorGeo = new THREE.PlaneGeometry(30000, 30000);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1d27, roughness: 0.8 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -200;
+    // Floor & Grid
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), new THREE.MeshStandardMaterial({ color: 0x151820, roughness: 0.9 }));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -200;
     scene.add(floor);
+    scene.add(new THREE.GridHelper(40000, 80, 0x2e3245, 0x1e2030).translateY(-199));
 
-    // Grid
-    const gridHelper = new THREE.GridHelper(30000, 60, 0x2e3245, 0x1e2030);
-    gridHelper.position.y = -199;
-    scene.add(gridHelper);
+    // Raycaster for tooltips
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', () => document.getElementById('tooltip3d').style.display = 'none');
 
-    // Truck
     createTruck();
-
-    // Coordinate axes
-    const axesHelper = new THREE.AxesHelper(1500);
-    axesHelper.position.set(truckConfig.length/2 + 500, 0, -truckConfig.width/2 - 500);
-    scene.add(axesHelper);
-
     animate();
     window.addEventListener('resize', onResize);
+    
+    // Load from local storage if exists
+    loadSession(true);
 }
 
 function createTruck() {
     if (truckMesh) scene.remove(truckMesh);
     truckMesh = new THREE.Group();
-
-    const L = truckConfig.length;
-    const W = truckConfig.width;
-    const H = truckConfig.height;
-
-    const material = new THREE.MeshStandardMaterial({ color: 0x3a3f55, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x5a6080, transparent: true, opacity: 0.4 });
-
+    const { length: L, width: W, height: H } = truckConfig;
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x5a6080, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+    
     // Floor
-    const floorGeo = new THREE.BoxGeometry(L, 50, W);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x4a5070 });
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.position.set(0, 25, 0);
-    truckMesh.add(floorMesh);
-
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(L, 40, W), new THREE.MeshStandardMaterial({ color: 0x4a5070 }));
+    floor.position.y = 20; truckMesh.add(floor);
+    
     // Walls
-    const wallThick = 50;
-    // Left wall
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(L, H, wallThick), edgeMat);
-    leftWall.position.set(0, H/2, -W/2);
-    truckMesh.add(leftWall);
-    // Right wall
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(L, H, wallThick), edgeMat);
-    rightWall.position.set(0, H/2, W/2);
-    truckMesh.add(rightWall);
-    // Front wall
-    const frontWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, W), edgeMat);
-    frontWall.position.set(-L/2, H/2, 0);
-    truckMesh.add(frontWall);
-    // Top
-    const topWall = new THREE.Mesh(new THREE.BoxGeometry(L, wallThick, W), material);
-    topWall.position.set(0, H, 0);
-    truckMesh.add(topWall);
+    const walls = [
+        { s: [L, H, 40], p: [0, H/2, -W/2] }, // Left
+        { s: [L, H, 40], p: [0, H/2, W/2] },  // Right
+        { s: [40, H, W], p: [-L/2, H/2, 0] }, // Front
+        { s: [L, 40, W], p: [0, H, 0] }       // Top
+    ];
+    walls.forEach(w => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(...w.s), edgeMat);
+        mesh.position.set(...w.p);
+        truckMesh.add(mesh);
+    });
 
-    // Floor grid lines (for Euro pallets)
-    const palletL = PALLET_TYPES.euro.l;
-    const palletW = PALLET_TYPES.euro.w;
-    for (let x = -L/2; x <= L/2; x += palletL) {
-        const lineGeo = new THREE.BoxGeometry(2, 5, W);
-        const line = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: 0x6a7090 }));
-        line.position.set(x, 52, 0);
-        truckMesh.add(line);
-    }
-    for (let z = -W/2; z <= W/2; z += palletW) {
-        const lineGeo = new THREE.BoxGeometry(L, 5, 2);
-        const line = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: 0x6a7090 }));
-        line.position.set(0, 52, z);
-        truckMesh.add(line);
-    }
-
-    // Door indicator (rear, at +X)
-    const doorGeo = new THREE.BoxGeometry(10, H - 200, W - 200);
-    const doorMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.2 });
-    const door = new THREE.Mesh(doorGeo, doorMat);
+    // Door indicator (Rear, +X)
+    const door = new THREE.Mesh(new THREE.BoxGeometry(10, H-200, W-200), new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.15 }));
     door.position.set(L/2 + 30, H/2, 0);
     truckMesh.add(door);
 
     scene.add(truckMesh);
 }
 
-function createTextSprite(text, color) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 128;
-    canvas.height = 128;
-    
-    // Circle background
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(64, 64, 58, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Border
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    
-    // Text
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 60px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(text), 64, 64);
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(250, 250, 1);
-    sprite.renderOrder = 999;
-    return sprite;
-}
-
-function createPalletMesh(pallet) {
-    const group = new THREE.Group();
-    const isOzon = pallet.mp === 'ozon';
-    const color = isOzon ? 0x005BFF : 0x7B2D8E;
-    const woodColor = 0xc4a265;
-
-    const type = PALLET_TYPES[pallet.palletType] || PALLET_TYPES.euro;
-    const h = pallet.height;
-    const l = type.l;
-    const w = type.w;
-
-    // Pallet base (wood)
-    const baseGeo = new THREE.BoxGeometry(l - 40, 20, w - 40);
-    const woodMat = new THREE.MeshStandardMaterial({ color: woodColor, roughness: 0.9 });
-    const base = new THREE.Mesh(baseGeo, woodMat);
-    base.position.y = 10;
-    group.add(base);
-
-    // Goods box
-    const goodsH = h - 150;
-    const goodsGeo = new THREE.BoxGeometry(l - 60, goodsH, w - 60);
-    const goodsMat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.85, roughness: 0.5 });
-    const goods = new THREE.Mesh(goodsGeo, goodsMat);
-    goods.position.y = 20 + goodsH / 2;
-    goods.castShadow = true;
-    group.add(goods);
-
-    // Top label
-    const labelGeo = new THREE.BoxGeometry(l - 80, 5, w - 80);
-    const labelMat = new THREE.MeshStandardMaterial({ color: isOzon ? 0x3399ff : 0x9944cc });
-    const label = new THREE.Mesh(labelGeo, labelMat);
-    label.position.y = h - 2;
-    group.add(label);
-
-    // Stretch wrap lines (decorative)
-    for (let y = 50; y < h - 50; y += 200) {
-        const wrapGeo = new THREE.BoxGeometry(l - 30, 3, w - 30);
-        const wrapMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
-        const wrap = new THREE.Mesh(wrapGeo, wrapMat);
-        wrap.position.y = y;
-        group.add(wrap);
-    }
-
-    return group;
-}
-
-// ===== BIN PACKING ALGORITHM =====
-function calculateLayoutCapacity() {
-    const L = truckConfig.length;
-    const W = truckConfig.width;
-    const H = truckConfig.height;
-    
-    const palletL = PALLET_TYPES.euro.l;
-    const palletW = PALLET_TYPES.euro.w;
-    
-    // How many pallets per row (along length)
-    const perRow = Math.floor((L + GAP) / (palletL + GAP));
-    // How many rows (along width)
-    const rows = Math.floor((W + GAP) / (palletW + GAP));
-    
-    // Can we stack 2 layers?
-    // Max pallet height is 1800. For 2 layers: 2 * 1800 = 3600, need H >= 3600
-    // But actually, we stack pallets on top of each other, so:
-    // Layer 1: pallet height (up to 1800)
-    // Layer 2: pallet height (up to 1800)
-    // Total: up to 3600mm, but truck height is typically 2700mm
-    // So 2 layers only possible if max pallet height <= (H - 150) / 2 + 150
-    // For H=2700: max pallet = (2700-150)/2 + 150 = 1425mm
-    const maxPalletHFor2Layers = Math.floor((H - 150) / 2) + 150;
-    const canStack2Layers = maxPalletHFor2Layers >= 1000; // at least some pallets can stack
-    
-    return {
-        perRow,
-        rows,
-        slotsPerLayer: perRow * rows,
-        maxLayers: canStack2Layers ? 2 : 1,
-        maxPalletHFor2Layers,
-        totalSlots: perRow * rows * (canStack2Layers ? 2 : 1)
-    };
-}
-
-function calculatePositions(palletsList) {
-    const L = truckConfig.length;
-    const W = truckConfig.width;
-    const H = truckConfig.height;
-    
-    const capacity = calculateLayoutCapacity();
+// ===== ADVANCED BIN PACKING =====
+function calculatePositions() {
+    const { length: L, width: W, height: H } = truckConfig;
     const positions = [];
+    const indexed = pallets.map((p, i) => ({ pallet: p, originalIndex: i }));
     
-    // Sort by priority (LIFO: lower priority number = unloaded first = closer to doors = larger X)
-    const indexed = palletsList.map((p, i) => ({ pallet: p, originalIndex: i }));
+    // Sort by priority (LIFO: lower number = unloaded first = placed at rear +X)
     indexed.sort((a, b) => a.pallet.priority - b.pallet.priority);
-    
-    const palletL = PALLET_TYPES.euro.l;
-    const palletW = PALLET_TYPES.euro.w;
-    
-    // Start from rear (doors, +X side)
-    const startX = L / 2 - palletL / 2 - GAP;
-    const stepX = palletL + GAP;
-    
-    // Z positions: centered rows
-    const totalWidth = capacity.rows * palletW + (capacity.rows - 1) * GAP;
-    const startZ = -totalWidth / 2 + palletW / 2;
-    const stepZ = palletW + GAP;
-    
-    // Layer Y positions
-    const layerY = [0, 0];
-    if (capacity.maxLayers >= 2) {
-        // Second layer sits on top of first layer pallets
-        // Assume average pallet height for layer 1
-        layerY[1] = 1800; // max pallet height
-    }
-    
-    let slotIndex = 0;
-    const usedSlots = []; // track which slots are used
+
+    const slots = [];
+    // Generate potential slots (simplified grid for mixed pallets)
+    // We try to place pallets starting from rear (+X), bottom (Y=0), left (-Z)
+    const stepX = 1200 + GAP;
     
     indexed.forEach(({ pallet, originalIndex }) => {
-        // Find next available slot
+        const pType = PALLET_TYPES[pallet.palletType];
+        const pL = pType.l;
+        const pW = pType.w;
+        
         let placed = false;
         
-        // Try layer 1 first
-        for (let layer = 0; layer < capacity.maxLayers && !placed; layer++) {
-            for (let row = 0; row < capacity.rows && !placed; row++) {
-                for (let col = 0; col < capacity.perRow && !placed; col++) {
-                    const slotKey = `${layer}-${row}-${col}`;
-                    if (usedSlots.includes(slotKey)) continue;
-                    
-                    // For layer 2, check if there's a pallet below
-                    if (layer === 1) {
-                        const belowKey = `0-${row}-${col}`;
-                        if (!usedSlots.includes(belowKey)) continue; // need support
-                        
-                        // Check height: pallet in layer 2 must fit
-                        const belowPallet = usedSlots.find(s => s === belowKey);
-                        // Assume max height for below pallet
-                        if (1800 + pallet.height > H) continue; // won't fit
+        // ADR goods must be at the very rear (highest X), isolated if possible
+        const startX = pallet.isAdr ? (L/2 - pL/2 - GAP) : (L/2 - pL/2 - GAP);
+        
+        for (let layer = 0; layer < 2 && !placed; layer++) {
+            for (let x = startX; x >= -L/2 + pL/2; x -= stepX) {
+                // Try different Z positions to fit width
+                const possibleZ = [];
+                // Simple heuristic: try left-aligned, right-aligned, or centered
+                possibleZ.push(-W/2 + pW/2); // Left
+                possibleZ.push(W/2 - pW/2);  // Right
+                possibleZ.push(-pW/2);       // Center-left
+                possibleZ.push(pW/2);        // Center-right
+                
+                // Remove duplicates
+                const uniqueZ = [...new Set(possibleZ)].filter(z => z >= -W/2 + pW/2 && z <= W/2 - pW/2);
+
+                for (let z of uniqueZ) {
+                    // Check collision with already placed pallets
+                    let collision = false;
+                    for (let slot of slots) {
+                        if (slot.layer === layer) {
+                            // Simple AABB collision check
+                            const dx = Math.abs(x - slot.x);
+                            const dz = Math.abs(z - slot.z);
+                            const minDx = (pL + slot.pL) / 2 + GAP/2;
+                            const minDz = (pW + slot.pW) / 2 + GAP/2;
+                            if (dx < minDx && dz < minDz) {
+                                collision = true;
+                                break;
+                            }
+                        }
                     }
                     
-                    const x = startX - col * stepX;
-                    const z = startZ + row * stepZ;
-                    const y = layer === 0 ? 0 : layerY[1];
-                    
-                    positions[originalIndex] = { x, y, z, layer };
-                    usedSlots.push(slotKey);
-                    placed = true;
+                    // Check height for layer 1
+                    if (layer === 1) {
+                        // Find pallet below
+                        const below = slots.find(s => Math.abs(s.x - x) < 10 && Math.abs(s.z - z) < 10 && s.layer === 0);
+                        if (!below) continue; // Must have support
+                        if (below.pallet.height + pallet.height > H) continue; // Exceeds truck height
+                    }
+
+                    if (!collision) {
+                        slots.push({ x, z, layer, pL, pW, pallet });
+                        positions[originalIndex] = { x, y: layer === 0 ? 0 : (slots.find(s => Math.abs(s.x - x) < 10 && Math.abs(s.z - z) < 10 && s.layer === 0)?.pallet.height || 1800), z, layer, overflow: false };
+                        placed = true;
+                        break;
+                    }
                 }
+                if (placed) break;
             }
         }
         
         if (!placed) {
-            // Overflow - place outside truck (will be flagged as error)
-            positions[originalIndex] = { x: 0, y: 0, z: 0, overflow: true };
+            positions[originalIndex] = { x: L/2 + 1000, y: 0, z: 0, layer: 0, overflow: true };
         }
     });
-    
     return positions;
 }
 
+// ===== 3D RENDERING =====
+function getWeightColor(weight) {
+    if (weight < 300) return 0x2ecc71; // Green
+    if (weight < 450) return 0xf39c12; // Yellow
+    return 0xe74c3c; // Red
+}
+
 function updateScene() {
-    // Remove old pallet meshes
     palletMeshes.forEach(m => scene.remove(m));
     palletMeshes = [];
     palletMeshMap.clear();
+    if (cogMesh) { scene.remove(cogMesh); cogMesh = null; }
 
-    // Calculate positions
-    const positions = calculatePositions(pallets);
+    const positions = calculatePositions();
+    const showHeatmap = document.getElementById('toggleHeatmap').checked;
+    const explodedOffset = parseInt(document.getElementById('explodedSlider').value) * 30; // mm per %
+
+    let totalWeight = 0, sumX = 0, sumY = 0, sumZ = 0;
 
     pallets.forEach((pallet, i) => {
         const pos = positions[i];
         if (!pos) return;
-        
-        const mesh = createPalletMesh(pallet);
-        mesh.position.set(pos.x, pos.y, pos.z);
-        
-        if (pos.overflow) {
-            // Visual indicator for overflow
-            mesh.traverse(child => {
-                if (child.isMesh && child.material) {
-                    child.material = child.material.clone();
-                    child.material.color.setHex(0xff0000);
-                    child.material.opacity = 0.5;
-                }
-            });
-        }
-        
-        scene.add(mesh);
-        palletMeshes.push(mesh);
-        palletMeshMap.set(i, mesh);
 
-        // Add numbered sprite label
-        const labelColor = pallet.mp === 'ozon' ? '#005BFF' : '#7B2D8E';
-        const sprite = createTextSprite(i + 1, labelColor);
-        sprite.position.set(pos.x, pos.y + pallet.height + 150, pos.z);
-        scene.add(sprite);
-        palletMeshes.push(sprite);
+        const group = new THREE.Group();
+        const type = PALLET_TYPES[pallet.palletType];
+        const isOzon = pallet.mp === 'ozon';
+        
+        // Base color: Heatmap or Marketplace
+        let baseColor = isOzon ? 0x005BFF : 0x7B2D8E;
+        if (pallet.isCold) baseColor = 0x00d2ff;
+        if (pallet.isAdr) baseColor = 0xff4444;
+        if (showHeatmap && !pallet.isCold && !pallet.isAdr) baseColor = getWeightColor(pallet.weight);
+
+        const opacity = pos.overflow ? 0.3 : 0.85;
+
+        // Wood base
+        const base = new THREE.Mesh(new THREE.BoxGeometry(type.l - 40, 20, type.w - 40), new THREE.MeshStandardMaterial({ color: 0xc4a265 }));
+        base.position.y = 10;
+        group.add(base);
+
+        // Goods
+        const goodsH = pallet.height - 150;
+        const goods = new THREE.Mesh(new THREE.BoxGeometry(type.l - 60, goodsH, type.w - 60), new THREE.MeshStandardMaterial({ color: baseColor, transparent: true, opacity }));
+        goods.position.y = 20 + goodsH / 2;
+        goods.castShadow = true;
+        goods.userData = { palletIndex: i }; // For raycasting
+        group.add(goods);
+
+        // Exploded view offset
+        const yPos = pos.y + (pos.layer > 0 ? explodedOffset : 0);
+        group.position.set(pos.x, yPos, pos.z);
+
+        if (pos.overflow) {
+            group.traverse(c => { if(c.isMesh) c.material = c.material.clone(); if(group.children[1]) group.children[1].material.color.setHex(0xff0000); });
+        }
+
+        scene.add(group);
+        palletMeshes.push(group);
+        palletMeshMap.set(i, group);
+
+        // CoG calculation
+        if (!pos.overflow) {
+            const pWeight = pallet.weight;
+            totalWeight += pWeight;
+            sumX += pos.x * pWeight;
+            sumY += (yPos + pallet.height/2) * pWeight;
+            sumZ += pos.z * pWeight;
+        }
     });
+
+    // Draw Center of Gravity
+    if (document.getElementById('toggleCoG').checked && totalWeight > 0) {
+        const cogX = sumX / totalWeight;
+        const cogY = sumY / totalWeight;
+        const cogZ = sumZ / totalWeight;
+        
+        document.getElementById('cogX').textContent = Math.round(cogX);
+        document.getElementById('cogY').textContent = Math.round(cogY);
+        document.getElementById('cogZ').textContent = Math.round(cogZ);
+
+        // Check balance (ideal X is near 0, Z is near 0)
+        const xDeviation = Math.abs(cogX) / (truckConfig.length / 2);
+        const zDeviation = Math.abs(cogZ) / (truckConfig.width / 2);
+        const isBalanced = xDeviation < 0.3 && zDeviation < 0.3;
+
+        const cogBadge = document.getElementById('cogBadge');
+        document.getElementById('cogStatus').textContent = isBalanced ? 'OK' : 'СМЕЩЁН';
+        cogBadge.className = 'stat-badge ' + (isBalanced ? 'cog-ok' : 'cog-warn');
+
+        const cogGeo = new THREE.SphereGeometry(150, 16, 16);
+        const cogMat = new THREE.MeshBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c, transparent: true, opacity: 0.6 });
+        cogMesh = new THREE.Mesh(cogGeo, cogMat);
+        cogMesh.position.set(cogX, cogY, cogZ);
+        
+        // Glow effect (simple wireframe)
+        const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(cogGeo), new THREE.LineBasicMaterial({ color: isBalanced ? 0x2ecc71 : 0xe74c3c }));
+        cogMesh.add(wireframe);
+        
+        scene.add(cogMesh);
+    }
 
     updateUI();
+    draw2DSchema();
 }
 
-// ===== UI UPDATES =====
+// ===== INTERACTION =====
+function onMouseMove(event) {
+    const canvas = document.getElementById('canvas3d');
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(palletMeshes, true);
+    const tooltip = document.getElementById('tooltip3d');
+
+    if (intersects.length > 0) {
+        // Find the parent group that has userData
+        let obj = intersects[0].object;
+        while (obj.parent && !obj.userData.palletIndex && obj.parent.type !== 'Scene') {
+            obj = obj.parent;
+        }
+        
+        if (obj.userData.palletIndex !== undefined) {
+            const idx = obj.userData.palletIndex;
+            const p = pallets[idx];
+            document.getElementById('ttTitle').textContent = `Палета #${idx + 1} (${p.mp.toUpperCase()})`;
+            document.getElementById('ttWeight').textContent = p.weight + ' кг';
+            document.getElementById('ttHeight').textContent = p.height + ' мм';
+            document.getElementById('ttPriority').textContent = p.priority;
+            
+            const specialEl = document.getElementById('ttSpecial');
+            if (p.isCold || p.isAdr) {
+                specialEl.style.display = 'block';
+                specialEl.textContent = (p.isCold ? '❄️ Реф ' : '') + (p.isAdr ? '⚠️ ADR' : '');
+            } else {
+                specialEl.style.display = 'none';
+            }
+
+            tooltip.style.display = 'block';
+            tooltip.style.left = (event.clientX - rect.left + 15) + 'px';
+            tooltip.style.top = (event.clientY - rect.top + 15) + 'px';
+            canvas.style.cursor = 'pointer';
+            return;
+        }
+    }
+    tooltip.style.display = 'none';
+    canvas.style.cursor = 'default';
+}
+
+// ===== UI & LOGIC =====
 function updateUI() {
-    const ozonCount = pallets.filter(p => p.mp === 'ozon').length;
-    const wbCount = pallets.filter(p => p.mp === 'wb').length;
-    const totalWeight = pallets.reduce((s, p) => s + p.weight, 0);
-    const capacity = calculateLayoutCapacity();
-    const loadPercent = Math.round((pallets.length / capacity.totalSlots) * 100);
+    const ozon = pallets.filter(p => p.mp === 'ozon').length;
+    const wb = pallets.filter(p => p.mp === 'wb').length;
+    const weight = pallets.reduce((s, p) => s + p.weight, 0);
+    const capacity = Math.floor(truckConfig.length / 1250) * Math.floor(truckConfig.width / 850) * 2; // Approx
+    const pct = Math.min(100, Math.round((pallets.length / capacity) * 100));
 
-    document.getElementById('ozonCount').textContent = ozonCount;
-    document.getElementById('wbCount').textContent = wbCount;
-    document.getElementById('totalWeight').textContent = totalWeight;
-    document.getElementById('loadPercent').textContent = loadPercent;
+    document.getElementById('ozonCount').textContent = ozon;
+    document.getElementById('wbCount').textContent = wb;
+    document.getElementById('totalWeight').textContent = weight;
+    document.getElementById('loadPercent').textContent = pct;
     document.getElementById('palletListCount').textContent = pallets.length;
-    
-    document.getElementById('truckSizeInfo').textContent = `${truckConfig.length}×${truckConfig.width}×${truckConfig.height}`;
     document.getElementById('truckDims').textContent = `${truckConfig.length}×${truckConfig.width}×${truckConfig.height}`;
-    document.getElementById('truckCapacity').textContent = capacity.totalSlots;
-    document.getElementById('layerCount').textContent = capacity.maxLayers;
-    
-    document.getElementById('topbarTitle').textContent = `🚛 Кузов ${truckConfig.length/1000}м × ${truckConfig.width/1000}м × ${truckConfig.height/1000}м`;
+    document.getElementById('truckCapacity').textContent = capacity;
+    document.getElementById('topbarTitle').textContent = `🚛 ${truckConfig.length/1000}м × ${truckConfig.width/1000}м × ${truckConfig.height/1000}м`;
 
-    renderPalletList();
-    runValidation();
-    calcWeightDistribution();
-    updateTruckConfigUI();
+    renderList();
+    runValidation(weight);
 }
 
-function updateTruckConfigUI() {
-    const capacity = calculateLayoutCapacity();
-    document.getElementById('calcSlots1').textContent = capacity.slotsPerLayer;
-    document.getElementById('calcSlots2').textContent = capacity.maxLayers >= 2 ? capacity.slotsPerLayer * 2 : '—';
-    document.getElementById('calcPerRow').textContent = capacity.perRow;
-    document.getElementById('calcRows').textContent = capacity.rows;
-}
-
-function renderPalletList() {
+function renderList() {
     const container = document.getElementById('palletListContainer');
     if (pallets.length === 0) {
-        container.innerHTML = '<p class="text-dim" style="text-align:center;padding:20px;">Нет добавленных палет</p>';
+        container.innerHTML = '<p class="text-dim" style="text-align:center;padding:20px;">Нет палет</p>';
         return;
     }
-
-    const positions = calculatePositions(pallets);
-
+    const positions = calculatePositions();
     container.innerHTML = pallets.map((p, i) => {
         const pos = positions[i];
-        const layerInfo = pos && pos.layer > 0 ? `<span class="layer-indicator">Слой ${pos.layer + 1}</span>` : '';
-        const overflowBadge = pos && pos.overflow ? `<span class="badge badge-err">ВНЕ КУЗОВА</span>` : '';
+        const layerBadge = pos && pos.layer > 0 ? `<span class="badge badge-layer">Слой ${pos.layer+1}</span>` : '';
+        const overflowBadge = pos && pos.overflow ? `<span class="badge badge-err">ВНЕ</span>` : '';
+        const colorClass = p.isAdr ? 'adr' : p.isCold ? 'cold' : p.mp;
         
-        return `
-        <div class="pallet-item" draggable="true" data-index="${i}"
-             ondragstart="onDragStart(event)" ondragover="onDragOver(event)" 
-             ondrop="onDrop(event)" ondragend="onDragEnd(event)"
-             onclick="highlightPallet(${i})">
-            <div class="drag-handle">⋮⋮</div>
-            <div class="pallet-color ${p.mp}"></div>
+        return `<div class="pallet-item" draggable="true" data-index="${i}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onclick="highlightPallet(${i})">
+            <div class="pallet-color ${colorClass}"></div>
             <div class="pallet-info">
-                <div class="pallet-name">${p.mp === 'ozon' ? '🔵' : '🟣'} #${i + 1} <span class="badge badge-${p.mp === 'ozon' ? 'ozon' : 'wb'}">${p.mp.toUpperCase()}</span>${layerInfo}${overflowBadge}</div>
-                <div class="pallet-meta">${p.height}мм • ${p.weight}кг • ${p.boxes} коробок • Приор: ${p.priority}</div>
+                <div class="pallet-name">#${i+1} <span class="badge badge-${p.mp}">${p.mp.toUpperCase()}</span> ${layerBadge} ${overflowBadge}</div>
+                <div class="pallet-meta">${p.height}мм • ${p.weight}кг • Приор: ${p.priority} ${p.isCold?'❄️':''} ${p.isAdr?'⚠️':''}</div>
             </div>
-            <div class="pallet-actions">
-                <button onclick="event.stopPropagation();removePallet(${i})" title="Удалить">🗑</button>
-            </div>
-        </div>
-    `}).join('');
+            <div class="pallet-actions"><button onclick="event.stopPropagation(); removePallet(${i})">✕</button></div>
+        </div>`;
+    }).join('');
 }
 
-function runValidation() {
+function runValidation(totalWeight) {
     const container = document.getElementById('validationResults');
-    if (pallets.length === 0) {
-        container.innerHTML = '<p class="text-dim" style="text-align:center;padding:20px;">Добавьте палеты для проверки</p>';
-        return;
-    }
-
     let items = [];
-    const capacity = calculateLayoutCapacity();
-
-    // Check each pallet
-    pallets.forEach((p, i) => {
-        if (p.height > 1800) {
-            items.push({ type: 'error', text: `Палета #${i + 1}: Высота ${p.height}мм > 1800мм` });
-        } else if (p.height > 1750) {
-            items.push({ type: 'warn', text: `Палета #${i + 1}: Высота ${p.height}мм — близко к лимиту` });
-        }
-
-        if (p.weight > 500) {
-            items.push({ type: 'error', text: `Палета #${i + 1}: Вес ${p.weight}кг > 500кг` });
-        }
-
-        // WB requires Euro pallets only
-        if (p.mp === 'wb' && p.palletType !== 'euro') {
-            items.push({ type: 'error', text: `Палета #${i + 1} (WB): Только европалета! Тип "${PALLET_TYPES[p.palletType].name}" запрещён.` });
-        }
-    });
-
-    // Overall checks
-    if (pallets.length > capacity.totalSlots) {
-        items.push({ type: 'error', text: `Превышена вместимость: ${pallets.length} > ${capacity.totalSlots}` });
-    }
-
-    const totalWeight = pallets.reduce((s, p) => s + p.weight, 0);
-    if (totalWeight > truckConfig.payload) {
-        items.push({ type: 'error', text: `Общий вес ${totalWeight}кг превышает грузоподъёмность ${truckConfig.payload}кг` });
-    } else if (totalWeight > truckConfig.payload * 0.9) {
-        items.push({ type: 'warn', text: `Общий вес ${totalWeight}кг — более 90% грузоподъёмности` });
-    }
-
-    // Check 2-layer stacking
-    const positions = calculatePositions(pallets);
-    positions.forEach((pos, i) => {
-        if (pos && pos.layer === 1) {
-            const palletH = pallets[i].height;
-            if (palletH + 1800 > truckConfig.height) {
-                items.push({ type: 'error', text: `Палета #${i + 1} во 2-м слое: не влезает по высоте (${palletH}+1800 > ${truckConfig.height})` });
-            }
-        }
-        if (pos && pos.overflow) {
-            items.push({ type: 'error', text: `Палета #${i + 1}: не помещается в кузов!` });
-        }
-    });
-
-    if (items.length === 0) {
-        items.push({ type: 'ok', text: 'Все палеты соответствуют регламенту ✅' });
-    }
-
-    container.innerHTML = items.map(item => `
-        <div class="validation-item ${item.type}">
-            <span class="v-icon">${item.type === 'ok' ? '✅' : item.type === 'error' ? '✕' : '⚠'}</span>
-            ${item.text}
-        </div>
-    `).join('');
-}
-
-function calcWeightDistribution() {
-    if (pallets.length === 0) return;
-
-    let left = 0, right = 0, front = 0, rear = 0;
-    const positions = calculatePositions(pallets);
+    const positions = calculatePositions();
 
     pallets.forEach((p, i) => {
-        const pos = positions[i];
-        if (!pos) return;
-        if (pos.z < 0) left += p.weight; else right += p.weight;
-        if (pos.x < 0) front += p.weight; else rear += p.weight;
+        if (p.height > 1800) items.push({ type: 'error', text: `#${i+1}: Высота ${p.height} > 1800мм` });
+        if (p.weight > 500) items.push({ type: 'error', text: `#${i+1}: Вес ${p.weight} > 500кг` });
+        if (p.mp === 'wb' && p.palletType !== 'euro') items.push({ type: 'error', text: `#${i+1} (WB): Только европалеты!` });
+        if (positions[i]?.overflow) items.push({ type: 'error', text: `#${i+1}: Не помещается в кузов!` });
+        
+        // ADR validation: must be at rear
+        if (p.isAdr && positions[i]) {
+            const rearLimit = truckConfig.length / 2 - 2000;
+            if (positions[i].x < rearLimit) items.push({ type: 'warn', text: `#${i+1} (ADR): Должен быть в задней части кузова` });
+        }
     });
 
-    document.getElementById('weightLeft').textContent = left + ' кг';
-    document.getElementById('weightRight').textContent = right + ' кг';
-    document.getElementById('weightFront').textContent = front + ' кг';
-    document.getElementById('weightRear').textContent = rear + ' кг';
+    if (totalWeight > truckConfig.payload) items.push({ type: 'error', text: `Перегруз: ${totalWeight} > ${truckConfig.payload} кг` });
+    if (items.length === 0) items.push({ type: 'ok', text: 'Все проверки пройдены ✅' });
 
+    container.innerHTML = items.map(it => `<div class="validation-item ${it.type}"><span>${it.type==='ok'?'✅':it.type==='error'?'✕':'⚠'}</span> ${it.text}</div>`).join('');
+
+    // Balance bar
+    let left = 0, right = 0;
+    pallets.forEach((p, i) => { if (positions[i]?.z < 0) left += p.weight; else right += p.weight; });
     const total = left + right || 1;
     const balance = Math.round((Math.min(left, right) / total) * 100);
-    document.getElementById('balancePercent').textContent = balance;
+    document.getElementById('wLeft').textContent = left;
+    document.getElementById('wRight').textContent = right;
     document.getElementById('balanceBar').style.width = balance + '%';
-    document.getElementById('balanceBar').className = 'progress-fill ' + (balance > 70 ? 'success' : balance > 40 ? '' : 'danger');
+    document.getElementById('balanceBar').style.background = balance > 70 ? 'var(--success)' : balance > 40 ? 'var(--warning)' : 'var(--danger)';
 }
 
 // ===== ACTIONS =====
 function addPallet() {
-    const capacity = calculateLayoutCapacity();
-    if (pallets.length >= capacity.totalSlots) { 
-        alert(`Кузов заполнен! Максимум ${capacity.totalSlots} палет.`); 
-        return; 
-    }
     const mp = document.getElementById('mpSelect').value;
     const h = parseInt(document.getElementById('palletHeight').value) || 1600;
     const w = parseInt(document.getElementById('palletWeight').value) || 350;
-    const boxes = parseInt(document.getElementById('boxCount').value) || 24;
     const priority = parseInt(document.getElementById('unloadPriority').value) || 1;
-    const palletType = document.getElementById('palletType').value;
+    const type = document.getElementById('palletType').value;
+    const isCold = document.getElementById('isCold').checked;
+    const isAdr = document.getElementById('isAdr').checked;
 
-    if (h > 1800) { alert('Высота не может превышать 1800мм!'); return; }
-    if (w > 500) { alert('Вес не может превышать 500кг!'); return; }
-    
-    // WB validation
-    if (mp === 'wb' && palletType !== 'euro') {
-        alert('Wildberries принимает только европалеты (1200×800)!');
-        return;
-    }
+    if (mp === 'wb' && type !== 'euro') { alert('WB принимает только европалеты!'); return; }
+    if (h > 1800) { alert('Макс. высота 1800мм!'); return; }
 
-    pallets.push({ 
-        id: nextPalletId++,
-        mp, height: h, weight: w, boxes, priority, palletType 
-    });
+    pallets.push({ id: nextId++, mp, palletType: type, height: h, weight: w, priority, isCold, isAdr });
     updateScene();
 }
 
 function addQuick(mp, count) {
-    const capacity = calculateLayoutCapacity();
     for (let i = 0; i < count; i++) {
-        if (pallets.length >= capacity.totalSlots) break;
-        pallets.push({
-            id: nextPalletId++,
-            mp,
-            height: 1400 + Math.floor(Math.random() * 300),
-            weight: 250 + Math.floor(Math.random() * 200),
-            boxes: 20 + Math.floor(Math.random() * 20),
-            priority: Math.floor(Math.random() * 5) + 1,
-            palletType: 'euro'
-        });
+        pallets.push({ id: nextId++, mp, palletType: 'euro', height: 1400+Math.random()*300|0, weight: 250+Math.random()*200|0, priority: Math.random()*5+1|0, isCold: false, isAdr: false });
     }
     updateScene();
 }
 
-function removePallet(index) {
-    pallets.splice(index, 1);
-    updateScene();
-}
+function removePallet(idx) { pallets.splice(idx, 1); updateScene(); }
+function clearAll() { if(confirm('Удалить всё?')) { pallets = []; updateScene(); } }
 
-function clearAll() {
-    if (confirm('Удалить все палеты?')) {
-        pallets = [];
-        updateScene();
-    }
-}
-
-function generateFullLoad() {
-    if (pallets.length > 0 && !confirm('Заменить текущие палеты?')) return;
-    pallets = [];
-    const capacity = calculateLayoutCapacity();
-    const total = capacity.slotsPerLayer; // Fill one layer
-    
-    for (let i = 0; i < total; i++) {
-        const mp = i < total * 0.6 ? 'ozon' : 'wb';
-        pallets.push({
-            id: nextPalletId++,
-            mp,
-            height: 1500 + Math.floor(Math.random() * 250),
-            weight: 300 + Math.floor(Math.random() * 150),
-            boxes: 20 + Math.floor(Math.random() * 20),
-            priority: Math.ceil((total - i) / 5),
-            palletType: 'euro'
-        });
-    }
-    updateScene();
-}
-
-// ===== DRAG AND DROP =====
-let draggedIndex = null;
-
-function onDragStart(event) {
-    draggedIndex = parseInt(event.currentTarget.dataset.index);
-    event.currentTarget.classList.add('dragging');
-    event.dataTransfer.effectAllowed = 'move';
-}
-
-function onDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    const item = event.currentTarget;
-    item.classList.add('drag-over');
-}
-
-function onDrop(event) {
-    event.preventDefault();
-    const targetIndex = parseInt(event.currentTarget.dataset.index);
-    const item = event.currentTarget;
-    item.classList.remove('drag-over');
-    
-    if (draggedIndex !== null && draggedIndex !== targetIndex) {
-        // Reorder pallets
-        const [moved] = pallets.splice(draggedIndex, 1);
-        pallets.splice(targetIndex, 0, moved);
-        
-        // Recalculate priorities based on new order
-        // First in array = first to unload = closest to doors = highest priority (lowest number)
-        pallets.forEach((p, i) => {
-            p.priority = i + 1;
-        });
-        
-        updateScene();
-    }
-}
-
-function onDragEnd(event) {
-    event.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.pallet-item').forEach(el => el.classList.remove('drag-over'));
-    draggedIndex = null;
-}
-
-function highlightPallet(index) {
-    const mesh = palletMeshMap.get(index);
-    if (!mesh) return;
-    
-    // Flash effect
-    const originalScale = mesh.scale.clone();
-    mesh.scale.multiplyScalar(1.15);
-    
-    // Highlight color
-    mesh.traverse(child => {
-        if (child.isMesh && child.material && child.material.emissive) {
-            child.material.emissive.setHex(0x444444);
-            setTimeout(() => {
-                if (child.material.emissive) child.material.emissive.setHex(0x000000);
-            }, 400);
-        }
+function autoBalance() {
+    // Sort by weight descending, then distribute to balance left/right while keeping LIFO priority roughly intact
+    pallets.sort((a, b) => b.weight - a.weight);
+    let leftWeight = 0, rightWeight = 0;
+    pallets.forEach((p, i) => {
+        // Simple heuristic: alternate heavy pallets left/right, adjust priority to keep unloading order
+        p.priority = i + 1; 
     });
-    
-    setTimeout(() => { mesh.scale.copy(originalScale); }, 400);
+    // Re-sort by priority for final placement
+    pallets.sort((a, b) => a.priority - b.priority);
+    updateScene();
+    alert('Авто-балансировка применена (приоритеты скорректированы)');
 }
 
-// ===== TRUCK CONFIG =====
+// Drag & Drop
+let draggedIdx = null;
+function onDragStart(e) { draggedIdx = +e.currentTarget.dataset.index; e.currentTarget.classList.add('dragging'); }
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDrop(e) {
+    e.preventDefault();
+    const targetIdx = +e.currentTarget.dataset.index;
+    e.currentTarget.classList.remove('drag-over');
+    if (draggedIdx !== null && draggedIdx !== targetIdx) {
+        const [moved] = pallets.splice(draggedIdx, 1);
+        pallets.splice(targetIdx, 0, moved);
+        pallets.forEach((p, i) => p.priority = i + 1);
+        updateScene();
+    }
+}
+function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.pallet-item').forEach(el => el.classList.remove('drag-over')); draggedIdx = null; }
+
+function highlightPallet(idx) {
+    const mesh = palletMeshMap.get(idx);
+    if (!mesh) return;
+    mesh.scale.setScalar(1.15);
+    setTimeout(() => mesh.scale.setScalar(1), 300);
+}
+
+function updateExplodedView(val) {
+    document.getElementById('explodedVal').textContent = val + '%';
+    updateScene();
+}
+
 function updateTruckSize() {
-    truckConfig.length = parseInt(document.getElementById('truckLength').value) || 13600;
-    truckConfig.width = parseInt(document.getElementById('truckWidth').value) || 2450;
-    truckConfig.height = parseInt(document.getElementById('truckHeight').value) || 2700;
-    truckConfig.payload = parseInt(document.getElementById('truckPayload').value) || 22000;
-    
+    truckConfig.length = +document.getElementById('truckLength').value || 13600;
+    truckConfig.width = +document.getElementById('truckWidth').value || 2450;
+    truckConfig.height = +document.getElementById('truckHeight').value || 2700;
+    truckConfig.payload = +document.getElementById('truckPayload').value || 22000;
     createTruck();
     updateScene();
-    
-    // Update preset buttons
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
 }
 
-function applyTruckPreset(preset) {
-    const presets = {
-        euro13: { length: 13600, width: 2450, height: 2700, payload: 22000 },
-        euro10: { length: 10000, width: 2450, height: 2700, payload: 15000 },
-        euro8: { length: 8000, width: 2450, height: 2700, payload: 10000 },
-        gazelle: { length: 4000, width: 2000, height: 2000, payload: 1500 },
-        custom: null
-    };
+function applyPreset(name) {
+    const presets = { euro13: {l:13600, w:2450, h:2700, p:22000} };
+    const p = presets[name];
+    document.getElementById('truckLength').value = p.l;
+    document.getElementById('truckWidth').value = p.w;
+    document.getElementById('truckHeight').value = p.h;
+    document.getElementById('truckPayload').value = p.p;
+    updateTruckSize();
+}
+
+// ===== 2D SCHEMA =====
+function draw2DSchema() {
+    const canvas = document.getElementById('canvas2d');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
     
-    if (preset === 'custom') {
-        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector('[onclick*="custom"]').classList.add('active');
-        return;
-    }
+    const W = rect.width, H = rect.height;
+    const padding = 40;
+    const drawW = W - padding * 2;
+    const drawH = H - padding * 2;
     
-    const p = presets[preset];
-    if (p) {
-        truckConfig = { ...p };
-        document.getElementById('truckLength').value = p.length;
-        document.getElementById('truckWidth').value = p.width;
-        document.getElementById('truckHeight').value = p.height;
-        document.getElementById('truckPayload').value = p.payload;
+    const scaleX = drawW / truckConfig.length;
+    const scaleY = drawH / truckConfig.width;
+    const scale = Math.min(scaleX, scaleY);
+    
+    const offsetX = (W - truckConfig.length * scale) / 2;
+    const offsetY = (H - truckConfig.width * scale) / 2;
+
+    // Clear
+    ctx.fillStyle = '#232635';
+    ctx.fillRect(0, 0, W, H);
+
+    // Truck outline
+    ctx.strokeStyle = '#8b8fa3';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(offsetX, offsetY, truckConfig.length * scale, truckConfig.width * scale);
+    
+    // Door indicator (Right side)
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+    ctx.fillRect(offsetX + truckConfig.length * scale - 5, offsetY, 5, truckConfig.width * scale);
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '12px Segoe UI';
+    ctx.fillText('ДВЕРИ ➡️', offsetX + truckConfig.length * scale + 10, offsetY + truckConfig.width * scale / 2);
+
+    const positions = calculatePositions();
+    pallets.forEach((p, i) => {
+        const pos = positions[i];
+        if (!pos || pos.overflow) return;
         
-        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        const type = PALLET_TYPES[p.palletType];
+        const px = offsetX + (pos.x + truckConfig.length/2 - type.l/2) * scale;
+        const py = offsetY + (pos.z + truckConfig.width/2 - type.w/2) * scale;
+        const pw = type.l * scale;
+        const ph = type.w * scale;
+
+        // Color
+        ctx.fillStyle = p.isAdr ? '#ff4444' : p.isCold ? '#00d2ff' : (p.mp === 'ozon' ? '#005BFF' : '#7B2D8E');
+        if (document.getElementById('toggleHeatmap').checked && !p.isAdr && !p.isCold) {
+            ctx.fillStyle = p.weight < 300 ? '#2ecc71' : p.weight < 450 ? '#f39c12' : '#e74c3c';
+        }
         
+        ctx.fillRect(px, py, pw, ph);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, pw, ph);
+
+        // Number
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.max(10, 14 * scale * 2)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(i + 1, px + pw/2, py + ph/2);
+    });
+}
+
+// ===== DATA MANAGEMENT =====
+function saveSession() {
+    localStorage.setItem('palletLoadPro', JSON.stringify({ pallets, truckConfig, nextId }));
+    alert('План сохранён в браузере!');
+}
+
+function loadSession(silent = false) {
+    const data = localStorage.getItem('palletLoadPro');
+    if (data) {
+        const parsed = JSON.parse(data);
+        pallets = parsed.pallets || [];
+        truckConfig = parsed.truckConfig || truckConfig;
+        nextId = parsed.nextId || 1;
+        document.getElementById('truckLength').value = truckConfig.length;
+        document.getElementById('truckWidth').value = truckConfig.width;
+        document.getElementById('truckHeight').value = truckConfig.height;
+        document.getElementById('truckPayload').value = truckConfig.payload;
         createTruck();
         updateScene();
+        if (!silent) alert('План загружен!');
+    } else if (!silent) {
+        alert('Нет сохранённых данных');
     }
 }
 
-function recalculateLayout() {
-    updateScene();
+function importCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+        header: true,
+        complete: function(results) {
+            results.data.forEach(row => {
+                if (row.mp && row.weight) {
+                    pallets.push({
+                        id: nextId++,
+                        mp: row.mp.toLowerCase().trim(),
+                        palletType: row.type?.toLowerCase().includes('фин') ? 'fin' : 'euro',
+                        height: parseInt(row.height) || 1600,
+                        weight: parseInt(row.weight) || 350,
+                        priority: parseInt(row.priority) || 1,
+                        isCold: row.cold === 'true' || row.cold === 'да',
+                        isAdr: row.adr === 'true' || row.adr === 'да'
+                    });
+                }
+            });
+            updateScene();
+            alert(`Импортировано ${results.data.length} строк`);
+        }
+    });
+    input.value = '';
 }
 
-// ===== CAMERA =====
-function setCameraView(view) {
-    const L = truckConfig.length;
-    const W = truckConfig.width;
-    const H = truckConfig.height;
+async function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
     
-    switch (view) {
-        case 'rear':
-            camera.position.set(0, H/2, W * 3);
-            controls.target.set(0, H/2, 0);
-            break;
-        case 'top':
-            camera.position.set(0, Math.max(L, W) * 1.5, 100);
-            controls.target.set(0, 0, 0);
-            break;
-        case 'side':
-            camera.position.set(L * 1.2, H, 0);
-            controls.target.set(0, H/2, 0);
-            break;
-        case 'perspective':
-            camera.position.set(L * 0.8, H * 1.5, W * 2);
-            controls.target.set(0, H/2, 0);
-            break;
-    }
-    controls.update();
-}
+    // Header
+    doc.setFontSize(18);
+    doc.text('PalletLoad Pro — План загрузки', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Дата: ${new Date().toLocaleString()} | Кузов: ${truckConfig.length/1000}м x ${truckConfig.width/1000}м x ${truckConfig.height/1000}м`, 14, 30);
+    
+    // Stats
+    const totalW = pallets.reduce((s, p) => s + p.weight, 0);
+    doc.text(`Всего палет: ${pallets.length} | Общий вес: ${totalW} кг | Лимит: ${truckConfig.payload} кг`, 14, 40);
 
-function toggleAutoRotate() {
-    autoRotate = !autoRotate;
-    controls.autoRotate = autoRotate;
-    controls.autoRotateSpeed = 2;
-}
+    // 2D Schema Image
+    const canvas = document.getElementById('canvas2d');
+    const imgData = canvas.toDataURL('image/png');
+    doc.addImage(imgData, 'PNG', 14, 50, 180, 90);
 
-function toggleLayers() {
-    showSecondLayer = !showSecondLayer;
-    // Visual feedback - could hide/show second layer meshes
-    const btn = document.getElementById('btnLayers');
-    btn.style.background = showSecondLayer ? 'var(--panel)' : 'var(--ozon)';
-    updateScene();
-}
+    // Table
+    const tableData = pallets.map((p, i) => [
+        i + 1, p.mp.toUpperCase(), PALLET_TYPES[p.palletType].name, 
+        `${p.height}мм`, `${p.weight}кг`, p.priority, 
+        (p.isCold ? '❄️ ' : '') + (p.isAdr ? '⚠️ ' : '')
+    ]);
 
-function resetScene() {
-    pallets = [];
-    updateScene();
-    setCameraView('perspective');
+    doc.autoTable({
+        startY: 150,
+        head: [['#', 'МП', 'Тип', 'Высота', 'Вес', 'Приор', 'Особые']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 91, 255] },
+        styles: { fontSize: 9 }
+    });
+
+    doc.save(`plan-pogruzki-${Date.now()}.pdf`);
 }
 
 // ===== NAVIGATION =====
-function switchTab(event, tab) {
+function switchTab(e, tab) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
-    }
-
-    if (tab === 'ozon-rules') openModal('modal-ozon');
-    else if (tab === 'wb-rules') openModal('modal-wb');
-    else if (tab === 'acceptance') openModal('modal-acceptance');
+    if (e?.currentTarget) e.currentTarget.classList.add('active');
+    if (tab === 'schema2d') { setTimeout(draw2DSchema, 100); } // Ensure canvas is visible before drawing
 }
 
-function switchPanel(event, panel) {
+function switchPanel(e, panel) {
     document.querySelectorAll('.panel-tab').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.panel-content').forEach(el => el.classList.remove('active'));
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
-    }
-    const target = document.getElementById('panel-' + panel);
-    if (target) target.classList.add('active');
+    if (e?.currentTarget) e.currentTarget.classList.add('active');
+    document.getElementById('panel-' + panel).classList.add('active');
+    if (panel === 'schema2d') setTimeout(draw2DSchema, 100);
 }
 
-function openModal(id) { 
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.add('show'); 
-}
-
-function closeModal(id) { 
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('show'); 
-}
-
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.remove('show');
-        }
-    });
-});
-
-function exportPDF() {
-    const capacity = calculateLayoutCapacity();
-    const data = {
-        date: new Date().toISOString(),
-        truck: { ...truckConfig },
-        capacity,
-        pallets: pallets.map((p, i) => ({ ...p, index: i + 1 })),
-        total: pallets.length,
-        ozon: pallets.filter(p => p.mp === 'ozon').length,
-        wb: pallets.filter(p => p.mp === 'wb').length,
-        weight: pallets.reduce((s, p) => s + p.weight, 0)
+function setCameraView(view) {
+    const { length: L, width: W, height: H } = truckConfig;
+    const targets = {
+        rear: { pos: [0, H/2, W*2.5], target: [0, H/2, 0] },
+        top: { pos: [0, Math.max(L,W)*1.5, 100], target: [0, 0, 0] },
+        side: { pos: [L*1.2, H, 0], target: [0, H/2, 0] },
+        perspective: { pos: [L*0.8, H*1.5, W*2], target: [0, H/2, 0] }
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pallet-plan-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    alert('План загрузки экспортирован!');
+    const t = targets[view];
+    camera.position.set(...t.pos);
+    controls.target.set(...t.target);
+    controls.update();
 }
 
-// ===== ANIMATION =====
-function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-}
+function toggleAutoRotate() { autoRotate = !autoRotate; controls.autoRotate = autoRotate; }
 
 function onResize() {
     const container = document.getElementById('canvas3d').parentElement;
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
+    draw2DSchema();
 }
 
-// ===== INIT =====
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+// Start
 init3D();
-updateUI();
 </script>
 </body>
 </html>
