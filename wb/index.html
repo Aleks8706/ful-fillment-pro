@@ -269,12 +269,22 @@
     .label-sheet .lbl-expiry { font-size: 8pt; font-weight: 600; color: #000; }
     .label-sheet .lbl-quantity { font-size: 8pt; font-weight: 600; color: #000; }
     .label-sheet .lbl-instruction { font-size: 7pt; line-height: 1.2; margin-top: 1px; overflow: hidden; color: #333; }
+    
+    /* TZ Table Styles */
+    .tz-checkbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    #tzTableBody tr { cursor: pointer; }
+    #tzTableBody tr:hover { background: var(--surface2); }
+    #tzTableBody tr.selected { background: var(--primary-glow); }
+    
     @media print {
-      @page { size: 58mm 40mm; margin: 0; }
+      @page { size: A4; margin: 10mm; }
       body * { visibility: hidden !important; }
       #bulkPrintArea, #bulkPrintArea * { visibility: visible !important; }
       #bulkPrintArea { position: absolute; left: 0; top: 0; width: 100%; display: block; }
       #bulkPrintArea .label-sheet { page-break-after: always; page-break-inside: avoid; }
+      
+      #tzPrintArea, #tzPrintArea * { visibility: visible !important; }
+      #tzPrintArea { position: absolute; left: 0; top: 0; width: 100%; display: block; }
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--surface); }
@@ -365,6 +375,7 @@
       <button class="tab-btn active" onclick="switchTab('upload')">📥 Загрузка</button>
       <button class="tab-btn" onclick="switchTab('mapping')">🗺️ Маппинг</button>
       <button class="tab-btn" onclick="switchTab('labels')">🏷️ Этикетки</button>
+      <button class="tab-btn" onclick="switchTab('tz')">📋 ТЗ</button>
       <button class="tab-btn" onclick="switchTab('scanner')">📷 Сканер</button>
       <button class="tab-btn" onclick="switchTab('report')">📊 Отчёт</button>
     </div>
@@ -415,6 +426,59 @@
       </div>
       <div class="search-box"><input type="text" id="labelSearch" placeholder="Поиск по артикулу, штрихкоду..." oninput="searchLabels()"></div>
       <div class="label-grid" id="labelGrid"></div>
+    </section>
+
+    <!-- НОВАЯ ВКЛАДКА: ТЗ -->
+    <section id="tab-tz" class="panel hidden">
+      <h2>📋 Техническое задание</h2>
+      <p>Просмотр и печать ТЗ с фильтрацией. Отметьте позиции для печати или печатайте все.</p>
+      
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="num" id="tzStatTotal">0</div>
+          <div class="lbl">Всего позиций</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="tzStatSelected">0</div>
+          <div class="lbl">Выбрано</div>
+        </div>
+      </div>
+      
+      <div class="print-toolbar">
+        <button onclick="printTZ()" class="purple" style="width:auto;">🖨️ Печать ТЗ</button>
+        <button onclick="selectAllTZ()" class="success" style="width:auto;">✅ Выбрать все</button>
+        <button onclick="deselectAllTZ()" class="secondary" style="width:auto;">❌ Снять выбор</button>
+        <span class="stat" id="tzStats"></span>
+      </div>
+      
+      <div class="filter-chips">
+        <div class="chip active" onclick="filterTZ('all', this)">Все</div>
+        <div class="chip" onclick="filterTZ('selected', this)">✅ Выбранные</div>
+      </div>
+      
+      <div class="search-box">
+        <input type="text" id="tzSearchInput" placeholder="Поиск по артикулу, ШК, наименованию..." oninput="searchTZ()">
+      </div>
+      
+      <div style="max-height: 600px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius);">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" class="tz-checkbox" onchange="if(this.checked) selectAllTZ(); else deselectAllTZ();"></th>
+              <th>Артикул</th>
+              <th>ШК</th>
+              <th>Наименование</th>
+              <th>Кол-во</th>
+              <th>Итого</th>
+              <th style="text-align: center;">Коробов</th>
+              <th style="text-align: center;">Палет</th>
+            </tr>
+          </thead>
+          <tbody id="tzTableBody">
+            <tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">Нет загруженных данных</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section id="tab-scanner" class="panel hidden">
@@ -515,6 +579,7 @@
 
   <div id="bulkPrintArea" class="hidden"></div>
   <div id="reportPrintArea" class="hidden"></div>
+  <div id="tzPrintArea" class="hidden"></div>
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
@@ -580,6 +645,11 @@
     var boxPalletMap = {};
     var nextPalletId = 1;
 
+    // TZ State
+    var tzSelectedIndices = new Set();
+    var tzFilter = 'all';
+    var tzSearch = '';
+
     // Camera scanner state
     var html5QrCode = null;
     var cameraRunning = false;
@@ -602,10 +672,11 @@
       document.querySelectorAll('.panel').forEach(function(p) { p.classList.add('hidden'); });
       document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
       document.getElementById('tab-' + tab).classList.remove('hidden');
-      var names = ['upload','mapping','labels','scanner','report'];
+      var names = ['upload','mapping','labels','tz','scanner','report'];
       document.querySelectorAll('.tab-btn')[names.indexOf(tab)].classList.add('active');
       if(tab === 'scanner') { document.getElementById('scannerInput').focus(); renderBoxChips(); }
       if(tab === 'labels') { calculateCounters(); renderLabelGrid(); updatePrintSummary(); }
+      if(tab === 'tz') { renderTZTable(); }
       if(tab === 'mapping') { showRawHeaders(); previewMapping(); }
       if(tab === 'report') { updatePalletAssignUI(); generateReport(); }
     }
@@ -998,6 +1069,236 @@
       selectedIndices.clear();
       renderLabelGrid();
       showToast('Статус сброшен', 'info');
+    }
+
+    // ===== TZ (ТЕХНИЧЕСКОЕ ЗАДАНИЕ) =====
+    function renderTZTable() {
+      var container = document.getElementById('tzTableBody');
+      if(!container) return;
+      container.innerHTML = '';
+      
+      document.getElementById('tzStatTotal').textContent = excelData.length;
+      
+      if(!excelData.length) {
+        container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">Нет загруженных данных</td></tr>';
+        updateTZStats();
+        return;
+      }
+      
+      var st = tzSearch.toLowerCase();
+      var visibleCount = 0;
+      
+      excelData.forEach(function(item, idx) {
+        var art = getItemArticle(idx);
+        var bc = getItemBarcode(idx);
+        var desc = getItemDescription(idx);
+        var qty = getItemQuantity(idx);
+        var totalQty = getItemField(idx, 'total_quantity');
+        
+        // Фильтрация
+        if(tzFilter === 'selected' && !tzSelectedIndices.has(idx)) return;
+        if(st && !art.toLowerCase().includes(st) && !bc.toLowerCase().includes(st) && !desc.toLowerCase().includes(st)) return;
+        
+        visibleCount++;
+        
+        // Расчет количества коробов и палетов
+        var boxCount = 0;
+        var palletIds = new Set();
+        
+        Object.keys(boxes).forEach(function(boxId) {
+          var box = boxes[boxId];
+          var hasItem = box.items.some(function(it) {
+            var itBc = String(it[mapping.label_barcode] || '').trim();
+            var itOb = String(it[mapping.origin_barcode] || '').trim();
+            return itBc === bc || itOb === bc;
+          });
+          if(hasItem) {
+            boxCount++;
+            if(boxPalletMap[boxId]) {
+              palletIds.add(boxPalletMap[boxId]);
+            }
+          }
+        });
+        
+        var palletStr = palletIds.size > 0 ? Array.from(palletIds).sort().map(function(p) { return 'П' + p; }).join(', ') : '—';
+        var boxStr = boxCount > 0 ? boxCount : '—';
+        
+        var tr = document.createElement('tr');
+        if(tzSelectedIndices.has(idx)) tr.className = 'selected';
+        tr.innerHTML = '<td><input type="checkbox" class="tz-checkbox" data-idx="'+idx+'" '+(tzSelectedIndices.has(idx)?'checked':'')+'></td>'+
+          '<td><b>'+art+'</b></td>'+
+          '<td style="font-family:monospace; font-size:0.8rem;">'+bc+'</td>'+
+          '<td>'+desc+'</td>'+
+          '<td><b>'+(qty||'—')+'</b></td>'+
+          '<td><b>'+(totalQty||'—')+'</b></td>'+
+          '<td style="text-align:center;"><b>'+boxStr+'</b></td>'+
+          '<td style="text-align:center;">'+palletStr+'</td>';
+        
+        container.appendChild(tr);
+      });
+      
+      if(visibleCount === 0) {
+        container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">Ничего не найдено</td></tr>';
+      }
+      
+      // Добавляем обработчики для чекбоксов
+      document.querySelectorAll('.tz-checkbox').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var idx = parseInt(this.dataset.idx);
+          if(this.checked) {
+            tzSelectedIndices.add(idx);
+          } else {
+            tzSelectedIndices.delete(idx);
+          }
+          updateTZStats();
+          // Обновляем стиль строки
+          this.closest('tr').className = this.checked ? 'selected' : '';
+        });
+      });
+      
+      updateTZStats();
+    }
+
+    function updateTZStats() {
+      var total = excelData.length;
+      var selected = tzSelectedIndices.size;
+      document.getElementById('tzStatTotal').textContent = total;
+      document.getElementById('tzStatSelected').textContent = selected;
+      var statsEl = document.getElementById('tzStats');
+      if(statsEl) {
+        statsEl.textContent = 'Всего: ' + total + ' · Выбрано: ' + selected;
+      }
+    }
+
+    function selectAllTZ() {
+      tzSelectedIndices.clear();
+      excelData.forEach(function(_, idx) {
+        tzSelectedIndices.add(idx);
+      });
+      renderTZTable();
+    }
+
+    function deselectAllTZ() {
+      tzSelectedIndices.clear();
+      renderTZTable();
+    }
+
+    function filterTZ(filter, el) {
+      tzFilter = filter;
+      document.querySelectorAll('#tab-tz .filter-chips .chip').forEach(function(c) {
+        c.classList.remove('active');
+      });
+      if(el) el.classList.add('active');
+      renderTZTable();
+    }
+
+    function searchTZ() {
+      tzSearch = document.getElementById('tzSearchInput').value;
+      renderTZTable();
+    }
+
+    function printTZ() {
+      if(!excelData.length) {
+        showToast('Нет данных для печати', 'warning');
+        return;
+      }
+      
+      var indicesToPrint = [];
+      if(tzSelectedIndices.size > 0) {
+        indicesToPrint = Array.from(tzSelectedIndices).sort(function(a,b) { return a-b; });
+      } else {
+        // Печать всего, если ничего не выбрано
+        excelData.forEach(function(_, idx) {
+          indicesToPrint.push(idx);
+        });
+      }
+      
+      if(indicesToPrint.length === 0) {
+        showToast('Нет данных для печати', 'warning');
+        return;
+      }
+      
+      // Генерируем HTML для печати
+      var printHTML = '<div style="font-family: Arial, sans-serif; padding: 20px;">';
+      printHTML += '<h1 style="text-align: center; margin-bottom: 20px;">Техническое задание на сборку</h1>';
+      printHTML += '<p style="text-align: center; margin-bottom: 30px;">Дата: ' + new Date().toLocaleDateString('ru-RU') + '</p>';
+      printHTML += '<table style="width: 100%; border-collapse: collapse; font-size: 11pt;">';
+      printHTML += '<thead><tr style="background: #f0f0f0;">';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">№</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Артикул</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">ШК</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Наименование</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Кол-во</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Итого</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Коробов</th>';
+      printHTML += '<th style="border: 1px solid #000; padding: 8px;">Палет</th>';
+      printHTML += '</tr></thead><tbody>';
+      
+      indicesToPrint.forEach(function(idx, i) {
+        var art = getItemArticle(idx);
+        var bc = getItemBarcode(idx);
+        var desc = getItemDescription(idx);
+        var qty = getItemQuantity(idx);
+        var totalQty = getItemField(idx, 'total_quantity');
+        
+        // Расчет коробов и палетов
+        var boxCount = 0;
+        var palletIds = new Set();
+        
+        Object.keys(boxes).forEach(function(boxId) {
+          var box = boxes[boxId];
+          var hasItem = box.items.some(function(it) {
+            var itBc = String(it[mapping.label_barcode] || '').trim();
+            var itOb = String(it[mapping.origin_barcode] || '').trim();
+            return itBc === bc || itOb === bc;
+          });
+          if(hasItem) {
+            boxCount++;
+            if(boxPalletMap[boxId]) {
+              palletIds.add(boxPalletMap[boxId]);
+            }
+          }
+        });
+        
+        var palletStr = palletIds.size > 0 ? Array.from(palletIds).sort().map(function(p) { return 'П' + p; }).join(', ') : '—';
+        var boxStr = boxCount > 0 ? boxCount : '—';
+        
+        printHTML += '<tr>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; text-align: center;">' + (i+1) + '</td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px;"><b>' + art + '</b></td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; font-family: monospace; font-size: 10pt;">' + bc + '</td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px;">' + desc + '</td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; text-align: center;">' + (qty || '—') + '</td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; text-align: center;"><b>' + (totalQty || '—') + '</b></td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; text-align: center;"><b>' + boxStr + '</b></td>';
+        printHTML += '<td style="border: 1px solid #000; padding: 6px; text-align: center;">' + palletStr + '</td>';
+        printHTML += '</tr>';
+      });
+      
+      printHTML += '</tbody></table>';
+      printHTML += '<p style="margin-top: 30px; text-align: right;">Всего позиций: ' + indicesToPrint.length + '</p>';
+      printHTML += '</div>';
+      
+      // Создаем временный элемент для печати
+      var printArea = document.getElementById('tzPrintArea');
+      if(!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'tzPrintArea';
+        printArea.className = 'hidden';
+        document.body.appendChild(printArea);
+      }
+      
+      printArea.innerHTML = printHTML;
+      printArea.classList.remove('hidden');
+      
+      setTimeout(function() {
+        window.print();
+      }, 300);
+      
+      setTimeout(function() {
+        printArea.classList.add('hidden');
+        showToast('ТЗ отправлено на печать (' + indicesToPrint.length + ' позиций)', 'success');
+      }, 2000);
     }
 
     function renderBoxChips() {
@@ -1538,4 +1839,3 @@
   </script>
 </body>
 </html>
-
