@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletLoad Pro v4.2 Interactive</title>
+    <title>PalletLoad Pro v4.3 Max Density</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -147,7 +147,7 @@
 <div class="sidebar-left">
     <div class="logo">
         <h1><span>Pallet</span>Load Pro</h1>
-        <p>Interactive v4.2</p>
+        <p>Max Density v4.3</p>
     </div>
     <div class="nav">
         <div class="nav-section">Управление</div>
@@ -201,7 +201,7 @@
             </div>
             <div class="viewport-info">
                 <div><span>Кузов:</span> <span id="truckDims">13600×2450×2700</span> мм</div>
-                <div><span>Вместимость:</span> <span id="truckCapacity">33</span> мест</div>
+                <div><span>Зазор:</span> <span style="color:var(--success)">10 мм (Макс. плотность)</span></div>
                 <div><span>Центр тяжести:</span> X:<span id="cogX">0</span> Y:<span id="cogY">0</span> Z:<span id="cogZ">0</span></div>
             </div>
             <div class="viewport-controls">
@@ -370,7 +370,9 @@ let dragOffset = { x: 0, z: 0 };
 
 let truckConfig = { length: 13600, width: 2450, height: 2700, payload: 22000 };
 const PALLET_TYPES = { euro: { l: 1200, w: 800, name: 'Евро' }, fin: { l: 1200, w: 1000, name: 'Финская' } };
-const GAP = 50;
+
+// !!! ГЛАВНОЕ ИЗМЕНЕНИЕ: Минимальный зазор для максимальной плотности !!!
+const GAP = 10; // 10 мм (1 см) -行业标准 для плотной укладки
 
 // ===== INIT =====
 function init3D() {
@@ -408,7 +410,6 @@ function init3D() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
     
-    // Mouse events for Drag & Drop
     canvas.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMoveGlobal);
     window.addEventListener('mouseup', onMouseUpGlobal);
@@ -418,7 +419,6 @@ function init3D() {
         if (!isDragging) hoveredPalletIndex = null;
     });
 
-    // Hotkey for rotation
     window.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         if ((e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') && hoveredPalletIndex !== null) {
@@ -463,7 +463,7 @@ function createTruck() {
 
 // ===== DRAG & DROP LOGIC =====
 function onMouseDown(event) {
-    if (event.button !== 0) return; // Только ЛКМ
+    if (event.button !== 0) return;
     const canvas = document.getElementById('canvas3d');
     const rect = canvas.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -482,7 +482,7 @@ function onMouseDown(event) {
             isDragging = true;
             draggedMesh = obj;
             draggedPallet = pallets[obj.userData.palletIndex];
-            controls.enabled = false; // Отключаем вращение камеры
+            controls.enabled = false;
             
             dragPlane.constant = -obj.position.y;
             dragStartPos = { x: obj.position.x, y: obj.position.y, z: obj.position.z };
@@ -494,7 +494,7 @@ function onMouseDown(event) {
                 z: intersectPoint.z - obj.position.z
             };
             
-            obj.scale.setScalar(1.1);
+            obj.scale.setScalar(1.05); // Меньше увеличение, так как палеты стоят плотно
             document.getElementById('canvas3d').style.cursor = 'grabbing';
         }
     }
@@ -504,7 +504,6 @@ function onMouseMoveGlobal(event) {
     const canvas = document.getElementById('canvas3d');
     const rect = canvas.getBoundingClientRect();
     
-    // Tooltip logic when not dragging
     if (!isDragging) {
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -549,7 +548,6 @@ function onMouseMoveGlobal(event) {
         hoveredPalletIndex = null;
     }
 
-    // Drag logic
     if (isDragging && draggedMesh) {
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -560,7 +558,7 @@ function onMouseMoveGlobal(event) {
             let newX = intersectPoint.x - dragOffset.x;
             let newZ = intersectPoint.z - dragOffset.z;
             
-            // Snap to grid
+            // Snapping to tight grid
             const type = PALLET_TYPES[draggedPallet.palletType];
             const sX = draggedPallet.isRotated ? (type.w + GAP) : (type.l + GAP);
             const sZ = draggedPallet.isRotated ? (type.l + GAP) : (type.w + GAP);
@@ -574,7 +572,6 @@ function onMouseMoveGlobal(event) {
             newX = startX + col * sX;
             newZ = startZ + row * sZ;
             
-            // Boundaries
             const maxX = truckConfig.length / 2 - sX / 2 + GAP;
             const maxZ = truckConfig.width / 2 - sZ / 2 + GAP;
             const minX = -truckConfig.length / 2 + sX / 2 - GAP;
@@ -623,7 +620,7 @@ function checkPositionValidity(pallet, x, z, y) {
     
     for (let other of pallets) {
         if (other.id === pallet.id) continue;
-        if (!other.isManual) continue; // Проверяем коллизии только с другими ручными палетами
+        if (!other.isManual) continue;
         
         const otherType = PALLET_TYPES[other.palletType];
         const oL = other.isRotated ? otherType.w : otherType.l;
@@ -669,7 +666,6 @@ function calculatePositions() {
 
     const slots = [];
     
-    // 1. Занимаем слоты ручными палетами
     pallets.forEach(p => {
         if (p.isManual) {
             const type = PALLET_TYPES[p.palletType];
@@ -686,7 +682,6 @@ function calculatePositions() {
 
     const stepX = 1200 + GAP;
     
-    // 2. Размещаем остальные
     indexed.forEach(({ pallet, originalIndex }) => {
         if (pallet.isManual) {
             positions[originalIndex] = { 
@@ -728,8 +723,8 @@ function calculatePositions() {
                             if (slot.layer === layer) {
                                 const dx = Math.abs(x - slot.x);
                                 const dz = Math.abs(z - slot.z);
-                                const minDx = (pL + slot.pL) / 2 + GAP/2;
-                                const minDz = (pW + slot.pW) / 2 + GAP/2;
+                                const minDx = (pL + slot.pL) / 2 + GAP / 2;
+                                const minDz = (pW + slot.pW) / 2 + GAP / 2;
                                 if (dx < minDx && dz < minDz) {
                                     collision = true;
                                     break;
@@ -789,17 +784,18 @@ function createPalletMesh(pallet) {
     if (pallet.isCold) baseColor = 0x00d2ff;
     if (pallet.isAdr) baseColor = 0xff4444;
 
-    const base = new THREE.Mesh(new THREE.BoxGeometry(drawL - 40, 20, drawW - 40), new THREE.MeshStandardMaterial({ color: 0xc4a265 }));
+    // !!! ИЗМЕНЕНИЕ: Визуальные размеры уменьшены всего на 10-14мм, чтобы имитировать плотную стыковку !!!
+    const base = new THREE.Mesh(new THREE.BoxGeometry(drawL - 10, 20, drawW - 10), new THREE.MeshStandardMaterial({ color: 0xc4a265 }));
     base.position.y = 10;
     group.add(base);
 
     const goodsH = pallet.height - 150;
-    const goods = new THREE.Mesh(new THREE.BoxGeometry(drawL - 60, goodsH, drawW - 60), new THREE.MeshStandardMaterial({ color: baseColor, transparent: true, opacity: 0.85 }));
+    const goods = new THREE.Mesh(new THREE.BoxGeometry(drawL - 14, goodsH, drawW - 14), new THREE.MeshStandardMaterial({ color: baseColor, transparent: true, opacity: 0.9 }));
     goods.position.y = 20 + goodsH / 2;
     goods.castShadow = true;
     group.add(goods);
 
-    const indicator = new THREE.Mesh(new THREE.BoxGeometry(drawL - 80, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }));
+    const indicator = new THREE.Mesh(new THREE.BoxGeometry(drawL - 20, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }));
     indicator.position.y = pallet.height - 5;
     indicator.visible = false;
     indicator.name = 'rotIndicator';
@@ -816,7 +812,7 @@ function updateMeshAppearance(mesh, pallet, pos) {
     if (pallet.isAdr) baseColor = 0xff4444;
     if (showHeatmap && !pallet.isCold && !pallet.isAdr) baseColor = getWeightColor(pallet.weight);
 
-    const opacity = pos.overflow ? 0.3 : 0.85;
+    const opacity = pos.overflow ? 0.3 : 0.9;
 
     if (mesh.children[1] && mesh.children[1].material) {
         mesh.children[1].material.color.setHex(baseColor);
@@ -929,7 +925,8 @@ function updateUI() {
     const ozon = pallets.filter(p => p.mp === 'ozon').length;
     const wb = pallets.filter(p => p.mp === 'wb').length;
     const weight = pallets.reduce((s, p) => s + p.weight, 0);
-    const capacity = Math.floor(truckConfig.length / 1250) * Math.floor(truckConfig.width / 850) * 2;
+    // Пересчет вместимости с учетом нового зазора 10мм
+    const capacity = Math.floor(truckConfig.length / (1200 + GAP)) * Math.floor(truckConfig.width / (800 + GAP)) * 2;
     const pct = Math.min(100, Math.round((pallets.length / capacity) * 100));
 
     document.getElementById('ozonCount').textContent = ozon;
@@ -1212,8 +1209,9 @@ function draw2DSchema() {
         }
         
         ctx.fillRect(px, py, pw, ph);
-        ctx.strokeStyle = p.isManual ? '#f39c12' : '#fff';
-        ctx.lineWidth = p.isManual ? 2 : 1;
+        // Белая обводка толщиной 1px, чтобы даже при зазоре 10мм палеты визуально не сливались
+        ctx.strokeStyle = p.isManual ? '#f39c12' : '#ffffff';
+        ctx.lineWidth = 1;
         ctx.strokeRect(px, py, pw, ph);
 
         ctx.fillStyle = '#fff';
@@ -1235,12 +1233,12 @@ function draw2DSchema() {
 
 // ===== DATA MANAGEMENT =====
 function saveSession() {
-    localStorage.setItem('palletLoadPro_v42', JSON.stringify({ pallets, truckConfig, nextId }));
+    localStorage.setItem('palletLoadPro_v43', JSON.stringify({ pallets, truckConfig, nextId }));
     alert('План сохранён в браузере!');
 }
 
 function loadSession(silent = false) {
-    const data = localStorage.getItem('palletLoadPro_v42');
+    const data = localStorage.getItem('palletLoadPro_v43');
     if (data) {
         const parsed = JSON.parse(data);
         pallets = parsed.pallets || [];
