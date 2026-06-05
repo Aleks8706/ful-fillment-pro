@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Чат</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f5f5f5;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            max-width: 80%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message.other { margin-right: auto; }
+        .message.self { margin-left: auto; background: #667eea; color: white; }
+        .message-name { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #667eea; }
+        .message.self .message-name { color: white; }
+        .message-text { font-size: 16px; }
+        .message-time { font-size: 12px; color: #999; margin-top: 5px; }
+        .message.self .message-time { color: rgba(255,255,255,0.7); }
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+        .chat-input input:focus { border-color: #667eea; }
+        .chat-input button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chat-input button:hover { transform: scale(1.05); }
+        .user-name-input {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .user-name-form {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .user-name-form h2 { margin-bottom: 20px; color: #333; }
+        .user-name-form input {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            width: 300px;
+            outline: none;
+        }
+        .user-name-form button {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-name-input" id="userNameInput">
+        <div class="user-name-form">
+            <h2>👋 Привет! Введите ваше имя</h2>
+            <input type="text" id="name" placeholder="ВашЕ имя" maxlength="30">
+            <button onclick="joinChat()">Войти в чат</button>
+        </div>
+    </div>
+    <div class="chat-container" id="chatContainer" style="display: none;">
+        <div class="chat-header">🚀 Мой Чат</div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message other">
+                <div class="message-name">Система</div>
+                <div class="message-text">Добро пожаловать в чат! Напишите первое сообщение 💬</div>
+                <div class="message-time"></div>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." maxlength="500">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+    </div>
+    <script>
+        let userName = "";
+        let clientId = Math.random().toString(36).substr(2, 9);
+        
+        function joinChat() {
+            const nameInput = document.getElementById("name");
+            userName = nameInput.value.trim();
+            if (!userName) { alert("Введите ваше имя!"); return; }
+            document.getElementById("userNameInput").style.display = "none";
+            document.getElementById("chatContainer").style.display = "flex";
+            addMessage({"clientId": clientId, "name": "Система", "text": userName + " присоединился!"});
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const text = input.value.trim();
+            if (!text) return;
+            addMessage({"clientId": clientId, "name": userName, "text": text});
+            input.value = "";
+            input.focus();
+        }
+        
+        function addMessage(data) {
+            const messagesDiv = document.getElementById("chatMessages");
+            const isSelf = data.clientId === clientId;
+            const messageDiv = document.createElement("div");
+            messageDiv.className = "message " + (isSelf ? "self" : "other");
+            const time = new Date().toLocaleTimeString("ru-RU", {hour: "2-digit", minute: "2-digit"});
+            messageDiv.innerHTML = "<div class=\"message-name\">" + data.name + "</div><div class=\"message-text\">" + data.text + "</div><div class=\"message-time\">" + time + "</div>";
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        document.getElementById("messageInput").addEventListener("keypress", function(e) { if (e.key === "Enter") sendMessage(); });
+        document.getElementById("name").focus();
+    </script>
+</body>
+</html>
