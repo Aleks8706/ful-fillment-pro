@@ -286,10 +286,14 @@
       margin-top: 1mm; font-family: 'Courier New', monospace; color: #000 !important; 
     }
     
+    /* ИСПРАВЛЕННЫЙ СТИЛЬ НАИМЕНОВАНИЯ */
     .label-sheet .lbl-desc { 
-      font-size: 7.5pt; font-weight: 600; line-height: 1.1; text-align: center;
+      font-size: 7.5pt; font-weight: 600; line-height: 1.15; text-align: center;
       margin-bottom: 1mm; color: #000 !important; 
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
+      display: block !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
     }
     
     .label-sheet .lbl-footer {
@@ -336,16 +340,35 @@
         color: #000 !important;
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important;
-        overflow: visible !important; /* ВАЖНО: чтобы текст не обрезался молча */
+        overflow: visible !important;
       }
       #bulkPrintArea .label-sheet .lbl-barcode-area svg { 
-        height: 12mm !important; /* Уменьшено, чтобы освободить место для нижних строк */
+        height: 12mm !important; 
         max-height: 12mm !important;
       }
       #bulkPrintArea .label-sheet * { 
         color: #000 !important; 
         border-color: #000 !important; 
       }
+
+      /* ГАРАНТИЯ ОТОБРАЖЕНИЯ НАИМЕНОВАНИЯ ПРИ ПЕЧАТИ */
+      #bulkPrintArea .lbl-desc {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        -webkit-line-clamp: unset !important;
+        -webkit-box-orient: unset !important;
+        text-overflow: unset !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        flex-shrink: 0 !important;
+        min-height: auto !important;
+        max-height: none !important;
+        line-height: 1.1 !important;
+        margin: 1mm 0 !important;
+      }
+
       #bulkPrintArea .lbl-expiry, 
       #bulkPrintArea .lbl-quantity {
         display: inline-block !important;
@@ -854,7 +877,10 @@
     }
     function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
     function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
-    function getItemDescription(idx) { return getItemField(idx, 'product_name'); }
+    function getItemDescription(idx) { 
+      var desc = getItemField(idx, 'product_name');
+      return desc ? desc : 'Наименование не указано'; 
+    }
     function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
@@ -867,7 +893,7 @@
     function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
       var art = getItemArticle(idx) || '---';
       var bc = getItemBarcode(idx) || '---';
-      var desc = getItemDescription(idx) || '';
+      var desc = getItemDescription(idx);
       var expiry = getItemExpiry(idx);
       var instruction = getItemInstruction(idx);
       var quantity = getItemQuantity(idx);
@@ -876,7 +902,6 @@
       var tCopies = totalCopies || (printCopies[idx] || 1);
       var svgId = forPrint ? 'bp_svg_'+idx+'_'+cNum : 'grid_svg_'+idx;
       
-      // Явно пишем "НЕ УКАЗАНО", если данных нет, чтобы было видно, что поле есть
       var expiryText = (expiry && String(expiry).trim() !== '') ? String(expiry).trim() : 'НЕ УКАЗАНО';
       var qtyText = (quantity && String(quantity).trim() !== '' && String(quantity).trim() !== '0') ? String(quantity).trim() : 'НЕ УКАЗАНО';
       
@@ -999,9 +1024,9 @@
       }
       
       if (skippedCount > 0) {
-        showToast('⚠️ Пропущено ' + skippedCount + ' поз. без ШК. Проверьте настройки печати: 58x40мм, масштаб 100%!', 'warning');
+        showToast('⚠️ Пропущено ' + skippedCount + ' поз. без ШК.', 'warning');
       } else {
-        showToast('⚠️ ВАЖНО: В окне печати выберите размер 58x40 мм, масштаб 100%, поля "Нет"', 'warning');
+        showToast('⚠️ ПРОВЕРЬТЕ В ОКНЕ ПЕЧАТИ: Размер 58x40 мм, Масштаб 100%, Поля "Нет"', 'warning');
       }
       
       var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = ''; var tl = 0;
