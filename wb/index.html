@@ -297,9 +297,9 @@
       padding-top: 1.5mm;
       margin-top: auto;
     }
-    .label-sheet .lbl-bottom-row { display: flex; justify-content: space-between; align-items: center; }
-    .label-sheet .lbl-expiry { font-size: 7.5pt; font-weight: 800; color: #000 !important; }
-    .label-sheet .lbl-quantity { font-size: 7.5pt; font-weight: 800; color: #000 !important; }
+    .label-sheet .lbl-bottom-row { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+    .label-sheet .lbl-expiry { font-size: 8pt; font-weight: 800; color: #000 !important; }
+    .label-sheet .lbl-quantity { font-size: 8pt; font-weight: 800; color: #000 !important; }
     .label-sheet .lbl-instruction { 
       font-size: 6pt; font-weight: 700; line-height: 1.1; margin-top: 1.5mm; 
       text-align: center; color: #000 !important; border-top: 1px dashed #000; padding-top: 1mm;
@@ -315,20 +315,37 @@
       body * { visibility: hidden !important; }
       
       #bulkPrintArea, #bulkPrintArea * { visibility: visible !important; }
-      #bulkPrintArea { position: absolute; left: 0; top: 0; width: 58mm !important; display: block; }
-      
+      #bulkPrintArea { 
+        position: absolute; left: 0; top: 0; 
+        width: 58mm !important; 
+        display: block; 
+      }
       #bulkPrintArea .label-sheet { 
-        width: 58mm !important; height: 40mm !important; max-width: none !important;
-        page-break-after: always; page-break-inside: avoid; 
+        width: 58mm !important; 
+        height: 40mm !important; 
+        max-width: none !important;
+        min-width: 58mm !important;
+        min-height: 40mm !important;
+        page-break-after: always; 
+        page-break-inside: avoid; 
         border: 3px solid #000 !important;
         border-radius: 2mm !important;
         padding: 2mm !important;
         box-sizing: border-box !important;
-        background: #fff !important; color: #000 !important;
-        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        background: #fff !important; 
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important;
+        overflow: hidden !important;
       }
-      #bulkPrintArea .label-sheet .lbl-barcode-area svg { height: 14mm !important; }
-      #bulkPrintArea .label-sheet * { color: #000 !important; border-color: #000 !important; }
+      #bulkPrintArea .label-sheet .lbl-barcode-area svg { 
+        height: 14mm !important; 
+        max-height: 14mm !important;
+      }
+      #bulkPrintArea .label-sheet * { 
+        color: #000 !important; 
+        border-color: #000 !important; 
+      }
       
       #reportPrintArea, #reportPrintArea * { visibility: visible !important; }
       #reportPrintArea { position: absolute; left: 0; top: 0; width: 100%; display: block; }
@@ -841,14 +858,24 @@
     }
 
     function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
-      var art = getItemArticle(idx) || '---', bc = getItemBarcode(idx) || '---';
-      var desc = getItemDescription(idx) || '', expiry = getItemExpiry(idx) || '---';
-      var instruction = getItemInstruction(idx) || '', quantity = getItemQuantity(idx) || '';
-      var cNum = copyNum || 1, tCopies = totalCopies || (printCopies[idx] || 1);
+      var art = getItemArticle(idx) || '---';
+      var bc = getItemBarcode(idx) || '---';
+      var desc = getItemDescription(idx) || '';
+      var expiry = getItemExpiry(idx);
+      var instruction = getItemInstruction(idx);
+      var quantity = getItemQuantity(idx);
+      
+      var cNum = copyNum || 1;
+      var tCopies = totalCopies || (printCopies[idx] || 1);
       var svgId = forPrint ? 'bp_svg_'+idx+'_'+cNum : 'grid_svg_'+idx;
-      var br = '<span class="lbl-expiry">Годен: '+expiry+'</span>';
-      if(quantity && quantity!=='' && quantity!=='0') br += '<span class="lbl-quantity">Квант: '+quantity+'</span>';
-      var ih = instruction ? '<div class="lbl-instruction">'+instruction+'</div>' : '';
+      
+      // Всегда выводим поля, даже если пустые, чтобы было видно, что они есть
+      var expiryText = (expiry && String(expiry).trim() !== '') ? String(expiry).trim() : '—';
+      var qtyText = (quantity && String(quantity).trim() !== '' && String(quantity).trim() !== '0') ? String(quantity).trim() : '—';
+      
+      var br = '<span class="lbl-expiry">Годен: ' + expiryText + '</span>';
+      var qr = '<span class="lbl-quantity">Квант: ' + qtyText + '</span>';
+      var ih = (instruction && String(instruction).trim() !== '') ? '<div class="lbl-instruction">' + String(instruction).trim() + '</div>' : '';
       
       return '<div class="label-sheet" data-idx="'+idx+'">' +
         '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
@@ -856,7 +883,7 @@
         '<div class="lbl-barcode-area"><svg id="'+svgId+'"></svg><div class="lbl-barcode-num">'+bc+'</div></div>' +
         '<div class="lbl-desc">'+desc+'</div>' +
         '<div class="lbl-footer">' +
-          '<div class="lbl-bottom-row">'+br+'</div>' +
+          '<div class="lbl-bottom-row">' + br + qr + '</div>' +
           ih +
         '</div></div>';
     }
@@ -875,7 +902,6 @@
       document.getElementById('statLabels').textContent = tl;
     }
 
-    // === НОВАЯ ФУНКЦИЯ: Проверка валидности штрихкода ===
     function isValidBarcode(idx) {
       var bc = getItemBarcode(idx);
       return bc && typeof bc === 'string' && bc.trim() !== '' && bc !== '---';
@@ -957,7 +983,6 @@
     }
 
     function printMultipleLabels(indices) {
-      // Фильтруем только те индексы, у которых есть корректный штрихкод
       var validIndices = indices.filter(function(idx) { return isValidBarcode(idx); });
       var skippedCount = indices.length - validIndices.length;
       
@@ -967,7 +992,9 @@
       }
       
       if (skippedCount > 0) {
-        showToast('Пропущено ' + skippedCount + ' позиций без штрихкода', 'info');
+        showToast('⚠️ Пропущено ' + skippedCount + ' поз. без ШК. Проверьте настройки печати: 58x40мм, масштаб 100%!', 'warning');
+      } else {
+        showToast('⚠️ ВАЖНО: В окне печати выберите размер 58x40 мм, масштаб 100%, поля "Нет"', 'warning');
       }
       
       var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = ''; var tl = 0;
@@ -981,8 +1008,8 @@
           var c = printCopies[idx] || 1, bc = getItemBarcode(idx);
           for(var i=1; i<=c; i++){ try { JsBarcode('#bp_svg_'+idx+'_'+i, bc, {format:'CODE128', width:2.5, height:60, displayValue:false, margin:0}); } catch(e){} }
         });
-        showToast('Печать '+tl+' этикеток...', 'info'); window.print();
-      }, 1000);
+        window.print();
+      }, 1200);
       setTimeout(function(){
         pa.classList.add('hidden'); validIndices.forEach(function(idx){ printedSet.add(idx); });
         selectedIndices.clear(); renderLabelGrid(); showToast('Печать завершена!', 'success');
