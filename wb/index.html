@@ -253,6 +253,7 @@
     .mapping-preview h4 { margin-bottom: 10px; }
     .mapping-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
     
+    /* ЭКРАННАЯ ЭТИКЕТКА */
     .label-sheet {
       width: 100%; max-width: 360px; aspect-ratio: 58/40; 
       border: 3px solid #000 !important;
@@ -289,8 +290,7 @@
     .label-sheet .lbl-desc { 
       font-size: 7.5pt; font-weight: 600; line-height: 1.15; text-align: center;
       margin-bottom: 1mm; color: #000 !important; 
-      display: block !important;
-      word-break: break-word;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     
     .label-sheet .lbl-footer {
@@ -311,72 +311,124 @@
     #tzTableBody tr:hover { background: var(--surface2); }
     #tzTableBody tr.selected { background: var(--primary-glow); }
     
+    /* === ЖЕСТКИЕ СТИЛИ ДЛЯ ПЕЧАТИ (БЕЗ FLEXBOX-МАГИИ) === */
     @media print {
       @page { size: 58mm 40mm; margin: 0; }
+      body { margin: 0 !important; padding: 0 !important; }
       body * { visibility: hidden !important; }
       
       #bulkPrintArea, #bulkPrintArea * { visibility: visible !important; }
-      #bulkPrintArea { 
-        position: absolute; left: 0; top: 0; 
-        width: 58mm !important; 
-        display: block; 
+      #bulkPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 58mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
       }
-      #bulkPrintArea .label-sheet { 
-        width: 58mm !important; 
-        height: auto !important; 
-        min-height: 40mm !important;
+      #bulkPrintArea .label-sheet {
+        width: 58mm !important;
+        height: 40mm !important;
+        max-width: 58mm !important;
         max-height: 40mm !important;
-        max-width: none !important;
-        page-break-after: always; 
-        page-break-inside: avoid; 
-        border: 3px solid #000 !important;
+        margin: 0 !important;
+        padding: 2mm !important;
+        border: 2px solid #000 !important;
         border-radius: 2mm !important;
-        padding: 1.5mm !important;
         box-sizing: border-box !important;
-        background: #fff !important; 
+        background: #fff !important;
         color: #000 !important;
-        -webkit-print-color-adjust: exact !important; 
-        print-color-adjust: exact !important;
-        overflow: visible !important;
+        display: block !important; /* Отключаем flex для печати, используем блочную модель */
+        overflow: hidden !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
       }
-      #bulkPrintArea .label-sheet .lbl-barcode-area svg { 
-        height: 12mm !important; 
-        max-height: 12mm !important;
+      #bulkPrintArea .lbl-header {
+        font-size: 7pt !important;
+        font-weight: 900 !important;
+        text-align: center !important;
+        border-bottom: 1px solid #000 !important;
+        padding-bottom: 1mm !important;
+        margin-bottom: 1mm !important;
+        height: 4mm !important;
+        line-height: 4mm !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
       }
-      #bulkPrintArea .label-sheet * { 
-        color: #000 !important; 
-        border-color: #000 !important; 
-      }
-
-      /* АБСОЛЮТНАЯ ЗАЩИТА НАИМЕНОВАНИЯ ПРИ ПЕЧАТИ */
-      #bulkPrintArea .lbl-desc {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        height: auto !important;
-        min-height: 5mm !important;
-        max-height: 15mm !important;
-        overflow: visible !important;
-        white-space: normal !important;
-        word-break: break-word !important;
-        word-wrap: break-word !important;
-        line-height: 1.1 !important;
+      #bulkPrintArea .lbl-header-row {
         font-size: 8pt !important;
         font-weight: 800 !important;
-        color: #000 !important;
-        margin: 2mm 0 !important;
-        padding: 1mm !important;
-        text-align: center !important;
-        flex: none !important;
-        flex-shrink: 0 !important;
+        height: 4mm !important;
+        line-height: 4mm !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        overflow: hidden !important;
       }
-
-      #bulkPrintArea .lbl-expiry, 
-      #bulkPrintArea .lbl-quantity {
-        display: inline-block !important;
-        visibility: visible !important;
-        font-size: 7.5pt !important;
+      #bulkPrintArea .lbl-barcode-area {
+        height: 14mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 1mm 0 !important;
+      }
+      #bulkPrintArea .lbl-barcode-area svg {
+        width: 100% !important;
+        height: 10mm !important;
+        max-height: 10mm !important;
+        display: block !important;
+      }
+      #bulkPrintArea .lbl-barcode-num {
+        font-size: 10pt !important;
         font-weight: 900 !important;
+        text-align: center !important;
+        height: 4mm !important;
+        line-height: 4mm !important;
+        font-family: 'Courier New', monospace !important;
+        overflow: hidden !important;
+      }
+      #bulkPrintArea .lbl-desc {
+        font-size: 7pt !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        height: 6mm !important;
+        max-height: 6mm !important;
+        line-height: 1.1 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        margin-bottom: 1mm !important;
+        color: #000 !important;
+      }
+      #bulkPrintArea .lbl-footer {
+        border-top: 1px solid #000 !important;
+        padding-top: 1mm !important;
+        height: 7mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+      }
+      #bulkPrintArea .lbl-bottom-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        font-size: 7pt !important;
+        font-weight: 800 !important;
+        height: 3.5mm !important;
+        line-height: 3.5mm !important;
+        overflow: hidden !important;
+      }
+      #bulkPrintArea .lbl-instruction {
+        font-size: 6pt !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        height: 3.5mm !important;
+        line-height: 3.5mm !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
       }
       
       #reportPrintArea, #reportPrintArea * { visibility: visible !important; }
@@ -879,16 +931,11 @@
     }
     function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
     function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
-    
-    // ЖЕСТКАЯ ПРОВЕРКА НАИМЕНОВАНИЯ
     function getItemDescription(idx) { 
       var desc = getItemField(idx, 'product_name');
-      if (!desc || String(desc).trim() === '') {
-        return '⚠️ НАИМЕНОВАНИЕ ОТСУТСТВУЕТ (проверьте маппинг)';
-      }
+      if (!desc || String(desc).trim() === '') return '⚠️ НАИМЕНОВАНИЕ ОТСУТСТВУЕТ';
       return String(desc).trim();
     }
-    
     function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
@@ -969,7 +1016,7 @@
           '<div class="copies-input"><label>Копий:</label><input type="number" value="'+copies+'" min="1" onchange="updateCopies('+idx+',this.value)" onclick="event.stopPropagation()"></div>';
         grid.appendChild(card);
         setTimeout(function(){ 
-          try { JsBarcode('#'+svgId, bc, {format:'CODE128', width:2.5, height:60, displayValue:false, margin:0}); } catch(e){} 
+          try { JsBarcode('#'+svgId, bc, {format:'CODE128', width:2, height:40, displayValue:false, margin:0}); } catch(e){} 
         }, 0);
       });
       if(!cnt) grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>Ничего не найдено</p></div>';
@@ -1016,7 +1063,7 @@
       var pa = document.getElementById('bulkPrintArea');
       pa.innerHTML = createLabelHTML(idx, true, 1, copies); pa.classList.remove('hidden');
       setTimeout(function(){
-        try { JsBarcode('#bp_svg_'+idx+'_1', getItemBarcode(idx), {format:'CODE128', width:2.5, height:60, displayValue:false, margin:0}); } catch(e){}
+        try { JsBarcode('#bp_svg_'+idx+'_1', getItemBarcode(idx), {format:'CODE128', width:2, height:40, displayValue:false, margin:0}); } catch(e){}
         window.print();
       }, 150);
       setTimeout(function(){ pa.classList.add('hidden'); printedSet.add(idx); renderLabelGrid(); showToast('Этикетка напечатана', 'success'); }, 2500);
@@ -1034,7 +1081,7 @@
       if (skippedCount > 0) {
         showToast('⚠️ Пропущено ' + skippedCount + ' поз. без ШК.', 'warning');
       } else {
-        showToast('⚠️ ПРОВЕРЬТЕ В ОКНЕ ПЕЧАТИ: Размер 58x40 мм, Масштаб 100%, Поля "Нет"', 'warning');
+        showToast('⚠️ ВАЖНО: В окне печати: Размер 58x40 мм, Масштаб 100%, Поля "Нет"', 'warning');
       }
       
       var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = ''; var tl = 0;
@@ -1046,7 +1093,7 @@
       setTimeout(function(){
         validIndices.forEach(function(idx){
           var c = printCopies[idx] || 1, bc = getItemBarcode(idx);
-          for(var i=1; i<=c; i++){ try { JsBarcode('#bp_svg_'+idx+'_'+i, bc, {format:'CODE128', width:2.5, height:60, displayValue:false, margin:0}); } catch(e){} }
+          for(var i=1; i<=c; i++){ try { JsBarcode('#bp_svg_'+idx+'_'+i, bc, {format:'CODE128', width:2, height:40, displayValue:false, margin:0}); } catch(e){} }
         });
         window.print();
       }, 1200);
