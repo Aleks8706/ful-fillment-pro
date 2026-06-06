@@ -286,13 +286,10 @@
       margin-top: 1mm; font-family: 'Courier New', monospace; color: #000 !important; 
     }
     
-    /* ИСПРАВЛЕННЫЙ СТИЛЬ НАИМЕНОВАНИЯ */
     .label-sheet .lbl-desc { 
       font-size: 7.5pt; font-weight: 600; line-height: 1.15; text-align: center;
       margin-bottom: 1mm; color: #000 !important; 
       display: block !important;
-      overflow: hidden;
-      text-overflow: ellipsis;
       word-break: break-word;
     }
     
@@ -351,22 +348,27 @@
         border-color: #000 !important; 
       }
 
-      /* ГАРАНТИЯ ОТОБРАЖЕНИЯ НАИМЕНОВАНИЯ ПРИ ПЕЧАТИ */
+      /* АБСОЛЮТНАЯ ЗАЩИТА НАИМЕНОВАНИЯ ПРИ ПЕЧАТИ */
       #bulkPrintArea .lbl-desc {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        height: auto !important;
+        min-height: 5mm !important;
+        max-height: 15mm !important;
         overflow: visible !important;
-        -webkit-line-clamp: unset !important;
-        -webkit-box-orient: unset !important;
-        text-overflow: unset !important;
         white-space: normal !important;
         word-break: break-word !important;
-        flex-shrink: 0 !important;
-        min-height: auto !important;
-        max-height: none !important;
+        word-wrap: break-word !important;
         line-height: 1.1 !important;
-        margin: 1mm 0 !important;
+        font-size: 8pt !important;
+        font-weight: 800 !important;
+        color: #000 !important;
+        margin: 2mm 0 !important;
+        padding: 1mm !important;
+        text-align: center !important;
+        flex: none !important;
+        flex-shrink: 0 !important;
       }
 
       #bulkPrintArea .lbl-expiry, 
@@ -877,10 +879,16 @@
     }
     function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
     function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
+    
+    // ЖЕСТКАЯ ПРОВЕРКА НАИМЕНОВАНИЯ
     function getItemDescription(idx) { 
       var desc = getItemField(idx, 'product_name');
-      return desc ? desc : 'Наименование не указано'; 
+      if (!desc || String(desc).trim() === '') {
+        return '⚠️ НАИМЕНОВАНИЕ ОТСУТСТВУЕТ (проверьте маппинг)';
+      }
+      return String(desc).trim();
     }
+    
     function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
     function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
     function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
