@@ -3,431 +3,1878 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FBO Отгрузка | Полная версия</title>
+    <title>FBO Отгрузка | Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.1.1/dist/bwip-js-min.js"></script>
     <style>
-        :root { --ozon: #005bff; --wb: #cb11ab; --bg: #f5f7fa; --card: #fff; --text: #222; --border: #e0e0e0; --success: #28a745; --danger: #dc3545; --warning: #ffc107; }
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --secondary: #64748b;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --info: #06b6d4;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --transition: all 0.2s ease;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.4; }
-        
-        .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 12px; max-width: 1400px; margin: 0 auto; }
-        .card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; }
-        h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-        
-        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
-        input:focus, select:focus { outline: 2px solid var(--ozon); border-color: transparent; }
-        button { cursor: pointer; background: var(--ozon); color: #fff; border: none; font-weight: 600; transition: 0.15s; }
-        button:hover { opacity: 0.95; } button:active { transform: scale(0.98); }
-        button.secondary { background: #6c757d; } button.danger { background: var(--danger); }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 12px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .app-header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .app-header .status { font-size: 12px; opacity: 0.9; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 340px;
+            gap: 16px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow); }
+
+        h2 {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+        }
+
+        /* Inputs & Buttons */
+        input, select, button {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            background: #fff;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        button {
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            padding: 10px 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+        button:active { transform: translateY(0); }
+        button.secondary { background: var(--secondary); }
+        button.secondary:hover { background: #475569; }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: #dc2626; }
         button.warning { background: var(--warning); color: #333; }
-        button:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; transform: none !important; }
-        .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
-        
-        .scanner-input { background: #f8f9fa; border: 2px dashed #005bff; font-size: 16px; text-align: center; font-family: monospace; transition: 0.2s; }
-        .scanner-input:focus { outline: none; border-color: var(--success); background: #fff; }
-        .scanner-input.success { border-color: var(--success); background: #e6ffe6; animation: pulse 0.3s; }
-        .scanner-input.error { border-color: var(--danger); background: #ffe6e6; animation: shake 0.3s; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-        
+        button.warning:hover { background: #d97706; }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; opacity: 0.6; transform: none !important; box-shadow: none !important; }
+
+        .row { display: flex; gap: 8px; }
+        .row > * { flex: 1; min-width: 0; }
+
+        /* Scanner */
+        .scanner-input {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed var(--primary);
+            font-size: 15px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: var(--transition);
+        }
+        .scanner-input:focus {
+            outline: none;
+            border-color: var(--success);
+            border-style: solid;
+            background: #fff;
+            box-shadow: 0 0 0 4px var(--success-light);
+        }
+        .scanner-input.success {
+            border-color: var(--success);
+            border-style: solid;
+            background: var(--success-light);
+            animation: pulse 0.4s ease;
+        }
+        .scanner-input.error {
+            border-color: var(--danger);
+            border-style: solid;
+            background: var(--danger-light);
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Table */
         table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-        th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
-        th { background: #f8f9fa; font-weight: 600; }
-        .qty-btn { width: auto; padding: 3px 10px; margin: 0 2px; background: #e9ecef; color: #333; font-size: 12px; border-radius: 4px; border: none; }
-        
-        .stats { display: flex; justify-content: space-between; background: #f0f4ff; padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 13px; font-weight: 600; }
-        .alert { padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; display: none; }
-        .alert-error { background: #ffe6e6; color: #a00; border: 1px solid #ffcdd2; }
-        .alert-success { background: #e6ffe6; color: #060; border: 1px solid #c8e6c9; }
-        .info-box { background: #fff3cd; color: #856404; padding: 8px 10px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; border-left: 4px solid #ffc107; }
+        th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+        th {
+            background: #f8fafc;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+        tbody tr { transition: var(--transition); }
+        tbody tr:hover { background: #f8fafc; }
 
-        .pallet-item { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .pallet-item:hover { background: #e9ecef; } .pallet-item.active { border-color: var(--success); background: #e8f5e9; }
-        .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; }
-        
-        .target-item { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 11px; border-left: 3px solid #ccc; }
-        .target-item.done { border-left-color: var(--success); opacity: 0.75; }
-        .target-item b { display: block; margin-bottom: 3px; font-size: 12px; }
-        .tz-note { font-size: 10px; color: #666; margin-top: 4px; font-style: italic; line-height: 1.3; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #eee; }
-        .progress-bar { height: 5px; background: #e9ecef; border-radius: 3px; overflow: hidden; margin: 4px 0; }
-        .progress-fill { height: 100%; background: var(--success); transition: width 0.3s; }
-        .progress-text { display: flex; justify-content: space-between; color: #555; font-size: 10px; }
-        .quant-badge { display: inline-block; background: #e6f0ff; color: var(--ozon); padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-left: 5px; }
+        .qty-btn {
+            width: auto;
+            padding: 4px 10px;
+            margin: 0 3px;
+            background: #e2e8f0;
+            color: #333;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 4px;
+            border: none;
+            transition: var(--transition);
+        }
+        .qty-btn:hover { background: var(--primary); color: #fff; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 10px; }
-        .modal { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .modal h3 { margin-bottom: 15px; font-size: 17px; }
-        .mapping-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
-        .mapping-label { width: 100%; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
-        .mapping-select { flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(135deg, var(--primary-light) 0%, #eff6ff 100%);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin: 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .alert-error { background: var(--danger-light); color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background: var(--success-light); color: #065f46; border: 1px solid #a7f3d0; }
+
+        .info-box {
+            background: var(--warning-light);
+            color: #92400e;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Pallets */
+        .pallet-item {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+        .pallet-item:hover { background: #e2e8f0; transform: translateX(2px); }
+        .pallet-item.active { border-color: var(--success); background: var(--success-light); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .pallet-item b { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text); }
+        .pallet-item .meta { color: var(--text-muted); font-size: 10px; }
+
+        /* Targets */
+        .target-search {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 10px;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: var(--radius-sm);
+        }
+        .filter-tab {
+            flex: 1;
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-muted);
+            user-select: none;
+        }
+        .filter-tab:hover { background: rgba(255,255,255,0.5); }
+        .filter-tab.active { background: #fff; color: var(--primary); box-shadow: var(--shadow-sm); }
+
+        .target-item {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            font-size: 11px;
+            border-left: 3px solid var(--border);
+            transition: var(--transition);
+        }
+        .target-item:hover { background: #f1f5f9; }
+        .target-item.done { border-left-color: var(--success); opacity: 0.7; }
+        .target-item b { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text); }
+
+        .tz-note {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            font-style: italic;
+            line-height: 1.3;
+            background: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, #34d399 100%);
+            transition: width 0.4s ease;
+            border-radius: 3px;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 500;
+        }
+        .quant-badge {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            margin-left: 5px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            background: #fff;
+            padding: 24px;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 550px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal h3 { margin-bottom: 16px; font-size: 18px; color: var(--text); }
+        .mapping-row { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+        .mapping-label { width: 100%; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: var(--text); }
+        .mapping-select { flex: 1; min-width: 150px; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* 🔴 ЭТИКЕТКИ */
-        .label-area { position: absolute; left: -9999px; top: 0; width: 120mm; height: 75mm; background: #fff; border: 1px solid #000; padding: 3mm; font-family: 'Arial', sans-serif; overflow: hidden; z-index: -1; line-height: 1.1; }
-        .label-header { border-bottom: 2px solid #000; padding-bottom: 1.5mm; margin-bottom: 2mm; display: flex; justify-content: space-between; align-items: center; }
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #fff;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+            max-width: 400px;
+            animation: toastIn 0.3s ease;
+            pointer-events: auto;
+            border-left: 4px solid var(--primary);
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+        .toast.removing { animation: toastOut 0.3s ease forwards; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100px); }
+        }
+
+        /* Camera */
+        #camera-section { margin-top: 12px; }
+        #interactive {
+            width: 100%;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: #000;
+            display: none;
+            position: relative;
+            min-height: 200px;
+            box-shadow: var(--shadow);
+        }
+        #interactive video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #interactive canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .camera-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 25%;
+            border: 3px solid var(--success);
+            border-radius: 6px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            animation: scanPulse 2s infinite;
+        }
+        @keyframes scanPulse {
+            0%, 100% { border-color: var(--success); }
+            50% { border-color: var(--primary); }
+        }
+        .scan-hint {
+            font-size: 11px;
+            color: #fff;
+            background: rgba(0,0,0,0.8);
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            text-align: center;
+        }
+        #camera-toggle { display: flex; gap: 8px; margin-top: 8px; }
+        #camera-toggle button { flex: 1; padding: 10px; }
+        .camera-permission { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+        .camera-active { border-color: var(--success) !important; background: var(--success-light) !important; border-style: solid !important; }
+        .scan-status {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 6px;
+            min-height: 20px;
+            font-weight: 600;
+        }
+        .scan-status.detecting { color: var(--warning); }
+        .scan-status.found { color: var(--success); font-weight: 700; }
+        .scan-status.error { color: var(--danger); }
+
+        /* Labels (Print) */
+        .label-area {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 120mm;
+            height: 75mm;
+            background: #fff;
+            border: 1px solid #000;
+            padding: 3mm;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            z-index: -1;
+            line-height: 1.1;
+        }
+        .label-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 1.5mm;
+            margin-bottom: 2mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .label-title { font-size: 12pt; font-weight: 900; }
         .label-date { font-size: 7pt; color: #444; }
-        .label-info-row { font-size: 8pt; margin-bottom: 1.5mm; display: flex; justify-content: space-between; gap: 2mm; border-bottom: 1px dashed #888; padding-bottom: 1.5mm; }
-        .label-info-row div { flex: 1; } .label-info-row strong { font-weight: 800; }
-        .label-summary { font-size: 7.5pt; background: #f4f4f4; padding: 1mm 2mm; border-radius: 1.5mm; margin-bottom: 1.5mm; display: flex; justify-content: space-between; border: 1px solid #ddd; }
+        .label-info-row {
+            font-size: 8pt;
+            margin-bottom: 1.5mm;
+            display: flex;
+            justify-content: space-between;
+            gap: 2mm;
+            border-bottom: 1px dashed #888;
+            padding-bottom: 1.5mm;
+        }
+        .label-info-row div { flex: 1; }
+        .label-info-row strong { font-weight: 800; }
+        .label-summary {
+            font-size: 7.5pt;
+            background: #f4f4f4;
+            padding: 1mm 2mm;
+            border-radius: 1.5mm;
+            margin-bottom: 1.5mm;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #ddd;
+        }
         .label-content { border-top: 1px solid #888; padding-top: 1.5mm; max-height: 30mm; }
         .label-content h3 { font-size: 7.5pt; margin-bottom: 1mm; font-weight: 800; text-transform: uppercase; color: #333; }
         .label-content ul { list-style: none; margin: 0; padding: 0; }
-        .label-content li { margin-bottom: 1.5mm; padding: 1mm 0; border-bottom: 1px dotted #ccc; font-size: 7pt; display: flex; align-items: flex-start; gap: 2mm; }
-        .label-content li .bc { display: inline-block; font-family: monospace; font-weight: 900; font-size: 8.5pt; background: #000; color: #fff; padding: 1px 3px; border-radius: 2px; }
+        .label-content li {
+            margin-bottom: 1.5mm;
+            padding: 1mm 0;
+            border-bottom: 1px dotted #ccc;
+            font-size: 7pt;
+            display: flex;
+            align-items: flex-start;
+            gap: 2mm;
+        }
+        .label-content li .bc {
+            display: inline-block;
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 8.5pt;
+            background: #000;
+            color: #fff;
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
         .label-content li .name { display: block; font-weight: 600; font-size: 6.5pt; margin-top: 1px; }
         .label-content li .qty { float: right; font-weight: 800; font-size: 7.5pt; white-space: nowrap; }
-        .datamatrix-box { width: 14mm; height: 14mm; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .datamatrix-box {
+            width: 14mm;
+            height: 14mm;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .datamatrix-box canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
-        .label-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 2px solid #000; padding-top: 1.5mm; }
-        .barcode-wrap { flex: 1; text-align: center; } .barcode-wrap svg { height: 10mm; width: auto; }
-        .weight-box { font-size: 9pt; font-weight: 900; background: #000; color: #fff; padding: 1mm 3mm; border-radius: 2mm; }
+        .label-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 2mm;
+            border-top: 2px solid #000;
+            padding-top: 1.5mm;
+        }
+        .barcode-wrap { flex: 1; text-align: center; }
+        .barcode-wrap svg { height: 10mm; width: auto; }
+        .weight-box {
+            font-size: 9pt;
+            font-weight: 900;
+            background: #000;
+            color: #fff;
+            padding: 1mm 3mm;
+            border-radius: 2mm;
+        }
 
-        /* 🔴 ЭТИКЕТКА ТОВАРА (58x40) */
         .product-labels-container { display: none; }
-        .label-product { width: 58mm; height: 40mm; background: #fff; border: 1px dashed #ccc; padding: 2mm; box-sizing: border-box; overflow: hidden; font-family: 'Arial', sans-serif; display: block; margin: 0 auto 2mm auto; position: relative; page-break-after: always; }
-        .prod-header { font-size: 8pt; font-weight: 900; text-align: center; color: #d00; border-bottom: 1px solid #333; padding-bottom: 0.5mm; margin-bottom: 1mm; text-transform: uppercase; }
+        .label-product {
+            width: 58mm;
+            height: 40mm;
+            background: #fff;
+            border: 1px dashed #ccc;
+            padding: 2mm;
+            box-sizing: border-box;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            display: block;
+            margin: 0 auto 2mm auto;
+            position: relative;
+            page-break-after: always;
+        }
+        .prod-header {
+            font-size: 8pt;
+            font-weight: 900;
+            text-align: center;
+            color: #d00;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5mm;
+            margin-bottom: 1mm;
+            text-transform: uppercase;
+        }
         .prod-name { font-size: 7.5pt; font-weight: 700; margin-bottom: 1mm; line-height: 1.1; }
         .prod-info { font-size: 6.5pt; display: flex; justify-content: space-between; margin-bottom: 0.5mm; }
         .prod-exp { font-size: 6pt; color: #444; margin-bottom: 1mm; }
-        .prod-barcode { text-align: center; } .prod-barcode svg { height: 10mm; max-width: 100%; }
+        .prod-barcode { text-align: center; }
+        .prod-barcode svg { height: 10mm; max-width: 100%; }
 
-        /* 🔴 ЭТИКЕТКА МАРШРУТА (120x75) */
-        .label-city { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .label-city {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
         .lbl-city-big { font-size: 20pt; font-weight: 900; margin: 2mm 0 1mm 0; line-height: 1.1; text-transform: uppercase; }
-        .lbl-route-sub { font-size: 9pt; color: #444; margin-bottom: 2mm; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 1.5mm 0; width: 100%; }
-        .lbl-city-details { font-size: 10pt; line-height: 1.5; margin: 2mm 0 4mm 0; text-align: left; width: 92%; background: #f8f8f8; padding: 2mm; border-radius: 2mm; }
+        .lbl-route-sub {
+            font-size: 9pt;
+            color: #444;
+            margin-bottom: 2mm;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 1.5mm 0;
+            width: 100%;
+        }
+        .lbl-city-details {
+            font-size: 10pt;
+            line-height: 1.5;
+            margin: 2mm 0 4mm 0;
+            text-align: left;
+            width: 92%;
+            background: #f8f8f8;
+            padding: 2mm;
+            border-radius: 2mm;
+        }
         .lbl-city-details div { margin-bottom: 1mm; display: flex; justify-content: space-between; }
         .lbl-city-details b { color: #000; }
 
         #retry-print-btn, #btn-product-print { display: none; margin-top: 8px; background: var(--warning); color: #333; }
 
-        /* Камера */
-        #camera-section { margin-top: 10px; }
-        #interactive { width: 100%; border-radius: 8px; overflow: hidden; background: #000; display: none; position: relative; min-height: 180px; }
-        #interactive video { width: 100%; height: 100%; object-fit: cover; display: block; }
-        #interactive canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .camera-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 25%; border: 3px solid var(--success); border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); }
-        .scan-hint { font-size: 11px; color: #fff; background: rgba(0,0,0,0.75); padding: 5px 10px; border-radius: 4px; margin-top: 6px; text-align: center; }
-        #camera-toggle { display: flex; gap: 8px; margin-top: 8px; } #camera-toggle button { flex: 1; padding: 9px; }
-        .camera-permission { font-size: 11px; color: #666; margin-top: 5px; text-align: center; }
-        .camera-active { border-color: var(--success) !important; background: #e6ffe6 !important; }
-        .scan-status { font-size: 11px; text-align: center; margin-top: 5px; min-height: 18px; font-weight: 500; }
-        .scan-status.detecting { color: var(--warning); } .scan-status.found { color: var(--success); font-weight: bold; } .scan-status.error { color: var(--danger); }
-
-        /* ПЕЧАТЬ */
-        @media print { 
+        /* Print Styles */
+        @media print {
             body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-            .no-print { display: none !important; } 
-            .label-area { position: relative !important; left: 0 !important; top: 0 !important; width: 120mm !important; height: 75mm !important; padding: 3mm !important; border: 1px solid #000 !important; margin: 0 !important; visibility: visible !important; display: block !important; page-break-after: always; }
+            .no-print { display: none !important; }
+            .label-area {
+                position: relative !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 120mm !important;
+                height: 75mm !important;
+                padding: 3mm !important;
+                border: 1px solid #000 !important;
+                margin: 0 !important;
+                visibility: visible !important;
+                display: block !important;
+                page-break-after: always;
+            }
             .label-area:last-child { page-break-after: auto; }
             .label-area.hide-during-print { display: none !important; visibility: hidden !important; }
             .label-content { max-height: none !important; overflow: visible !important; }
             .label-content li { break-inside: avoid !important; }
             .datamatrix-box canvas { display: inline-block !important; }
-            
+
             body.printing-products .label-area { display: none !important; }
             body.printing-products .product-labels-container { display: block !important; }
-            body.printing-products .label-product { width: 58mm !important; height: 40mm !important; border: none !important; page-break-after: always; }
-            
-            @page { size: 120mm 75mm; margin: 0; } 
+            body.printing-products .label-product {
+                width: 58mm !important;
+                height: 40mm !important;
+                border: none !important;
+                page-break-after: always;
+            }
+
+            @page { size: 120mm 75mm; margin: 0; }
             body.printing-products @page { size: 58mm 40mm; margin: 0; }
         }
-        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .mapping-row { flex-direction: column; align-items: stretch; } .mapping-label { width: 100%; } #interactive { max-height: 220px; } }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+            .grid > div:first-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            body { padding: 8px; }
+            .app-header { padding: 12px 16px; }
+            .app-header h1 { font-size: 16px; }
+            .mapping-row { flex-direction: column; align-items: stretch; }
+            .mapping-label { width: 100%; }
+            #interactive { max-height: 220px; }
+            .toast-container { bottom: 10px; right: 10px; left: 10px; }
+            .toast { min-width: auto; width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <div class="modal-overlay no-print" id="mapping-modal">
+    <!-- Header -->
+    <div class="app-header no-print">
+        <h1>📦 FBO Отгрузка</h1>
+        <div class="status" id="app-status">Готов к работе</div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Mapping Modal -->
+    <div class="modal-overlay no-print" id="mapping-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal">
-            <h3>📋 Настройка колонок</h3>
-            <p style="font-size:12px; color:#666; margin-bottom:15px;">Выберите соответствие колонок из вашего файла.</p>
+            <h3 id="modal-title">📋 Настройка колонок</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Выберите соответствие колонок из вашего файла.</p>
             <div id="mapping-fields"></div>
             <div class="modal-actions">
-                <button onclick="applyMapping()">✅ Применить</button>
-                <button class="secondary" onclick="closeMappingModal()">❌ Отмена</button>
+                <button onclick="applyMapping()" aria-label="Применить настройки">✅ Применить</button>
+                <button class="secondary" onclick="closeMappingModal()" aria-label="Отменить">❌ Отмена</button>
             </div>
         </div>
     </div>
 
+    <!-- Main Grid -->
     <div class="grid no-print">
+        <!-- Left Column -->
         <div>
             <div class="card">
-                <h2>📂 Загрузка ТЗ <button id="voice-toggle" class="secondary" style="width:auto;font-size:12px;padding:4px 8px;">🔊 ВКЛ</button></h2>
-                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv">
+                <h2>
+                    📂 Загрузка ТЗ
+                    <button id="voice-toggle" class="secondary" style="width:auto;font-size:11px;padding:4px 10px;" aria-label="Переключить голос">🔊 ВКЛ</button>
+                </h2>
+                <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv" aria-label="Загрузить файл Excel">
                 <div id="upload-status" class="alert alert-success"></div>
             </div>
+
             <div class="card" id="order-info" style="display:none;">
                 <h2>📋 Информация</h2>
                 <div class="info-box">📌 <b>Маршрут:</b> <span id="excel-route-display">-</span></div>
-                <div class="stats"><span>📦 SKU: <span id="loaded-count">0</span></span><span>📊 План: <span id="total-plan">0</span></span></div>
+                <div class="stats">
+                    <span>📦 SKU: <span id="loaded-count">0</span></span>
+                    <span>📊 План: <span id="total-plan">0</span></span>
+                </div>
             </div>
+
             <div class="card">
                 <h2>🎛️ Параметры</h2>
-                <select id="marketplace"><option value="WB" selected>Wildberries FBO</option><option value="OZON">Ozon FBO</option></select>
-                <input type="text" id="city" placeholder="⚠️ Город вручную">
-                <input type="text" id="pallet-input" placeholder="📦 Палет" readonly>
+                <select id="marketplace" aria-label="Выбор маркетплейса">
+                    <option value="WB" selected>Wildberries FBO</option>
+                    <option value="OZON">Ozon FBO</option>
+                </select>
+                <input type="text" id="city" placeholder="⚠️ Город отгрузки" aria-label="Город">
+                <input type="text" id="pallet-input" placeholder="📦 Палет" readonly aria-label="Текущий палет">
                 <div class="alert alert-error" id="error-msg"></div>
             </div>
+
             <div class="card">
                 <h2>🏗 Палеты</h2>
-                <div class="row" style="margin-bottom:8px;">
-                    <button onclick="createPallet()" style="flex:2;">+ Палет</button>
-                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled>🖨 Палет</button>
-                    <button class="warning" onclick="printCityLabel()" id="btn-print-city" disabled>🏙 Маршрут</button>
+                <div class="row" style="margin-bottom:10px;">
+                    <button onclick="createPallet()" style="flex:2;" aria-label="Создать палет">+ Палет</button>
+                    <button class="secondary" onclick="printPalletLabel()" id="btn-print-pallet" disabled aria-label="Печать этикетки палета">🖨</button>
+                    <button class="warning" onclick="printCityLabel()" id="btn-print-city" disabled aria-label="Печать маршрута">🏙</button>
                 </div>
-                <div id="pallets-list" style="max-height:160px;overflow-y:auto;"></div>
+                <div id="pallets-list" style="max-height:180px;overflow-y:auto;" role="listbox" aria-label="Список палетов"></div>
             </div>
         </div>
+
+        <!-- Center Column -->
         <div>
             <div class="card">
                 <h2>📡 Сканирование</h2>
-                <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или сканируйте ШК" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Введите или сканируйте ШК" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Поле сканирования">
                 <div id="camera-section">
                     <div class="row" id="camera-toggle">
-                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()">📷 Камера</button>
-                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none;">⏹ Стоп</button>
+                        <button class="secondary" id="btn-camera-start" onclick="startCameraScan()" aria-label="Включить камеру">📷 Камера</button>
+                        <button class="danger" id="btn-camera-stop" onclick="stopCameraScan()" style="display:none;" aria-label="Остановить камеру">⏹ Стоп</button>
                     </div>
-                    <div id="interactive"><div class="camera-overlay"></div></div>
+                    <div id="interactive" role="img" aria-label="Видео с камеры">
+                        <div class="camera-overlay"></div>
+                    </div>
                     <div class="scan-hint">🎯 Наведите рамку на штрихкод</div>
-                    <div id="scan-status" class="scan-status"></div>
+                    <div id="scan-status" class="scan-status" aria-live="polite"></div>
                     <p class="camera-permission">💡 Требуется HTTPS или localhost</p>
                 </div>
             </div>
+
             <div class="card">
-                <h2>📦 Коробка <span id="box-id-display" style="background:#e6f0ff;padding:2px 6px;border-radius:4px;font-size:11px;"># НОВАЯ</span></h2>
-                <div class="stats"><span>📦 Поз.: <span id="items-count">0</span></span><span>⚖️ <span id="total-weight">0.00</span> кг</span></div>
-                <div class="row">
-                    <button onclick="closeBox()" id="btn-close" disabled>✅ Закрыть</button>
-                    <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled>↩️</button>
+                <h2>
+                    📦 Коробка
+                    <span id="box-id-display" style="background:var(--primary-light);color:var(--primary);padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;"># НОВАЯ</span>
+                </h2>
+                <div class="stats">
+                    <span>📦 Поз.: <span id="items-count">0</span></span>
+                    <span>⚖️ <span id="total-weight">0.00</span> кг</span>
                 </div>
-                <button id="btn-product-print" onclick="printProductLabels()">🏷 Этикетки на товар</button>
-                <button id="retry-print-btn" onclick="retryPrint()">🔄 Повтор печати</button>
-                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;">🗑 Очистить</button>
+                <div class="row">
+                    <button onclick="closeBox()" id="btn-close" disabled aria-label="Закрыть короб">✅ Закрыть</button>
+                    <button class="warning" onclick="reopenLastBox()" id="btn-reopen" disabled aria-label="Переоткрыть последний короб">↩️</button>
+                </div>
+                <button id="btn-product-print" onclick="printProductLabels()" aria-label="Печать этикеток товаров">🏷 Этикетки на товар</button>
+                <button id="retry-print-btn" onclick="retryPrint()" aria-label="Повторить печать">🔄 Повтор печати</button>
+                <button class="secondary danger" onclick="clearBox()" style="margin-top:6px;" aria-label="Очистить короб">🗑 Очистить</button>
             </div>
+
             <div class="card">
                 <h2>📋 Состав</h2>
-                <table id="box-table"><thead><tr><th>ШК</th><th>Артикул</th><th>Название</th><th>Кол-во</th><th></th></tr></thead><tbody id="box-tbody"></tbody></table>
-                <p id="empty-msg" style="text-align:center;color:#888;margin:15px 0;">Коробка пуста</p>
+                <table id="box-table" aria-label="Содержимое короба">
+                    <thead>
+                        <tr>
+                            <th>ШК</th>
+                            <th>Артикул</th>
+                            <th>Название</th>
+                            <th>Кол-во</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="box-tbody"></tbody>
+                </table>
+                <p id="empty-msg" style="text-align:center;color:var(--text-muted);margin:20px 0;">Коробка пуста</p>
             </div>
         </div>
+
+        <!-- Right Column -->
         <div>
             <div class="card">
                 <h2>🎯 План (ТЗ)</h2>
-                <div id="targets-list" style="max-height:580px;overflow-y:auto;"></div>
+                <input type="text" id="target-search" class="target-search" placeholder="🔍 Поиск по артикулу или названию..." aria-label="Поиск товара">
+                <div class="filter-tabs" role="tablist">
+                    <div class="filter-tab active" data-filter="all" role="tab" aria-selected="true">Все</div>
+                    <div class="filter-tab" data-filter="pending" role="tab" aria-selected="false">В процессе</div>
+                    <div class="filter-tab" data-filter="done" role="tab" aria-selected="false">Готово</div>
+                </div>
+                <div id="targets-list" style="max-height:520px;overflow-y:auto;" role="tabpanel"></div>
             </div>
+
             <div class="card">
                 <h2>📜 Экспорт</h2>
-                <button class="secondary" onclick="exportCSV()">📤 CSV</button>
-                <button class="secondary danger" onclick="resetAllData()" style="margin-top:6px;">🔄 Сброс</button>
+                <button class="secondary" onclick="exportCSV()" aria-label="Экспорт в CSV">📤 CSV</button>
+                <button class="secondary danger" onclick="resetAllData()" style="margin-top:6px;" aria-label="Сброс всех данных">🔄 Сброс</button>
             </div>
         </div>
     </div>
 
+    <!-- Print Labels -->
     <div class="product-labels-container" id="product-labels-container"></div>
 
     <div class="label-area" id="label-box">
-        <div class="label-header"><span class="label-title" id="lbl-mp-box">🔴 WB FBO</span><span class="label-date" id="lbl-date-box"></span></div>
-        <div class="label-info-row"><div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div><div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div><div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div></div>
-        <div class="label-summary"><span>📦 Позиций: <b id="lbl-total-pos">0</b></span><span>🔢 Штук: <b id="lbl-total-qty">0</b></span><span>⚖️ Вес: <b id="lbl-weight-box"></b></span></div>
-        <div class="label-content"><h3>📋 Содержимое:</h3><ul id="lbl-items-list-box"></ul></div>
-        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-box"></svg><div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-box"></div></div><div class="weight-box" id="lbl-weight-footer"></div></div>
+        <div class="label-header">
+            <span class="label-title" id="lbl-mp-box">🔴 WB FBO</span>
+            <span class="label-date" id="lbl-date-box"></span>
+        </div>
+        <div class="label-info-row">
+            <div>📍 <strong>Город:</strong> <span id="lbl-city-box"></span></div>
+            <div>📦 <strong>Палет:</strong> <span id="lbl-pallet-box"></span></div>
+            <div>🆔 <strong>Короб:</strong> <span id="lbl-box-id-box"></span></div>
+        </div>
+        <div class="label-summary">
+            <span>📦 Позиций: <b id="lbl-total-pos">0</b></span>
+            <span>🔢 Штук: <b id="lbl-total-qty">0</b></span>
+            <span>⚖️ Вес: <b id="lbl-weight-box"></b></span>
+        </div>
+        <div class="label-content">
+            <h3>📋 Содержимое:</h3>
+            <ul id="lbl-items-list-box"></ul>
+        </div>
+        <div class="label-footer">
+            <div class="barcode-wrap">
+                <svg id="barcode-svg-box"></svg>
+                <div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-box"></div>
+            </div>
+            <div class="weight-box" id="lbl-weight-footer"></div>
+        </div>
     </div>
 
     <div class="label-area" id="label-pallet">
-        <div class="label-header"><span class="label-title" id="lbl-mp-pal">🔴 WB FBO</span><span style="font-size:6pt" id="lbl-date-pal"></span></div>
-        <div class="label-info-row"><div>📍<b>Город:</b><span id="lbl-city-pal"></span></div><div>🆔<b>Палет:</b><span id="lbl-pal-id"></span></div><div>📦<b>Коробов:</b><span id="lbl-pal-count"></span></div></div>
-        <div class="label-content"><h3>📦 Состав палета:</h3><ul id="lbl-pal-boxes-list"></ul></div>
-        <div class="label-footer"><div class="barcode-wrap"><svg id="barcode-svg-pal"></svg><div style="font-size:5pt" id="lbl-barcode-text-pal"></div></div><div class="weight-box">⚖️<span id="lbl-pal-weight"></span></div></div>
+        <div class="label-header">
+            <span class="label-title" id="lbl-mp-pal">🔴 WB FBO</span>
+            <span style="font-size:6pt" id="lbl-date-pal"></span>
+        </div>
+        <div class="label-info-row">
+            <div>📍<b>Город:</b><span id="lbl-city-pal"></span></div>
+            <div>🆔<b>Палет:</b><span id="lbl-pal-id"></span></div>
+            <div>📦<b>Коробов:</b><span id="lbl-pal-count"></span></div>
+        </div>
+        <div class="label-content">
+            <h3>📦 Состав палета:</h3>
+            <ul id="lbl-pal-boxes-list"></ul>
+        </div>
+        <div class="label-footer">
+            <div class="barcode-wrap">
+                <svg id="barcode-svg-pal"></svg>
+                <div style="font-size:5pt" id="lbl-barcode-text-pal"></div>
+            </div>
+            <div class="weight-box">⚖️<span id="lbl-pal-weight"></span></div>
+        </div>
     </div>
 
-    <!-- 🔴 ЭТИКЕТКА МАРШРУТА / ТЗ -->
     <div class="label-area label-city" id="label-city">
-        <div class="label-header"><span class="label-title" style="font-size:13pt;">📍 МАРШРУТ / ТЗ</span><span class="label-date" id="lbl-city-date"></span></div>
+        <div class="label-header">
+            <span class="label-title" style="font-size:13pt;">📍 МАРШРУТ / ТЗ</span>
+            <span class="label-date" id="lbl-city-date"></span>
+        </div>
         <div class="lbl-city-big" id="lbl-city-name">-</div>
         <div class="lbl-route-sub" id="lbl-route-info">-</div>
-        
         <div class="lbl-city-details">
             <div><span>№ Палета:</span> <b id="lbl-city-pallet-id">-</b></div>
             <div><span>№ Короба:</span> <b id="lbl-city-box-range">-</b></div>
             <div><span>Количество коробок:</span> <b id="lbl-city-box-count">-</b></div>
         </div>
-        
-        <div class="barcode-wrap"><svg id="barcode-svg-city"></svg><div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-city"></div></div>
+        <div class="barcode-wrap">
+            <svg id="barcode-svg-city"></svg>
+            <div style="font-size:5pt; margin-top:1mm;" id="lbl-barcode-text-city"></div>
+        </div>
     </div>
 
     <script>
+        // ============ CONFIGURATION ============
         const MAPPING_CONFIG = [
-            {key:'sku',label:'Артикул / Код товара *',required:true},
-            {key:'name',label:'Название товара *',required:true},
-            {key:'barcode_orig',label:'ШК исходный',required:false},
-            {key:'barcode_wb',label:'ШК на этикетку WB',required:false},
-            {key:'datamatrix',label:'DataMatrix (Честный Знак)',required:false},
-            {key:'qty_total',label:'ИТОГО к отгрузке (шт.) *',required:true},
-            {key:'quant',label:'Квант спайки',required:false},
-            {key:'tz_note',label:'ТЗ / Требования',required:false},
-            {key:'boxes_plan',label:'Коробов план',required:false},
-            {key:'pcs_per_box',label:'Штук в коробе',required:false},
-            {key:'expiry',label:'Годен до',required:false}
+            {key:'sku', label:'Артикул / Код товара *', required:true},
+            {key:'name', label:'Название товара *', required:true},
+            {key:'barcode_orig', label:'ШК исходный', required:false},
+            {key:'barcode_wb', label:'ШК на этикетку WB', required:false},
+            {key:'datamatrix', label:'DataMatrix (Честный Знак)', required:false},
+            {key:'qty_total', label:'ИТОГО к отгрузке (шт.) *', required:true},
+            {key:'quant', label:'Квант спайки', required:false},
+            {key:'tz_note', label:'ТЗ / Требования', required:false},
+            {key:'boxes_plan', label:'Коробов план', required:false},
+            {key:'pcs_per_box', label:'Штук в коробе', required:false},
+            {key:'expiry', label:'Годен до', required:false}
         ];
 
-        let state = {db:{},targets:[],currentBox:{items:{},weight:0},history:[],boxCounter:1,orderMeta:{},pallets:{},activePallet:null};
-        let tempExcelData=null,tempHeaders=[],lastPrintedLabelId=null;
-        let quaggaActive=false,scanDebounce=false,scanTimeout=null;
+        // ============ STATE ============
+        let state = {
+            db: {},
+            targets: [],
+            currentBox: {items: {}, weight: 0},
+            history: [],
+            boxCounter: 1,
+            orderMeta: {},
+            pallets: {},
+            activePallet: null
+        };
+        let tempExcelData = null, tempHeaders = [], lastPrintedLabelId = null;
+        let quaggaActive = false, scanDebounce = false, scanTimeout = null;
+        let currentFilter = 'all', searchQuery = '';
 
-        let voiceEnabled=true,maleVoice=null;
-        const synth=window.speechSynthesis;
-        function initVoices(){const v=synth.getVoices().filter(x=>x.lang.startsWith('ru'));maleVoice=v.find(x=>/male|pavel|yuri|dmitry/i.test(x.name))||v[0];}
-        function speak(t){if(!voiceEnabled||!synth||synth.pending)return;synth.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=1.1;u.pitch=0.9;if(maleVoice)u.voice=maleVoice;synth.speak(u);}
-        document.getElementById('voice-toggle').onclick=function(){voiceEnabled=!voiceEnabled;this.textContent=voiceEnabled?'🔊 ВКЛ':'🔇 ВЫКЛ';this.style.background=voiceEnabled?'#6c757d':'#dc3545';if(voiceEnabled)speak('Голос включен');};
-        if(synth){synth.onvoiceschanged=initVoices;initVoices();}
+        // ============ VOICE ============
+        let voiceEnabled = true, maleVoice = null;
+        const synth = window.speechSynthesis;
 
-        document.addEventListener('DOMContentLoaded',()=>{loadState();setupScanner();renderPallets();renderTargets();updateUI();document.getElementById('excel-upload').addEventListener('change',handleFileSelect);document.getElementById('city').addEventListener('input',updateUI);document.getElementById('scanner').focus();checkCameraSupport();});
-
-        function checkCameraSupport(){if(!navigator.mediaDevices?.getUserMedia){document.getElementById('btn-camera-start').disabled=true;document.getElementById('btn-camera-start').textContent='📷 Не поддерживается';document.querySelector('.camera-permission').textContent='❌ Камера недоступна (нужен HTTPS)';}}
-
-        async function startCameraScan(){
-            if(!navigator.mediaDevices?.getUserMedia){showError('❌ Камера не поддерживается');return;}
-            try{
-                document.getElementById('scanner').style.display='none'; document.getElementById('interactive').style.display='block';
-                document.getElementById('btn-camera-start').style.display='none'; document.getElementById('btn-camera-stop').style.display='block';
-                document.getElementById('scanner').classList.add('camera-active'); setStatus('🔍 Запуск...', 'detecting'); scanDebounce=false;
-                if(window._quagga) Quagga.stop();
-                await new Promise((resolve,reject)=>{ Quagga.init({ inputStream:{name:"Live",type:"LiveStream",target:document.querySelector('#interactive'),constraints:{facingMode:"environment",width:{min:640},height:{min:480}},area:{top:"37%",right:"8%",left:"8%",bottom:"37%"}}, locator:{patchSize:"medium",halfSample:true}, numOfWorkers:navigator.hardwareConcurrency>1?2:1, decoder:{readers:[{format:"code_128_reader",config:{}},{format:"ean_reader",config:{}},{format:"ean_8_reader",config:{}},{format:"upc_reader",config:{}},{format:"code_39_reader",config:{}},{format:"codabar_reader",config:{}}],multiple:false}, locate:true },err=>err?reject(err):resolve()); });
-                Quagga.start(); quaggaActive=true; window._quagga=true; setStatus('📷 Наведите на штрихкод','detecting'); speak('Камера включена');
-                Quagga.onDetected(result=>{
-                    if(scanDebounce)return; const code=result.codeResult?.code?.trim(); if(!code||code.length<3||code.length>50)return;
-                    setStatus(`✅ ${code}`,'found'); document.getElementById('scanner').classList.add('success'); if(navigator.vibrate)navigator.vibrate([40,30,40]);
-                    scanDebounce=true; if(scanTimeout)clearTimeout(scanTimeout); scanTimeout=setTimeout(()=>{scanDebounce=false;},1500);
-                    handleScan(code); setTimeout(()=>{document.getElementById('scanner').classList.remove('success');if(quaggaActive)setStatus('📷 Наведите на штрихкод','detecting');},1000);
-                });
-            }catch(err){console.error(err);showError('❌ Ошибка камеры');setStatus('❌ Ошибка','error');stopCameraScan();}
+        function initVoices() {
+            const v = synth.getVoices().filter(x => x.lang.startsWith('ru'));
+            maleVoice = v.find(x => /male|pavel|yuri|dmitry/i.test(x.name)) || v[0];
         }
-        function stopCameraScan(){if(quaggaActive){Quagga.stop();quaggaActive=false;}if(window._quagga)window._quagga=false;if(scanTimeout)clearTimeout(scanTimeout);document.getElementById('scanner').style.display='block';document.getElementById('interactive').style.display='none';document.getElementById('btn-camera-start').style.display='block';document.getElementById('btn-camera-stop').style.display='none';document.getElementById('scanner').classList.remove('camera-active');setStatus('','');document.getElementById('scanner').focus();}
-        function setStatus(text,cls){const el=document.getElementById('scan-status');el.textContent=text;el.className='scan-status'+(cls?' '+cls:'');}
 
-        function setupScanner(){const inp=document.getElementById('scanner');inp.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();handleScan(inp.value.trim());inp.value='';setTimeout(()=>inp.classList.remove('success','error'),300);}});inp.addEventListener('focus',()=>inp.select());}
+        function speak(t) {
+            if (!voiceEnabled || !synth || synth.pending) return;
+            synth.cancel();
+            const u = new SpeechSynthesisUtterance(t);
+            u.lang = 'ru-RU';
+            u.rate = 1.1;
+            u.pitch = 0.9;
+            if (maleVoice) u.voice = maleVoice;
+            synth.speak(u);
+        }
 
-        function handleFileSelect(e){const file=e.target.files[0];if(!file){showError('⚠️ Файл не выбран');return;}if(typeof XLSX==='undefined'){showError('❌ Библиотека Excel не загружена');return;}const reader=new FileReader();reader.onerror=()=>showError('❌ Ошибка чтения файла');reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});if(!wb.SheetNames.length)throw new Error('В файле нет листов');const sheet=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});if(!data||data.length===0)throw new Error('Файл пуст');let headerRowIdx=-1;const searchTerms=['артикул','шк','наименование','код','товар','barcode','sku','qty','name','fbo','кол','datamatrix','честн'];for(let i=0;i<Math.min(30,data.length);i++){const rowStr=(data[i]||[]).join(' ').toLowerCase();if(!rowStr)continue;let m=0;searchTerms.forEach(t=>{if(rowStr.includes(t))m++;});if(m>=2||rowStr.includes('артикул')||rowStr.includes('barcode')){headerRowIdx=i;break;}}if(headerRowIdx===-1)headerRowIdx=0;tempHeaders=(data[headerRowIdx]||[]).map(h=>String(h||'').trim()).filter(h=>h);if(tempHeaders.length===0)throw new Error('Не удалось прочитать заголовки');tempExcelData=data.slice(headerRowIdx+1);openMappingModal();}catch(err){console.error('File Error:',err);showError('❌ '+err.message);speak('Ошибка файла');}};reader.readAsArrayBuffer(file);}
+        document.getElementById('voice-toggle').onclick = function() {
+            voiceEnabled = !voiceEnabled;
+            this.textContent = voiceEnabled ? '🔊 ВКЛ' : '🔇 ВЫКЛ';
+            this.style.background = voiceEnabled ? 'var(--secondary)' : 'var(--danger)';
+            if (voiceEnabled) speak('Голос включен');
+            showToast(voiceEnabled ? 'Голос включен' : 'Голос выключен', 'info');
+        };
 
-        function openMappingModal(){const c=document.getElementById('mapping-fields');c.innerHTML='';MAPPING_CONFIG.forEach(f=>{const r=document.createElement('div');r.className='mapping-row';const l=document.createElement('div');l.className='mapping-label';l.textContent=f.label;const s=document.createElement('select');s.className='mapping-select';s.dataset.key=f.key;s.dataset.required=f.required;const o0=document.createElement('option');o0.value='';o0.textContent=f.required?'-- Выберите * --':'-- Не выбрано --';s.appendChild(o0);tempHeaders.forEach((h,idx)=>{const o=document.createElement('option');o.value=idx;o.textContent=h;const hl=h.toLowerCase();if(f.key==='sku'&&(hl.includes('артикул')||hl.includes('код')||hl.includes('sku')))o.selected=true;if(f.key==='name'&&(hl.includes('наименование')||hl.includes('назв')||hl.includes('name')))o.selected=true;if(f.key==='barcode_orig'&&hl.includes('шк')&&hl.includes('исх'))o.selected=true;if(f.key==='barcode_wb'&&hl.includes('этикетк')&&hl.includes('шк'))o.selected=true;if(f.key==='datamatrix'&&(hl.includes('datamatrix')||hl.includes('честн')||hl.includes('dm')))o.selected=true;if(f.key==='qty_total'&&(hl.includes('итого')||hl.includes('кол')||hl.includes('qty')))o.selected=true;if(f.key==='quant'&&hl.includes('квант'))o.selected=true;if(f.key==='tz_note'&&hl.includes('тз'))o.selected=true;if(f.key==='boxes_plan'&&hl.includes('короб'))o.selected=true;if(f.key==='pcs_per_box'&&hl.includes('штук')&&hl.includes('короб'))o.selected=true;if(f.key==='expiry'&&hl.includes('годен'))o.selected=true;s.appendChild(o);});r.appendChild(l);r.appendChild(s);c.appendChild(r);});document.getElementById('mapping-modal').style.display='flex';}
-        function closeMappingModal(){document.getElementById('mapping-modal').style.display='none';document.getElementById('excel-upload').value='';}
-        function applyMapping(){const sels=document.querySelectorAll('.mapping-select');const map={};let ok=true;sels.forEach(sel=>{if(sel.dataset.required==='true'&&sel.value===''){sel.style.borderColor='red';ok=false;}else{sel.style.borderColor='';if(sel.value!=='')map[sel.dataset.key]=parseInt(sel.value);}});if(!ok){showError('⚠️ Заполните обязательные поля');return;}processDataWithMapping(map);closeMappingModal();}
+        if (synth) {
+            synth.onvoiceschanged = initVoices;
+            initVoices();
+        }
 
-        function processDataWithMapping(mapping){try{state.db={};state.targets=[];let total=0;document.getElementById('excel-route-display').textContent=state.orderMeta.route||'Не определено';document.getElementById('city').value='';for(let i=0;i<tempExcelData.length;i++){const r=tempExcelData[i];const sku=String(r[mapping.sku]||'').trim();if(!sku||sku==='undefined'||isNaN(sku.replace(/\D/g,'')))continue;const tp=parseInt(String(r[mapping.qty_total]||'0').replace(/[,\s]/g,''));if(!tp||tp<=0)continue;const prod={sku,name:String(r[mapping.name]||'Без названия').trim(),targetPcs:tp,packedPcs:0,quant:mapping.quant!==undefined?parseInt(String(r[mapping.quant]||1).replace(/[,\s]/g,'')):1,datamatrix:mapping.datamatrix!==undefined?String(r[mapping.datamatrix]||'').trim():'',boxesPlan:mapping.boxes_plan!==undefined?parseInt(String(r[mapping.boxes_plan]||0).replace(/[,\s]/g,'')):0,pcsPerBox:mapping.pcs_per_box!==undefined?parseInt(String(r[mapping.pcs_per_box]||0).replace(/[,\s]/g,'')):0,tz:mapping.tz_note!==undefined?String(r[mapping.tz_note]||'').trim():'',expiry:mapping.expiry!==undefined?String(r[mapping.expiry]||'').trim():''};total+=tp;state.targets.push(prod);const bcs=new Set();const bcOrig=mapping.barcode_orig!==undefined?String(r[mapping.barcode_orig]||''):'';const bcWb=mapping.barcode_wb!==undefined?String(r[mapping.barcode_wb]||''):'';bcOrig.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});bcWb.split(/[;,\s]+/).forEach(b=>{if(b&&!b.includes('ERROR'))bcs.add(b.trim());});if(bcs.size===0)bcs.add(sku);bcs.forEach(b=>{state.db[b]=prod;});}document.getElementById('order-info').style.display='block';document.getElementById('loaded-count').textContent=state.targets.length;document.getElementById('total-plan').textContent=total.toLocaleString('ru');renderTargets();showSuccess(`✅ Загружено ${state.targets.length} поз.`);saveState();speak('Файл загружен');}catch(err){showError('❌ '+err.message);speak('Ошибка обработки');}}
+        // ============ TOAST NOTIFICATIONS ============
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
 
-        function handleScan(bc){hideError();const inp=document.getElementById('scanner');if(!Object.keys(state.db).length){showError('⚠️ Загрузите ТЗ');inp.classList.add('error');speak('Загрузите файл');return;}if(!state.activePallet){showError('⚠️ Выберите палет');inp.classList.add('error');speak('Выберите палет');return;}let p=state.db[bc];if(!p){const found=Object.keys(state.db).find(key=>key.includes(bc)||bc.includes(key));if(found)p=state.db[found];}if(!p){showError(`❌ ШК ${bc} не найден`);inp.classList.add('error');speak('Не найдено');return;}if(p.packedPcs>=p.targetPcs){showError(`🚫 Лимит: ${p.targetPcs} шт.`);inp.classList.add('error');speak(`Стоп. План выполнен`);setTimeout(()=>inp.classList.remove('error'),500);return;}state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+1;state.currentBox.weight+=0.12;p.packedPcs++;renderBox();renderTargets();inp.classList.add('success');const rem=p.targetPcs-p.packedPcs;const qt=p.quant>1?`Квант ${p.quant}. `:'';const rt=rem>0?`Осталось ${rem}`:'Готово';speak(`${qt}${rt}`);setTimeout(()=>inp.classList.remove('success'),400);}
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
 
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            setupScanner();
+            setupSearch();
+            setupFilters();
+            renderPallets();
+            renderTargets();
+            updateUI();
+            document.getElementById('excel-upload').addEventListener('change', handleFileSelect);
+            document.getElementById('city').addEventListener('input', updateUI);
+            document.getElementById('scanner').focus();
+            checkCameraSupport();
+        });
+
+        function checkCameraSupport() {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                document.getElementById('btn-camera-start').disabled = true;
+                document.getElementById('btn-camera-start').textContent = '📷 Не поддерживается';
+                document.querySelector('.camera-permission').textContent = '❌ Камера недоступна (нужен HTTPS)';
+            }
+        }
+
+        // ============ CAMERA ============
+        async function startCameraScan() {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                showError('❌ Камера не поддерживается');
+                return;
+            }
+            try {
+                document.getElementById('scanner').style.display = 'none';
+                document.getElementById('interactive').style.display = 'block';
+                document.getElementById('btn-camera-start').style.display = 'none';
+                document.getElementById('btn-camera-stop').style.display = 'block';
+                document.getElementById('scanner').classList.add('camera-active');
+                setStatus('🔍 Запуск...', 'detecting');
+                scanDebounce = false;
+
+                if (window._quagga) Quagga.stop();
+
+                await new Promise((resolve, reject) => {
+                    Quagga.init({
+                        inputStream: {
+                            name: "Live",
+                            type: "LiveStream",
+                            target: document.querySelector('#interactive'),
+                            constraints: {
+                                facingMode: "environment",
+                                width: {min: 640},
+                                height: {min: 480}
+                            },
+                            area: {top: "37%", right: "8%", left: "8%", bottom: "37%"}
+                        },
+                        locator: {patchSize: "medium", halfSample: true},
+                        numOfWorkers: navigator.hardwareConcurrency > 1 ? 2 : 1,
+                        decoder: {
+                            readers: [
+                                {format: "code_128_reader", config: {}},
+                                {format: "ean_reader", config: {}},
+                                {format: "ean_8_reader", config: {}},
+                                {format: "upc_reader", config: {}},
+                                {format: "code_39_reader", config: {}},
+                                {format: "codabar_reader", config: {}}
+                            ],
+                            multiple: false
+                        },
+                        locate: true
+                    }, err => err ? reject(err) : resolve());
+                });
+
+                Quagga.start();
+                quaggaActive = true;
+                window._quagga = true;
+                setStatus('📷 Наведите на штрихкод', 'detecting');
+                speak('Камера включена');
+
+                Quagga.onDetected(result => {
+                    if (scanDebounce) return;
+                    const code = result.codeResult?.code?.trim();
+                    if (!code || code.length < 3 || code.length > 50) return;
+
+                    setStatus(`✅ ${code}`, 'found');
+                    document.getElementById('scanner').classList.add('success');
+                    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+
+                    scanDebounce = true;
+                    if (scanTimeout) clearTimeout(scanTimeout);
+                    scanTimeout = setTimeout(() => { scanDebounce = false; }, 1500);
+
+                    handleScan(code);
+                    setTimeout(() => {
+                        document.getElementById('scanner').classList.remove('success');
+                        if (quaggaActive) setStatus('📷 Наведите на штрихкод', 'detecting');
+                    }, 1000);
+                });
+            } catch (err) {
+                console.error(err);
+                showError('❌ Ошибка камеры');
+                setStatus('❌ Ошибка', 'error');
+                stopCameraScan();
+            }
+        }
+
+        function stopCameraScan() {
+            if (quaggaActive) { Quagga.stop(); quaggaActive = false; }
+            if (window._quagga) window._quagga = false;
+            if (scanTimeout) clearTimeout(scanTimeout);
+            document.getElementById('scanner').style.display = 'block';
+            document.getElementById('interactive').style.display = 'none';
+            document.getElementById('btn-camera-start').style.display = 'block';
+            document.getElementById('btn-camera-stop').style.display = 'none';
+            document.getElementById('scanner').classList.remove('camera-active');
+            setStatus('', '');
+            document.getElementById('scanner').focus();
+        }
+
+        function setStatus(text, cls) {
+            const el = document.getElementById('scan-status');
+            el.textContent = text;
+            el.className = 'scan-status' + (cls ? ' ' + cls : '');
+        }
+
+        // ============ SCANNER ============
+        function setupScanner() {
+            const inp = document.getElementById('scanner');
+            inp.addEventListener('keypress', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleScan(inp.value.trim());
+                    inp.value = '';
+                    setTimeout(() => inp.classList.remove('success', 'error'), 300);
+                }
+            });
+            inp.addEventListener('focus', () => inp.select());
+        }
+
+        // ============ SEARCH & FILTERS ============
+        function setupSearch() {
+            document.getElementById('target-search').addEventListener('input', e => {
+                searchQuery = e.target.value.toLowerCase().trim();
+                renderTargets();
+            });
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-tab').forEach(t => {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    tab.classList.add('active');
+                    tab.setAttribute('aria-selected', 'true');
+                    currentFilter = tab.dataset.filter;
+                    renderTargets();
+                });
+            });
+        }
+
+        // ============ FILE HANDLING ============
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) { showError('⚠️ Файл не выбран'); return; }
+            if (typeof XLSX === 'undefined') { showError('❌ Библиотека Excel не загружена'); return; }
+
+            const reader = new FileReader();
+            reader.onerror = () => showError('❌ Ошибка чтения файла');
+            reader.onload = ev => {
+                try {
+                    const wb = XLSX.read(ev.target.result, {type: 'array'});
+                    if (!wb.SheetNames.length) throw new Error('В файле нет листов');
+                    const sheet = wb.Sheets[wb.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: false});
+                    if (!data || data.length === 0) throw new Error('Файл пуст');
+
+                    let headerRowIdx = -1;
+                    const searchTerms = ['артикул', 'шк', 'наименование', 'код', 'товар', 'barcode', 'sku', 'qty', 'name', 'fbo', 'кол', 'datamatrix', 'честн'];
+                    for (let i = 0; i < Math.min(30, data.length); i++) {
+                        const rowStr = (data[i] || []).join(' ').toLowerCase();
+                        if (!rowStr) continue;
+                        let m = 0;
+                        searchTerms.forEach(t => { if (rowStr.includes(t)) m++; });
+                        if (m >= 2 || rowStr.includes('артикул') || rowStr.includes('barcode')) {
+                            headerRowIdx = i;
+                            break;
+                        }
+                    }
+                    if (headerRowIdx === -1) headerRowIdx = 0;
+
+                    tempHeaders = (data[headerRowIdx] || []).map(h => String(h || '').trim()).filter(h => h);
+                    if (tempHeaders.length === 0) throw new Error('Не удалось прочитать заголовки');
+                    tempExcelData = data.slice(headerRowIdx + 1);
+                    openMappingModal();
+                } catch (err) {
+                    console.error('File Error:', err);
+                    showError('❌ ' + err.message);
+                    showToast('Ошибка файла', 'error');
+                    speak('Ошибка файла');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ============ MAPPING MODAL ============
+        function openMappingModal() {
+            const c = document.getElementById('mapping-fields');
+            c.innerHTML = '';
+            MAPPING_CONFIG.forEach(f => {
+                const r = document.createElement('div');
+                r.className = 'mapping-row';
+                const l = document.createElement('div');
+                l.className = 'mapping-label';
+                l.textContent = f.label;
+                const s = document.createElement('select');
+                s.className = 'mapping-select';
+                s.dataset.key = f.key;
+                s.dataset.required = f.required;
+
+                const o0 = document.createElement('option');
+                o0.value = '';
+                o0.textContent = f.required ? '-- Выберите * --' : '-- Не выбрано --';
+                s.appendChild(o0);
+
+                tempHeaders.forEach((h, idx) => {
+                    const o = document.createElement('option');
+                    o.value = idx;
+                    o.textContent = h;
+                    const hl = h.toLowerCase();
+                    if (f.key === 'sku' && (hl.includes('артикул') || hl.includes('код') || hl.includes('sku'))) o.selected = true;
+                    if (f.key === 'name' && (hl.includes('наименование') || hl.includes('назв') || hl.includes('name'))) o.selected = true;
+                    if (f.key === 'barcode_orig' && hl.includes('шк') && hl.includes('исх')) o.selected = true;
+                    if (f.key === 'barcode_wb' && hl.includes('этикетк') && hl.includes('шк')) o.selected = true;
+                    if (f.key === 'datamatrix' && (hl.includes('datamatrix') || hl.includes('честн') || hl.includes('dm'))) o.selected = true;
+                    if (f.key === 'qty_total' && (hl.includes('итого') || hl.includes('кол') || hl.includes('qty'))) o.selected = true;
+                    if (f.key === 'quant' && hl.includes('квант')) o.selected = true;
+                    if (f.key === 'tz_note' && hl.includes('тз')) o.selected = true;
+                    if (f.key === 'boxes_plan' && hl.includes('короб')) o.selected = true;
+                    if (f.key === 'pcs_per_box' && hl.includes('штук') && hl.includes('короб')) o.selected = true;
+                    if (f.key === 'expiry' && hl.includes('годен')) o.selected = true;
+                    s.appendChild(o);
+                });
+                r.appendChild(l);
+                r.appendChild(s);
+                c.appendChild(r);
+            });
+            document.getElementById('mapping-modal').style.display = 'flex';
+        }
+
+        function closeMappingModal() {
+            document.getElementById('mapping-modal').style.display = 'none';
+            document.getElementById('excel-upload').value = '';
+        }
+
+        function applyMapping() {
+            const sels = document.querySelectorAll('.mapping-select');
+            const map = {};
+            let ok = true;
+            sels.forEach(sel => {
+                if (sel.dataset.required === 'true' && sel.value === '') {
+                    sel.style.borderColor = 'var(--danger)';
+                    ok = false;
+                } else {
+                    sel.style.borderColor = '';
+                    if (sel.value !== '') map[sel.dataset.key] = parseInt(sel.value);
+                }
+            });
+            if (!ok) {
+                showError('⚠️ Заполните обязательные поля');
+                return;
+            }
+            processDataWithMapping(map);
+            closeMappingModal();
+        }
+
+        function processDataWithMapping(mapping) {
+            try {
+                state.db = {};
+                state.targets = [];
+                let total = 0;
+                document.getElementById('excel-route-display').textContent = state.orderMeta.route || 'Не определено';
+                document.getElementById('city').value = '';
+
+                for (let i = 0; i < tempExcelData.length; i++) {
+                    const r = tempExcelData[i];
+                    const sku = String(r[mapping.sku] || '').trim();
+                    if (!sku || sku === 'undefined' || isNaN(sku.replace(/\D/g, ''))) continue;
+                    const tp = parseInt(String(r[mapping.qty_total] || '0').replace(/[,\s]/g, ''));
+                    if (!tp || tp <= 0) continue;
+
+                    const prod = {
+                        sku,
+                        name: String(r[mapping.name] || 'Без названия').trim(),
+                        targetPcs: tp,
+                        packedPcs: 0,
+                        quant: mapping.quant !== undefined ? parseInt(String(r[mapping.quant] || 1).replace(/[,\s]/g, '')) : 1,
+                        datamatrix: mapping.datamatrix !== undefined ? String(r[mapping.datamatrix] || '').trim() : '',
+                        boxesPlan: mapping.boxes_plan !== undefined ? parseInt(String(r[mapping.boxes_plan] || 0).replace(/[,\s]/g, '')) : 0,
+                        pcsPerBox: mapping.pcs_per_box !== undefined ? parseInt(String(r[mapping.pcs_per_box] || 0).replace(/[,\s]/g, '')) : 0,
+                        tz: mapping.tz_note !== undefined ? String(r[mapping.tz_note] || '').trim() : '',
+                        expiry: mapping.expiry !== undefined ? String(r[mapping.expiry] || '').trim() : ''
+                    };
+                    total += tp;
+                    state.targets.push(prod);
+
+                    const bcs = new Set();
+                    const bcOrig = mapping.barcode_orig !== undefined ? String(r[mapping.barcode_orig] || '') : '';
+                    const bcWb = mapping.barcode_wb !== undefined ? String(r[mapping.barcode_wb] || '') : '';
+                    bcOrig.split(/[;,\s]+/).forEach(b => { if (b && !b.includes('ERROR')) bcs.add(b.trim()); });
+                    bcWb.split(/[;,\s]+/).forEach(b => { if (b && !b.includes('ERROR')) bcs.add(b.trim()); });
+                    if (bcs.size === 0) bcs.add(sku);
+                    bcs.forEach(b => { state.db[b] = prod; });
+                }
+
+                document.getElementById('order-info').style.display = 'block';
+                document.getElementById('loaded-count').textContent = state.targets.length;
+                document.getElementById('total-plan').textContent = total.toLocaleString('ru');
+                renderTargets();
+                showSuccess(`✅ Загружено ${state.targets.length} поз.`);
+                showToast(`Загружено ${state.targets.length} товаров`, 'success');
+                saveState();
+                speak('Файл загружен');
+            } catch (err) {
+                showError('❌ ' + err.message);
+                showToast('Ошибка обработки', 'error');
+                speak('Ошибка обработки');
+            }
+        }
+
+        // ============ SCANNING ============
+        function handleScan(bc) {
+            hideError();
+            const inp = document.getElementById('scanner');
+
+            if (!Object.keys(state.db).length) {
+                showError('⚠️ Загрузите ТЗ');
+                inp.classList.add('error');
+                speak('Загрузите файл');
+                showToast('Сначала загрузите файл ТЗ', 'warning');
+                return;
+            }
+            if (!state.activePallet) {
+                showError('⚠️ Выберите палет');
+                inp.classList.add('error');
+                speak('Выберите палет');
+                showToast('Выберите палет', 'warning');
+                return;
+            }
+
+            let p = state.db[bc];
+            if (!p) {
+                const found = Object.keys(state.db).find(key => key.includes(bc) || bc.includes(key));
+                if (found) p = state.db[found];
+            }
+            if (!p) {
+                showError(`❌ ШК ${bc} не найден`);
+                inp.classList.add('error');
+                speak('Не найдено');
+                showToast(`ШК не найден: ${bc}`, 'error');
+                return;
+            }
+            if (p.packedPcs >= p.targetPcs) {
+                showError(`🚫 Лимит: ${p.targetPcs} шт.`);
+                inp.classList.add('error');
+                speak('Стоп. План выполнен');
+                showToast(`Лимит достигнут для ${p.sku}`, 'warning');
+                setTimeout(() => inp.classList.remove('error'), 500);
+                return;
+            }
+
+            state.currentBox.items[bc] = (state.currentBox.items[bc] || 0) + 1;
+            state.currentBox.weight += 0.12;
+            p.packedPcs++;
+            renderBox();
+            renderTargets();
+            inp.classList.add('success');
+
+            const rem = p.targetPcs - p.packedPcs;
+            const qt = p.quant > 1 ? `Квант ${p.quant}. ` : '';
+            const rt = rem > 0 ? `Осталось ${rem}` : 'Готово';
+            speak(`${qt}${rt}`);
+            showToast(`Добавлено: ${p.name.substring(0, 30)}`, 'success', 2000);
+            setTimeout(() => inp.classList.remove('success'), 400);
+        }
+
+        // ============ PRINT ============
         function triggerPrint(labelId) {
-            ['label-box','label-pallet','label-city'].forEach(id=>document.getElementById(id).classList.add('hide-during-print'));
+            ['label-box', 'label-pallet', 'label-city'].forEach(id =>
+                document.getElementById(id).classList.add('hide-during-print')
+            );
             document.getElementById(labelId).classList.remove('hide-during-print');
             lastPrintedLabelId = labelId;
-            if(labelId === 'label-box' || labelId === 'label-city') document.getElementById('retry-print-btn').style.display = 'block';
-            requestAnimationFrame(() => { window.print(); setTimeout(() => { ['label-box','label-pallet','label-city'].forEach(id=>document.getElementById(id).classList.remove('hide-during-print')); document.getElementById('retry-print-btn').style.display = 'none'; }, 800); });
+            if (labelId === 'label-box' || labelId === 'label-city')
+                document.getElementById('retry-print-btn').style.display = 'block';
+
+            requestAnimationFrame(() => {
+                window.print();
+                setTimeout(() => {
+                    ['label-box', 'label-pallet', 'label-city'].forEach(id =>
+                        document.getElementById(id).classList.remove('hide-during-print')
+                    );
+                    document.getElementById('retry-print-btn').style.display = 'none';
+                }, 800);
+            });
         }
 
-        function closeBox(){const city=document.getElementById('city').value.trim();if(!city)return showError('⚠️ Введите город');if(!state.activePallet)return showError('⚠️ Выберите палет');if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');const now=new Date();const boxId=`BOX-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(state.boxCounter).padStart(3,'0')}`;const palId=state.activePallet;const boxData={id:boxId,city,pallet:palId,items:{...state.currentBox.items},weight:state.currentBox.weight,date:now.toISOString()};state.pallets[palId].boxes.push(boxId);state.pallets[palId].weight+=boxData.weight;state.history.unshift(boxData);state.boxCounter++;saveState();generateBoxLabel(boxData);clearBoxUI();renderTargets();renderPallets();speak('Короб закрыт. Печать');triggerPrint('label-box');}
+        // ============ BOX OPERATIONS ============
+        function closeBox() {
+            const city = document.getElementById('city').value.trim();
+            if (!city) return showError('⚠️ Введите город');
+            if (!state.activePallet) return showError('⚠️ Выберите палет');
+            if (!Object.keys(state.currentBox.items).length) return showError('⚠️ Короб пуст');
 
-        function retryPrint(){if(lastPrintedLabelId)triggerPrint(lastPrintedLabelId);else showError('Нет этикетки');}
-        
-        function reopenLastBox(){if(!state.history.length)return showError('Нет коробов');const lb=state.history[0];if(!confirm(`Переоткрыть ${lb.id}?`))return;for(const[bc,q]of Object.entries(lb.items)){state.currentBox.items[bc]=(state.currentBox.items[bc]||0)+q;if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox.weight+=lb.weight;state.history.shift();if(state.pallets[lb.pallet]){const p=state.pallets[lb.pallet];p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight;}saveState();renderBox();renderTargets();renderPallets();updateUI();speak(`Переоткрыто ${lb.id}`);document.getElementById('retry-print-btn').style.display='none';document.getElementById('scanner').focus();}
-        
-        function clearBox(){if(Object.keys(state.currentBox.items).length&&!confirm('Очистить?'))return;for(const[bc,q]of Object.entries(state.currentBox.items)){if(state.db[bc])state.db[bc].packedPcs-=q;}state.currentBox={items:{},weight:0};updateUI();renderBox();renderTargets();speak('Очищено');}
-        
-        function renderBox(){const tb=document.getElementById('box-tbody');tb.innerHTML='';const items=Object.entries(state.currentBox.items);document.getElementById('empty-msg').style.display=items.length?'none':'block';items.forEach(([bc,q])=>{const p=state.db[bc]||{sku:'?',name:'?'};tb.innerHTML+=`<tr><td>${bc}</td><td>${p.sku}</td><td>${p.name.substring(0,15)}</td><td><button class="qty-btn" onclick="changeQty('${bc}',-1)">-</button><b>${q}</b><button class="qty-btn" onclick="changeQty('${bc}',1)">+</button></td><td><button class="danger" style="width:auto;padding:2px 5px;" onclick="removeItem('${bc}')">✕</button></td></tr>`;});updateUI();}
-        
-        function changeQty(bc,d){if(d>0&&state.db[bc]&&state.db[bc].packedPcs>=state.db[bc].targetPcs){showError(`🚫 Лимит: ${state.db[bc].targetPcs}`);speak(`Лимит`);return;}const o=state.currentBox.items[bc]||0;const n=Math.max(0,o+d);if(n===0)delete state.currentBox.items[bc];else state.currentBox.items[bc]=n;if(state.db[bc])state.db[bc].packedPcs+=(n-o);updWeight();renderBox();renderTargets();}
-        function removeItem(bc){const q=state.currentBox.items[bc]||0;delete state.currentBox.items[bc];if(state.db[bc])state.db[bc].packedPcs-=q;updWeight();renderBox();renderTargets();}
-        function updWeight(){let w=0;for(const q of Object.values(state.currentBox.items))w+=0.12*q;state.currentBox.weight=w;}
-        
-        function updateUI(){document.getElementById('items-count').textContent=Object.keys(state.currentBox.items).length;document.getElementById('total-weight').textContent=state.currentBox.weight.toFixed(2);const hi=Object.keys(state.currentBox.items).length>0;document.getElementById('btn-close').disabled=!(document.getElementById('city').value.trim()&&state.activePallet&&hi);document.getElementById('btn-reopen').disabled=!(state.history.length>0&&!hi);document.getElementById('box-id-display').textContent=hi?'# ТЕКУЩИЙ':'# НОВАЯ';document.getElementById('btn-product-print').style.display=hi?'block':'none';document.getElementById('btn-print-city').disabled=!(document.getElementById('city').value.trim());}
-        function clearBoxUI(){state.currentBox={items:{},weight:0};renderBox();updateUI();}
-        
-        function createPallet(){const id=prompt('ID палета:')||`PAL-${Date.now().toString().slice(-5)}`;if(state.pallets[id])return showError('Существует');state.pallets[id]={id,boxes:[],weight:0};state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();speak('Палет создан');saveState();}
-        function selectPallet(id){state.activePallet=id;document.getElementById('pallet-input').value=id;document.getElementById('btn-print-pallet').disabled=false;renderPallets();updateUI();}
-        function renderPallets(){const l=document.getElementById('pallets-list');l.innerHTML='';if(!Object.keys(state.pallets).length){l.innerHTML='<p style="color:#888;font-size:11px">Нет палетов</p>';return;}Object.values(state.pallets).forEach(p=>{const d=document.createElement('div');d.className=`pallet-item ${p.id===state.activePallet?'active':''}`;d.innerHTML=`<b>📦 ${p.id}</b><div>📦${p.boxes.length} кор. | ⚖️${p.weight.toFixed(1)}кг</div>`;d.onclick=()=>selectPallet(p.id);l.appendChild(d);});}
-        function renderTargets(){const l=document.getElementById('targets-list');if(!state.targets.length){l.innerHTML='<p style="color:#888;font-size:11px">Загрузите Excel</p>';return;}l.innerHTML=state.targets.map(p=>{const pct=p.targetPcs>0?Math.min(100,Math.round((p.packedPcs/p.targetPcs)*100)):0;const done=p.packedPcs>=p.targetPcs&&p.targetPcs>0;const bi=p.boxesPlan>0?`📦 ${p.boxesPlan}×${p.pcsPerBox}`:'';const qb=p.quant>1?`<span class="quant-badge">Квант:${p.quant}</span>`:'';return `<div class="target-item ${done?'done':''}"><b>${p.sku} | ${p.name.substring(0,25)} ${qb}</b><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>✅ ${p.packedPcs}/${p.targetPcs}</span><span>${bi}</span></div>${p.tz?`<div class="tz-note">📝 ${p.tz.substring(0,80)}...</div>`:''}</div>`;}).join('');}
+            const now = new Date();
+            const boxId = `BOX-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${String(state.boxCounter).padStart(3, '0')}`;
+            const palId = state.activePallet;
+            const boxData = {
+                id: boxId,
+                city,
+                pallet: palId,
+                items: {...state.currentBox.items},
+                weight: state.currentBox.weight,
+                date: now.toISOString()
+            };
 
-        // ГЕНЕРАЦИЯ ЭТИКЕТКИ КОРОБА
-        function generateBoxLabel(b){
-            document.getElementById('lbl-mp-box').textContent='🔴 WB FBO'; document.getElementById('lbl-date-box').textContent=new Date(b.date).toLocaleString('ru');
-            document.getElementById('lbl-city-box').textContent=b.city; document.getElementById('lbl-pallet-box').textContent=b.pallet;
-            document.getElementById('lbl-box-id-box').textContent=b.id; document.getElementById('lbl-weight-box').textContent=b.weight.toFixed(1)+' кг';
-            document.getElementById('lbl-weight-footer').textContent='⚖️ '+b.weight.toFixed(1)+' кг'; document.getElementById('lbl-barcode-text-box').textContent=b.id;
-            let totalQty=0; const posCount=Object.keys(b.items).length; Object.values(b.items).forEach(q=>totalQty+=q);
-            document.getElementById('lbl-total-pos').textContent=posCount; document.getElementById('lbl-total-qty').textContent=totalQty;
-            const ul=document.getElementById('lbl-items-list-box'); ul.innerHTML='';
-            Object.entries(b.items).forEach(([bc,q])=>{
-                const p=state.db[bc]; const name=p?.name||'Без названия'; const sku=p?.sku||'-'; const dm=p?.datamatrix||'';
-                const li=document.createElement('li');
-                const info=document.createElement('div'); info.className='item-info';
-                info.innerHTML=`<span class="bc">${bc}</span><span class="qty">×${q}</span><div class="name">${name}</div><div style="font-size:6pt; color:#555;">Арт: ${sku}</div>`;
+            state.pallets[palId].boxes.push(boxId);
+            state.pallets[palId].weight += boxData.weight;
+            state.history.unshift(boxData);
+            state.boxCounter++;
+            saveState();
+            generateBoxLabel(boxData);
+            clearBoxUI();
+            renderTargets();
+            renderPallets();
+            speak('Короб закрыт. Печать');
+            showToast('Короб закрыт', 'success');
+            triggerPrint('label-box');
+        }
+
+        function retryPrint() {
+            if (lastPrintedLabelId) triggerPrint(lastPrintedLabelId);
+            else showError('Нет этикетки');
+        }
+
+        function reopenLastBox() {
+            if (!state.history.length) return showError('Нет коробов');
+            const lb = state.history[0];
+            if (!confirm(`Переоткрыть ${lb.id}?`)) return;
+
+            for (const [bc, q] of Object.entries(lb.items)) {
+                state.currentBox.items[bc] = (state.currentBox.items[bc] || 0) + q;
+                if (state.db[bc]) state.db[bc].packedPcs -= q;
+            }
+            state.currentBox.weight += lb.weight;
+            state.history.shift();
+
+            if (state.pallets[lb.pallet]) {
+                const p = state.pallets[lb.pallet];
+                p.boxes = p.boxes.filter(b => b !== lb.id);
+                p.weight -= lb.weight;
+            }
+            saveState();
+            renderBox();
+            renderTargets();
+            renderPallets();
+            updateUI();
+            speak(`Переоткрыто ${lb.id}`);
+            showToast(`Переоткрыт ${lb.id}`, 'info');
+            document.getElementById('retry-print-btn').style.display = 'none';
+            document.getElementById('scanner').focus();
+        }
+
+        function clearBox() {
+            if (Object.keys(state.currentBox.items).length && !confirm('Очистить?')) return;
+            for (const [bc, q] of Object.entries(state.currentBox.items)) {
+                if (state.db[bc]) state.db[bc].packedPcs -= q;
+            }
+            state.currentBox = {items: {}, weight: 0};
+            updateUI();
+            renderBox();
+            renderTargets();
+            speak('Очищено');
+            showToast('Короб очищен', 'info');
+        }
+
+        function renderBox() {
+            const tb = document.getElementById('box-tbody');
+            tb.innerHTML = '';
+            const items = Object.entries(state.currentBox.items);
+            document.getElementById('empty-msg').style.display = items.length ? 'none' : 'block';
+
+            items.forEach(([bc, q]) => {
+                const p = state.db[bc] || {sku: '?', name: '?'};
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${bc}</td>
+                    <td>${p.sku}</td>
+                    <td>${p.name.substring(0, 15)}</td>
+                    <td>
+                        <button class="qty-btn" onclick="changeQty('${bc}',-1)" aria-label="Уменьшить количество">-</button>
+                        <b>${q}</b>
+                        <button class="qty-btn" onclick="changeQty('${bc}',1)" aria-label="Увеличить количество">+</button>
+                    </td>
+                    <td>
+                        <button class="danger" style="width:auto;padding:2px 6px;" onclick="removeItem('${bc}')" aria-label="Удалить позицию">✕</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
+            updateUI();
+        }
+
+        function changeQty(bc, d) {
+            if (d > 0 && state.db[bc] && state.db[bc].packedPcs >= state.db[bc].targetPcs) {
+                showError(`🚫 Лимит: ${state.db[bc].targetPcs}`);
+                speak('Лимит');
+                return;
+            }
+            const o = state.currentBox.items[bc] || 0;
+            const n = Math.max(0, o + d);
+            if (n === 0) delete state.currentBox.items[bc];
+            else state.currentBox.items[bc] = n;
+            if (state.db[bc]) state.db[bc].packedPcs += (n - o);
+            updWeight();
+            renderBox();
+            renderTargets();
+        }
+
+        function removeItem(bc) {
+            const q = state.currentBox.items[bc] || 0;
+            delete state.currentBox.items[bc];
+            if (state.db[bc]) state.db[bc].packedPcs -= q;
+            updWeight();
+            renderBox();
+            renderTargets();
+        }
+
+        function updWeight() {
+            let w = 0;
+            for (const q of Object.values(state.currentBox.items)) w += 0.12 * q;
+            state.currentBox.weight = w;
+        }
+
+        // ============ UI UPDATE ============
+        function updateUI() {
+            document.getElementById('items-count').textContent = Object.keys(state.currentBox.items).length;
+            document.getElementById('total-weight').textContent = state.currentBox.weight.toFixed(2);
+
+            const hi = Object.keys(state.currentBox.items).length > 0;
+            document.getElementById('btn-close').disabled = !(document.getElementById('city').value.trim() && state.activePallet && hi);
+            document.getElementById('btn-reopen').disabled = !(state.history.length > 0 && !hi);
+            document.getElementById('box-id-display').textContent = hi ? '# ТЕКУЩИЙ' : '# НОВАЯ';
+            document.getElementById('btn-product-print').style.display = hi ? 'block' : 'none';
+            document.getElementById('btn-print-city').disabled = !(document.getElementById('city').value.trim());
+
+            // Update app status
+            const status = document.getElementById('app-status');
+            if (state.activePallet) {
+                status.textContent = `📦 ${state.activePallet} | ${state.pallets[state.activePallet]?.boxes.length || 0} кор.`;
+            } else {
+                status.textContent = 'Готов к работе';
+            }
+        }
+
+        function clearBoxUI() {
+            state.currentBox = {items: {}, weight: 0};
+            renderBox();
+            updateUI();
+        }
+
+        // ============ PALLETS ============
+        function createPallet() {
+            const id = prompt('ID палета:') || `PAL-${Date.now().toString().slice(-5)}`;
+            if (state.pallets[id]) return showError('Существует');
+            state.pallets[id] = {id, boxes: [], weight: 0};
+            state.activePallet = id;
+            document.getElementById('pallet-input').value = id;
+            document.getElementById('btn-print-pallet').disabled = false;
+            renderPallets();
+            updateUI();
+            speak('Палет создан');
+            showToast(`Палет ${id} создан`, 'success');
+            saveState();
+        }
+
+        function selectPallet(id) {
+            state.activePallet = id;
+            document.getElementById('pallet-input').value = id;
+            document.getElementById('btn-print-pallet').disabled = false;
+            renderPallets();
+            updateUI();
+            showToast(`Выбран палет ${id}`, 'info', 2000);
+        }
+
+        function renderPallets() {
+            const l = document.getElementById('pallets-list');
+            l.innerHTML = '';
+            if (!Object.keys(state.pallets).length) {
+                l.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;padding:10px;">Нет палетов</p>';
+                return;
+            }
+            Object.values(state.pallets).forEach(p => {
+                const d = document.createElement('div');
+                d.className = `pallet-item ${p.id === state.activePallet ? 'active' : ''}`;
+                d.setAttribute('role', 'option');
+                d.setAttribute('aria-selected', p.id === state.activePallet);
+                d.innerHTML = `
+                    <b>📦 ${p.id}</b>
+                    <div class="meta">📦 ${p.boxes.length} кор. | ⚖️ ${p.weight.toFixed(1)} кг</div>
+                `;
+                d.onclick = () => selectPallet(p.id);
+                l.appendChild(d);
+            });
+        }
+
+        // ============ TARGETS ============
+        function renderTargets() {
+            const l = document.getElementById('targets-list');
+            if (!state.targets.length) {
+                l.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;padding:15px;">Загрузите Excel</p>';
+                return;
+            }
+
+            let filtered = state.targets;
+
+            // Filter
+            if (currentFilter === 'pending') {
+                filtered = filtered.filter(p => p.packedPcs < p.targetPcs);
+            } else if (currentFilter === 'done') {
+                filtered = filtered.filter(p => p.packedPcs >= p.targetPcs && p.targetPcs > 0);
+            }
+
+            // Search
+            if (searchQuery) {
+                filtered = filtered.filter(p =>
+                    p.sku.toLowerCase().includes(searchQuery) ||
+                    p.name.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            if (!filtered.length) {
+                l.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;padding:15px;">Ничего не найдено</p>';
+                return;
+            }
+
+            l.innerHTML = filtered.map(p => {
+                const pct = p.targetPcs > 0 ? Math.min(100, Math.round((p.packedPcs / p.targetPcs) * 100)) : 0;
+                const done = p.packedPcs >= p.targetPcs && p.targetPcs > 0;
+                const bi = p.boxesPlan > 0 ? `📦 ${p.boxesPlan}×${p.pcsPerBox}` : '';
+                const qb = p.quant > 1 ? `<span class="quant-badge">Квант:${p.quant}</span>` : '';
+                return `
+                    <div class="target-item ${done ? 'done' : ''}">
+                        <b>${p.sku} | ${p.name.substring(0, 25)} ${qb}</b>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${pct}%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>✅ ${p.packedPcs}/${p.targetPcs}</span>
+                            <span>${bi}</span>
+                        </div>
+                        ${p.tz ? `<div class="tz-note">📝 ${p.tz.substring(0, 80)}...</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============ LABEL GENERATION ============
+        function generateBoxLabel(b) {
+            document.getElementById('lbl-mp-box').textContent = '🔴 WB FBO';
+            document.getElementById('lbl-date-box').textContent = new Date(b.date).toLocaleString('ru');
+            document.getElementById('lbl-city-box').textContent = b.city;
+            document.getElementById('lbl-pallet-box').textContent = b.pallet;
+            document.getElementById('lbl-box-id-box').textContent = b.id;
+            document.getElementById('lbl-weight-box').textContent = b.weight.toFixed(1) + ' кг';
+            document.getElementById('lbl-weight-footer').textContent = '⚖️ ' + b.weight.toFixed(1) + ' кг';
+            document.getElementById('lbl-barcode-text-box').textContent = b.id;
+
+            let totalQty = 0;
+            const posCount = Object.keys(b.items).length;
+            Object.values(b.items).forEach(q => totalQty += q);
+            document.getElementById('lbl-total-pos').textContent = posCount;
+            document.getElementById('lbl-total-qty').textContent = totalQty;
+
+            const ul = document.getElementById('lbl-items-list-box');
+            ul.innerHTML = '';
+            Object.entries(b.items).forEach(([bc, q]) => {
+                const p = state.db[bc];
+                const name = p?.name || 'Без названия';
+                const sku = p?.sku || '-';
+                const dm = p?.datamatrix || '';
+
+                const li = document.createElement('li');
+                const info = document.createElement('div');
+                info.className = 'item-info';
+                info.innerHTML = `
+                    <span class="bc">${bc}</span>
+                    <span class="qty">×${q}</span>
+                    <div class="name">${name}</div>
+                    <div style="font-size:6pt; color:#555;">Арт: ${sku}</div>
+                `;
                 li.appendChild(info);
-                if(dm&&dm.length>10){const db=document.createElement('div');db.className='datamatrix-box';const c=document.createElement('canvas');try{bwipjs.toCanvas(c,{bcid:'datamatrix',text:dm,scale:1,width:12,height:12,padding:0.5});db.appendChild(c);}catch(e){db.innerHTML='<div style="font-size:5pt;color:red;">DM Err</div>';}li.appendChild(db);}
+
+                if (dm && dm.length > 10) {
+                    const db = document.createElement('div');
+                    db.className = 'datamatrix-box';
+                    const c = document.createElement('canvas');
+                    try {
+                        bwipjs.toCanvas(c, {bcid: 'datamatrix', text: dm, scale: 1, width: 12, height: 12, padding: 0.5});
+                        db.appendChild(c);
+                    } catch (e) {
+                        db.innerHTML = '<div style="font-size:5pt;color:red;">DM Err</div>';
+                    }
+                    li.appendChild(db);
+                }
                 ul.appendChild(li);
             });
-            JsBarcode("#barcode-svg-box",b.id,{format:"CODE128",width:1.5,height:10,displayValue:false});
+            JsBarcode("#barcode-svg-box", b.id, {format: "CODE128", width: 1.5, height: 10, displayValue: false});
         }
 
-        // ПЕЧАТЬ ПАЛЕТА
-        function printPalletLabel(){if(!state.activePallet)return showError('⚠️ Выберите палет');const p=state.pallets[state.activePallet];const city=document.getElementById('city').value.trim()||'ЕКБ';
-        document.getElementById('lbl-mp-pal').textContent='🔴 WB FBO'; document.getElementById('lbl-date-pal').textContent=new Date().toLocaleString('ru');
-        document.getElementById('lbl-city-pal').textContent=city; document.getElementById('lbl-pal-id').textContent=p.id;
-        document.getElementById('lbl-pal-count').textContent=p.boxes.length; document.getElementById('lbl-pal-weight').textContent=p.weight.toFixed(1)+' кг';
-        const ul=document.getElementById('lbl-pal-boxes-list');ul.innerHTML='';p.boxes.forEach(bx=>ul.innerHTML+=`<li style="margin-bottom:0.5mm; padding-bottom:0.5mm; border-bottom:1px dotted #aaa;">${bx}</li>`);
-        document.getElementById('lbl-barcode-text-pal').textContent=p.id; JsBarcode("#barcode-svg-pal",p.id,{format:"CODE128",width:2,height:12,displayValue:false});
-        triggerPrint('label-pallet'); speak('Печать палета');}
+        function printPalletLabel() {
+            if (!state.activePallet) return showError('⚠️ Выберите палет');
+            const p = state.pallets[state.activePallet];
+            const city = document.getElementById('city').value.trim() || 'ЕКБ';
 
-        // 🔴 ПЕЧАТЬ МАРШРУТА / ТЗ К ГОРОДУ (Обновлено)
-        function printCityLabel(){
-            const city=document.getElementById('city').value.trim();
-            if(!city) return showError('⚠️ Введите город');
-            
+            document.getElementById('lbl-mp-pal').textContent = '🔴 WB FBO';
+            document.getElementById('lbl-date-pal').textContent = new Date().toLocaleString('ru');
+            document.getElementById('lbl-city-pal').textContent = city;
+            document.getElementById('lbl-pal-id').textContent = p.id;
+            document.getElementById('lbl-pal-count').textContent = p.boxes.length;
+            document.getElementById('lbl-pal-weight').textContent = p.weight.toFixed(1) + ' кг';
+
+            const ul = document.getElementById('lbl-pal-boxes-list');
+            ul.innerHTML = '';
+            p.boxes.forEach(bx => ul.innerHTML += `<li style="margin-bottom:0.5mm; padding-bottom:0.5mm; border-bottom:1px dotted #aaa;">${bx}</li>`);
+
+            document.getElementById('lbl-barcode-text-pal').textContent = p.id;
+            JsBarcode("#barcode-svg-pal", p.id, {format: "CODE128", width: 2, height: 12, displayValue: false});
+            triggerPrint('label-pallet');
+            speak('Печать палета');
+            showToast('Печать этикетки палета', 'info');
+        }
+
+        function printCityLabel() {
+            const city = document.getElementById('city').value.trim();
+            if (!city) return showError('⚠️ Введите город');
+
             document.getElementById('lbl-city-name').textContent = city;
             document.getElementById('lbl-route-info').textContent = state.orderMeta.route || 'Маршрут не указан';
             document.getElementById('lbl-city-date').textContent = new Date().toLocaleString('ru');
-            
-            // Сбор данных для печати ТЗ
+
             let palletId = state.activePallet || 'Все';
             let boxIds = [];
-            if(state.activePallet && state.pallets[state.activePallet]) {
+            if (state.activePallet && state.pallets[state.activePallet]) {
                 boxIds = state.pallets[state.activePallet].boxes;
             } else {
                 Object.values(state.pallets).forEach(p => boxIds.push(...p.boxes));
             }
-            
+
             const boxCount = boxIds.length;
-            const boxRange = boxIds.length > 0 ? 
-                (boxIds.length === 1 ? boxIds[0] : `${boxIds[0]} ... ${boxIds[boxIds.length-1]}`) 
-                : '-';
-                
+            const boxRange = boxIds.length > 0 ?
+                (boxIds.length === 1 ? boxIds[0] : `${boxIds[0]} ... ${boxIds[boxIds.length - 1]}`) : '-';
+
             document.getElementById('lbl-city-pallet-id').textContent = palletId;
             document.getElementById('lbl-city-box-range').textContent = boxRange;
             document.getElementById('lbl-city-box-count').textContent = boxCount;
-            
-            const cityCode = 'ROUTE_'+city.replace(/\s/g,'_').toUpperCase();
+
+            const cityCode = 'ROUTE_' + city.replace(/\s/g, '_').toUpperCase();
             document.getElementById('lbl-barcode-text-city').textContent = cityCode;
-            JsBarcode("#barcode-svg-city", cityCode, {format:"CODE128", width:2, height:12, displayValue:false});
-            
-            triggerPrint('label-city'); 
+            JsBarcode("#barcode-svg-city", cityCode, {format: "CODE128", width: 2, height: 12, displayValue: false});
+
+            triggerPrint('label-city');
             speak('Печать маршрута');
+            showToast('Печать маршрута', 'info');
         }
 
-        // ПЕЧАТЬ ЭТИКЕТОК НА ТОВАР (58x40)
-        function printProductLabels(){if(!Object.keys(state.currentBox.items).length)return showError('⚠️ Короб пуст');const container=document.getElementById('product-labels-container');container.innerHTML='';
-        Object.entries(state.currentBox.items).forEach(([bc,q])=>{const p=state.db[bc];if(!p)return;for(let i=0;i<q;i++){const el=document.createElement('div');el.className='label-product';const name=p.name||'Без названия';const sku=p.sku||'-';const quant=p.quant>1?p.quant:'';const expiry=p.expiry||'Не указан';el.innerHTML=`<div class="prod-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div><div class="prod-name">${name}</div><div class="prod-info"><span>Арт: <b>${sku}</b></span>${quant?`<span>Квант: <b>${quant}</b></span>`:''}</div><div class="prod-exp">Годен до: <b>${expiry}</b></div><div class="prod-barcode"><svg id="pb-${bc}-${i}"></svg></div>`;container.appendChild(el);try{JsBarcode(`#pb-${bc}-${i}`,bc,{format:"auto",width:1.5,height:10,displayValue:false,margin:0});}catch(e){console.warn('Barcode error',e);}}});
-        document.body.classList.add('printing-products');requestAnimationFrame(()=>{window.print();setTimeout(()=>{document.body.classList.remove('printing-products');container.innerHTML='';},1000);});}
+        function printProductLabels() {
+            if (!Object.keys(state.currentBox.items).length) return showError('⚠️ Короб пуст');
+            const container = document.getElementById('product-labels-container');
+            container.innerHTML = '';
 
-        function exportCSV(){if(!state.history.length)return showError('Нет данных');let csv='\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';state.history.forEach(b=>Object.entries(b.items).forEach(([bc,q])=>{const p=state.db[bc]||{};csv+=`${b.id};${b.pallet};${b.city};${bc};${p.sku||''};"${(p.name||'').replace(/"/g,'""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;}));const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fbo_report.csv`;a.click();speak('Готово');}
-        function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
-        function hideError(){document.getElementById('error-msg').style.display='none';}
-        function showSuccess(m){const s=document.getElementById('upload-status');s.textContent=m;s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
-        function saveState(){localStorage.setItem('fbo_v9_route',JSON.stringify({targets:state.targets,history:state.history,boxCounter:state.boxCounter,orderMeta:state.orderMeta,pallets:state.pallets,activePallet:state.activePallet}));}
-        function loadState(){const s=localStorage.getItem('fbo_v9_route');if(s){const d=JSON.parse(s);Object.assign(state,d);if(state.activePallet)document.getElementById('pallet-input').value=state.activePallet;renderTargets();renderPallets();updateUI();}}
-        function resetAllData(){if(confirm('Сброс?')){localStorage.removeItem('fbo_v9_route');location.reload();}}
-        window.addEventListener('beforeunload',()=>{if(quaggaActive)Quagga.stop();});
+            Object.entries(state.currentBox.items).forEach(([bc, q]) => {
+                const p = state.db[bc];
+                if (!p) return;
+                for (let i = 0; i < q; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'label-product';
+                    const name = p.name || 'Без названия';
+                    const sku = p.sku || '-';
+                    const quant = p.quant > 1 ? p.quant : '';
+                    const expiry = p.expiry || 'Не указан';
+                    el.innerHTML = `
+                        <div class="prod-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>
+                        <div class="prod-name">${name}</div>
+                        <div class="prod-info">
+                            <span>Арт: <b>${sku}</b></span>
+                            ${quant ? `<span>Квант: <b>${quant}</b></span>` : ''}
+                        </div>
+                        <div class="prod-exp">Годен до: <b>${expiry}</b></div>
+                        <div class="prod-barcode"><svg id="pb-${bc}-${i}"></svg></div>
+                    `;
+                    container.appendChild(el);
+                    try {
+                        JsBarcode(`#pb-${bc}-${i}`, bc, {format: "auto", width: 1.5, height: 10, displayValue: false, margin: 0});
+                    } catch (e) { console.warn('Barcode error', e); }
+                }
+            });
+
+            document.body.classList.add('printing-products');
+            requestAnimationFrame(() => {
+                window.print();
+                setTimeout(() => {
+                    document.body.classList.remove('printing-products');
+                    container.innerHTML = '';
+                }, 1000);
+            });
+        }
+
+        // ============ EXPORT & STORAGE ============
+        function exportCSV() {
+            if (!state.history.length) return showError('Нет данных');
+            let csv = '\uFEFFКороб;Палет;Город;ШК;Артикул;Название;Кол-во;Вес;Дата\n';
+            state.history.forEach(b => Object.entries(b.items).forEach(([bc, q]) => {
+                const p = state.db[bc] || {};
+                csv += `${b.id};${b.pallet};${b.city};${bc};${p.sku || ''};"${(p.name || '').replace(/"/g, '""')}";${q};${b.weight.toFixed(2)};${new Date(b.date).toLocaleString()}\n`;
+            }));
+            const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `fbo_report_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            speak('Готово');
+            showToast('CSV экспортирован', 'success');
+        }
+
+        function showError(m) {
+            const e = document.getElementById('error-msg');
+            e.textContent = m;
+            e.style.display = 'block';
+            setTimeout(() => e.style.display = 'none', 4000);
+        }
+
+        function hideError() {
+            document.getElementById('error-msg').style.display = 'none';
+        }
+
+        function showSuccess(m) {
+            const s = document.getElementById('upload-status');
+            s.textContent = m;
+            s.style.display = 'block';
+            setTimeout(() => s.style.display = 'none', 3000);
+        }
+
+        function saveState() {
+            localStorage.setItem('fbo_v10_pro', JSON.stringify({
+                targets: state.targets,
+                history: state.history,
+                boxCounter: state.boxCounter,
+                orderMeta: state.orderMeta,
+                pallets: state.pallets,
+                activePallet: state.activePallet
+            }));
+        }
+
+        function loadState() {
+            const s = localStorage.getItem('fbo_v10_pro');
+            if (s) {
+                const d = JSON.parse(s);
+                Object.assign(state, d);
+                if (state.activePallet) document.getElementById('pallet-input').value = state.activePallet;
+                renderTargets();
+                renderPallets();
+                updateUI();
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('Сбросить все данные?')) {
+                localStorage.removeItem('fbo_v10_pro');
+                location.reload();
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (quaggaActive) Quagga.stop();
+        });
     </script>
 </body>
 </html>
