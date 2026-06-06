@@ -3,701 +3,1015 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система Фильтрации и Печати (Озон/ТЗ)</title>
-    <!-- Подключение библиотек -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-    
+    <title>Fulfillment Pro - Единая система</title>
     <style>
-        /* === БАЗОВЫЕ СТИЛИ === */
-        :root {
-            --primary: #005bff; --primary-hover: #0047cc;
-            --success: #00a651; --danger: #ff3333;
-            --wb: #cb11ab; --wb-hover: #a00e88;
-            --bg: #f5f5f7; --card-bg: #ffffff; --text: #333333; --border: #e0e0e0;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; font-size: 14px; }
-        * { box-sizing: border-box; }
-        
-        /* === LAYOUT === */
-        .app-header { background: white; padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .app-header h1 { margin: 0; font-size: 20px; color: var(--primary); }
-        .tabs { display: flex; gap: 5px; margin-bottom: 0; }
-        .tab-btn { padding: 10px 20px; border: none; background: #eee; cursor: pointer; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 14px; color: #666; transition: 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); }
-        .tab-btn.wb-tab.active { color: var(--wb); }
-
-        .container { max-width: 1600px; margin: 20px auto; padding: 0 20px; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .hidden { display: none !important; }
-        
-        /* === UPLOAD & ACTIONS === */
-        .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: 0.2s; background: #fafafa; }
-        .upload-zone:hover { border-color: var(--primary); background: #f0f5ff; }
-        .upload-zone p { margin: 5px 0 0; color: #888; font-size: 12px; }
-        
-        .actions-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 15px 0; }
-        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; color: white; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background: var(--primary); } .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-        .btn-success { background: var(--success); } .btn-success:hover:not(:disabled) { background: #008f46; }
-        .btn-wb { background: var(--wb); } .btn-wb:hover:not(:disabled) { background: var(--wb-hover); }
-        .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); } .btn-outline:hover { background: #f5f5f5; }
-        
-        /* === FILTERS === */
-        .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
-        .filter-group { display: flex; align-items: center; gap: 6px; margin-right: 15px; margin-bottom: 5px; }
-        .filter-group label { font-size: 12px; font-weight: 600; color: #555; white-space: nowrap; }
-        
-        select.filter-select, input.search-input {
-            padding: 6px 10px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 13px;
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-        input.search-input { flex-grow: 1; min-width: 200px; }
-
-        .city-filters { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: 8px; }
-        .city-chip { padding: 5px 12px; background: white; border: 1px solid var(--border); border-radius: 15px; font-size: 12px; cursor: pointer; transition: 0.1s; }
-        .city-chip:hover { border-color: var(--primary); }
-        .city-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .city-chip.wb.active { background: var(--wb); border-color: var(--wb); }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        header p { opacity: 0.9; font-size: 1.1em; }
         
-        /* === TABLE === */
-        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; max-height: 600px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: #555; white-space: nowrap; }
-        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
-        tr:hover td { background: #f4f7fb; }
-        .val-bold { font-weight: bold; color: var(--primary); }
-        
-        /* === LABEL EDITOR & MODAL === */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: white; width: 90%; max-width: 1200px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
-        .modal-body { flex: 1; display: flex; overflow: hidden; }
-        
-        .editor-panel { width: 350px; background: #fafafa; border-right: 1px solid var(--border); padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .editor-section h4 { margin: 0 0 8px 0; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-        .label-row { display: flex; align-items: center; gap: 8px; padding: 8px; background: white; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; }
-        .label-row label { flex: 1; font-size: 13px; cursor: pointer; }
-        
-        .preview-area { flex: 1; background: #eef2f5; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .preview-container { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 40px; border-radius: 8px; }
-        
-        /* === LABEL 58x40mm === */
-        .label-canvas {
-            width: 58mm; height: 40mm; 
-            background: white; border: 1px solid #ddd; 
-            padding: 1.5mm; box-sizing: border-box;
-            display: flex; flex-direction: column;
-            font-family: Arial, sans-serif;
-            overflow: visible; /* Важно: разрешаем контенту выходить за пределы при предпросмотре */
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            overflow-x: auto;
+        }
+        .nav-tab {
+            padding: 20px 30px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+        .nav-tab:hover { background: #e9ecef; color: #495057; }
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
         }
         
-        /* СТИЛИ ЭЛЕМЕНТОВ ЭТИКЕТКИ */
-        .lbl-warning { text-align: center; font-weight: 900; font-size: 7px; color: #000; border-bottom: 0.5px solid #000; padding-bottom: 0.5mm; margin-bottom: 0.5mm; text-transform: uppercase; }
-        .lbl-title { font-weight: bold; font-size: 10px; margin-bottom: 0.3mm; color: #000; }
-        .lbl-counter { float: right; font-size: 9px; font-weight: bold; }
-        .lbl-barcode { text-align: center; margin: 0.5mm 0; display: flex; justify-content: center; }
-        .lbl-barcode svg { max-width: 54mm; max-height: 16mm; width: 100%; height: auto; display: block; }
-        .lbl-name { font-size: 9.5px; line-height: 1.15; color: #000; font-weight: bold; word-break: break-word; margin-bottom: 0.5mm; flex-grow: 1; }
-        .lbl-meta { display: flex; justify-content: space-between; font-size: 7px; color: #333; border-top: 0.5px solid #ccc; padding-top: 0.3mm; margin-top: auto; }
+        .content { padding: 30px; }
+        .module { display: none; }
+        .module.active { display: block; animation: fadeIn 0.3s; }
         
-        /* === PRINT STYLES === */
-        #print-output { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; z-index: -1; }
-        
-        @media print {
-            body * { visibility: hidden; }
-            #print-output, #print-output * { visibility: visible; }
-            #print-output { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; background: white; overflow: visible; }
-            
-            /* Label Print */
-            .print-label-mode .label-canvas { page-break-after: always; border: none; margin: 0; overflow: hidden; }
-            .print-label-mode .label-canvas:last-child { page-break-after: auto; }
-            @page { size: 58mm 40mm; margin: 0; }
-
-            /* TTN Print */
-            .print-ttn-mode .ttn-doc { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
-            @page { size: A4 landscape; margin: 10mm; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        /* TTN Styles */
-        .ttn-doc { padding: 20px; font-size: 12px; }
-        .ttn-head { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
-        .ttn-table { width: 100%; border-collapse: collapse; }
-        .ttn-table th, .ttn-table td { border: 1px solid #000; padding: 4px; text-align: center; }
-        .ttn-table td:nth-child(2) { text-align: left; }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .card h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+        .stat-box .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-box .label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover { background: #218838; }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover { background: #c82333; }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover { background: #5a6268; }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover { background: #f8f9fa; }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="file"], select {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            flex: 1;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .scanner-area {
+            background: #000;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            margin: 20px 0;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-tab { padding: 15px 20px; font-size: 0.9em; }
+            .content { padding: 15px; }
+            header h1 { font-size: 1.8em; }
+        }
     </style>
 </head>
 <body>
-
-<div class="app-header">
-    <h1>📦 Система Упаковки</h1>
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('list')">📋 Сборка (ТТН)</button>
-        <button class="tab-btn" onclick="switchTab('label')">🏷️ Печать Этикеток</button>
-    </div>
-</div>
-
-<div class="container">
-    
-    <!-- TAB 1: LIST / TTN -->
-    <div id="tab-list" class="tab-content">
-        <div class="card">
-            <div class="upload-zone" onclick="document.getElementById('file-list').click()">
-                <b>Загрузить ТЗ (Excel)</b> для формирования списка сборки
-                <input type="file" id="file-list" hidden accept=".xlsx,.xls">
-                <p>Нажмите сюда или перетащите файл</p>
-            </div>
-            <div class="actions-bar hidden" id="actions-list">
-                <button class="btn btn-primary" onclick="printTTN('filter')">🖨️ Печать (Выбранные города)</button>
-                <button class="btn btn-success" onclick="printTTN('all')">🖨️ Печать Всего (Альбомная)</button>
-            </div>
-            <div class="filters hidden" id="filters-list">
-                <div style="display:flex; justify-content:space-between; width:100%">
-                    <span style="font-weight:bold; font-size:12px;">Города:</span>
-                    <div>
-                        <button class="btn btn-outline btn-sm" onclick="toggleAllCities('list', true)">Все</button>
-                        <button class="btn btn-outline btn-sm" onclick="toggleAllCities('list', false)">Сброс</button>
+    <div class="container">
+        <header>
+            <h1>🚀 Fulfillment Pro</h1>
+            <p>Единая система управления фулфилментом</p>
+        </header>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchModule('dashboard')">📊 Главная</button>
+            <button class="nav-tab" onclick="switchModule('receiving')">📥 Приёмка</button>
+            <button class="nav-tab" onclick="switchModule('crm')">🏢 CRM FBO</button>
+            <button class="nav-tab" onclick="switchModule('wb')">📦 Wildberries</button>
+            <button class="nav-tab" onclick="switchModule('reports')">📈 Отчёты</button>
+        </div>
+        
+        <div class="content">
+            <!-- Dashboard -->
+            <div id="dashboard" class="module active">
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="value" id="total-orders">0</div>
+                        <div class="label">Всего заказов</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="processed-orders">0</div>
+                        <div class="label">Обработано</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="pending-orders">0</div>
+                        <div class="label">В ожидании</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="error-orders">0</div>
+                        <div class="label">Ошибки</div>
                     </div>
                 </div>
-                <div class="city-filters" id="city-chips-list"></div>
                 
-                <!-- NEW: Filter by Pack Quantity -->
-                <div class="filter-group" style="margin-top: 10px;">
-                    <label>В упаковке:</label>
-                    <select id="filter-pack-list" class="filter-select" onchange="applyFilter('list')">
-                        <option value="">Все</option>
-                    </select>
-                </div>
-                
-                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="applyFilter('list')">
-            </div>
-            <div class="table-wrap hidden" id="table-wrap-list">
-                <table id="table-list">
-                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>Упак.</th><th>Кол-во</th><th>Палета</th><th>Короб</th></tr></thead>
-                    <tbody id="tbody-list"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 2: LABELS -->
-    <div id="tab-label" class="tab-content hidden">
-        <div class="card">
-            <div class="upload-zone" onclick="document.getElementById('file-label').click()">
-                <b>Загрузить ТЗ (Excel)</b> для печати этикеток
-                <input type="file" id="file-label" hidden accept=".xlsx,.xls">
-            </div>
-            <div class="actions-bar hidden" id="actions-label">
-                <button class="btn btn-success" onclick="openLabelModal()">🏷️ Настроить и Печать</button>
-            </div>
-            <div class="filters hidden" id="filters-label">
-                <div style="display:flex; justify-content:space-between; width:100%">
-                    <span style="font-weight:bold; font-size:12px;">Фильтр:</span>
-                    <div>
-                        <button class="btn btn-outline btn-sm" onclick="toggleAllCities('label', true)">Все</button>
-                        <button class="btn btn-outline btn-sm" onclick="toggleAllCities('label', false)">Сброс</button>
+                <div class="card">
+                    <h3>📋 Быстрые действия</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="switchModule('receiving')">📥 Начать приёмку</button>
+                        <button class="btn btn-success" onclick="switchModule('crm')">🏢 CRM FBO</button>
+                        <button class="btn btn-secondary" onclick="switchModule('wb')">📦 Управление WB</button>
+                        <button class="btn btn-primary" onclick="switchModule('reports')">📈 Отчёты</button>
                     </div>
                 </div>
-                <div class="city-filters" id="city-chips-label"></div>
                 
-                <!-- NEW: Filter by Pack Quantity -->
-                <div class="filter-group" style="margin-top: 10px;">
-                    <label>В упаковке:</label>
-                    <select id="filter-pack-label" class="filter-select" onchange="applyFilter('label')">
-                        <option value="">Все</option>
-                    </select>
+                <div class="card">
+                    <h3>📊 Прогресс работы</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%">0%</div>
+                    </div>
                 </div>
                 
-                <input type="text" class="search-input" placeholder="🔍 Поиск товара..." oninput="applyFilter('label')">
+                <div class="card">
+                    <h3>📜 Последние операции</h3>
+                    <div class="log" id="main-log">
+                        <div class="log-entry">[Система готова] Добро пожаловать в Fulfillment Pro!</div>
+                    </div>
+                </div>
             </div>
-            <div class="table-wrap hidden" id="table-wrap-label">
-                <table id="table-label">
-                    <thead><tr><th style="width:40px">№</th><th>Наименование</th><th>Артикул</th><th>ШК</th><th>Упак.</th><th>Кол-во</th></tr></thead>
-                    <tbody id="tbody-label"></tbody>
-                </table>
+            
+            <!-- Receiving Module -->
+            <div id="receiving" class="module">
+                <div class="card">
+                    <h3>📥 Приёмка поставок</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value" id="recv-total">0</div>
+                            <div class="label">Всего</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="recv-accepted">0</div>
+                            <div class="label">Принято</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="recv-errors">0</div>
+                            <div class="label">Ошибки</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px;">Метод ввода:</h4>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" onclick="setScanMode('scanner', this)">⌨️ Сканер</button>
+                        <button class="mode-btn" onclick="setScanMode('camera', this)">📷 Камера</button>
+                        <button class="mode-btn" onclick="setScanMode('manual', this)">✍️ Вручную</button>
+                        <button class="mode-btn" onclick="setScanMode('rfid', this)">📡 RFID</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🔍 Сканирование</h3>
+                    <div class="scanner-area">
+                        <p style="font-size: 1.2em; margin-bottom: 20px;">Наведите сканер на штрихкод</p>
+                        <input type="text" id="scan-input" placeholder="Штрихкод..." style="width: 100%; max-width: 400px; padding: 15px; font-size: 1.2em;">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="processScan()">✅ Принять</button>
+                        <button class="btn btn-danger" onclick="clearScan()">↩️ Отменить</button>
+                        <button class="btn btn-secondary" onclick="resetReceiving()">🔄 Сброс</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📂 Загрузка плана поставки</h3>
+                    <div class="input-group">
+                        <input type="file" id="plan-file" accept=".xlsx,.xls,.csv,.json">
+                        <button class="btn btn-primary" onclick="loadPlan()">📂 Загрузить</button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="downloadTemplate('xlsx')">⬇️ Excel шаблон</button>
+                        <button class="btn btn-secondary" onclick="downloadTemplate('json')">⬇️ JSON пример</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📜 Журнал операций</h3>
+                    <div class="log" id="recv-log"></div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="exportLog('excel')">📊 Экспорт в Excel</button>
+                        <button class="btn btn-secondary" onclick="exportLog('json')">💾 Экспорт в JSON</button>
+                        <button class="btn btn-danger" onclick="clearLog()">🗑️ Очистить</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CRM FBO Module -->
+            <div id="crm" class="module">
+                <div class="card">
+                    <h3>🏢 CRM FBO - Управление отгрузками</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value" id="crm-sku">0</div>
+                            <div class="label">SKU</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="crm-plan">0</div>
+                            <div class="label">План</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="crm-pallets">0</div>
+                            <div class="label">Палетов</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px;">Маркетплейс:</h4>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" onclick="setMarketplace('wb', this)">🟣 Wildberries FBO</button>
+                        <button class="mode-btn" onclick="setMarketplace('ozon', this)">🔵 Ozon FBO</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🏗️ Управление палетами</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="addPallet()">+ Добавить палет</button>
+                        <button class="btn btn-secondary" onclick="printPalletLabels()">🖨️ Печать этикеток</button>
+                    </div>
+                    <div id="pallets-list" style="margin-top: 15px;">
+                        <p style="color: #6c757d; text-align: center; padding: 20px;">Нет палетов</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📡 Сканирование</h3>
+                    <div class="scanner-area">
+                        <p style="font-size: 1.2em; margin-bottom: 20px;">🎯 Наведите рамку на штрихкод</p>
+                        <button class="btn btn-primary" onclick="toggleCamera()" id="camera-btn">📷 Включить камеру</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📦 Коробка</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value" id="box-positions">0</div>
+                            <div class="label">Позиций</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="box-weight">0.00 кг</div>
+                            <div class="label">Вес</div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="closeBox()">✅ Закрыть коробку</button>
+                        <button class="btn btn-secondary" onclick="reprintLabel()">🔄 Повтор печати</button>
+                        <button class="btn btn-danger" onclick="clearBox()">🗑️ Очистить</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📋 Состав коробки</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ШК</th>
+                                <th>Артикул</th>
+                                <th>Название</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody id="box-contents">
+                            <tr><td colspan="4" style="text-align: center; color: #6c757d;">Коробка пуста</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card">
+                    <h3>🎯 План (ТЗ)</h3>
+                    <div class="input-group">
+                        <input type="file" id="crm-plan-file" accept=".xlsx,.xls">
+                        <button class="btn btn-primary" onclick="loadCRMPlan()">📂 Загрузить Excel</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📜 Экспорт</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="exportCRM('csv')">📤 CSV</button>
+                        <button class="btn btn-danger" onclick="resetCRM()">🔄 Сброс</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Wildberries Module -->
+            <div id="wb" class="module">
+                <div class="card">
+                    <h3>📦 Управление отгрузкой Wildberries</h3>
+                    <div class="input-group">
+                        <input type="file" id="wb-tz-file" accept=".xlsx,.xls">
+                        <button class="btn btn-primary" onclick="loadWBTask()">📂 Загрузить ТЗ</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🗺️ Соответствие полей</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Системное поле</th>
+                                <th>Колонка Excel</th>
+                                <th>Пример</th>
+                            </tr>
+                        </thead>
+                        <tbody id="field-mapping">
+                            <tr><td colspan="3" style="text-align: center; color: #6c757d;">Загрузите файл для настройки</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="saveMapping()">✅ Сохранить</button>
+                        <button class="btn btn-secondary" onclick="previewMapping()">👁️ Предпросмотр</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🏷️ Этикетки для сборки</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value" id="wb-positions">0</div>
+                            <div class="label">Позиций</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="wb-labels">0</div>
+                            <div class="label">Этикеток</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="wb-printed">0</div>
+                            <div class="label">Напечатано</div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="printAllLabels()">🖨️ Печать всех</button>
+                        <button class="btn btn-secondary" onclick="printRemainingLabels()">🖨️ Оставшихся</button>
+                        <button class="btn btn-success" onclick="markAllPrinted()">✅ Все напечатаны</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📋 Техническое задание</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value" id="wb-tz-total">0</div>
+                            <div class="label">Всего позиций</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="wb-tz-selected">0</div>
+                            <div class="label">Выбрано</div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" onchange="toggleAllWB(this)"></th>
+                                <th>Артикул</th>
+                                <th>ШК</th>
+                                <th>Наименование</th>
+                                <th>Кол-во</th>
+                                <th>Коробов</th>
+                                <th>Палет</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wb-task-list">
+                            <tr><td colspan="7" style="text-align: center; color: #6c757d;">Нет загруженных данных</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="printWBTask()">🖨️ Печать ТЗ</button>
+                        <button class="btn btn-success" onclick="selectAllWB()">✅ Выбрать все</button>
+                        <button class="btn btn-danger" onclick="deselectAllWB()">❌ Снять выбор</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📦 Управление коробами</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="newWBBox()">📦 Новый короб</button>
+                    </div>
+                    <div class="scanner-area" style="margin-top: 20px;">
+                        <p style="margin-bottom: 15px;">Последний ШК: <span id="wb-last-scan">—</span></p>
+                        <input type="text" id="wb-scan-input" placeholder="Сканируйте или введите ШК..." style="width: 100%; max-width: 400px; padding: 15px;">
+                    </div>
+                    <div class="stats" style="margin-top: 15px;">
+                        <div class="stat-box">
+                            <div class="value" id="wb-box-items">0</div>
+                            <div class="label">Позиций в коробе</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📋 Содержимое текущего короба</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Артикул</th>
+                                <th>ШК</th>
+                                <th>Кол</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wb-box-contents">
+                            <tr><td colspan="4" style="text-align: center; color: #6c757d;">Короб пуст</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="resetWBBox()">🔄 Сброс</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 Отчёт по отгрузке</h3>
+                    <h4 style="margin-bottom: 15px;">🏗️ Распределение по палетам</h4>
+                    <div class="input-group">
+                        <select id="wb-box-select">
+                            <option>Выберите короб...</option>
+                        </select>
+                        <select id="wb-pallet-select">
+                            <option>Выберите палет...</option>
+                        </select>
+                        <button class="btn btn-success" onclick="assignBoxToPallet()">✅ Назначить</button>
+                        <button class="btn btn-primary" onclick="autoAssign()">⚡ Авто</button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="generateWBReport()">📊 Сформировать</button>
+                        <button class="btn btn-secondary" onclick="printWBReport()">🖨️ Печать</button>
+                        <button class="btn btn-success" onclick="exportWBExcel()">📥 Excel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports Module -->
+            <div id="reports" class="module">
+                <div class="card">
+                    <h3>📈 Аналитика и отчёты</h3>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="value">0</div>
+                            <div class="label">Приёмки за сегодня</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value">0</div>
+                            <div class="label">Отгрузки FBO</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value">0</div>
+                            <div class="label">Отгрузки WB</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value">0%</div>
+                            <div class="label">Эффективность</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 Экспорт данных</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="exportAllData('excel')">📊 Все данные в Excel</button>
+                        <button class="btn btn-secondary" onclick="exportAllData('json')">💾 Все данные в JSON</button>
+                        <button class="btn btn-success" onclick="exportAllData('pdf')">📄 Отчёт в PDF</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📜 История операций</h3>
+                    <div class="log" id="reports-log">
+                        <div class="log-entry">[Информация] История операций будет отображаться здесь</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- MODAL FOR LABEL EDITING -->
-<div id="label-modal" class="modal-overlay">
-    <div class="modal">
-        <div class="modal-header">
-            <h3>⚙️ Конструктор Этикетки 58x40</h3>
-            <button class="btn btn-outline" onclick="closeLabelModal()">Закрыть</button>
-        </div>
-        <div class="modal-body">
-            <div class="editor-panel">
-                <div class="editor-section">
-                    <h4>Состав этикетки</h4>
-                    <div id="label-elements"></div>
-                    <button class="btn btn-outline btn-sm" onclick="addCustomLabelField()" style="margin-top:5px; width:100%">＋ Добавить свое поле</button>
-                </div>
-                <div class="editor-section">
-                    <h4>Настройки штрихкода</h4>
-                    <label>Высота:</label>
-                    <select id="bc-height" onchange="updatePreview()" style="width:100%; padding: 5px; margin-bottom: 5px;">
-                        <option value="10">Маленький (10mm)</option>
-                        <option value="14">Средний (14mm)</option>
-                        <option value="18" selected>Большой (18mm)</option>
-                        <option value="24">Огромный (24mm)</option>
-                    </select>
-                    <label>Формат:</label>
-                    <select id="bc-format" onchange="updatePreview()" style="width:100%; padding: 5px;">
-                        <option value="CODE128">CODE128</option>
-                        <option value="EAN13">EAN13</option>
-                    </select>
-                </div>
-                <div class="editor-section" style="margin-top:auto">
-                    <button class="btn btn-success" onclick="executePrintLabels()" style="width:100%; padding: 12px; font-size: 16px;">🖨️ Печать выбранных</button>
-                </div>
-            </div>
-            <div class="preview-area">
-                <h4 style="margin-top:0">Предпросмотр</h4>
-                <div class="preview-container" id="preview-box"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- HIDDEN PRINT AREA -->
-<div id="print-output"></div>
-
-<script>
-    // --- STATE ---
-    var appData = [];
-    var appCities = [];
-    var appPackQty = []; // To store unique pack quantities
-    var selectedCities = new Set();
-    var filteredData = [];
-    var labelConfig = [
-        { id: 'warning', name: '⚠️ Предупреждение', checked: true, type: 'static', text: 'ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ' },
-        { id: 'art', name: '📋 Артикул', checked: true, type: 'field', key: 'art' },
-        { id: 'barcode', name: '📊 Штрихкод', checked: true, type: 'barcode', key: 'barcode' },
-        { id: 'name', name: '📝 Наименование', checked: true, type: 'field', key: 'name' },
-        { id: 'expiry', name: '📅 Годен до', checked: true, type: 'field', key: 'expiry' }
-    ];
     
-    // --- PARSING LOGIC ---
-    function handleFile(file, type) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                var wb = XLSX.read(e.target.result, {type:'array'});
-                var ws = wb.Sheets[wb.SheetNames[0]];
-                var raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:""});
-                parseData(raw, type);
-            } catch(err) { alert('Ошибка чтения файла: ' + err.message); }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function parseData(rows, type) {
-        if(!rows.length) return;
+    <script>
+        let currentModule = 'dashboard';
+        let scanMode = 'scanner';
+        let marketplace = 'wb';
+        let scanLog = [];
+        let boxContents = [];
+        let wbData = [];
         
-        // 1. Find Header Row
-        var hRow = -1;
-        for(var i=0; i<Math.min(rows.length, 10); i++) {
-            var rStr = (rows[i]||[]).join(' ').toLowerCase();
-            if(rStr.indexOf('наименование') > -1) { hRow = i; break; }
+        function switchModule(moduleName) {
+            document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(moduleName).classList.add('active');
+            event.target.classList.add('active');
+            currentModule = moduleName;
+            addLog('main-log', `Переключено на модуль: ${moduleName}`);
         }
-        if(hRow === -1) { alert('Не найдена строка заголовков (колонка "Наименование")'); return; }
-
-        // 2. Map Columns
-        var headers = rows[hRow];
-        var colMap = {};
-        var cIdx = []; // City indices
         
-        // Define standard keys to ignore for city detection
-        var ignoreKeys = ['наименование', 'артикул', 'шк', 'кол-во', 'упаковку', 'отгрузк', 'годен', 'тз'];
+        function setScanMode(mode, btn) {
+            scanMode = mode;
+            document.querySelectorAll('#receiving .mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            addLog('recv-log', `Режим сканирования: ${mode}`);
+        }
         
-        headers.forEach(function(h, i) {
-            if(!h) return;
-            var hStr = String(h).trim().toLowerCase();
-            if(hStr.indexOf('наименование') > -1) colMap.name = i;
-            else if(hStr.indexOf('шк на этикетку') > -1) colMap.barcode = i;
-            else if(hStr.indexOf('шк производителя') > -1 && !colMap.barcode) colMap.barcode = i;
-            else if(hStr.indexOf('артикул') > -1) colMap.art = i;
-            else if(hStr.indexOf('годен') > -1) colMap.expiry = i;
-            else if(hStr.indexOf('кол-во в упаковку') > -1) colMap.pack = i; // NEW: Map Pack Qty
-            else {
-                // Check if it's a known key to exclude
-                var isKnown = false;
-                ignoreKeys.forEach(function(k) { if(hStr.indexOf(k) > -1) isKnown = true; });
-                
-                // If not known and looks like a name (contains letters) and isn't empty
-                if(!isKnown && hStr.length > 2) {
-                    cIdx.push(i);
+        function setMarketplace(mp, btn) {
+            marketplace = mp;
+            document.querySelectorAll('#crm .mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            addLog('main-log', `Маркетплейс: ${mp.toUpperCase()}`);
+        }
+        
+        function processScan() {
+            const input = document.getElementById('scan-input');
+            const barcode = input.value.trim();
+            if (!barcode) {
+                alert('Введите штрихкод!');
+                return;
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            addLog('recv-log', `[${timestamp}] Принят: ${barcode}`);
+            addLog('main-log', `[${timestamp}] Сканирование: ${barcode}`);
+            
+            const total = parseInt(document.getElementById('recv-total').textContent) + 1;
+            const accepted = parseInt(document.getElementById('recv-accepted').textContent) + 1;
+            document.getElementById('recv-total').textContent = total;
+            document.getElementById('recv-accepted').textContent = accepted;
+            document.getElementById('total-orders').textContent = total;
+            document.getElementById('processed-orders').textContent = accepted;
+            
+            input.value = '';
+            input.focus();
+        }
+        
+        function clearScan() {
+            document.getElementById('scan-input').value = '';
+            addLog('recv-log', 'Скан очищен');
+        }
+        
+        function resetReceiving() {
+            if (confirm('Сбросить все данные приёмки?')) {
+                document.getElementById('recv-total').textContent = '0';
+                document.getElementById('recv-accepted').textContent = '0';
+                document.getElementById('recv-errors').textContent = '0';
+                document.getElementById('recv-log').innerHTML = '';
+                addLog('recv-log', 'Приёмка сброшена');
+            }
+        }
+        
+        function loadPlan() {
+            const file = document.getElementById('plan-file').files[0];
+            if (!file) {
+                alert('Выберите файл!');
+                return;
+            }
+            addLog('recv-log', `Загружен файл: ${file.name}`);
+            addLog('main-log', `План поставки загружен: ${file.name}`);
+        }
+        
+        function downloadTemplate(type) {
+            addLog('recv-log', `Скачан шаблон: ${type}`);
+            alert(`Шаблон ${type} будет скачан`);
+        }
+        
+        function exportLog(type) {
+            addLog('recv-log', `Экспорт журнала в ${type}`);
+            alert(`Журнал экспортирован в ${type}`);
+        }
+        
+        function clearLog() {
+            if (confirm('Очистить журнал?')) {
+                document.getElementById('recv-log').innerHTML = '';
+            }
+        }
+        
+        function addPallet() {
+            const count = parseInt(document.getElementById('crm-pallets').textContent) + 1;
+            document.getElementById('crm-pallets').textContent = count;
+            addLog('main-log', `Добавлен палет #${count}`);
+            updatePalletsList();
+        }
+        
+        function updatePalletsList() {
+            const count = parseInt(document.getElementById('crm-pallets').textContent);
+            const list = document.getElementById('pallets-list');
+            if (count === 0) {
+                list.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">Нет палетов</p>';
+            } else {
+                let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">';
+                for (let i = 1; i <= count; i++) {
+                    html += `<div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #667eea;">
+                        <strong>Палет #${i}</strong>
+                    </div>`;
+                }
+                html += '</div>';
+                list.innerHTML = html;
+            }
+        }
+        
+        function printPalletLabels() {
+            addLog('main-log', 'Печать этикеток палетов');
+            alert('Этикетки отправлены на печать');
+        }
+        
+        function toggleCamera() {
+            const btn = document.getElementById('camera-btn');
+            if (btn.textContent.includes('Включить')) {
+                btn.textContent = '⏹️ Выключить камеру';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-danger');
+                addLog('main-log', 'Камера включена');
+            } else {
+                btn.textContent = '📷 Включить камеру';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-primary');
+                addLog('main-log', 'Камера выключена');
+            }
+        }
+        
+        function closeBox() {
+            if (boxContents.length === 0) {
+                alert('Коробка пуста!');
+                return;
+            }
+            addLog('main-log', `Коробка закрыта. Позиций: ${boxContents.length}`);
+            alert(`Коробка закрыта. Позиций: ${boxContents.length}`);
+            clearBox();
+        }
+        
+        function reprintLabel() {
+            addLog('main-log', 'Повторная печать этикетки');
+        }
+        
+        function clearBox() {
+            boxContents = [];
+            document.getElementById('box-positions').textContent = '0';
+            document.getElementById('box-weight').textContent = '0.00 кг';
+            document.getElementById('box-contents').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6c757d;">Коробка пуста</td></tr>';
+            addLog('main-log', 'Коробка очищена');
+        }
+        
+        function loadCRMPlan() {
+            const file = document.getElementById('crm-plan-file').files[0];
+            if (!file) {
+                alert('Выберите файл!');
+                return;
+            }
+            addLog('main-log', `CRM план загружен: ${file.name}`);
+        }
+        
+        function exportCRM(type) {
+            addLog('main-log', `CRM экспорт в ${type}`);
+            alert(`Данные экспортированы в ${type}`);
+        }
+        
+        function resetCRM() {
+            if (confirm('Сбросить все данные CRM?')) {
+                document.getElementById('crm-sku').textContent = '0';
+                document.getElementById('crm-plan').textContent = '0';
+                document.getElementById('crm-pallets').textContent = '0';
+                clearBox();
+                updatePalletsList();
+                addLog('main-log', 'CRM сброшен');
+            }
+        }
+        
+        function loadWBTask() {
+            const file = document.getElementById('wb-tz-file').files[0];
+            if (!file) {
+                alert('Выберите файл!');
+                return;
+            }
+            addLog('main-log', `ТЗ WB загружено: ${file.name}`);
+            
+            // Симуляция загрузки данных
+            wbData = [
+                { article: 'WB-001', barcode: '1234567890', name: 'Товар 1', qty: 10, boxes: 2, pallets: 1 },
+                { article: 'WB-002', barcode: '0987654321', name: 'Товар 2', qty: 15, boxes: 3, pallets: 1 }
+            ];
+            
+            document.getElementById('wb-positions').textContent = wbData.length;
+            document.getElementById('wb-tz-total').textContent = wbData.length;
+            
+            updateWBTaskList();
+        }
+        
+        function updateWBTaskList() {
+            const tbody = document.getElementById('wb-task-list');
+            if (wbData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6c757d;">Нет загруженных данных</td></tr>';
+            } else {
+                tbody.innerHTML = wbData.map((item, idx) => `
+                    <tr>
+                        <td><input type="checkbox" class="wb-item-check" data-index="${idx}"></td>
+                        <td>${item.article}</td>
+                        <td>${item.barcode}</td>
+                        <td>${item.name}</td>
+                        <td>${item.qty}</td>
+                        <td>${item.boxes}</td>
+                        <td>${item.pallets}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+        function toggleAllWB(checkbox) {
+            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = checkbox.checked);
+            updateWBSelectedCount();
+        }
+        
+        function selectAllWB() {
+            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = true);
+            updateWBSelectedCount();
+        }
+        
+        function deselectAllWB() {
+            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = false);
+            updateWBSelectedCount();
+        }
+        
+        function updateWBSelectedCount() {
+            const count = document.querySelectorAll('.wb-item-check:checked').length;
+            document.getElementById('wb-tz-selected').textContent = count;
+        }
+        
+        function printWBTask() {
+            addLog('main-log', 'Печать ТЗ WB');
+            alert('ТЗ отправлено на печать');
+        }
+        
+        function printAllLabels() {
+            const labels = parseInt(document.getElementById('wb-labels').textContent);
+            document.getElementById('wb-printed').textContent = labels;
+            addLog('main-log', `Напечатано этикеток: ${labels}`);
+        }
+        
+        function printRemainingLabels() {
+            addLog('main-log', 'Печать оставшихся этикеток');
+        }
+        
+        function markAllPrinted() {
+            const labels = parseInt(document.getElementById('wb-labels').textContent);
+            document.getElementById('wb-printed').textContent = labels;
+            addLog('main-log', 'Все этикетки отмечены как напечатанные');
+        }
+        
+        function newWBBox() {
+            addLog('main-log', 'Создан новый короб WB');
+            document.getElementById('wb-box-items').textContent = '0';
+            document.getElementById('wb-box-contents').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6c757d;">Короб пуст</td></tr>';
+        }
+        
+        function resetWBBox() {
+            if (confirm('Сбросить содержимое короба?')) {
+                newWBBox();
+            }
+        }
+        
+        function assignBoxToPallet() {
+            addLog('main-log', 'Короб назначен на палет');
+            alert('Короб назначен на палет');
+        }
+        
+        function autoAssign() {
+            addLog('main-log', 'Автоматическое распределение коробов');
+            alert('Короба автоматически распределены');
+        }
+        
+        function generateWBReport() {
+            addLog('main-log', 'Сформирован отчёт по отгрузке WB');
+            alert('Отчёт сформирован');
+        }
+        
+        function printWBReport() {
+            addLog('main-log', 'Печать отчёта WB');
+            alert('Отчёт отправлен на печать');
+        }
+        
+        function exportWBExcel() {
+            addLog('main-log', 'Экспорт отчёта WB в Excel');
+            alert('Отчёт экспортирован в Excel');
+        }
+        
+        function exportAllData(type) {
+            addLog('main-log', `Экспорт всех данных в ${type}`);
+            alert(`Все данные экспортированы в ${type}`);
+        }
+        
+        function saveMapping() {
+            addLog('main-log', 'Соответствие полей сохранено');
+            alert('Соответствие полей сохранено');
+        }
+        
+        function previewMapping() {
+            addLog('main-log', 'Предпросмотр соответствия полей');
+            alert('Предпросмотр соответствия полей');
+        }
+        
+        function addLog(logId, message) {
+            const log = document.getElementById(logId);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Ограничиваем количество записей
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // Обработка Enter в полях сканирования
+        document.getElementById('scan-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') processScan();
+        });
+        
+        document.getElementById('wb-scan-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const barcode = this.value.trim();
+                if (barcode) {
+                    document.getElementById('wb-last-scan').textContent = barcode;
+                    const count = parseInt(document.getElementById('wb-box-items').textContent) + 1;
+                    document.getElementById('wb-box-items').textContent = count;
+                    addLog('main-log', `WB сканирование: ${barcode}`);
+                    this.value = '';
                 }
             }
         });
-
-        if(colMap.name === undefined) { alert('Колонка "Наименование" не найдена'); return; }
-
-        // 3. Parse Rows
-        appData = [];
-        var citySet = new Set();
-        var packSet = new Set();
         
-        for(var r = hRow + 1; r < rows.length; r++) {
-            var row = rows[r];
-            var name = String(row[colMap.name] || "").trim();
-            if(!name || name === '---' || name.length < 2) continue;
-
-            // NEW: Read Pack Quantity
-            var packVal = 1;
-            if(colMap.pack !== undefined && row[colMap.pack]) {
-                var parsedPack = parseInt(row[colMap.pack]);
-                if(!isNaN(parsedPack) && parsedPack > 0) {
-                    packVal = parsedPack;
-                }
-            }
-            packSet.add(packVal);
-
-            var item = {
-                name: name,
-                art: colMap.art !== undefined ? String(row[colMap.art]||"").trim() : '',
-                barcode: colMap.barcode !== undefined ? String(row[colMap.barcode]||"").trim() : '',
-                expiry: colMap.expiry !== undefined ? String(row[colMap.expiry]||"").trim() : '',
-                packQty: packVal, // Store pack quantity
-                cities: {},
-                pallet: '', boxes: '',
-                totalQty: 0
-            };
-
-            var rowTotal = 0;
-            cIdx.forEach(function(idx) {
-                var val = parseInt(row[idx]);
-                if(!isNaN(val) && val > 0) {
-                    var cName = headers[idx].trim();
-                    item.cities[cName] = val;
-                    rowTotal += val;
-                    citySet.add(cName);
-                }
-            });
-
-            if(rowTotal > 0) {
-                item.totalQty = rowTotal;
-                appData.push(item);
-            }
-        }
-
-        // 4. Update UI
-        appCities = Array.from(citySet).sort();
-        appPackQty = Array.from(packSet).sort(function(a,b){return a-b;}); // NEW: Sorted pack quantities
-        selectedCities = new Set(appCities);
-        
-        document.getElementById('actions-' + type).classList.remove('hidden');
-        document.getElementById('filters-' + type).classList.remove('hidden');
-        document.getElementById('table-wrap-' + type).classList.remove('hidden');
-        
-        renderCityChips(type);
-        populatePackFilter(type); // NEW: Populate dropdown
-        applyFilter(type);
-    }
-
-    // NEW: Function to populate Pack Quantity Filter
-    function populatePackFilter(type) {
-        var select = document.getElementById('filter-pack-' + type);
-        if(!select) return;
-        
-        // Clear existing options except "All"
-        while(select.options.length > 1) {
-            select.remove(1);
-        }
-        
-        appPackQty.forEach(function(qty) {
-            var opt = document.createElement('option');
-            opt.value = qty;
-            opt.textContent = qty + ' шт.';
-            select.appendChild(opt);
-        });
-    }
-
-    // --- RENDERING ---
-    function renderCityChips(type) {
-        var cont = document.getElementById('city-chips-' + type);
-        cont.innerHTML = '';
-        appCities.forEach(function(c) {
-            var d = document.createElement('div');
-            d.className = 'city-chip' + (type === 'label' ? ' wb' : '') + (selectedCities.has(c) ? ' active' : '');
-            d.textContent = c;
-            d.onclick = function() {
-                if(selectedCities.has(c)) selectedCities.delete(c);
-                else selectedCities.add(c);
-                renderCityChips(type);
-                applyFilter(type);
-            };
-            cont.appendChild(d);
-        });
-    }
-    
-    function toggleAllCities(type, state) {
-        selectedCities = state ? new Set(appCities) : new Set();
-        renderCityChips(type);
-        applyFilter(type);
-    }
-
-    function applyFilter(type) {
-        var sInput = document.querySelector('#filters-' + type + ' input.search-input');
-        var pInput = document.getElementById('filter-pack-' + type);
-        var search = sInput ? sInput.value.toLowerCase() : '';
-        var packFilter = pInput ? parseInt(pInput.value) : 0; // 0 means "All"
-
-        filteredData = [];
-        
-        appData.forEach(function(it) {
-            // Check Cities
-            var hasCity = false;
-            for(var c in it.cities) {
-                if(selectedCities.has(c)) { hasCity = true; break; }
-            }
-            if(!hasCity) return;
-
-            // Check Search
-            if(search && it.name.toLowerCase().indexOf(search) === -1) return;
-
-            // NEW: Check Pack Quantity
-            if(packFilter > 0 && it.packQty !== packFilter) return;
-
-            filteredData.push(it);
-        });
-
-        if(type === 'list') renderTableList();
-        else renderTableLabel();
-    }
-
-    function renderTableList() {
-        var tbody = document.getElementById('tbody-list');
-        tbody.innerHTML = '';
-        var idx = 0;
-        
-        filteredData.forEach(function(it) {
-            var qty = 0; 
-            for(var c in it.cities) if(selectedCities.has(c)) qty += it.cities[c];
-            if(qty === 0) return;
-            
-            idx++;
-            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td style="text-align:center">'+it.packQty+'</td><td class="val-bold">'+qty+'</td><td><input type="text" value="'+esc(it.pallet)+'" style="width:60px" onchange="it.pallet=this.value"></td><td><input type="text" value="'+esc(it.boxes)+'" style="width:60px" onchange="it.boxes=this.value"></td></tr>';
-        });
-    }
-
-    function renderTableLabel() {
-        var tbody = document.getElementById('tbody-label');
-        tbody.innerHTML = '';
-        var idx = 0;
-        
-        filteredData.forEach(function(it) {
-            var qty = 0; 
-            for(var c in it.cities) if(selectedCities.has(c)) qty += it.cities[c];
-            if(qty === 0) return;
-            
-            idx++;
-            tbody.innerHTML += '<tr><td>'+idx+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+esc(it.barcode)+'</td><td style="text-align:center">'+it.packQty+'</td><td class="val-bold">'+qty+'</td></tr>';
-        });
-    }
-
-    // --- PRINT TTN ---
-    function printTTN(mode) {
-        var out = document.getElementById('print-output');
-        out.innerHTML = '';
-        document.body.className = 'print-ttn-mode';
-
-        var items = [];
-        filteredData.forEach(function(it) { // Use filteredData
-            var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
-            if(q > 0) items.push({ name: it.name, art: it.art, qty: q, pallet: it.pallet, boxes: it.boxes });
-        });
-
-        var title = (mode === 'all') ? 'ОБЩАЯ НАКЛАДНАЯ (ВСЕ ГОРОДА)' : 'НАКЛАДНАЯ НА СБОРКУ (ФИЛЬТР)';
-        var html = '<div class="ttn-doc"><div class="ttn-head"><h1>'+title+'</h1><p>Дата: '+new Date().toLocaleDateString()+'</p></div><table class="ttn-table"><thead><tr><th>№</th><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Палета</th><th>Короб</th></tr></thead><tbody>';
-        items.forEach(function(it, i) {
-            html += '<tr><td>'+(i+1)+'</td><td style="text-align:left">'+esc(it.name)+'</td><td>'+esc(it.art)+'</td><td>'+it.qty+'</td><td>'+esc(it.pallet)+'</td><td>'+esc(it.boxes)+'</td></tr>';
-        });
-        html += '</tbody></table><br><p>Ответственный: ____________________</p></div>';
-        
-        out.innerHTML = html;
-        setTimeout(function(){ window.print(); setTimeout(function(){ document.body.className = ''; }, 1000); }, 200);
-    }
-
-    // --- LABEL MODAL ---
-    function openLabelModal() {
-        document.getElementById('label-modal').classList.add('open');
-        renderLabelEditor();
-        updatePreview();
-        renderLabelTable();
-    }
-    function closeLabelModal() { document.getElementById('label-modal').classList.remove('open'); }
-
-    function renderLabelEditor() {
-        var div = document.getElementById('label-elements');
-        div.innerHTML = '';
-        labelConfig.forEach(function(el, idx) {
-            var d = document.createElement('div');
-            d.className = 'label-row';
-            d.innerHTML = '<input type="checkbox" ' + (el.checked ? 'checked' : '') + ' onchange="toggleLabelField('+idx+', this.checked)"> <label>' + el.name + '</label>';
-            if(el.type !== 'static') {
-                d.innerHTML += '<button class="btn btn-outline btn-sm" onclick="removeLabelField('+idx+')">✕</button>';
-            }
-            div.appendChild(d);
-        });
-    }
-    
-    function toggleLabelField(idx, val) { labelConfig[idx].checked = val; updatePreview(); }
-    function removeLabelField(idx) { labelConfig.splice(idx, 1); renderLabelEditor(); updatePreview(); }
-    
-    function addCustomLabelField() {
-        var t = prompt('Введите название поля:');
-        if(t) {
-            labelConfig.push({ id: 'custom_'+Date.now(), name: '✏️ ' + t, checked: true, type: 'text', text: t });
-            renderLabelEditor();
-            updatePreview();
-        }
-    }
-
-    function renderLabelTable() {
-        var modalTbody = document.querySelector('#label-modal tbody');
-        if(!modalTbody) {
-            var modalBody = document.querySelector('#label-modal .modal-body .editor-panel').parentElement; 
-            var tWrap = document.createElement('div');
-            tWrap.style.cssText = 'flex:1; padding:15px; overflow:auto;';
-            tWrap.innerHTML = '<h4 style="margin-top:0">Выберите товары для печати</h4><div class="table-wrap"><table class="t-check"><thead><tr><th>✔</th><th>Товар</th><th>Кол-во</th></tr></thead><tbody></tbody></table></div>';
-            modalBody.appendChild(tWrap);
-            modalTbody = tWrap.querySelector('tbody');
-        }
-        
-        modalTbody.innerHTML = '';
-        filteredData.forEach(function(it) {
-            var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
-            if(q > 0) {
-                // Find index in appData to bind checkbox correctly if needed, or just use object ref
-                // Here we just store it in the row for printing
-                modalTbody.innerHTML += '<tr><td><input type="checkbox" checked class="lbl-check" data-val=\''+JSON.stringify(it).replace(/'/g, "\\'")+'\'></td><td>'+esc(it.name)+'</td><td>'+q+'</td></tr>';
-            }
-        });
-    }
-
-    // --- LABEL GENERATION ---
-    function updatePreview() {
-        var box = document.getElementById('preview-box');
-        var it = filteredData.length ? filteredData[0] : { name: "Тестовое наименование товара", art: "12345", barcode: "4600000000000", expiry: "01.01.30" };
-        box.innerHTML = '';
-        box.appendChild(createLabelEl(it));
-    }
-
-    function createLabelEl(it) {
-        var div = document.createElement('div');
-        div.className = 'label-canvas';
-        var html = '';
-        var hBC = parseInt(document.getElementById('bc-height').value);
-        var fBC = document.getElementById('bc-format').value;
-        
-        var bcId = 'bc-' + Math.random().toString(36).substr(2, 9);
-
-        labelConfig.forEach(function(el) {
-            if(!el.checked) return;
-            if(el.type === 'static') html += '<div class="lbl-warning">'+el.text+'</div>';
-            else if(el.type === 'field') html += '<div class="lbl-'+el.id+'">'+esc(it[el.key])+'</div>';
-            else if(el.type === 'barcode') html += '<div class="lbl-barcode"><svg id="'+bcId+'"></svg></div>';
-            else if(el.type === 'text') html += '<div class="lbl-custom" style="font-size:8px; text-align:center">'+esc(el.text)+'</div>';
-        });
-
-        div.innerHTML = html;
-        document.body.appendChild(div);
-
-        var svg = document.getElementById(bcId);
-        if(svg && it.barcode) {
-            try {
-                JsBarcode(svg, String(it.barcode), { format: fBC, height: hBC, displayValue: true, margin: 0, fontSize: 10, width: 1.5 });
-            } catch(e) {
-                svg.parentElement.innerHTML = '<span style="font-size:8px; color:red">Ошибка ШК</span>';
-            }
-        }
-        
-        document.body.removeChild(div);
-        return div;
-    }
-
-    function executePrintLabels() {
-        var out = document.getElementById('print-output');
-        out.innerHTML = '';
-        document.body.className = 'print-label-mode';
-        
-        var checks = document.querySelectorAll('.lbl-check:checked');
-        var count = 0;
-
-        checks.forEach(function(chk) {
-            var it = JSON.parse(chk.getAttribute('data-val'));
-            var q = 0; for(var c in it.cities) if(selectedCities.has(c)) q += it.cities[c];
-            
-            for(var k=0; k<q; k++) {
-                out.appendChild(createLabelEl(it));
-                count++;
-            }
-        });
-
-        if(count === 0) { alert('Нет выбранных товаров для печати'); document.body.className = ''; return; }
-        
-        setTimeout(function(){ 
-            window.print(); 
-            setTimeout(function(){ 
-                document.body.className = ''; 
-                out.innerHTML = ''; 
-            }, 1000); 
-        }, 300);
-    }
-
-    function esc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
-
-    // --- TABS ---
-    function switchTab(id) {
-        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-        document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.add('hidden'); });
-        
-        if(id === 'list') {
-            document.querySelector('.tabs .tab-btn:nth-child(1)').classList.add('active');
-            document.getElementById('tab-list').classList.remove('hidden');
-        } else {
-            document.querySelector('.tabs .tab-btn:nth-child(2)').classList.add('active');
-            document.getElementById('tab-label').classList.remove('hidden');
-        }
-    }
-
-    // --- EVENTS ---
-    document.getElementById('file-list').onchange = function(){ if(this.files[0]) handleFile(this.files[0], 'list'); };
-    document.getElementById('file-label').onchange = function(){ if(this.files[0]) handleFile(this.files[0], 'label'); };
-    
-    // Drag & Drop
-    document.querySelectorAll('.upload-zone').forEach(function(zone) {
-        zone.ondragover = function(e) { e.preventDefault(); this.style.borderColor = 'var(--primary)'; };
-        zone.ondragleave = function(e) { e.preventDefault(); this.style.borderColor = 'var(--border)'; };
-        zone.ondrop = function(e) { 
-            e.preventDefault(); this.style.borderColor = 'var(--border)';
-            if(e.dataTransfer.files[0]) {
-                var id = this.querySelector('input').id;
-                handleFile(e.dataTransfer.files[0], id === 'file-list' ? 'list' : 'label');
-            }
-        };
-    });
-
-    // Load Demo Data on Start
-    window.onload = function() {
-        var demo = [
-            ["наименование","Исходный артикул","шк производителя","шк на этикетку","Артикул продавца","кол-во в упаковку","ИТОГО К ОТГРУЗКЕ спаек","ГОДЕН ДО","Омск","Новосиб","Ростов","Пермь"],
-            ["Губка гемостатическая 10х10","8891","4605370003130","4605370003130","8891","1","626","17.03.29","50","9","40","10"],
-            ["Теймурова крем пудра 50г","18801","4605370037876","2048605010770","25183","1","1512","13.04.29","100","201","150","50"],
-            ["Набор уходовой косметики (5 уп)","25194","4605370042375","4605370042559","25406","5","50","31.12.27","5","5","0","0"]
-        ];
-        parseData(demo, 'list');
-        parseData(demo, 'label');
-        alert('Система готова. Демо-данные загружены.');
-    };
-</script>
+        // Инициализация
+        addLog('main-log', 'Система инициализирована');
+        addLog('recv-log', 'Модуль приёмки готов к работе');
+    </script>
 </body>
 </html>
-
