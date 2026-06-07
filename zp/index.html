@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StaffPro — Управление сотрудниками</title>
+    <title>StaffPro — Управление сотрудниками v4.0</title>
+    
+    <!-- CDN библиотеки -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
     <style>
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #a5b4fc;
@@ -11,60 +17,94 @@
             --bg: #0f172a; --bg-card: #1e293b; --bg-hover: #334155;
             --text: #f1f5f9; --text-muted: #94a3b8; --border: #334155;
             --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        :root.light {
+            --bg: #f1f5f9; --bg-card: #ffffff; --bg-hover: #e2e8f0;
+            --text: #0f172a; --text-muted: #64748b; --border: #cbd5e1;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: var(--transition); }
 
+        /* Анимации */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .fade-in { animation: fadeIn 0.4s ease; }
+
+        /* Login */
         .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
-        .login-box { background: var(--bg-card); padding: 48px; border-radius: 20px; box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; }
+        .login-box { background: var(--bg-card); padding: 48px; border-radius: 20px; box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; animation: fadeIn 0.6s ease; }
         .login-box h1 { font-size: 28px; margin-bottom: 8px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .login-box p { color: var(--text-muted); margin-bottom: 32px; }
-        .login-box input { width: 100%; padding: 14px 18px; margin-bottom: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 15px; outline: none; }
-        .login-box .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; border-radius: var(--radius); color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .login-box input { width: 100%; padding: 14px 18px; margin-bottom: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 15px; outline: none; transition: var(--transition); }
+        .login-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        .login-box .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; border-radius: var(--radius); color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .login-box .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
         .login-hint { margin-top: 20px; padding: 12px; background: var(--bg); border-radius: 8px; color: var(--text-muted); font-size: 13px; }
 
+        /* App Layout */
         .app { display: none; } .app.active { display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--bg-card); border-bottom: 1px solid var(--border); z-index: 99; padding: 0 16px; align-items: center; justify-content: space-between; }
+        .hamburger { width: 40px; height: 40px; background: none; border: none; color: var(--text); cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .hamburger:hover { background: var(--bg-hover); }
+        .mobile-title { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, var(--primary-light), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; transition: transform 0.3s ease; }
         .sidebar-header { padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
         .sidebar-header h2 { font-size: 22px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .sidebar-header small { color: var(--text-muted); font-size: 12px; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: var(--text-muted); cursor: pointer; border-left: 3px solid transparent; font-size: 14px; transition: all 0.2s; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: var(--text-muted); cursor: pointer; border-left: 3px solid transparent; font-size: 14px; transition: var(--transition); }
         .nav-item:hover { background: var(--bg-hover); color: var(--text); }
         .nav-item.active { background: rgba(99,102,241,0.1); color: var(--primary-light); border-left-color: var(--primary); }
         .nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
         .sidebar-footer { margin-top: auto; padding: 16px 24px; border-top: 1px solid var(--border); }
         .sidebar-footer .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .sidebar-footer .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+        .sidebar-footer .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; }
         .sidebar-footer .user-name { font-size: 14px; font-weight: 600; }
         .sidebar-footer .user-role { font-size: 12px; color: var(--text-muted); }
-        .btn-logout { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 13px; }
+        .btn-logout { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 13px; transition: var(--transition); }
+        .btn-logout:hover { background: var(--bg-hover); color: var(--text); }
 
-        .main { margin-left: 260px; flex: 1; padding: 32px; overflow-y: auto; }
-        .page { display: none; } .page.active { display: block; }
+        /* Main Content */
+        .main { margin-left: 260px; flex: 1; padding: 32px; overflow-y: auto; min-height: 100vh; }
+        .page { display: none; } .page.active { display: block; animation: fadeIn 0.3s ease; }
         .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
         .page-header h1 { font-size: 28px; font-weight: 700; }
 
+        /* Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+        .stat-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); transition: var(--transition); }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--primary); }
         .stat-card .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
         .stat-card .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
         .stat-card .stat-label { color: var(--text-muted); font-size: 13px; }
 
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        /* Buttons */
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: var(--transition); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
         .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-warning { background: var(--warning); color: #000; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn:active { transform: translateY(0); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        /* Tables */
         .table-container { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
         th { background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        tr { transition: var(--transition); }
+        tbody tr:hover { background: var(--bg-hover); }
 
+        /* Badges */
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
         .badge-success { background: rgba(16,185,129,0.15); color: var(--success); }
         .badge-warning { background: rgba(245,158,11,0.15); color: var(--warning); }
@@ -72,8 +112,9 @@
         .badge-info { background: rgba(99,102,241,0.15); color: var(--primary-light); }
         .badge-muted { background: rgba(148,163,184,0.15); color: var(--text-muted); }
 
+        /* Employees Grid */
         .employees-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .emp-card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; cursor: pointer; transition: all 0.2s; }
+        .emp-card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; cursor: pointer; transition: var(--transition); }
         .emp-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--primary); }
         .emp-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
         .emp-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white; flex-shrink: 0; background-size: cover; background-position: center; overflow: hidden; }
@@ -85,23 +126,28 @@
         .emp-card-stat .val { font-size: 18px; font-weight: 700; }
         .emp-card-stat .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
+        /* Modal */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-overlay.active { display: flex; }
-        .modal { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 1px solid var(--border); }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+        .modal { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); animation: fadeIn 0.3s ease; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10; }
         .modal-header h2 { font-size: 20px; }
-        .modal-close { width: 32px; height: 32px; border-radius: 8px; background: var(--bg); border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; }
+        .modal-close { width: 32px; height: 32px; border-radius: 8px; background: var(--bg); border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; transition: var(--transition); }
+        .modal-close:hover { background: var(--danger); color: white; }
         .modal-body { padding: 24px; }
-        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; position: sticky; bottom: 0; background: var(--bg-card); }
 
+        /* Forms */
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: var(--transition); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+        /* Employee Detail */
         .emp-mega-card { background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
         .emp-mega-header { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); padding: 32px; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-        .emp-mega-photo { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white; flex-shrink: 0; background-size: cover; background-position: center; border: 4px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.3); position: relative; overflow: hidden; cursor: pointer; }
+        .emp-mega-photo { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white; flex-shrink: 0; background-size: cover; background-position: center; border: 4px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.3); position: relative; overflow: hidden; cursor: pointer; transition: var(--transition); }
         .emp-mega-photo img { width: 100%; height: 100%; object-fit: cover; }
         .emp-mega-photo:hover::after { content: '📷'; position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 32px; }
         .emp-mega-info { flex: 1; min-width: 250px; }
@@ -111,7 +157,8 @@
         .emp-mega-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .finance-block { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; padding: 24px 32px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); }
-        .finance-item { text-align: center; padding: 16px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); }
+        .finance-item { text-align: center; padding: 16px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); transition: var(--transition); }
+        .finance-item:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
         .finance-item .fi-icon { font-size: 24px; margin-bottom: 8px; }
         .finance-item .fi-value { font-size: 24px; font-weight: 700; }
         .finance-item .fi-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
@@ -120,27 +167,28 @@
         .finance-item.primary .fi-value { color: var(--primary-light); }
 
         .qr-block { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 24px 32px; border-bottom: 1px solid var(--border); }
-        .qr-card { background: var(--bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .qr-card { background: var(--bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; text-align: center; cursor: pointer; transition: var(--transition); }
         .qr-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
         .qr-card .qr-icon { font-size: 36px; margin-bottom: 8px; }
         .qr-card h4 { font-size: 15px; margin-bottom: 4px; }
         .qr-card p { font-size: 12px; color: var(--text-muted); }
 
         .detail-tabs { display: flex; gap: 4px; padding: 0 32px; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--bg-card); }
-        .detail-tab { padding: 14px 18px; color: var(--text-muted); cursor: pointer; font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+        .detail-tab { padding: 14px 18px; color: var(--text-muted); cursor: pointer; font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; transition: var(--transition); }
         .detail-tab:hover { color: var(--text); }
         .detail-tab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
         .detail-content { display: none; padding: 24px 32px; background: var(--bg-card); }
-        .detail-content.active { display: block; }
+        .detail-content.active { display: block; animation: fadeIn 0.3s ease; }
 
         .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-        .info-item { padding: 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+        .info-item { padding: 14px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); transition: var(--transition); }
+        .info-item:hover { border-color: var(--primary); }
         .info-item .lbl { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
         .info-item .val { font-size: 15px; font-weight: 600; }
 
         .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-        .doc-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: all 0.2s; }
-        .doc-card:hover { border-color: var(--primary); }
+        .doc-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: var(--transition); }
+        .doc-card:hover { border-color: var(--primary); transform: translateY(-2px); }
         .doc-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         .doc-icon { width: 40px; height: 40px; border-radius: 8px; background: rgba(99,102,241,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .doc-title { font-weight: 600; font-size: 14px; }
@@ -165,71 +213,70 @@
         .progress-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
 
-        .notification { position: fixed; top: 24px; right: 24px; padding: 16px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 2000; display: flex; align-items: center; gap: 12px; transform: translateX(120%); transition: transform 0.3s ease; }
+        /* Notifications */
+        .notification { position: fixed; top: 24px; right: 24px; padding: 16px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 2000; display: flex; align-items: center; gap: 12px; transform: translateX(120%); transition: transform 0.3s ease; max-width: 400px; }
         .notification.show { transform: translateX(0); }
         .notification.success { border-left: 4px solid var(--success); }
         .notification.error { border-left: 4px solid var(--danger); }
         .notification.info { border-left: 4px solid var(--primary); }
 
-        .chart-bar-container { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding: 16px 0; }
-        .chart-bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
-        .chart-bar { width: 100%; max-width: 36px; background: linear-gradient(180deg, var(--primary), var(--primary-dark)); border-radius: 6px 6px 0 0; min-height: 4px; }
-        .chart-bar-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; }
-        .chart-bar-value { font-size: 11px; color: var(--text); margin-bottom: 4px; font-weight: 600; }
+        /* Chart */
+        .chart-container { position: relative; height: 280px; padding: 16px; }
 
         .report-card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; margin-bottom: 20px; }
         .report-card h3 { margin-bottom: 16px; font-size: 18px; }
-        .report-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .report-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; transition: var(--transition); }
+        .report-row:hover { background: var(--bg-hover); padding-left: 8px; }
         .report-row:last-child { border-bottom: none; }
         .report-row .label { color: var(--text-muted); }
         .report-row .value { font-weight: 600; }
 
         .filters-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .filter-select, .search-box input { padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none; }
+        .filter-select, .search-box input { padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none; transition: var(--transition); }
+        .filter-select:focus, .search-box input:focus { border-color: var(--primary); }
         .search-box { display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; }
         .search-box input { background: none; border: none; width: 200px; }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
 
-        /* QR Confirmation Block Styles */
-        .qr-confirm-block {
-            background: rgba(99,102,241,0.05);
-            border: 2px dashed var(--primary);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 16px;
-            text-align: center;
-        }
-        .qr-confirm-block.confirmed {
-            background: rgba(16,185,129,0.05);
-            border-color: var(--success);
-        }
-        .qr-confirm-block .status-text {
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+        /* QR Scanner */
+        #qr-reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 12px; overflow: hidden; }
+        #qr-reader video { border-radius: 12px; }
+        .qr-confirm-block { background: rgba(99,102,241,0.05); border: 2px dashed var(--primary); border-radius: 12px; padding: 20px; margin-top: 16px; text-align: center; transition: var(--transition); }
+        .qr-confirm-block.confirmed { background: rgba(16,185,129,0.05); border-color: var(--success); }
+        .qr-confirm-block .status-text { font-size: 14px; font-weight: 600; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .qr-confirm-block .status-text.pending { color: var(--warning); }
         .qr-confirm-block .status-text.success { color: var(--success); }
 
+        /* Theme Toggle */
+        .theme-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: var(--transition); }
+        .theme-toggle:hover { border-color: var(--primary); }
+        .theme-toggle-icon { font-size: 18px; }
+
+        /* Skeleton Loading */
+        .skeleton { background: linear-gradient(90deg, var(--bg) 25%, var(--bg-hover) 50%, var(--bg) 75%); background-size: 200% 100%; animation: pulse 1.5s infinite; border-radius: 8px; }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .main { margin-left: 0; padding: 16px; }
+            .mobile-header { display: flex; }
+            .sidebar { transform: translateX(-100%); top: 60px; }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.3); }
+            .main { margin-left: 0; padding: 76px 16px 16px; }
             .form-row { grid-template-columns: 1fr; }
-            .emp-mega-header { flex-direction: column; align-items: center; text-align: center; }
-            .finance-block, .qr-block { grid-template-columns: repeat(2, 1fr); }
+            .emp-mega-header { flex-direction: column; align-items: center; text-align: center; padding: 20px; }
+            .finance-block, .qr-block { grid-template-columns: repeat(2, 1fr); padding: 16px; }
             .detail-tabs { padding: 0 16px; }
             .detail-content { padding: 16px; }
+            .page-header h1 { font-size: 22px; }
+            .stat-card .stat-value { font-size: 22px; }
+            .modal { max-width: 95%; margin: 10px; }
         }
+        
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
     </style>
 </head>
 <body>
@@ -238,20 +285,29 @@
 <div class="login-screen" id="loginScreen">
     <div class="login-box">
         <h1>👥 StaffPro</h1>
-        <p>Система управления сотрудниками</p>
+        <p>Система управления сотрудниками v4.0</p>
         <input type="text" id="loginUser" placeholder="Логин" value="admin">
         <input type="password" id="loginPass" placeholder="Пароль" value="admin123">
-        <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="doLogin()">Войти</button>
+        <button class="btn-login" onclick="doLogin()">Войти</button>
         <div class="login-hint">Демо: admin / admin123</div>
     </div>
 </div>
 
 <!-- APP -->
 <div class="app" id="app">
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="mobile-title">👥 StaffPro</div>
+        <div class="theme-toggle" onclick="toggleTheme()">
+            <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+        </div>
+    </div>
+
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>👥 StaffPro</h2>
-            <small>Управление v3.0 (QR Выплаты)</small>
+            <small>Управление v4.0</small>
         </div>
         <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Дашборд</div>
         <div class="nav-item" onclick="showPage('employees')"><span class="icon">👤</span> Сотрудники</div>
@@ -275,17 +331,21 @@
         <div class="page active" id="page-dashboard">
             <div class="page-header">
                 <h1>📊 Дашборд</h1>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <div class="theme-toggle" onclick="toggleTheme()">
+                        <span class="theme-toggle-icon" id="themeIcon2">🌙</span>
+                        <span id="themeLabel">Тёмная</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт JSON</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 Импорт</button>
                     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
                 </div>
             </div>
             <div class="stats-grid" id="dashboardStats"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="dashboard-grid">
                 <div class="report-card">
                     <h3>📅 Присутствие за 7 дней</h3>
-                    <div class="chart-bar-container" id="attendanceChart"></div>
+                    <div class="chart-container"><canvas id="attendanceChart"></canvas></div>
                 </div>
                 <div class="report-card">
                     <h3>📋 Последние операции</h3>
@@ -379,7 +439,13 @@
 
         <!-- REPORTS -->
         <div class="page" id="page-reports">
-            <div class="page-header"><h1>📈 Отчёты</h1><button class="btn btn-secondary" onclick="exportReport()">📥 Скачать</button></div>
+            <div class="page-header">
+                <h1>📈 Отчёты</h1>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="exportReportCSV()">📥 CSV</button>
+                    <button class="btn btn-success" onclick="exportReportExcel()">📊 Excel</button>
+                </div>
+            </div>
             <div class="filters-bar">
                 <select class="filter-select" id="reportPeriod" onchange="renderReports()">
                     <option value="week">Неделя</option><option value="month" selected>Месяц</option><option value="year">Год</option>
@@ -399,6 +465,16 @@
         <div class="page" id="page-settings">
             <div class="page-header"><h1>⚙️ Настройки</h1></div>
             <div class="report-card">
+                <h3>🎨 Оформление</h3>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                    <span>Тема интерфейса:</span>
+                    <button class="btn btn-secondary" onclick="toggleTheme()">
+                        <span id="themeIcon3">🌙</span>
+                        <span id="themeLabel2">Переключить на светлую</span>
+                    </button>
+                </div>
+            </div>
+            <div class="report-card">
                 <h3>🏢 Организация</h3>
                 <div class="form-row">
                     <div class="form-group"><label>Название</label><input type="text" id="settCompany"></div>
@@ -413,7 +489,7 @@
             <div class="report-card">
                 <h3>💾 Данные</h3>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт</button>
+                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт JSON</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('importFile2').click()">📤 Импорт</button>
                     <input type="file" id="importFile2" accept=".json" style="display:none" onchange="importData(event)">
                     <button class="btn btn-danger" onclick="resetData()">🗑️ Сброс</button>
@@ -440,7 +516,7 @@
 
 <script>
 // ==================== DATA ====================
-let DB = { employees: [], timesheets: [], operations: [], penalties: [], payments: [], settings: { company: '', address: '', phone: '', normHours: 8 } };
+let DB = { employees: [], timesheets: [], operations: [], penalties: [], payments: [], settings: { company: '', address: '', phone: '', normHours: 8, theme: 'dark' } };
 const COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444','#14b8a6','#f97316','#06b6d4'];
 const OP_TYPES = {
     receipt: { label: 'Приёмка', icon: '📦', color: '#3b82f6' }, shipment: { label: 'Отгрузка', icon: '🚚', color: '#10b981' },
@@ -452,11 +528,14 @@ const DOC_TYPES = {
     diploma: { label: 'Диплом', icon: '🎓' }, contract: { label: 'Договор', icon: '📝' }, medical: { label: 'Мед. книжка', icon: '🏥' }, other: { label: 'Другое', icon: '📎' }
 };
 
+let attendanceChart = null;
+let html5QrCode = null;
+
 // ==================== INIT ====================
 function init() {
     const saved = localStorage.getItem('staffpro_db');
     if (saved) { try { DB = JSON.parse(saved); } catch(e) {} }
-    if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8 };
+    if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8, theme:'dark' };
     if (!DB.employees) DB.employees = [];
     if (!DB.timesheets) DB.timesheets = [];
     if (!DB.operations) DB.operations = [];
@@ -464,6 +543,7 @@ function init() {
     if (!DB.payments) DB.payments = [];
     DB.employees.forEach(e => { if (!e.documents) e.documents = []; });
     
+    applyTheme(DB.settings.theme || 'dark');
     document.getElementById('timeDate').value = new Date().toISOString().split('T')[0];
     if (sessionStorage.getItem('staffpro_logged')) {
         document.getElementById('loginScreen').style.display = 'none';
@@ -473,6 +553,31 @@ function init() {
 }
 function save() { localStorage.setItem('staffpro_db', JSON.stringify(DB)); }
 function refreshAll() { renderDashboard(); renderEmployees(); renderTimesheet(); renderOperations(); renderPenalties(); renderPayments(); renderReports(); loadSettings(); populateFilters(); }
+
+// ==================== THEME ====================
+function toggleTheme() {
+    const current = DB.settings.theme || 'dark';
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    DB.settings.theme = newTheme;
+    applyTheme(newTheme);
+    save();
+}
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.querySelectorAll('#themeIcon, #themeIcon2, #themeIcon3').forEach(el => el.textContent = '☀️');
+        document.querySelectorAll('#themeLabel, #themeLabel2').forEach(el => el.textContent = 'Светлая');
+    } else {
+        document.documentElement.classList.remove('light');
+        document.querySelectorAll('#themeIcon, #themeIcon2, #themeIcon3').forEach(el => el.textContent = '🌙');
+        document.querySelectorAll('#themeLabel, #themeLabel2').forEach(el => el.textContent = 'Тёмная');
+    }
+}
+
+// ==================== MOBILE SIDEBAR ====================
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
 
 // ==================== AUTH & NAV ====================
 function doLogin() {
@@ -492,6 +597,8 @@ function showPage(page) {
     if (idx >= 0) document.querySelectorAll('.nav-item')[idx].classList.add('active');
     if (page === 'dashboard') renderDashboard();
     if (page === 'reports') renderReports();
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('open');
 }
 function showDetailTab(tab) {
     document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
@@ -550,16 +657,48 @@ function renderDashboard() {
         <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">⏰</div><div class="stat-value">${todaySheets.filter(t => t.timeIn && !t.timeOut).length}</div><div class="stat-label">Сейчас на месте</div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">📋</div><div class="stat-value">${DB.operations.filter(o => o.date === today).length}</div><div class="stat-label">Операций сегодня</div></div>
     `;
-    const chartEl = document.getElementById('attendanceChart');
-    let chartHTML = ''; const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    
+    // Chart.js
+    const ctx = document.getElementById('attendanceChart');
+    if (!ctx) return;
+    const labels = []; const data = []; const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
     for (let i = 6; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         const count = DB.timesheets.filter(t => t.date === dateStr && t.timeIn).length;
-        const height = (count / Math.max(total, 1)) * 140;
-        chartHTML += `<div class="chart-bar-wrapper"><div class="chart-bar-value">${count}</div><div class="chart-bar" style="height:${height}px;"></div><div class="chart-bar-label">${dayNames[d.getDay()]}<br>${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}</div></div>`;
+        labels.push(`${dayNames[d.getDay()]} ${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}`);
+        data.push(count);
     }
-    chartEl.innerHTML = chartHTML;
+    
+    if (attendanceChart) attendanceChart.destroy();
+    const isLight = document.documentElement.classList.contains('light');
+    const textColor = isLight ? '#0f172a' : '#f1f5f9';
+    const gridColor = isLight ? '#cbd5e1' : '#334155';
+    
+    attendanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Присутствие',
+                data: data,
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderColor: 'rgba(99, 102, 241, 1)',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
+                x: { ticks: { color: textColor }, grid: { display: false } }
+            }
+        }
+    });
+    
     const recentOps = [...DB.operations].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
     document.getElementById('recentOperations').innerHTML = recentOps.length === 0 ? '<div class="empty-state"><p>Нет операций</p></div>' :
         recentOps.map(op => { const type = OP_TYPES[op.type] || OP_TYPES.other; return `<div class="timeline-item"><div class="timeline-dot" style="background:${type.color};"></div><div class="timeline-content"><div class="time">${formatDateTime(op.createdAt)}</div><div class="desc">${type.icon} <b>${getEmpName(op.employeeId)}</b> — ${op.description || type.label}</div></div></div>`; }).join('');
@@ -658,7 +797,7 @@ function deleteEmployee(id) {
     save(); closeModal(); showPage('employees'); refreshAll(); notify('Сотрудник удалён', 'info');
 }
 
-// ==================== EMPLOYEE DETAIL (MEGA CARD) ====================
+// ==================== EMPLOYEE DETAIL ====================
 let currentDetailEmpId = null;
 function openEmployeeDetail(id) { currentDetailEmpId = id; showPage('employee-detail'); renderEmployeeDetail(); }
 
@@ -987,10 +1126,8 @@ function showQR(type, empId) {
     openModal();
 }
 
-// НОВЫЙ МЕХАНИЗМ: QR-код получателя для подтверждения выплаты администратором
 function showEmployeeReceiptQR(empId) {
     const emp = getEmp(empId); if (!emp) return;
-    // Генерируем уникальный код подтверждения для этого сотрудника
     const confirmCode = `REC-${emp.id.substring(0,4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
     const qrData = { action: 'CONFIRM_RECEIPT', empId: emp.id, name: emp.name, code: confirmCode, timestamp: new Date().toISOString() };
     const qrText = btoa(unescape(encodeURIComponent(JSON.stringify(qrData))));
@@ -1211,7 +1348,7 @@ function deletePenalty(id) {
     save(); refreshAll(); notify('Запись удалена', 'info');
 }
 
-// ==================== PAYMENTS (С QR ПОДТВЕРЖДЕНИЕМ) ====================
+// ==================== PAYMENTS (С РЕАЛЬНЫМ QR СКАНЕРOM) ====================
 function renderPayments() {
     const tbody = document.getElementById('paymentsBody');
     const payments = [...DB.payments].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -1237,15 +1374,18 @@ function openPaymentModal(empId) {
             </div>
             <div class="form-group"><label>Комментарий</label><input type="text" id="payComment" placeholder="Необязательно"></div>
             
-            <!-- БЛОК ПОДТВЕРЖДЕНИЯ ПОЛУЧЕНИЯ ПО QR -->
             <div class="qr-confirm-block" id="payConfirmBlock">
                 <h4 style="margin-bottom:8px;">📱 Подтверждение получения сотрудником</h4>
                 <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-                    Сотрудник должен показать свой <b>QR-код получателя</b>. Отсканируйте его или введите код вручную.
+                    Сотрудник должен показать свой <b>QR-код получателя</b>. Отсканируйте его камерой или введите код вручную.
                 </p>
-                <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
-                    <input type="text" id="payConfirmCode" placeholder="Введите код с QR (напр. REC-XXXX)" style="flex:1;text-transform:uppercase;font-family:monospace;font-size:16px;text-align:center;letter-spacing:1px;" oninput="validatePaymentConfirm()">
-                    <button class="btn btn-secondary" onclick="simulateScanPayment()" title="Симулировать сканирование камерой (для демо)">📷 Сканировать</button>
+                <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+                    <input type="text" id="payConfirmCode" placeholder="REC-XXXX-XXXXXX" style="flex:1;min-width:200px;text-transform:uppercase;font-family:monospace;font-size:16px;text-align:center;letter-spacing:1px;" oninput="validatePaymentConfirm()">
+                    <button class="btn btn-primary" onclick="startQRScanner()">📷 Сканировать камерой</button>
+                </div>
+                <div id="qr-reader-container" style="display:none;margin-top:16px;">
+                    <div id="qr-reader"></div>
+                    <button class="btn btn-secondary btn-sm" onclick="stopQRScanner()" style="margin-top:8px;">⏹️ Остановить сканер</button>
                 </div>
                 <div class="status-text pending" id="payConfirmStatus">
                     ⏳ Ожидание подтверждения...
@@ -1259,22 +1399,60 @@ function openPaymentModal(empId) {
     openModal();
 }
 
-// Симуляция сканирования QR-кода (для демо-режима, так как доступ к камере требует HTTPS)
-function simulateScanPayment() {
-    const empId = document.getElementById('payEmpId').value;
-    const emp = getEmp(empId);
-    if (!emp) return;
+// Реальное сканирование QR через камеру
+function startQRScanner() {
+    const container = document.getElementById('qr-reader-container');
+    container.style.display = 'block';
     
-    // Генерируем тот же код, который был бы в QR-коде сотрудника
-    // В реальном приложении здесь был бы вызов камеры и парсинг QR
-    const mockCode = `REC-${empId.substring(0,4).toUpperCase()}-DEMO`;
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().catch(err => console.log(err));
+    }
     
-    // Для демо мы просто подставим правильный префикс и покажем успех
-    // В реальной системе код валидировался бы по базе
-    document.getElementById('payConfirmCode').value = mockCode;
-    validatePaymentConfirm();
+    html5QrCode = new Html5Qrcode("qr-reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
     
-    notify('QR-код успешно отсканирован!', 'success');
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+            // Успешное сканирование
+            try {
+                const data = JSON.parse(atob(decodeURIComponent(decodedText)));
+                if (data.code && data.code.startsWith('REC-')) {
+                    document.getElementById('payConfirmCode').value = data.code;
+                    validatePaymentConfirm();
+                    stopQRScanner();
+                    notify('✅ QR-код успешно отсканирован!', 'success');
+                } else {
+                    notify('Неверный QR-код', 'error');
+                }
+            } catch(e) {
+                // Пробуем как plain text
+                if (decodedText.startsWith('REC-')) {
+                    document.getElementById('payConfirmCode').value = decodedText;
+                    validatePaymentConfirm();
+                    stopQRScanner();
+                    notify('✅ QR-код успешно отсканирован!', 'success');
+                }
+            }
+        },
+        (errorMessage) => {
+            // Ошибка сканирования (игнорируем)
+        }
+    ).catch(err => {
+        notify('Не удалось запустить камеру. Проверьте разрешения.', 'error');
+        container.style.display = 'none';
+    });
+}
+
+function stopQRScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('qr-reader-container').style.display = 'none';
+        }).catch(err => console.log(err));
+    } else {
+        document.getElementById('qr-reader-container').style.display = 'none';
+    }
 }
 
 function validatePaymentConfirm() {
@@ -1285,7 +1463,6 @@ function validatePaymentConfirm() {
     const blockEl = document.getElementById('payConfirmBlock');
     const saveBtn = document.getElementById('btnSavePayment');
     
-    // Простая валидация: код должен начинаться с REC- и содержать ID сотрудника
     const isValid = code.startsWith('REC-') && code.includes(empId.substring(0,4).toUpperCase()) && code.length >= 10;
     
     if (isValid && amount > 0) {
@@ -1384,7 +1561,7 @@ function renderReports() {
     </tr>`).join('');
 }
 
-function exportReport() {
+function exportReportCSV() {
     const period = document.getElementById('reportPeriod').value;
     const { from, to } = getDaysRange(period);
     const periodLabel = { week: 'Неделя', month: 'Месяц', year: 'Год' }[period];
@@ -1406,7 +1583,43 @@ function exportReport() {
     link.href = URL.createObjectURL(blob);
     link.download = `Отчет_${periodLabel}_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    notify('Отчёт скачан');
+    notify('CSV отчёт скачан');
+}
+
+function exportReportExcel() {
+    const period = document.getElementById('reportPeriod').value;
+    const { from, to } = getDaysRange(period);
+    const periodLabel = { week: 'Неделя', month: 'Месяц', year: 'Год' }[period];
+    
+    const data = [];
+    DB.employees.filter(e => e.status !== 'fired').forEach(emp => {
+        const sheets = DB.timesheets.filter(t => t.employeeId === emp.id && new Date(t.date) >= from && new Date(t.date) <= to);
+        const ops = DB.operations.filter(o => o.employeeId === emp.id && new Date(o.date) >= from && new Date(o.date) <= to);
+        const pens = DB.penalties.filter(p => p.employeeId === emp.id && new Date(p.date) >= from && new Date(p.date) <= to);
+        const hours = sheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+        const days = sheets.filter(t => t.timeIn).length;
+        const qty = ops.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+        const penSum = pens.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const bonusSum = pens.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const total = hours * emp.rate + bonusSum - penSum;
+        data.push({
+            'Сотрудник': emp.name,
+            'Должность': emp.position,
+            'Дней': days,
+            'Часов': hours.toFixed(1),
+            'Операций': ops.length,
+            'Выработка': qty,
+            'Штрафы': penSum,
+            'Бонусы': bonusSum,
+            'Итого': Math.round(total)
+        });
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Отчет");
+    XLSX.writeFile(wb, `Отчет_${periodLabel}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    notify('Excel отчёт скачан');
 }
 
 // ==================== SETTINGS & DATA ====================
@@ -1438,10 +1651,11 @@ function importData(event) {
             const data = JSON.parse(e.target.result);
             if (data.employees) {
                 DB = data;
-                if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8 };
+                if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8, theme:'dark' };
                 if (!DB.payments) DB.payments = [];
                 DB.employees.forEach(emp => { if (!emp.documents) emp.documents = []; });
-                save(); refreshAll(); notify('Данные импортированы');
+                save(); refreshAll(); applyTheme(DB.settings.theme || 'dark');
+                notify('Данные импортированы');
             } else notify('Неверный формат', 'error');
         } catch(err) { notify('Ошибка чтения', 'error'); }
     };
@@ -1450,8 +1664,8 @@ function importData(event) {
 function resetData() {
     if (!confirm('Удалить ВСЕ данные?')) return;
     if (!confirm('Вы уверены?')) return;
-    DB = { employees:[], timesheets:[], operations:[], penalties:[], payments:[], settings:{ company:'', address:'', phone:'', normHours:8 } };
-    save(); refreshAll(); notify('Все данные удалены', 'info');
+    DB = { employees:[], timesheets:[], operations:[], penalties:[], payments:[], settings:{ company:'', address:'', phone:'', normHours:8, theme:'dark' } };
+    save(); refreshAll(); applyTheme('dark'); notify('Все данные удалены', 'info');
 }
 
 // ==================== DEMO DATA ====================
@@ -1520,7 +1734,10 @@ function loadDemoData() {
 
 // ==================== MODAL & UTILS ====================
 function openModal() { document.getElementById('modalOverlay').classList.add('active'); }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+function closeModal() { 
+    document.getElementById('modalOverlay').classList.remove('active');
+    stopQRScanner();
+}
 document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
 function populateFilters() {
     ['timeEmpFilter', 'opsEmpFilter', 'reportEmp'].forEach(id => {
