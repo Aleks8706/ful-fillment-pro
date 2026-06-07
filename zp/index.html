@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StaffPro — Управление сотрудниками</title>
-    <!-- Библиотека для сканирования QR-кодов -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></style>
+    <!-- ИСПРАВЛЕНО: правильный закрывающий тег script -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #a5b4fc;
@@ -201,8 +201,7 @@
         .qr-confirm-block .status-text.success { color: var(--success); }
 
         /* Scanner Styles */
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary); }
-        #reader video { border-radius: 12px; }
+        #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary); background: #000; }
         .scanner-status { text-align: center; margin-top: 16px; font-size: 15px; color: var(--text-muted); }
         .scanner-status.scanning { color: var(--primary-light); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -241,7 +240,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>👥 StaffPro</h2>
-            <small>Управление v4.0 (QR Сканер)</small>
+            <small>Управление v4.1 (Исправлено)</small>
         </div>
         <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Дашборд</div>
         <div class="nav-item" onclick="showPage('employees')"><span class="icon">👤</span> Сотрудники</div>
@@ -441,7 +440,7 @@
             <div id="reader"></div>
             <p class="scanner-status" id="scanStatus">Наведите камеру на QR-код сотрудника</p>
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
-                ⚠️ Для работы камеры откройте сайт через <b>HTTPS</b> или <b>localhost</b>.
+                ⚠️ Камера работает только через <b>HTTPS</b> или <b>localhost</b>.
             </p>
         </div>
     </div>
@@ -673,7 +672,7 @@ function deleteEmployee(id) {
     save(); closeModal(); showPage('employees'); refreshAll(); notify('Сотрудник удалён', 'info');
 }
 
-// ==================== EMPLOYEE DETAIL (MEGA CARD) ====================
+// ==================== EMPLOYEE DETAIL ====================
 let currentDetailEmpId = null;
 function openEmployeeDetail(id) { currentDetailEmpId = id; showPage('employee-detail'); renderEmployeeDetail(); }
 
@@ -972,7 +971,6 @@ let html5QrCode = null;
 
 function showEmployeeTimeQR(empId) {
     const emp = getEmp(empId); if (!emp) return;
-    // Генерируем чистый JSON для сканера
     const qrData = { type: 'EMPLOYEE_ID', empId: emp.id, name: emp.name, timestamp: Date.now() };
     const qrText = btoa(unescape(encodeURIComponent(JSON.stringify(qrData))));
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrText)}&margin=10`;
@@ -1054,37 +1052,35 @@ function showQR(type, empId) {
 // === SCANNER LOGIC ===
 function openScannerModal() {
     document.getElementById('scannerModal').classList.add('active');
-    document.getElementById('scanStatus').className = 'scanner-status';
+    document.getElementById('scanStatus').className = 'scanner-status scanning';
     document.getElementById('scanStatus').textContent = 'Инициализация камеры...';
     
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
-        { facingMode: "environment" }, // Предпочитать заднюю камеру
+        { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText, decodedResult) => {
+        (decodedText) => {
             handleScanSuccess(decodedText);
         },
         (errorMessage) => {
-            // Игнорируем ошибки парсинга кадров, это нормально
+            // Игнорируем ошибки парсинга кадров
         }
     ).catch(err => {
-        document.getElementById('scanStatus').textContent = "❌ Ошибка доступа к камере. Убедитесь, что сайт открыт через HTTPS или localhost, и вы дали разрешение на использование камеры.";
+        document.getElementById('scanStatus').className = 'scanner-status';
         document.getElementById('scanStatus').style.color = 'var(--danger)';
+        document.getElementById('scanStatus').textContent = "❌ Ошибка камеры. Используйте HTTPS или localhost, и разрешите доступ к камере.";
     });
 }
 
 function handleScanSuccess(text) {
     try {
-        // Декодируем данные из QR
         const decoded = decodeURIComponent(escape(atob(text)));
         const data = JSON.parse(decoded);
         
         if (data.type === 'EMPLOYEE_ID' && data.empId) {
             const emp = getEmp(data.empId);
             if (emp) {
-                // Останавливаем сканер, чтобы не было двойных срабатываний
                 stopScanner();
-                
                 const action = document.getElementById('scanAction').value;
                 if (action === 'in') {
                     quickClockIn(data.empId);
