@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StaffPro — Управление сотрудниками</title>
+    <!-- Библиотека для сканирования QR-кодов -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></style>
     <style>
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #a5b4fc;
@@ -85,7 +87,7 @@
         .emp-card-stat .val { font-size: 18px; font-weight: 700; }
         .emp-card-stat .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
         .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 1px solid var(--border); }
@@ -192,30 +194,18 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
 
-        /* QR Confirmation Block Styles */
-        .qr-confirm-block {
-            background: rgba(99,102,241,0.05);
-            border: 2px dashed var(--primary);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 16px;
-            text-align: center;
-        }
-        .qr-confirm-block.confirmed {
-            background: rgba(16,185,129,0.05);
-            border-color: var(--success);
-        }
-        .qr-confirm-block .status-text {
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+        .qr-confirm-block { background: rgba(99,102,241,0.05); border: 2px dashed var(--primary); border-radius: 12px; padding: 20px; margin-top: 16px; text-align: center; }
+        .qr-confirm-block.confirmed { background: rgba(16,185,129,0.05); border-color: var(--success); }
+        .qr-confirm-block .status-text { font-size: 14px; font-weight: 600; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .qr-confirm-block .status-text.pending { color: var(--warning); }
         .qr-confirm-block .status-text.success { color: var(--success); }
+
+        /* Scanner Styles */
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary); }
+        #reader video { border-radius: 12px; }
+        .scanner-status { text-align: center; margin-top: 16px; font-size: 15px; color: var(--text-muted); }
+        .scanner-status.scanning { color: var(--primary-light); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -251,7 +241,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>👥 StaffPro</h2>
-            <small>Управление v3.0 (QR Выплаты)</small>
+            <small>Управление v4.0 (QR Сканер)</small>
         </div>
         <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Дашборд</div>
         <div class="nav-item" onclick="showPage('employees')"><span class="icon">👤</span> Сотрудники</div>
@@ -322,9 +312,10 @@
         <div class="page" id="page-timesheet">
             <div class="page-header">
                 <h1>⏰ Учёт времени</h1>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-success" onclick="openTimeModal('in')">✅ Приход</button>
-                    <button class="btn btn-warning" onclick="openTimeModal('out')">🚪 Уход</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="openScannerModal()">📷 Сканировать QR</button>
+                    <button class="btn btn-success" onclick="openTimeModal('in')">✅ Приход (вручную)</button>
+                    <button class="btn btn-warning" onclick="openTimeModal('out')">🚪 Уход (вручную)</button>
                 </div>
             </div>
             <div class="filters-bar">
@@ -430,6 +421,30 @@
 <!-- MODALS -->
 <div class="modal-overlay" id="modalOverlay">
     <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- SCANNER MODAL -->
+<div class="modal-overlay" id="scannerModal">
+    <div class="modal" style="max-width: 550px;">
+        <div class="modal-header">
+            <h2>📷 Сканер QR-кода</h2>
+            <button class="modal-close" onclick="stopScanner()">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <div class="form-group" style="max-width: 300px; margin: 0 auto 20px;">
+                <label>Режим сканирования:</label>
+                <select id="scanAction" style="width: 100%; padding: 12px; font-size: 16px; font-weight: 600;">
+                    <option value="in">✅ Регистрация ПРИХОДА</option>
+                    <option value="out">🚪 Регистрация УХОДА</option>
+                </select>
+            </div>
+            <div id="reader"></div>
+            <p class="scanner-status" id="scanStatus">Наведите камеру на QR-код сотрудника</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                ⚠️ Для работы камеры откройте сайт через <b>HTTPS</b> или <b>localhost</b>.
+            </p>
+        </div>
+    </div>
 </div>
 
 <!-- NOTIFICATION -->
@@ -687,7 +702,8 @@ function renderEmployeeDetail() {
                 </div>
                 <div class="emp-mega-actions">
                     <button class="btn btn-secondary" onclick="openEmployeeModal('${emp.id}')">✏️ Редактировать</button>
-                    <button class="btn btn-info" style="background:var(--primary);color:white;" onclick="showEmployeeReceiptQR('${emp.id}')">📱 QR Получателя</button>
+                    <button class="btn btn-primary" onclick="showEmployeeTimeQR('${emp.id}')">📱 Мой QR для отметки</button>
+                    <button class="btn btn-info" style="background:var(--primary);color:white;" onclick="showEmployeeReceiptQR('${emp.id}')">💳 QR Получателя</button>
                     ${!isHere ? `<button class="btn btn-success" onclick="quickClockIn('${emp.id}')">✅ Приход</button>` : `<button class="btn btn-warning" onclick="quickClockOut('${emp.id}')">🚪 Уход</button>`}
                 </div>
             </div>
@@ -951,7 +967,55 @@ function deleteDocument(empId, docId) {
     save(); renderEmployeeDetail(); notify('Документ удалён', 'info');
 }
 
-// ==================== QR CODES ====================
+// ==================== QR CODES & SCANNER ====================
+let html5QrCode = null;
+
+function showEmployeeTimeQR(empId) {
+    const emp = getEmp(empId); if (!emp) return;
+    // Генерируем чистый JSON для сканера
+    const qrData = { type: 'EMPLOYEE_ID', empId: emp.id, name: emp.name, timestamp: Date.now() };
+    const qrText = btoa(unescape(encodeURIComponent(JSON.stringify(qrData))));
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrText)}&margin=10`;
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header"><h2>📱 Мой QR для отметки времени</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+        <div class="modal-body">
+            <div class="qr-modal-content">
+                <h3>${emp.name}</h3>
+                <p style="color:var(--text-muted);margin-bottom:16px;">Покажите этот QR-код администратору или приложите к сканеру для регистрации прихода/ухода.</p>
+                <div class="qr-image"><img src="${qrUrl}" alt="QR Code"></div>
+                <div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:16px;border:1px dashed var(--border);">
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">ID сотрудника:</p>
+                    <p style="font-size:16px;font-weight:700;color:var(--primary-light);font-family:monospace;">${emp.id}</p>
+                </div>
+            </div>
+        </div>`;
+    openModal();
+}
+
+function showEmployeeReceiptQR(empId) {
+    const emp = getEmp(empId); if (!emp) return;
+    const confirmCode = `REC-${emp.id.substring(0,4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+    const qrData = { action: 'CONFIRM_RECEIPT', empId: emp.id, name: emp.name, code: confirmCode, timestamp: new Date().toISOString() };
+    const qrText = btoa(unescape(encodeURIComponent(JSON.stringify(qrData))));
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrText)}&margin=10`;
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header"><h2>💳 QR-код получателя</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+        <div class="modal-body">
+            <div class="qr-modal-content">
+                <h3>${emp.name}</h3>
+                <p style="color:var(--text-muted);margin-bottom:16px;">Покажите этот QR-код администратору при получении выплаты.</p>
+                <div class="qr-image"><img src="${qrUrl}" alt="QR Code"></div>
+                <div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:16px;border:1px dashed var(--border);">
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Код подтверждения:</p>
+                    <p style="font-size:18px;font-weight:700;color:var(--primary-light);letter-spacing:1px;">${confirmCode}</p>
+                </div>
+            </div>
+        </div>`;
+    openModal();
+}
+
 function showQR(type, empId) {
     const emp = getEmp(empId); if (!emp) return;
     let qrData = {}, title = '', desc = '', amount = 0;
@@ -987,29 +1051,70 @@ function showQR(type, empId) {
     openModal();
 }
 
-// НОВЫЙ МЕХАНИЗМ: QR-код получателя для подтверждения выплаты администратором
-function showEmployeeReceiptQR(empId) {
-    const emp = getEmp(empId); if (!emp) return;
-    // Генерируем уникальный код подтверждения для этого сотрудника
-    const confirmCode = `REC-${emp.id.substring(0,4).toUpperCase()}-${Date.now().toString().slice(-6)}`;
-    const qrData = { action: 'CONFIRM_RECEIPT', empId: emp.id, name: emp.name, code: confirmCode, timestamp: new Date().toISOString() };
-    const qrText = btoa(unescape(encodeURIComponent(JSON.stringify(qrData))));
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrText)}&margin=10`;
+// === SCANNER LOGIC ===
+function openScannerModal() {
+    document.getElementById('scannerModal').classList.add('active');
+    document.getElementById('scanStatus').className = 'scanner-status';
+    document.getElementById('scanStatus').textContent = 'Инициализация камеры...';
+    
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" }, // Предпочитать заднюю камеру
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText, decodedResult) => {
+            handleScanSuccess(decodedText);
+        },
+        (errorMessage) => {
+            // Игнорируем ошибки парсинга кадров, это нормально
+        }
+    ).catch(err => {
+        document.getElementById('scanStatus').textContent = "❌ Ошибка доступа к камере. Убедитесь, что сайт открыт через HTTPS или localhost, и вы дали разрешение на использование камеры.";
+        document.getElementById('scanStatus').style.color = 'var(--danger)';
+    });
+}
 
-    document.getElementById('modalContent').innerHTML = `
-        <div class="modal-header"><h2>📱 QR-код получателя</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
-        <div class="modal-body">
-            <div class="qr-modal-content">
-                <h3>${emp.name}</h3>
-                <p style="color:var(--text-muted);margin-bottom:16px;">Покажите этот QR-код администратору при получении выплаты.<br>Администратор отсканирует его для фиксации получения средств.</p>
-                <div class="qr-image"><img src="${qrUrl}" alt="QR Code"></div>
-                <div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:16px;border:1px dashed var(--border);">
-                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Код подтверждения (для ручного ввода):</p>
-                    <p style="font-size:18px;font-weight:700;color:var(--primary-light);letter-spacing:1px;">${confirmCode}</p>
-                </div>
-            </div>
-        </div>`;
-    openModal();
+function handleScanSuccess(text) {
+    try {
+        // Декодируем данные из QR
+        const decoded = decodeURIComponent(escape(atob(text)));
+        const data = JSON.parse(decoded);
+        
+        if (data.type === 'EMPLOYEE_ID' && data.empId) {
+            const emp = getEmp(data.empId);
+            if (emp) {
+                // Останавливаем сканер, чтобы не было двойных срабатываний
+                stopScanner();
+                
+                const action = document.getElementById('scanAction').value;
+                if (action === 'in') {
+                    quickClockIn(data.empId);
+                } else {
+                    quickClockOut(data.empId);
+                }
+            } else {
+                notify('Сотрудник не найден в базе', 'error');
+            }
+        } else {
+            notify('Неверный формат QR-кода', 'error');
+        }
+    } catch(e) {
+        notify('Не удалось распознать QR-код системы', 'error');
+    }
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            html5QrCode = null;
+            document.getElementById('scannerModal').classList.remove('active');
+        }).catch(err => {
+            console.error("Failed to stop scanner", err);
+            document.getElementById('scannerModal').classList.remove('active');
+        });
+    } else {
+        document.getElementById('scannerModal').classList.remove('active');
+    }
 }
 
 function confirmClockAction(empId, action) {
@@ -1211,7 +1316,7 @@ function deletePenalty(id) {
     save(); refreshAll(); notify('Запись удалена', 'info');
 }
 
-// ==================== PAYMENTS (С QR ПОДТВЕРЖДЕНИЕМ) ====================
+// ==================== PAYMENTS ====================
 function renderPayments() {
     const tbody = document.getElementById('paymentsBody');
     const payments = [...DB.payments].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -1236,20 +1341,14 @@ function openPaymentModal(empId) {
                 <div class="form-group"><label>Дата</label><input type="date" id="payDate" value="${new Date().toISOString().split('T')[0]}"></div>
             </div>
             <div class="form-group"><label>Комментарий</label><input type="text" id="payComment" placeholder="Необязательно"></div>
-            
-            <!-- БЛОК ПОДТВЕРЖДЕНИЯ ПОЛУЧЕНИЯ ПО QR -->
             <div class="qr-confirm-block" id="payConfirmBlock">
-                <h4 style="margin-bottom:8px;">📱 Подтверждение получения сотрудником</h4>
-                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-                    Сотрудник должен показать свой <b>QR-код получателя</b>. Отсканируйте его или введите код вручную.
-                </p>
+                <h4 style="margin-bottom:8px;">📱 Подтверждение получения</h4>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Сотрудник должен показать свой <b>QR-код получателя</b>. Отсканируйте или введите код.</p>
                 <div style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
-                    <input type="text" id="payConfirmCode" placeholder="Введите код с QR (напр. REC-XXXX)" style="flex:1;text-transform:uppercase;font-family:monospace;font-size:16px;text-align:center;letter-spacing:1px;" oninput="validatePaymentConfirm()">
-                    <button class="btn btn-secondary" onclick="simulateScanPayment()" title="Симулировать сканирование камерой (для демо)">📷 Сканировать</button>
+                    <input type="text" id="payConfirmCode" placeholder="Код с QR (напр. REC-XXXX)" style="flex:1;text-transform:uppercase;font-family:monospace;font-size:16px;text-align:center;letter-spacing:1px;" oninput="validatePaymentConfirm()">
+                    <button class="btn btn-secondary" onclick="simulateScanPayment()" title="Симулировать сканирование">📷 Сканировать</button>
                 </div>
-                <div class="status-text pending" id="payConfirmStatus">
-                    ⏳ Ожидание подтверждения...
-                </div>
+                <div class="status-text pending" id="payConfirmStatus">⏳ Ожидание подтверждения...</div>
             </div>
         </div>
         <div class="modal-footer">
@@ -1259,21 +1358,12 @@ function openPaymentModal(empId) {
     openModal();
 }
 
-// Симуляция сканирования QR-кода (для демо-режима, так как доступ к камере требует HTTPS)
 function simulateScanPayment() {
     const empId = document.getElementById('payEmpId').value;
-    const emp = getEmp(empId);
-    if (!emp) return;
-    
-    // Генерируем тот же код, который был бы в QR-коде сотрудника
-    // В реальном приложении здесь был бы вызов камеры и парсинг QR
+    const emp = getEmp(empId); if (!emp) return;
     const mockCode = `REC-${empId.substring(0,4).toUpperCase()}-DEMO`;
-    
-    // Для демо мы просто подставим правильный префикс и покажем успех
-    // В реальной системе код валидировался бы по базе
     document.getElementById('payConfirmCode').value = mockCode;
     validatePaymentConfirm();
-    
     notify('QR-код успешно отсканирован!', 'success');
 }
 
@@ -1285,7 +1375,6 @@ function validatePaymentConfirm() {
     const blockEl = document.getElementById('payConfirmBlock');
     const saveBtn = document.getElementById('btnSavePayment');
     
-    // Простая валидация: код должен начинаться с REC- и содержать ID сотрудника
     const isValid = code.startsWith('REC-') && code.includes(empId.substring(0,4).toUpperCase()) && code.length >= 10;
     
     if (isValid && amount > 0) {
@@ -1311,23 +1400,14 @@ function savePayment() {
     if (!code.startsWith('REC-')) { notify('Необходимо подтверждение получения по QR-коду', 'error'); return; }
     
     const data = {
-        id: genId(),
-        employeeId: document.getElementById('payEmpId').value,
-        type: document.getElementById('payType').value,
-        amount: parseFloat(document.getElementById('payAmount').value) || 0,
-        date: document.getElementById('payDate').value,
-        comment: document.getElementById('payComment').value.trim(),
-        confirmed: true,
-        confirmedAt: new Date().toISOString(),
-        confirmCode: code,
-        createdAt: new Date().toISOString()
+        id: genId(), employeeId: document.getElementById('payEmpId').value, type: document.getElementById('payType').value,
+        amount: parseFloat(document.getElementById('payAmount').value) || 0, date: document.getElementById('payDate').value,
+        comment: document.getElementById('payComment').value.trim(), confirmed: true, confirmedAt: new Date().toISOString(),
+        confirmCode: code, createdAt: new Date().toISOString()
     };
     if (!data.employeeId || data.amount <= 0) { notify('Заполните все обязательные поля', 'error'); return; }
     
-    DB.payments.push(data);
-    save();
-    closeModal();
-    refreshAll();
+    DB.payments.push(data); save(); closeModal(); refreshAll();
     if (currentDetailEmpId) renderEmployeeDetail();
     notify(`Выплата ${data.amount.toLocaleString()} ₽ подтверждена и сохранена`);
 }
@@ -1335,9 +1415,7 @@ function savePayment() {
 function deletePayment(id) {
     if (!confirm('Удалить выплату?')) return;
     DB.payments = DB.payments.filter(p => p.id !== id);
-    save(); refreshAll();
-    if (currentDetailEmpId) renderEmployeeDetail();
-    notify('Выплата удалена', 'info');
+    save(); refreshAll(); if (currentDetailEmpId) renderEmployeeDetail(); notify('Выплата удалена', 'info');
 }
 
 // ==================== REPORTS ====================
@@ -1405,8 +1483,7 @@ function exportReport() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `Отчет_${periodLabel}_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    notify('Отчёт скачан');
+    link.click(); notify('Отчёт скачан');
 }
 
 // ==================== SETTINGS & DATA ====================
@@ -1425,10 +1502,8 @@ function saveSettings() {
 }
 function exportData() {
     const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `staffpro_backup_${new Date().toISOString().split('T')[0]}.json`;
-    link.click(); notify('Данные экспортированы');
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+    link.download = `staffpro_backup_${new Date().toISOString().split('T')[0]}.json`; link.click(); notify('Данные экспортированы');
 }
 function importData(event) {
     const file = event.target.files[0]; if (!file) return;
