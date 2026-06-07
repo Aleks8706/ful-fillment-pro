@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StaffPro — Управление сотрудниками</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* === LOGIN === */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+        .login-box {
+            background: var(--bg-card);
+            padding: 48px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .login-box h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .login-box p { color: var(--text-muted); margin-bottom: 32px; }
+        .login-box input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .login-box input:focus { border-color: var(--primary); }
+        .login-box .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .login-box .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+        }
+        .login-hint {
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* === LAYOUT === */
+        .app { display: none; }
+        .app.active { display: flex; min-height: 100vh; }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            transition: transform 0.3s;
+        }
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .sidebar-header h2 {
+            font-size: 22px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sidebar-header small { color: var(--text-muted); font-size: 12px; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+        }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+        .nav-item.active {
+            background: rgba(99,102,241,0.1);
+            color: var(--primary-light);
+            border-left-color: var(--primary);
+        }
+        .nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+        }
+        .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .sidebar-footer .avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .sidebar-footer .user-name { font-size: 14px; font-weight: 600; }
+        .sidebar-footer .user-role { font-size: 12px; color: var(--text-muted); }
+        .btn-logout {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* === MAIN === */
+        .main {
+            margin-left: 260px;
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .page-header h1 { font-size: 28px; font-weight: 700; }
+
+        /* === STATS CARDS === */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .stat-card .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .stat-card .stat-value { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+        .stat-card .stat-label { color: var(--text-muted); font-size: 14px; }
+        .stat-card .stat-change {
+            font-size: 13px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stat-change.up { color: var(--success); }
+        .stat-change.down { color: var(--danger); }
+
+        /* === BUTTONS === */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        .btn-primary:hover { box-shadow: 0 4px 16px rgba(99,102,241,0.4); transform: translateY(-1px); }
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--primary); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-icon {
+            width: 36px; height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        /* === TABLES === */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .table-header h3 { font-size: 18px; }
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text);
+            outline: none;
+            font-size: 14px;
+            width: 200px;
+        }
+        .search-box .icon { color: var(--text-muted); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px 24px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        th {
+            background: var(--bg);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:hover td { background: rgba(99,102,241,0.03); }
+        tr:last-child td { border-bottom: none; }
+
+        /* === BADGES === */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-success { background: rgba(16,185,129,0.15); color: var(--success); }
+        .badge-warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .badge-danger { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .badge-info { background: rgba(99,102,241,0.15); color: var(--primary-light); }
+        .badge-muted { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+
+        /* === EMPLOYEE CARDS === */
+        .employees-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .emp-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .emp-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+        .emp-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .emp-avatar {
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        .emp-card-header .name { font-size: 18px; font-weight: 700; }
+        .emp-card-header .position { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+        .emp-card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .emp-card-stat {
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+        .emp-card-stat .val { font-size: 20px; font-weight: 700; }
+        .emp-card-stat .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* === MODAL === */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h2 { font-size: 20px; }
+        .modal-close {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: var(--bg);
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { background: var(--danger); color: white; }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* === FORMS === */
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* === EMPLOYEE DETAIL === */
+        .emp-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+            padding: 32px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .emp-detail-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        .emp-detail-info h2 { font-size: 24px; margin-bottom: 4px; }
+        .emp-detail-info .meta { color: var(--text-muted); font-size: 14px; }
+        .emp-detail-actions { margin-left: auto; display: flex; gap: 8px; }
+
+        .detail-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+            overflow-x: auto;
+        }
+        .detail-tab {
+            padding: 12px 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .detail-tab:hover { color: var(--text); }
+        .detail-tab.active {
+            color: var(--primary-light);
+            border-bottom-color: var(--primary);
+        }
+        .detail-content { display: none; }
+        .detail-content.active { display: block; }
+
+        /* === TIMELINE === */
+        .timeline { padding: 0; }
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .timeline-item:last-child { border-bottom: none; }
+        .timeline-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+        .timeline-content { flex: 1; }
+        .timeline-content .time { font-size: 12px; color: var(--text-muted); }
+        .timeline-content .desc { font-size: 14px; margin-top: 2px; }
+
+        /* === CHARTS (simple CSS) === */
+        .chart-bar-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 200px;
+            padding: 20px 0;
+        }
+        .chart-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+        .chart-bar {
+            width: 100%;
+            max-width: 40px;
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+            border-radius: 6px 6px 0 0;
+            transition: height 0.5s ease;
+            min-height: 4px;
+        }
+        .chart-bar-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        .chart-bar-value {
+            font-size: 11px;
+            color: var(--text);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        /* === REPORT SECTION === */
+        .report-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .report-card h3 { margin-bottom: 16px; font-size: 18px; }
+        .report-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .report-row:last-child { border-bottom: none; }
+        .report-row .label { color: var(--text-muted); }
+        .report-row .value { font-weight: 600; }
+
+        /* === FILTERS === */
+        .filters-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+        }
+
+        /* === PROGRESS BAR === */
+        .progress-bar {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* === NOTIFICATION === */
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.success { border-left: 4px solid var(--success); }
+        .notification.error { border-left: 4px solid var(--danger); }
+        .notification.info { border-left: 4px solid var(--primary); }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 16px; }
+            .form-row { grid-template-columns: 1fr; }
+            .emp-detail-header { flex-direction: column; text-align: center; }
+            .emp-detail-actions { margin-left: 0; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .employees-grid { grid-template-columns: 1fr; }
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* === EMPTY STATE === */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <h1>👥 StaffPro</h1>
+        <p>Система управления сотрудниками</p>
+        <input type="text" id="loginUser" placeholder="Логин" value="admin">
+        <input type="password" id="loginPass" placeholder="Пароль" value="admin123">
+        <button class="btn-login" onclick="doLogin()">Войти в систему</button>
+        <div class="login-hint">Демо: admin / admin123</div>
+    </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>👥 StaffPro</h2>
+            <small>Управление сотрудниками v1.0</small>
+        </div>
+
+        <div class="nav-item active" onclick="showPage('dashboard')">
+            <span class="icon">📊</span> Дашборд
+        </div>
+        <div class="nav-item" onclick="showPage('employees')">
+            <span class="icon">👤</span> Сотрудники
+        </div>
+        <div class="nav-item" onclick="showPage('timesheet')">
+            <span class="icon">⏰</span> Учёт времени
+        </div>
+        <div class="nav-item" onclick="showPage('operations')">
+            <span class="icon">📋</span> Операции
+        </div>
+        <div class="nav-item" onclick="showPage('penalties')">
+            <span class="icon">⚠️</span> Штрафы / Бонусы
+        </div>
+        <div class="nav-item" onclick="showPage('reports')">
+            <span class="icon">📈</span> Отчёты
+        </div>
+        <div class="nav-item" onclick="showPage('settings')">
+            <span class="icon">⚙️</span> Настройки
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">А</div>
+                <div>
+                    <div class="user-name">Администратор</div>
+                    <div class="user-role">Полный доступ</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="doLogout()">🚪 Выйти</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+            <div class="page-header">
+                <h1>📊 Дашборд</h1>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 Импорт</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                </div>
+            </div>
+
+            <div class="stats-grid" id="dashboardStats"></div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="report-card">
+                    <h3>📅 Присутствие за 7 дней</h3>
+                    <div class="chart-bar-container" id="attendanceChart"></div>
+                </div>
+                <div class="report-card">
+                    <h3>📋 Последние операции</h3>
+                    <div class="timeline" id="recentOperations"></div>
+                </div>
+            </div>
+
+            <div class="report-card" style="margin-top:20px;">
+                <h3>🏆 Топ сотрудников по выработке (месяц)</h3>
+                <div id="topEmployees"></div>
+            </div>
+        </div>
+
+        <!-- EMPLOYEES -->
+        <div class="page" id="page-employees">
+            <div class="page-header">
+                <h1>👤 Сотрудники</h1>
+                <button class="btn btn-primary" onclick="openEmployeeModal()">➕ Добавить сотрудника</button>
+            </div>
+
+            <div class="filters-bar">
+                <div class="search-box">
+                    <span class="icon">🔍</span>
+                    <input type="text" id="empSearch" placeholder="Поиск по имени..." oninput="renderEmployees()">
+                </div>
+                <select class="filter-select" id="empFilterPosition" onchange="renderEmployees()">
+                    <option value="">Все должности</option>
+                </select>
+                <select class="filter-select" id="empFilterStatus" onchange="renderEmployees()">
+                    <option value="">Все статусы</option>
+                    <option value="active">Активные</option>
+                    <option value="vacation">В отпуске</option>
+                    <option value="fired">Уволен</option>
+                </select>
+            </div>
+
+            <div class="employees-grid" id="employeesGrid"></div>
+        </div>
+
+        <!-- EMPLOYEE DETAIL -->
+        <div class="page" id="page-employee-detail">
+            <div style="margin-bottom:16px;">
+                <button class="btn btn-secondary" onclick="showPage('employees')">← Назад к списку</button>
+            </div>
+            <div class="emp-detail-header" id="empDetailHeader"></div>
+
+            <div class="detail-tabs">
+                <div class="detail-tab active" onclick="showDetailTab('overview')">Обзор</div>
+                <div class="detail-tab" onclick="showDetailTab('time')">Рабочее время</div>
+                <div class="detail-tab" onclick="showDetailTab('ops')">Операции</div>
+                <div class="detail-tab" onclick="showDetailTab('finance')">Финансы</div>
+                <div class="detail-tab" onclick="showDetailTab('history')">История</div>
+            </div>
+
+            <div class="detail-content active" id="detail-overview"></div>
+            <div class="detail-content" id="detail-time"></div>
+            <div class="detail-content" id="detail-ops"></div>
+            <div class="detail-content" id="detail-finance"></div>
+            <div class="detail-content" id="detail-history"></div>
+        </div>
+
+        <!-- TIMESHEET -->
+        <div class="page" id="page-timesheet">
+            <div class="page-header">
+                <h1>⏰ Учёт рабочего времени</h1>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-success" onclick="openTimeModal('in')">✅ Приход</button>
+                    <button class="btn btn-warning" onclick="openTimeModal('out')">🚪 Уход</button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <input type="date" class="filter-select" id="timeDate" onchange="renderTimesheet()">
+                <select class="filter-select" id="timeEmpFilter" onchange="renderTimesheet()">
+                    <option value="">Все сотрудники</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>Дата</th>
+                            <th>Приход</th>
+                            <th>Уход</th>
+                            <th>Часы</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timesheetBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- OPERATIONS -->
+        <div class="page" id="page-operations">
+            <div class="page-header">
+                <h1>📋 Операции</h1>
+                <button class="btn btn-primary" onclick="openOperationModal()">➕ Добавить операцию</button>
+            </div>
+
+            <div class="filters-bar">
+                <input type="date" class="filter-select" id="opsDateFrom" onchange="renderOperations()">
+                <input type="date" class="filter-select" id="opsDateTo" onchange="renderOperations()">
+                <select class="filter-select" id="opsTypeFilter" onchange="renderOperations()">
+                    <option value="">Все типы</option>
+                    <option value="receipt">Приёмка</option>
+                    <option value="shipment">Отгрузка</option>
+                    <option value="picking">Сборка</option>
+                    <option value="packing">Упаковка</option>
+                    <option value="inventory">Инвентаризация</option>
+                    <option value="other">Другое</option>
+                </select>
+                <select class="filter-select" id="opsEmpFilter" onchange="renderOperations()">
+                    <option value="">Все сотрудники</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Сотрудник</th>
+                            <th>Тип</th>
+                            <th>Описание</th>
+                            <th>Кол-во</th>
+                            <th>Время (мин)</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="operationsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PENALTIES -->
+        <div class="page" id="page-penalties">
+            <div class="page-header">
+                <h1>⚠️ Штрафы и Бонусы</h1>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-danger" onclick="openPenaltyModal('penalty')">➖ Штраф</button>
+                    <button class="btn btn-success" onclick="openPenaltyModal('bonus')">➕ Бонус</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Сотрудник</th>
+                            <th>Тип</th>
+                            <th>Причина</th>
+                            <th>Сумма</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="penaltiesBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div class="page" id="page-reports">
+            <div class="page-header">
+                <h1>📈 Отчёты</h1>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="exportReport()">📥 Скачать отчёт</button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <select class="filter-select" id="reportPeriod" onchange="renderReports()">
+                    <option value="week">Неделя</option>
+                    <option value="month" selected>Месяц</option>
+                    <option value="year">Год</option>
+                </select>
+                <select class="filter-select" id="reportEmp" onchange="renderReports()">
+                    <option value="">Все сотрудники</option>
+                </select>
+            </div>
+
+            <div class="stats-grid" id="reportStats"></div>
+
+            <div class="report-card">
+                <h3>📊 Сводка по сотрудникам</h3>
+                <div class="table-container" style="border:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>Дней</th>
+                                <th>Часов</th>
+                                <th>Операций</th>
+                                <th>Штрафы</th>
+                                <th>Бонусы</th>
+                                <th>Итого к выплате</th>
+                                <th>Рейтинг</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="page" id="page-settings">
+            <div class="page-header">
+                <h1>⚙️ Настройки</h1>
+            </div>
+
+            <div class="report-card">
+                <h3>🏢 Организация</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название компании</label>
+                        <input type="text" id="settCompany" placeholder="ООО Компания">
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес склада</label>
+                        <input type="text" id="settAddress" placeholder="г. Москва, ул. ...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="text" id="settPhone" placeholder="+7 ...">
+                    </div>
+                    <div class="form-group">
+                        <label>Рабочих часов в день (норма)</label>
+                        <input type="number" id="settNormHours" value="8" min="1" max="24">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить</button>
+            </div>
+
+            <div class="report-card">
+                <h3>💾 Управление данными</h3>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="exportData()">📥 Экспорт JSON</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile2').click()">📤 Импорт JSON</button>
+                    <input type="file" id="importFile2" accept=".json" style="display:none" onchange="importData(event)">
+                    <button class="btn btn-danger" onclick="resetData()">🗑️ Сбросить всё</button>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <h3>🧪 Демо-данные</h3>
+                <p style="color:var(--text-muted);margin-bottom:12px;font-size:14px;">
+                    Загрузить тестовых сотрудников и операции для демонстрации системы
+                </p>
+                <button class="btn btn-warning" onclick="loadDemoData()">🎭 Загрузить демо-данные</button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notification" id="notification">
+    <span id="notifIcon"></span>
+    <span id="notifText"></span>
+</div>
+
+<script>
+// ==================== DATA STORE ====================
+let DB = {
+    employees: [],
+    timesheets: [],
+    operations: [],
+    penalties: [],
+    settings: {
+        company: '',
+        address: '',
+        phone: '',
+        normHours: 8
+    }
+};
+
+const COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444','#14b8a6','#f97316','#06b6d4'];
+const OP_TYPES = {
+    receipt: { label: 'Приёмка', icon: '📦', color: '#3b82f6' },
+    shipment: { label: 'Отгрузка', icon: '🚚', color: '#10b981' },
+    picking: { label: 'Сборка', icon: '🛒', color: '#f59e0b' },
+    packing: { label: 'Упаковка', icon: '📫', color: '#8b5cf6' },
+    inventory: { label: 'Инвентаризация', icon: '📝', color: '#06b6d4' },
+    other: { label: 'Другое', icon: '📌', color: '#94a3b8' }
+};
+
+// ==================== INIT ====================
+function init() {
+    const saved = localStorage.getItem('staffpro_db');
+    if (saved) {
+        try { DB = JSON.parse(saved); } catch(e) {}
+    }
+    if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8 };
+    if (!DB.employees) DB.employees = [];
+    if (!DB.timesheets) DB.timesheets = [];
+    if (!DB.operations) DB.operations = [];
+    if (!DB.penalties) DB.penalties = [];
+
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('timeDate').value = today;
+
+    // Check login
+    if (sessionStorage.getItem('staffpro_logged')) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').classList.add('active');
+        refreshAll();
+    }
+}
+
+function save() {
+    localStorage.setItem('staffpro_db', JSON.stringify(DB));
+}
+
+function refreshAll() {
+    renderDashboard();
+    renderEmployees();
+    renderTimesheet();
+    renderOperations();
+    renderPenalties();
+    renderReports();
+    loadSettings();
+    populateFilters();
+}
+
+// ==================== AUTH ====================
+function doLogin() {
+    const u = document.getElementById('loginUser').value;
+    const p = document.getElementById('loginPass').value;
+    if (u === 'admin' && p === 'admin123') {
+        sessionStorage.setItem('staffpro_logged', '1');
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').classList.add('active');
+        refreshAll();
+    } else {
+        notify('Неверный логин или пароль', 'error');
+    }
+}
+
+function doLogout() {
+    sessionStorage.removeItem('staffpro_logged');
+    location.reload();
+}
+
+// ==================== NAVIGATION ====================
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.nav-item')[
+        ['dashboard','employees','timesheet','operations','penalties','reports','settings'].indexOf(page)
+    ].classList.add('active');
+
+    if (page === 'dashboard') renderDashboard();
+    if (page === 'reports') renderReports();
+}
+
+function showDetailTab(tab) {
+    document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.detail-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('detail-' + tab).classList.add('active');
+}
+
+// ==================== HELPERS ====================
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+
+function formatDate(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return dt.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function formatTime(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+}
+
+function formatDateTime(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function getEmpName(id) {
+    const emp = DB.employees.find(e => e.id === id);
+    return emp ? emp.name : 'Удалён';
+}
+
+function getEmpColor(id) {
+    const emp = DB.employees.find(e => e.id === id);
+    return emp ? emp.color || COLORS[0] : COLORS[0];
+}
+
+function getInitials(name) {
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+}
+
+function calcHours(timeIn, timeOut) {
+    if (!timeIn || !timeOut) return 0;
+    return Math.max(0, ((new Date(timeOut) - new Date(timeIn)) / 3600000)).toFixed(1);
+}
+
+function getDaysRange(period) {
+    const now = new Date();
+    let from = new Date();
+    if (period === 'week') from.setDate(now.getDate() - 7);
+    else if (period === 'month') from.setMonth(now.getMonth() - 1);
+    else if (period === 'year') from.setFullYear(now.getFullYear() - 1);
+    return { from, to: now };
+}
+
+function notify(text, type = 'success') {
+    const n = document.getElementById('notification');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    document.getElementById('notifIcon').textContent = icons[type] || '✅';
+    document.getElementById('notifText').textContent = text;
+    n.className = 'notification ' + type + ' show';
+    setTimeout(() => n.classList.remove('show'), 3000);
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+    const total = DB.employees.filter(e => e.status !== 'fired').length;
+    const today = new Date().toISOString().split('T')[0];
+    const todaySheets = DB.timesheets.filter(t => t.date === today);
+    const present = todaySheets.filter(t => t.timeIn && !t.timeOut).length;
+    const arrived = todaySheets.filter(t => t.timeIn).length;
+    const todayOps = DB.operations.filter(o => o.date === today).length;
+    const monthOps = DB.operations.filter(o => {
+        const d = new Date(o.date);
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+
+    const totalHoursToday = todaySheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+
+    document.getElementById('dashboardStats').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(99,102,241,0.15);color:var(--primary-light);">👥</div>
+            <div class="stat-value">${total}</div>
+            <div class="stat-label">Всего сотрудников</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success);">✅</div>
+            <div class="stat-value">${arrived}</div>
+            <div class="stat-label">Пришли сегодня</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">⏰</div>
+            <div class="stat-value">${present}</div>
+            <div class="stat-label">Сейчас на месте</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">📋</div>
+            <div class="stat-value">${todayOps}</div>
+            <div class="stat-label">Операций сегодня</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">📊</div>
+            <div class="stat-value">${monthOps}</div>
+            <div class="stat-label">Операций за месяц</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(20,184,166,0.15);color:#14b8a6;">⏱️</div>
+            <div class="stat-value">${totalHoursToday.toFixed(1)}</div>
+            <div class="stat-label">Часов сегодня</div>
+        </div>
+    `;
+
+    // Attendance chart (7 days)
+    const chartEl = document.getElementById('attendanceChart');
+    let chartHTML = '';
+    const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const count = DB.timesheets.filter(t => t.date === dateStr && t.timeIn).length;
+        const maxCount = Math.max(total, 1);
+        const height = (count / maxCount) * 150;
+        chartHTML += `
+            <div class="chart-bar-wrapper">
+                <div class="chart-bar-value">${count}</div>
+                <div class="chart-bar" style="height:${height}px;"></div>
+                <div class="chart-bar-label">${dayNames[d.getDay()]}<br>${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}</div>
+            </div>
+        `;
+    }
+    chartEl.innerHTML = chartHTML;
+
+    // Recent operations
+    const recentOps = [...DB.operations].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
+    const recentEl = document.getElementById('recentOperations');
+    if (recentOps.length === 0) {
+        recentEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Нет операций</p></div>';
+    } else {
+        recentEl.innerHTML = recentOps.map(op => {
+            const type = OP_TYPES[op.type] || OP_TYPES.other;
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background:${type.color};"></div>
+                    <div class="timeline-content">
+                        <div class="time">${formatDateTime(op.createdAt)}</div>
+                        <div class="desc">${type.icon} <b>${getEmpName(op.employeeId)}</b> — ${op.description || type.label} (${op.quantity || 0} шт.)</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Top employees
+    const topEl = document.getElementById('topEmployees');
+    const empStats = DB.employees.filter(e => e.status !== 'fired').map(emp => {
+        const ops = DB.operations.filter(o => o.employeeId === emp.id);
+        const monthOps = ops.filter(o => {
+            const d = new Date(o.date);
+            const now = new Date();
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+        const totalQty = monthOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+        return { emp, count: monthOps.length, qty: totalQty };
+    }).sort((a,b) => b.qty - a.qty).slice(0, 5);
+
+    if (topEl && topEl.length === 0) {
+        topEl.innerHTML = '<div class="empty-state"><p>Нет данных</p></div>';
+    } else {
+        const maxQty = Math.max(...topStats.map(t => t.qty), 1);
+        topEl.innerHTML = topStats.map((t, i) => `
+            <div style="display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);">
+                <div style="font-size:20px;font-weight:700;width:30px;text-align:center;color:${i<3?'var(--warning)':'var(--text-muted)'};">
+                    ${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1)}
+                </div>
+                <div class="emp-avatar" style="width:40px;height:40px;font-size:14px;background:${t.emp.color};">${getInitials(t.emp.name)}</div>
+                <div style="flex:1;">
+                    <div style="font-weight:600;">${t.emp.name}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${t.emp.position || '—'} • ${t.count} операций</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:${(t.qty/maxQty)*100}%;background:${t.emp.color};"></div>
+                    </div>
+                </div>
+                <div style="font-size:18px;font-weight:700;">${t.qty}</div>
+            </div>
+        `).join('');
+    }
+}
+
+// ==================== EMPLOYEES ====================
+function renderEmployees() {
+    const search = (document.getElementById('empSearch')?.value || '').toLowerCase();
+    const posFilter = document.getElementById('empFilterPosition')?.value || '';
+    const statusFilter = document.getElementById('empFilterStatus')?.value || '';
+
+    let emps = DB.employees.filter(e => {
+        if (search && !e.name.toLowerCase().includes(search)) return false;
+        if (posFilter && e.position !== posFilter) return false;
+        if (statusFilter && e.status !== statusFilter) return false;
+        return true;
+    });
+
+    const grid = document.getElementById('employeesGrid');
+    if (emps.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;">
+                <div class="icon">👤</div>
+                <h3>Нет сотрудников</h3>
+                <p>Добавьте первого сотрудника или загрузите демо-данные</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = emps.map(emp => {
+        const today = new Date().toISOString().split('T')[0];
+        const todaySheet = DB.timesheets.find(t => t.employeeId === emp.id && t.date === today);
+        const isHere = todaySheet && todaySheet.timeIn && !todaySheet.timeOut;
+
+        const monthOps = DB.operations.filter(o => {
+            const d = new Date(o.date);
+            const now = new Date();
+            return o.employeeId === emp.id && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+        const monthQty = monthOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+
+        const monthHours = DB.timesheets.filter(t => {
+            const d = new Date(t.date);
+            const now = new Date();
+            return t.employeeId === emp.id && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }).reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+
+        const statusBadge = emp.status === 'active' ? '<span class="badge badge-success">Активен</span>' :
+                           emp.status === 'vacation' ? '<span class="badge badge-warning">Отпуск</span>' :
+                           '<span class="badge badge-danger">Уволен</span>';
+
+        return `
+            <div class="emp-card" onclick="openEmployeeDetail('${emp.id}')">
+                <div class="emp-card-header">
+                    <div class="emp-avatar" style="background:${emp.color};">${getInitials(emp.name)}</div>
+                    <div>
+                        <div class="name">${emp.name} ${isHere ? '🟢' : ''}</div>
+                        <div class="position">${emp.position || '—'} ${statusBadge}</div>
+                    </div>
+                </div>
+                <div class="emp-card-stats">
+                    <div class="emp-card-stat">
+                        <div class="val">${monthOps.length}</div>
+                        <div class="lbl">Операций</div>
+                    </div>
+                    <div class="emp-card-stat">
+                        <div class="val">${monthQty}</div>
+                        <div class="lbl">Выработка</div>
+                    </div>
+                    <div class="emp-card-stat">
+                        <div class="val">${monthHours.toFixed(0)}</div>
+                        <div class="lbl">Часов/мес</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openEmployeeModal(id) {
+    const emp = id ? DB.employees.find(e => e.id === id) : null;
+    const title = emp ? 'Редактировать сотрудника' : 'Новый сотрудник';
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header">
+            <h2>${title}</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ФИО *</label>
+                    <input type="text" id="empName" value="${emp?.name || ''}" placeholder="Иванов Иван Иванович">
+                </div>
+                <div class="form-group">
+                    <label>Должность</label>
+                    <input type="text" id="empPosition" value="${emp?.position || ''}" placeholder="Кладовщик">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="text" id="empPhone" value="${emp?.phone || ''}" placeholder="+7 ...">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="empEmail" value="${emp?.email || ''}" placeholder="email@...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Ставка (₽/час)</label>
+                    <input type="number" id="empRate" value="${emp?.rate || 0}" min="0" step="10">
+                </div>
+                <div class="form-group">
+                    <label>Статус</label>
+                    <select id="empStatus">
+                        <option value="active" ${emp?.status==='active'?'selected':''}>Активен</option>
+                        <option value="vacation" ${emp?.status==='vacation'?'selected':''}>В отпуске</option>
+                        <option value="fired" ${emp?.status==='fired'?'selected':''}>Уволен</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Дата принятия</label>
+                <input type="date" id="empHireDate" value="${emp?.hireDate || new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group">
+                <label>Заметки</label>
+                <textarea id="empNotes" rows="3" placeholder="Дополнительная информация...">${emp?.notes || ''}</textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            ${emp ? `<button class="btn btn-danger" onclick="deleteEmployee('${emp.id}')">🗑️ Удалить</button>` : ''}
+            <button class="btn btn-primary" onclick="saveEmployee('${id || ''}')">💾 Сохранить</button>
+        </div>
+    `;
+    openModal();
+}
+
+function saveEmployee(id) {
+    const name = document.getElementById('empName').value.trim();
+    if (!name) { notify('Введите ФИО', 'error'); return; }
+
+    const data = {
+        name,
+        position: document.getElementById('empPosition').value.trim(),
+        phone: document.getElementById('empPhone').value.trim(),
+        email: document.getElementById('empEmail').value.trim(),
+        rate: parseFloat(document.getElementById('empRate').value) || 0,
+        status: document.getElementById('empStatus').value,
+        hireDate: document.getElementById('empHireDate').value,
+        notes: document.getElementById('empNotes').value.trim()
+    };
+
+    if (id) {
+        const idx = DB.employees.findIndex(e => e.id === id);
+        if (idx >= 0) Object.assign(DB.employees[idx], data);
+    } else {
+        data.id = genId();
+        data.color = COLORS[DB.employees.length % COLORS.length];
+        data.createdAt = new Date().toISOString();
+        DB.employees.push(data);
+    }
+
+    save();
+    closeModal();
+    refreshAll();
+    notify(id ? 'Сотрудник обновлён' : 'Сотрудник добавлен');
+}
+
+function deleteEmployee(id) {
+    if (!confirm('Удалить сотрудника и все связанные данные?')) return;
+    DB.employees = DB.employees.filter(e => e.id !== id);
+    DB.timesheets = DB.timesheets.filter(t => t.employeeId !== id);
+    DB.operations = DB.operations.filter(o => o.employeeId !== id);
+    DB.penalties = DB.penalties.filter(p => p.employeeId !== id);
+    save();
+    closeModal();
+    showPage('employees');
+    refreshAll();
+    notify('Сотрудник удалён', 'info');
+}
+
+// ==================== EMPLOYEE DETAIL ====================
+let currentDetailEmpId = null;
+
+function openEmployeeDetail(id) {
+    currentDetailEmpId = id;
+    showPage('employee-detail');
+    renderEmployeeDetail();
+}
+
+function renderEmployeeDetail() {
+    const emp = DB.employees.find(e => e.id === currentDetailEmpId);
+    if (!emp) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const todaySheet = DB.timesheets.find(t => t.employeeId === emp.id && t.date === today);
+    const isHere = todaySheet && todaySheet.timeIn && !todaySheet.timeOut;
+
+    // Header
+    document.getElementById('empDetailHeader').innerHTML = `
+        <div class="emp-detail-avatar" style="background:${emp.color};">${getInitials(emp.name)}</div>
+        <div class="emp-detail-info">
+            <h2>${emp.name} ${isHere ? '🟢 На смене' : ''}</h2>
+            <div class="meta">
+                ${emp.position || '—'} • ${emp.phone || '—'} • ${emp.email || '—'}<br>
+                Принят: ${formatDate(emp.hireDate)} • Ставка: ${emp.rate} ₽/ч
+            </div>
+        </div>
+        <div class="emp-detail-actions">
+            <button class="btn btn-secondary" onclick="openEmployeeModal('${emp.id}')">✏️ Редактировать</button>
+            ${!isHere ? `<button class="btn btn-success" onclick="quickClockIn('${emp.id}')">✅ Приход</button>` :
+                         `<button class="btn btn-warning" onclick="quickClockOut('${emp.id}')">🚪 Уход</button>`}
+        </div>
+    `;
+
+    renderDetailOverview(emp);
+    renderDetailTime(emp);
+    renderDetailOps(emp);
+    renderDetailFinance(emp);
+    renderDetailHistory(emp);
+}
+
+function renderDetailOverview(emp) {
+    const allOps = DB.operations.filter(o => o.employeeId === emp.id);
+    const allSheets = DB.timesheets.filter(t => t.employeeId === emp.id);
+    const allPenalties = DB.penalties.filter(p => p.employeeId === emp.id);
+
+    const totalHours = allSheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+    const totalOps = allOps.length;
+    const totalQty = allOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+    const totalPenalties = allPenalties.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    const totalBonuses = allPenalties.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    const totalEarned = totalHours * emp.rate + totalBonuses - totalPenalties;
+
+    // Monthly stats
+    const now = new Date();
+    const monthSheets = allSheets.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const monthHours = monthSheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+    const monthOps = allOps.filter(o => {
+        const d = new Date(o.date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const monthQty = monthOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+    const workDays = monthSheets.filter(t => t.timeIn).length;
+
+    document.getElementById('detail-overview').innerHTML = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success);">⏱️</div>
+                <div class="stat-value">${totalHours.toFixed(0)}</div>
+                <div class="stat-label">Всего часов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">📋</div>
+                <div class="stat-value">${totalOps}</div>
+                <div class="stat-label">Всего операций</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">📦</div>
+                <div class="stat-value">${totalQty}</div>
+                <div class="stat-label">Общая выработка</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">💰</div>
+                <div class="stat-value">${Math.round(totalEarned).toLocaleString()} ₽</div>
+                <div class="stat-label">Всего заработано</div>
+            </div>
+        </div>
+
+        <div class="report-card">
+            <h3>📊 Текущий месяц</h3>
+            <div class="report-row"><span class="label">Рабочих дней</span><span class="value">${workDays}</span></div>
+            <div class="report-row"><span class="label">Часов отработано</span><span class="value">${monthHours.toFixed(1)}</span></div>
+            <div class="report-row"><span class="label">Операций выполнено</span><span class="value">${monthOps.length}</span></div>
+            <div class="report-row"><span class="label">Выработка (шт.)</span><span class="value">${monthQty}</span></div>
+            <div class="report-row"><span class="label">Заработано за месяц</span><span class="value">${Math.round(monthHours * emp.rate).toLocaleString()} ₽</span></div>
+        </div>
+
+        <div class="report-card">
+            <h3>📈 Выработка по типам операций</h3>
+            <div id="opsByType"></div>
+        </div>
+    `;
+
+    // Operations by type
+    const typeStats = {};
+    allOps.forEach(op => {
+        const t = op.type || 'other';
+        if (!typeStats[t]) typeStats[t] = { count: 0, qty: 0 };
+        typeStats[t].count++;
+        typeStats[t].qty += parseInt(op.quantity) || 0;
+    });
+
+    const maxTypeQty = Math.max(...Object.values(typeStats).map(t => t.qty), 1);
+    document.getElementById('opsByType').innerHTML = Object.entries(typeStats).map(([type, stats]) => {
+        const info = OP_TYPES[type] || OP_TYPES.other;
+        return `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:20px;">${info.icon}</span>
+                <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span>${info.label}</span>
+                        <span style="font-weight:600;">${stats.qty} шт. (${stats.count} оп.)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:${(stats.qty/maxTypeQty)*100}%;background:${info.color};"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('') || '<p style="color:var(--text-muted);text-align:center;padding:20px;">Нет данных</p>';
+}
+
+function renderDetailTime(emp) {
+    const sheets = DB.timesheets.filter(t => t.employeeId === emp.id)
+        .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    let html = `
+        <div class="report-card">
+            <h3>⏰ Табель рабочего времени</h3>
+            <div class="table-container" style="border:none;">
+                <table>
+                    <thead>
+                        <tr><th>Дата</th><th>День</th><th>Приход</th><th>Уход</th><th>Часы</th><th>Статус</th></tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    if (sheets.length === 0) {
+        html += '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px;">Нет записей</td></tr>';
+    } else {
+        const dayNames = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+        sheets.forEach(s => {
+            const hours = calcHours(s.timeIn, s.timeOut);
+            const norm = DB.settings.normHours || 8;
+            const status = !s.timeIn ? '<span class="badge badge-muted">Не явился</span>' :
+                          !s.timeOut ? '<span class="badge badge-info">На смене</span>' :
+                          parseFloat(hours) >= norm ? '<span class="badge badge-success">Норма</span>' :
+                          '<span class="badge badge-warning">Недоработка</span>';
+            const d = new Date(s.date);
+            html += `<tr>
+                <td>${formatDate(s.date)}</td>
+                <td>${dayNames[d.getDay()]}</td>
+                <td>${s.timeIn ? formatTime(s.timeIn) : '—'}</td>
+                <td>${s.timeOut ? formatTime(s.timeOut) : '—'}</td>
+                <td><b>${hours}</b></td>
+                <td>${status}</td>
+            </tr>`;
+        });
+    }
+
+    html += '</tbody></table></div></div>';
+    document.getElementById('detail-time').innerHTML = html;
+}
+
+function renderDetailOps(emp) {
+    const ops = DB.operations.filter(o => o.employeeId === emp.id)
+        .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    let html = `<div class="report-card"><h3>📋 Все операции</h3>`;
+    html += `<div class="table-container" style="border:none;"><table>
+        <thead><tr><th>Дата</th><th>Тип</th><th>Описание</th><th>Кол-во</th><th>Время (мин)</th></tr></thead><tbody>`;
+
+    if (ops.length === 0) {
+        html += '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px;">Нет операций</td></tr>';
+    } else {
+        ops.forEach(op => {
+            const type = OP_TYPES[op.type] || OP_TYPES.other;
+            html += `<tr>
+                <td>${formatDateTime(op.createdAt)}</td>
+                <td><span class="badge" style="background:${type.color}22;color:${type.color};">${type.icon} ${type.label}</span></td>
+                <td>${op.description || '—'}</td>
+                <td><b>${op.quantity || 0}</b></td>
+                <td>${op.duration || '—'}</td>
+            </tr>`;
+        });
+    }
+
+    html += '</tbody></table></div></div>';
+    document.getElementById('detail-ops').innerHTML = html;
+}
+
+function renderDetailFinance(emp) {
+    const allSheets = DB.timesheets.filter(t => t.employeeId === emp.id);
+    const allPenalties = DB.penalties.filter(p => p.employeeId === emp.id);
+
+    const totalHours = allSheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+    const basePay = totalHours * emp.rate;
+    const totalBonuses = allPenalties.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    const totalPenaltiesSum = allPenalties.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    const total = basePay + totalBonuses - totalPenaltiesSum;
+
+    let html = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success);">💵</div>
+                <div class="stat-value">${Math.round(basePay).toLocaleString()} ₽</div>
+                <div class="stat-label">Оклад (${totalHours.toFixed(0)} ч × ${emp.rate} ₽)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">➕</div>
+                <div class="stat-value">${Math.round(totalBonuses).toLocaleString()} ₽</div>
+                <div class="stat-label">Бонусы</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:var(--danger);">➖</div>
+                <div class="stat-value">${Math.round(totalPenaltiesSum).toLocaleString()} ₽</div>
+                <div class="stat-label">Штрафы</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">💰</div>
+                <div class="stat-value">${Math.round(total).toLocaleString()} ₽</div>
+                <div class="stat-label">Итого к выплате</div>
+            </div>
+        </div>
+
+        <div class="report-card">
+            <h3>📜 История начислений и удержаний</h3>
+            <div class="table-container" style="border:none;">
+                <table>
+                    <thead><tr><th>Дата</th><th>Тип</th><th>Причина</th><th>Сумма</th></tr></thead>
+                    <tbody>
+    `;
+
+    const records = allPenalties.sort((a,b) => new Date(b.date) - new Date(a.date));
+    if (records.length === 0) {
+        html += '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px;">Нет записей</td></tr>';
+    } else {
+        records.forEach(r => {
+            const isBonus = r.type === 'bonus';
+            html += `<tr>
+                <td>${formatDate(r.date)}</td>
+                <td><span class="badge ${isBonus ? 'badge-success' : 'badge-danger'}">${isBonus ? '➕ Бонус' : '➖ Штраф'}</span></td>
+                <td>${r.reason || '—'}</td>
+                <td style="color:${isBonus ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">
+                    ${isBonus ? '+' : '-'}${parseFloat(r.amount).toLocaleString()} ₽
+                </td>
+            </tr>`;
+        });
+    }
+
+    html += '</tbody></table></div></div>';
+    document.getElementById('detail-finance').innerHTML = html;
+}
+
+function renderDetailHistory(emp) {
+    // Combine all events
+    const events = [];
+
+    DB.timesheets.filter(t => t.employeeId === emp.id).forEach(t => {
+        if (t.timeIn) events.push({ date: t.timeIn, type: 'time-in', desc: `Приход на работу`, icon: '✅', color: 'var(--success)' });
+        if (t.timeOut) events.push({ date: t.timeOut, type: 'time-out', desc: `Уход с работы (${calcHours(t.timeIn, t.timeOut)} ч)`, icon: '🚪', color: 'var(--warning)' });
+    });
+
+    DB.operations.filter(o => o.employeeId === emp.id).forEach(o => {
+        const type = OP_TYPES[o.type] || OP_TYPES.other;
+        events.push({ date: o.createdAt, type: 'op', desc: `${type.icon} ${type.label}: ${o.description || ''} (${o.quantity || 0} шт.)`, icon: type.icon, color: type.color });
+    });
+
+    DB.penalties.filter(p => p.employeeId === emp.id).forEach(p => {
+        const isBonus = p.type === 'bonus';
+        events.push({ date: p.date + 'T12:00:00', type: 'penalty', desc: `${isBonus ? '➕ Бонус' : '➖ Штраф'}: ${p.reason || '—'} (${p.amount} ₽)`, icon: isBonus ? '➕' : '➖', color: isBonus ? 'var(--success)' : 'var(--danger)' });
+    });
+
+    events.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    let html = `<div class="report-card"><h3>📜 Полная история</h3><div class="timeline">`;
+
+    if (events.length === 0) {
+        html += '<div class="empty-state"><p>Нет событий</p></div>';
+    } else {
+        events.slice(0, 50).forEach(e => {
+            html += `
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background:${e.color};"></div>
+                    <div class="timeline-content">
+                        <div class="time">${formatDateTime(e.date)}</div>
+                        <div class="desc">${e.desc}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += '</div></div>';
+    document.getElementById('detail-history').innerHTML = html;
+}
+
+function quickClockIn(empId) {
+    const today = new Date().toISOString().split('T')[0];
+    const existing = DB.timesheets.find(t => t.employeeId === empId && t.date === today);
+    if (existing && existing.timeIn) {
+        notify('Сотрудник уже отметился сегодня', 'error');
+        return;
+    }
+    if (existing) {
+        existing.timeIn = new Date().toISOString();
+    } else {
+        DB.timesheets.push({
+            id: genId(),
+            employeeId: empId,
+            date: today,
+            timeIn: new Date().toISOString(),
+            timeOut: null
+        });
+    }
+    save();
+    renderEmployeeDetail();
+    refreshAll();
+    notify('Приход зафиксирован');
+}
+
+function quickClockOut(empId) {
+    const today = new Date().toISOString().split('T')[0];
+    const existing = DB.timesheets.find(t => t.employeeId === empId && t.date === today);
+    if (!existing || !existing.timeIn) {
+        notify('Сотрудник не отмечал приход сегодня', 'error');
+        return;
+    }
+    if (existing.timeOut) {
+        notify('Сотрудник уже ушёл', 'error');
+        return;
+    }
+    existing.timeOut = new Date().toISOString();
+    save();
+    renderEmployeeDetail();
+    refreshAll();
+    notify('Уход зафиксирован');
+}
+
+// ==================== TIMESHEET ====================
+function renderTimesheet() {
+    const date = document.getElementById('timeDate').value;
+    const empFilter = document.getElementById('timeEmpFilter').value;
+
+    let sheets = DB.timesheets;
+    if (date) sheets = sheets.filter(t => t.date === date);
+    if (empFilter) sheets = sheets.filter(t => t.employeeId === empFilter);
+
+    sheets.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    const tbody = document.getElementById('timesheetBody');
+    if (sheets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">Нет записей</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = sheets.map(s => {
+        const hours = calcHours(s.timeIn, s.timeOut);
+        const norm = DB.settings.normHours || 8;
+        const status = !s.timeIn ? '<span class="badge badge-muted">Не явился</span>' :
+                      !s.timeOut ? '<span class="badge badge-info">На смене</span>' :
+                      parseFloat(hours) >= norm ? '<span class="badge badge-success">Норма</span>' :
+                      '<span class="badge badge-warning">Недоработка</span>';
+
+        return `<tr>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="emp-avatar" style="width:32px;height:32px;font-size:12px;background:${getEmpColor(s.employeeId)};">${getInitials(getEmpName(s.employeeId))}</div>
+                    <span style="cursor:pointer;color:var(--primary-light);" onclick="openEmployeeDetail('${s.employeeId}')">${getEmpName(s.employeeId)}</span>
+                </div>
+            </td>
+            <td>${formatDate(s.date)}</td>
+            <td>${s.timeIn ? formatTime(s.timeIn) : '—'}</td>
+            <td>${s.timeOut ? formatTime(s.timeOut) : '—'}</td>
+            <td><b>${hours}</b></td>
+            <td>${status}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deleteTimesheet('${s.id}')">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openTimeModal(type) {
+    const activeEmps = DB.employees.filter(e => e.status === 'active');
+    const title = type === 'in' ? '✅ Отметить приход' : '🚪 Отметить уход';
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header">
+            <h2>${title}</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Сотрудник</label>
+                <select id="timeEmpId">
+                    ${activeEmps.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Дата</label>
+                    <input type="date" id="timeDateInput" value="${new Date().toISOString().split('T')[0]}">
+                </div>
+                <div class="form-group">
+                    <label>Время</label>
+                    <input type="time" id="timeTimeInput" value="${new Date().toTimeString().substring(0,5)}">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="saveTimeRecord('${type}')">💾 Сохранить</button>
+        </div>
+    `;
+    openModal();
+}
+
+function saveTimeRecord(type) {
+    const empId = document.getElementById('timeEmpId').value;
+    const date = document.getElementById('timeDateInput').value;
+    const time = document.getElementById('timeTimeInput').value;
+
+    if (!empId || !date || !time) { notify('Заполните все поля', 'error'); return; }
+
+    const dt = new Date(`${date}T${time}:00`);
+    let sheet = DB.timesheets.find(t => t.employeeId === empId && t.date === date);
+
+    if (type === 'in') {
+        if (sheet && sheet.timeIn) { notify('Приход уже отмечен', 'error'); return; }
+        if (!sheet) {
+            sheet = { id: genId(), employeeId: empId, date, timeIn: null, timeOut: null };
+            DB.timesheets.push(sheet);
+        }
+        sheet.timeIn = dt.toISOString();
+    } else {
+        if (!sheet || !sheet.timeIn) { notify('Сначала отметьте приход', 'error'); return; }
+        if (sheet.timeOut) { notify('Уход уже отмечен', 'error'); return; }
+        sheet.timeOut = dt.toISOString();
+    }
+
+    save();
+    closeModal();
+    renderTimesheet();
+    renderDashboard();
+    notify(type === 'in' ? 'Приход отмечен' : 'Уход отмечен');
+}
+
+function deleteTimesheet(id) {
+    if (!confirm('Удалить запись?')) return;
+    DB.timesheets = DB.timesheets.filter(t => t.id !== id);
+    save();
+    renderTimesheet();
+    renderDashboard();
+    notify('Запись удалена', 'info');
+}
+
+// ==================== OPERATIONS ====================
+function renderOperations() {
+    const dateFrom = document.getElementById('opsDateFrom').value;
+    const dateTo = document.getElementById('opsDateTo').value;
+    const typeFilter = document.getElementById('opsTypeFilter').value;
+    const empFilter = document.getElementById('opsEmpFilter').value;
+
+    let ops = [...DB.operations];
+    if (dateFrom) ops = ops.filter(o => o.date >= dateFrom);
+    if (dateTo) ops = ops.filter(o => o.date <= dateTo);
+    if (typeFilter) ops = ops.filter(o => o.type === typeFilter);
+    if (empFilter) ops = ops.filter(o => o.employeeId === empFilter);
+
+    ops.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const tbody = document.getElementById('operationsBody');
+    if (ops.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">Нет операций</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = ops.map(op => {
+        const type = OP_TYPES[op.type] || OP_TYPES.other;
+        return `<tr>
+            <td>${formatDate(op.date)}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="emp-avatar" style="width:32px;height:32px;font-size:12px;background:${getEmpColor(op.employeeId)};">${getInitials(getEmpName(op.employeeId))}</div>
+                    <span style="cursor:pointer;color:var(--primary-light);" onclick="openEmployeeDetail('${op.employeeId}')">${getEmpName(op.employeeId)}</span>
+                </div>
+            </td>
+            <td><span class="badge" style="background:${type.color}22;color:${type.color};">${type.icon} ${type.label}</span></td>
+            <td>${op.description || '—'}</td>
+            <td><b>${op.quantity || 0}</b></td>
+            <td>${op.duration || '—'}</td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="openOperationModal('${op.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteOperation('${op.id}')">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openOperationModal(id) {
+    const op = id ? DB.operations.find(o => o.id === id) : null;
+    const title = op ? 'Редактировать операцию' : 'Новая операция';
+    const activeEmps = DB.employees.filter(e => e.status === 'active');
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header">
+            <h2>${title}</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Сотрудник *</label>
+                    <select id="opEmpId">
+                        ${activeEmps.map(e => `<option value="${e.id}" ${op?.employeeId===e.id?'selected':''}>${e.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Тип операции</label>
+                    <select id="opType">
+                        ${Object.entries(OP_TYPES).map(([k,v]) => `<option value="${k}" ${op?.type===k?'selected':''}>${v.icon} ${v.label}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Описание</label>
+                <input type="text" id="opDesc" value="${op?.description || ''}" placeholder="Описание операции...">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Количество (шт.)</label>
+                    <input type="number" id="opQty" value="${op?.quantity || 0}" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Время выполнения (мин)</label>
+                    <input type="number" id="opDuration" value="${op?.duration || ''}" min="0" placeholder="Необязательно">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Дата</label>
+                <input type="date" id="opDate" value="${op?.date || new Date().toISOString().split('T')[0]}">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="saveOperation('${id || ''}')">💾 Сохранить</button>
+        </div>
+    `;
+    openModal();
+}
+
+function saveOperation(id) {
+    const data = {
+        employeeId: document.getElementById('opEmpId').value,
+        type: document.getElementById('opType').value,
+        description: document.getElementById('opDesc').value.trim(),
+        quantity: parseInt(document.getElementById('opQty').value) || 0,
+        duration: document.getElementById('opDuration').value || '',
+        date: document.getElementById('opDate').value
+    };
+
+    if (!data.employeeId) { notify('Выберите сотрудника', 'error'); return; }
+
+    if (id) {
+        const idx = DB.operations.findIndex(o => o.id === id);
+        if (idx >= 0) Object.assign(DB.operations[idx], data);
+    } else {
+        data.id = genId();
+        data.createdAt = new Date().toISOString();
+        DB.operations.push(data);
+    }
+
+    save();
+    closeModal();
+    refreshAll();
+    notify(id ? 'Операция обновлена' : 'Операция добавлена');
+}
+
+function deleteOperation(id) {
+    if (!confirm('Удалить операцию?')) return;
+    DB.operations = DB.operations.filter(o => o.id !== id);
+    save();
+    refreshAll();
+    notify('Операция удалена', 'info');
+}
+
+// ==================== PENALTIES ====================
+function renderPenalties() {
+    const tbody = document.getElementById('penaltiesBody');
+    const items = [...DB.penalties].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px;">Нет записей</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(p => {
+        const isBonus = p.type === 'bonus';
+        return `<tr>
+            <td>${formatDate(p.date)}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="emp-avatar" style="width:32px;height:32px;font-size:12px;background:${getEmpColor(p.employeeId)};">${getInitials(getEmpName(p.employeeId))}</div>
+                    <span style="cursor:pointer;color:var(--primary-light);" onclick="openEmployeeDetail('${p.employeeId}')">${getEmpName(p.employeeId)}</span>
+                </div>
+            </td>
+            <td><span class="badge ${isBonus ? 'badge-success' : 'badge-danger'}">${isBonus ? '➕ Бонус' : '➖ Штраф'}</span></td>
+            <td>${p.reason || '—'}</td>
+            <td style="color:${isBonus ? 'var(--success)' : 'var(--danger)'};font-weight:700;">
+                ${isBonus ? '+' : '-'}${parseFloat(p.amount).toLocaleString()} ₽
+            </td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deletePenalty('${p.id}')">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openPenaltyModal(type) {
+    const activeEmps = DB.employees.filter(e => e.status === 'active');
+    const title = type === 'bonus' ? '➕ Новый бонус' : '➖ Новый штраф';
+
+    document.getElementById('modalContent').innerHTML = `
+        <div class="modal-header">
+            <h2>${title}</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Сотрудник</label>
+                <select id="penEmpId">
+                    ${activeEmps.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Причина</label>
+                <input type="text" id="penReason" placeholder="Укажите причину...">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Сумма (₽)</label>
+                    <input type="number" id="penAmount" min="0" step="100" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Дата</label>
+                    <input type="date" id="penDate" value="${new Date().toISOString().split('T')[0]}">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="savePenalty('${type}')">💾 Сохранить</button>
+        </div>
+    `;
+    openModal();
+}
+
+function savePenalty(type) {
+    const data = {
+        id: genId(),
+        employeeId: document.getElementById('penEmpId').value,
+        type,
+        reason: document.getElementById('penReason').value.trim(),
+        amount: parseFloat(document.getElementById('penAmount').value) || 0,
+        date: document.getElementById('penDate').value,
+        createdAt: new Date().toISOString()
+    };
+
+    if (!data.employeeId) { notify('Выберите сотрудника', 'error'); return; }
+
+    DB.penalties.push(data);
+    save();
+    closeModal();
+    refreshAll();
+    notify(type === 'bonus' ? 'Бонус добавлен' : 'Штраф добавлен');
+}
+
+function deletePenalty(id) {
+    if (!confirm('Удалить запись?')) return;
+    DB.penalties = DB.penalties.filter(p => p.id !== id);
+    save();
+    refreshAll();
+    notify('Запись удалена', 'info');
+}
+
+// ==================== REPORTS ====================
+function renderReports() {
+    const period = document.getElementById('reportPeriod').value;
+    const empFilter = document.getElementById('reportEmp').value;
+    const { from, to } = getDaysRange(period);
+
+    const emps = empFilter ? DB.employees.filter(e => e.id === empFilter) : DB.employees.filter(e => e.status !== 'fired');
+
+    // Stats
+    const filteredSheets = DB.timesheets.filter(t => {
+        const d = new Date(t.date);
+        return d >= from && d <= to;
+    });
+    const filteredOps = DB.operations.filter(o => {
+        const d = new Date(o.date);
+        return d >= from && d <= to;
+    });
+    const filteredPenalties = DB.penalties.filter(p => {
+        const d = new Date(p.date);
+        return d >= from && d <= to;
+    });
+
+    const totalHours = filteredSheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+    const totalOps = filteredOps.length;
+    const totalQty = filteredOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+    const totalPenaltiesSum = filteredPenalties.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    const totalBonusesSum = filteredPenalties.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+
+    document.getElementById('reportStats').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--success);">⏱️</div>
+            <div class="stat-value">${totalHours.toFixed(0)}</div>
+            <div class="stat-label">Часов отработано</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">📋</div>
+            <div class="stat-value">${totalOps}</div>
+            <div class="stat-label">Операций</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">📦</div>
+            <div class="stat-value">${totalQty}</div>
+            <div class="stat-label">Выработка (шт.)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">💰</div>
+            <div class="stat-value">${Math.round(totalHours * 300 + totalBonusesSum - totalPenaltiesSum).toLocaleString()} ₽</div>
+            <div class="stat-label">ФОТ (прибл.)</div>
+        </div>
+    `;
+
+    // Table
+    const tbody = document.getElementById('reportTableBody');
+    const rows = emps.map(emp => {
+        const empSheets = filteredSheets.filter(t => t.employeeId === emp.id);
+        const empOps = filteredOps.filter(o => o.employeeId === emp.id);
+        const empPenalties = filteredPenalties.filter(p => p.employeeId === emp.id);
+
+        const hours = empSheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+        const days = empSheets.filter(t => t.timeIn).length;
+        const ops = empOps.length;
+        const qty = empOps.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+        const penSum = empPenalties.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const bonusSum = empPenalties.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const total = hours * emp.rate + bonusSum - penSum;
+
+        // Rating: based on hours, ops, penalties
+        const rating = Math.min(100, Math.round((ops * 2 + hours) - penSum / 100));
+
+        return { emp, days, hours, ops, qty, penSum, bonusSum, total, rating };
+    });
+
+    rows.sort((a,b) => b.rating - a.rating);
+
+    tbody.innerHTML = rows.map(r => {
+        const ratingColor = r.rating >= 80 ? 'var(--success)' : r.rating >= 50 ? 'var(--warning)' : 'var(--danger)';
+        return `<tr>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openEmployeeDetail('${r.emp.id}')">
+                    <div class="emp-avatar" style="width:32px;height:32px;font-size:12px;background:${r.emp.color};">${getInitials(r.emp.name)}</div>
+                    <span style="color:var(--primary-light);">${r.emp.name}</span>
+                </div>
+            </td>
+            <td>${r.days}</td>
+            <td>${r.hours.toFixed(1)}</td>
+            <td>${r.ops} (${r.qty} шт.)</td>
+            <td style="color:var(--danger);">${r.penSum > 0 ? '-'+r.penSum.toLocaleString()+' ₽' : '—'}</td>
+            <td style="color:var(--success);">${r.bonusSum > 0 ? '+'+r.bonusSum.toLocaleString()+' ₽' : '—'}</td>
+            <td><b>${Math.round(r.total).toLocaleString()} ₽</b></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="progress-bar" style="width:60px;">
+                        <div class="progress-fill" style="width:${Math.max(0,r.rating)}%;background:${ratingColor};"></div>
+                    </div>
+                    <span style="font-weight:700;color:${ratingColor};">${r.rating}</span>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function exportReport() {
+    const period = document.getElementById('reportPeriod').value;
+    const { from, to } = getDaysRange(period);
+    const periodLabel = { week: 'Неделя', month: 'Месяц', year: 'Год' }[period];
+
+    let csv = 'Сотрудник;Должность;Дней;Часов;Операций;Выработка;Штрафы;Бонусы;Итого\n';
+
+    DB.employees.filter(e => e.status !== 'fired').forEach(emp => {
+        const sheets = DB.timesheets.filter(t => t.employeeId === emp.id && new Date(t.date) >= from && new Date(t.date) <= to);
+        const ops = DB.operations.filter(o => o.employeeId === emp.id && new Date(o.date) >= from && new Date(o.date) <= to);
+        const pens = DB.penalties.filter(p => p.employeeId === emp.id && new Date(p.date) >= from && new Date(p.date) <= to);
+
+        const hours = sheets.reduce((s, t) => s + parseFloat(calcHours(t.timeIn, t.timeOut) || 0), 0);
+        const days = sheets.filter(t => t.timeIn).length;
+        const qty = ops.reduce((s, o) => s + (parseInt(o.quantity) || 0), 0);
+        const penSum = pens.filter(p => p.type === 'penalty').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const bonusSum = pens.filter(p => p.type === 'bonus').reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+        const total = hours * emp.rate + bonusSum - penSum;
+
+        csv += `${emp.name};${emp.position};${days};${hours.toFixed(1)};${ops.length};${qty};${penSum};${bonusSum};${Math.round(total)}\n`;
+    });
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Отчет_${periodLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    notify('Отчёт скачан');
+}
+
+// ==================== SETTINGS ====================
+function loadSettings() {
+    document.getElementById('settCompany').value = DB.settings.company || '';
+    document.getElementById('settAddress').value = DB.settings.address || '';
+    document.getElementById('settPhone').value = DB.settings.phone || '';
+    document.getElementById('settNormHours').value = DB.settings.normHours || 8;
+}
+
+function saveSettings() {
+    DB.settings.company = document.getElementById('settCompany').value.trim();
+    DB.settings.address = document.getElementById('settAddress').value.trim();
+    DB.settings.phone = document.getElementById('settPhone').value.trim();
+    DB.settings.normHours = parseInt(document.getElementById('settNormHours').value) || 8;
+    save();
+    notify('Настройки сохранены');
+}
+
+// ==================== DATA MANAGEMENT ====================
+function exportData() {
+    const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `staffpro_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    notify('Данные экспортированы');
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.employees) {
+                DB = data;
+                if (!DB.settings) DB.settings = { company:'', address:'', phone:'', normHours:8 };
+                save();
+                refreshAll();
+                notify('Данные импортированы');
+            } else {
+                notify('Неверный формат файла', 'error');
+            }
+        } catch(err) {
+            notify('Ошибка чтения файла', 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function resetData() {
+    if (!confirm('Удалить ВСЕ данные? Это действие необратимо!')) return;
+    if (!confirm('Вы уверены? Все данные будут потеряны!')) return;
+    DB = { employees:[], timesheets:[], operations:[], penalties:[], settings:{ company:'', address:'', phone:'', normHours:8 } };
+    save();
+    refreshAll();
+    notify('Все данные удалены', 'info');
+}
+
+// ==================== DEMO DATA ====================
+function loadDemoData() {
+    if (DB.employees.length > 0 && !confirm('Демо-данные будут добавлены к существующим. Продолжить?')) return;
+
+    const names = [
+        { name: 'Иванов Иван Петрович', position: 'Кладовщик' },
+        { name: 'Петрова Анна Сергеевна', position: 'Оператор' },
+        { name: 'Сидоров Алексей Дмитриевич', position: 'Грузчик' },
+        { name: 'Козлова Мария Ивановна', position: 'Упаковщик' },
+        { name: 'Новиков Дмитрий Александрович', position: 'Водитель' },
+        { name: 'Морозова Елена Викторовна', position: 'Кладовщик' },
+        { name: 'Волков Артём Николаевич', position: 'Сборщик' },
+        { name: 'Соколова Ольга Андреевна', position: 'Оператор' },
+    ];
+
+    names.forEach((n, i) => {
+        if (!DB.employees.find(e => e.name === n.name)) {
+            DB.employees.push({
+                id: genId(),
+                name: n.name,
+                position: n.position,
+                phone: '+7 (9' + Math.floor(10 + Math.random()*89) + ') ' + Math.floor(100 + Math.random()*900) + '-' + Math.floor(10 + Math.random()*90) + '-' + Math.floor(10 + Math.random()*90),
+                email: n.name.split(' ')[0].toLowerCase() + '@company.ru',
+                rate: 250 + Math.floor(Math.random() * 200),
+                status: 'active',
+                hireDate: '2024-0' + (1 + Math.floor(Math.random()*9)) + '-' + String(Math.floor(1 + Math.random()*28)).padStart(2,'0'),
+                color: COLORS[i % COLORS.length],
+                notes: '',
+                createdAt: new Date().toISOString()
+            });
+        }
+    });
+
+    // Generate timesheets for last 14 days
+    for (let d = 13; d >= 0; d--) {
+        const date = new Date();
+        date.setDate(date.getDate() - d);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek === 0) continue; // Skip Sundays
+
+        DB.employees.forEach(emp => {
+            if (Math.random() > 0.15 && !DB.timesheets.find(t => t.employeeId === emp.id && t.date === dateStr)) {
+                const hourIn = 8 + Math.floor(Math.random() * 2);
+                const minIn = Math.floor(Math.random() * 30);
+                const hoursWorked = 7 + Math.floor(Math.random() * 4);
+                const timeIn = new Date(date);
+                timeIn.setHours(hourIn, minIn, 0);
+
+                const sheet = {
+                    id: genId(),
+                    employeeId: emp.id,
+                    date: dateStr,
+                    timeIn: timeIn.toISOString(),
+                    timeOut: null
+                };
+
+                if (d > 0 || (d === 0 && dayOfWeek !== 6)) {
+                    const timeOut = new Date(timeIn);
+                    timeOut.setHours(timeIn.getHours() + hoursWorked);
+                    sheet.timeOut = timeOut.toISOString();
+                }
+
+                DB.timesheets.push(sheet);
+            }
+        });
+    }
+
+    // Generate operations
+    const opTypes = Object.keys(OP_TYPES);
+    const descriptions = {
+        receipt: ['Приёмка от Поставщика А', 'Приёмка товара', 'Приёмка возврата'],
+        shipment: ['Отгрузка клиенту Б', 'Отгрузка в магазин', 'Отгрузка заказа #'],
+        picking: ['Сборка заказа #', 'Сборка для маркетплейса', 'Сборка партии'],
+        packing: ['Упаковка заказа', 'Упаковка подарочная', 'Паллетирование'],
+        inventory: ['Инвентаризация зоны А', 'Пересчёт товара', 'Ревизия'],
+        other: ['Разгрузка машины', 'Перемещение товара', 'Уборка зоны']
+    };
+
+    for (let d = 13; d >= 0; d--) {
+        const date = new Date();
+        date.setDate(date.getDate() - d);
+        const dateStr = date.toISOString().split('T')[0];
+
+        DB.employees.filter(e => e.status === 'active').forEach(emp => {
+            const numOps = Math.floor(Math.random() * 5) + 1;
+            for (let i = 0; i < numOps; i++) {
+                const type = opTypes[Math.floor(Math.random() * opTypes.length)];
+                const descs = descriptions[type];
+                const desc = descs[Math.floor(Math.random() * descs.length)] + (type === 'picking' || type === 'shipment' ? Math.floor(1000 + Math.random()*9000) : '');
+
+                const createdAt = new Date(date);
+                createdAt.setHours(9 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60));
+
+                DB.operations.push({
+                    id: genId(),
+                    employeeId: emp.id,
+                    type,
+                    description: desc,
+                    quantity: Math.floor(Math.random() * 100) + 5,
+                    duration: Math.floor(Math.random() * 60) + 10,
+                    date: dateStr,
+                    createdAt: createdAt.toISOString()
+                });
+            }
+        });
+    }
+
+    // Generate some penalties/bonuses
+    DB.employees.forEach(emp => {
+        if (Math.random() > 0.5) {
+            const d = new Date();
+            d.setDate(d.getDate() - Math.floor(Math.random() * 14));
+            DB.penalties.push({
+                id: genId(),
+                employeeId: emp.id,
+                type: Math.random() > 0.6 ? 'bonus' : 'penalty',
+                reason: Math.random() > 0.5 ? 'Опоздание' : Math.random() > 0.5 ? 'Выполнение плана' : 'Нарушение дисциплины',
+                amount: Math.floor(Math.random() * 3000) + 500,
+                date: d.toISOString().split('T')[0],
+                createdAt: d.toISOString()
+            });
+        }
+    });
+
+    save();
+    refreshAll();
+    notify('Демо-данные загружены! 🎉');
+}
+
+// ==================== MODAL ====================
+function openModal() {
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+});
+
+// ==================== POPULATE FILTERS ====================
+function populateFilters() {
+    // Positions
+    const positions = [...new Set(DB.employees.map(e => e.position).filter(Boolean))];
+    const posSelect = document.getElementById('empFilterPosition');
+    if (posSelect) {
+        posSelect.innerHTML = '<option value="">Все должности</option>' +
+            positions.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    // Employee filters
+    ['timeEmpFilter', 'opsEmpFilter', 'reportEmp'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) {
+            const val = sel.value;
+            sel.innerHTML = '<option value="">Все сотрудники</option>' +
+                DB.employees.filter(e => e.status !== 'fired').map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+            sel.value = val;
+        }
+    });
+}
+
+// ==================== INIT ====================
+init();
+</script>
+
+</body>
+</html>
