@@ -287,7 +287,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>👥 StaffPro</h2>
-            <small>Управление v5.0 (USB Сканер)</small>
+            <small>Управление v5.1 (Исправлено)</small>
         </div>
         <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Дашборд</div>
         <div class="nav-item" onclick="showPage('employees')"><span class="icon">👤</span> Сотрудники</div>
@@ -319,13 +319,10 @@
             </div>
             <div class="stats-grid" id="dashboardStats"></div>
             
-            <!-- Donut Chart & Employee List -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                 <div class="report-card">
                     <h3>💰 Доходы и Расходы (текущий месяц)</h3>
-                    <div class="donut-container" id="donutChartContainer">
-                        <!-- SVG Chart will be injected here -->
-                    </div>
+                    <div class="donut-container" id="donutChartContainer"></div>
                 </div>
                 <div class="report-card">
                     <h3>👥 Сотрудники (текущий месяц)</h3>
@@ -490,13 +487,13 @@
         </div>
         <div class="modal-body" style="text-align: center;">
             <p style="color:var(--text-muted);margin-bottom:16px;">
-                Наведите курсор в поле ниже и отсканируйте QR-код бейджа сотрудника.<br>
-                Система автоматически определит приход или уход.
+                Наведите курсор в поле ниже и отсканируйте QR-код бейджа.<br>
+                <b>Система распознает код мгновенно</b>, даже если сканер не нажимает Enter.
             </p>
             <input type="text" id="scannerInput" class="scanner-big-input" placeholder="Ожидание сканирования..." autocomplete="off">
             <div id="scanResult" style="margin-top:16px;font-size:18px;font-weight:600;min-height:30px;"></div>
             <p style="font-size:12px;color:var(--text-muted);margin-top:20px;">
-                Формат QR-кода: <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">STAFF:ID_СОТРУДНИКА</code>
+                💡 <b>Нет сканера?</b> Откройте QR-код сотрудника, скопируйте текст (например, <code>STAFF:m1a2b3</code>) и просто вставьте его в это поле. Система сработает так же!
             </p>
         </div>
     </div>
@@ -624,7 +621,6 @@ function renderDashboard() {
         <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">📋</div><div class="stat-value">${DB.operations.filter(o => o.date === today).length}</div><div class="stat-label">Операций сегодня</div></div>
     `;
 
-    // Donut Chart Data (Current Month)
     const now = new Date();
     let totalSalary = 0, totalPenalties = 0;
     const empMonthData = [];
@@ -645,14 +641,11 @@ function renderDashboard() {
         const pens = mPens.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
         totalPenalties += pens;
 
-        if (hours > 0) {
-            empMonthData.push({ name: emp.name, hours: hours.toFixed(1), earned: Math.round(earned) });
-        }
+        if (hours > 0) empMonthData.push({ name: emp.name, hours: hours.toFixed(1), earned: Math.round(earned) });
     });
 
-    // Render Donut Chart
     const total = totalSalary + totalPenalties;
-    const circumference = 251.2; // 2 * PI * 40
+    const circumference = 251.2;
     const salaryDash = total > 0 ? (totalSalary / total) * circumference : 0;
     const penaltyDash = total > 0 ? (totalPenalties / total) * circumference : 0;
 
@@ -660,11 +653,8 @@ function renderDashboard() {
         <div class="donut-chart">
             <svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#334155" stroke-width="12" />
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="12" 
-                        stroke-dasharray="${salaryDash} ${circumference}" />
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="12" 
-                        stroke-dasharray="${penaltyDash} ${circumference}" 
-                        stroke-dashoffset="-${salaryDash}" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="12" stroke-dasharray="${salaryDash} ${circumference}" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="12" stroke-dasharray="${penaltyDash} ${circumference}" stroke-dashoffset="-${salaryDash}" />
             </svg>
             <div class="donut-center">
                 <div class="amount">${Math.round(total).toLocaleString()} ₽</div>
@@ -685,7 +675,6 @@ function renderDashboard() {
         </div>
     `;
 
-    // Render Employee Table
     const tbody = document.getElementById('dashboardEmpTable');
     if (empMonthData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">Нет данных за месяц</td></tr>';
@@ -1087,10 +1076,9 @@ function deleteDocument(empId, docId) {
     save(); renderEmployeeDetail(); notify('Документ удалён', 'info');
 }
 
-// ==================== QR CODES & SCANNER ====================
+// ==================== QR CODES & SMART SCANNER ====================
 function showEmployeeTimeQR(empId) {
     const emp = getEmp(empId); if (!emp) return;
-    // Компактный формат для USB-сканера
     const qrData = `STAFF:${emp.id}`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&margin=5`;
 
@@ -1168,11 +1156,10 @@ function showQR(type, empId) {
     openModal();
 }
 
-// === USB SCANNER LOGIC ===
+// === SMART USB SCANNER LOGIC ===
 function openScannerModal() {
     document.getElementById('scannerModal').classList.add('active');
     document.getElementById('scanResult').textContent = '';
-    document.getElementById('scanResult').style.color = 'var(--text-muted)';
     setTimeout(() => {
         const input = document.getElementById('scannerInput');
         input.value = '';
@@ -1184,27 +1171,38 @@ function closeScannerModal() {
     document.getElementById('scannerModal').classList.remove('active');
 }
 
-// Глобальный обработчик для поля сканера
+// УМНЫЙ ОБРАБОТЧИК: срабатывает мгновенно, как только введен полный код STAFF:ID
+document.getElementById('scannerInput').addEventListener('input', function(e) {
+    const val = this.value.trim();
+    // Регулярное выражение проверяет, что код полностью введен (формат STAFF:любой_набор_букв_и_цифр)
+    if (/^STAFF:[a-zA-Z0-9]+$/.test(val)) {
+        processScannerScan(val.split(':')[1]);
+        this.value = ''; // Очищаем поле сразу после успешного сканирования для следующего
+    }
+});
+
+// Резервный обработчик на случай, если сканер всё же шлет Enter
 document.getElementById('scannerInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const val = this.value.trim();
-        if (val.startsWith('STAFF:')) {
-            const empId = val.split(':')[1];
-            processScannerScan(empId);
+        if (/^STAFF:[a-zA-Z0-9]+$/.test(val)) {
+            processScannerScan(val.split(':')[1]);
         } else if (val.length > 0) {
-            document.getElementById('scanResult').textContent = '❌ Неверный формат QR-кода';
+            document.getElementById('scanResult').innerHTML = '❌ Неверный формат. Должен быть: <code>STAFF:ID</code>';
             document.getElementById('scanResult').style.color = 'var(--danger)';
         }
-        this.value = ''; // Очистка для следующего сканирования
+        this.value = '';
     }
 });
 
 function processScannerScan(empId) {
     const emp = getEmp(empId);
+    const resultEl = document.getElementById('scanResult');
+    
     if (!emp) {
-        document.getElementById('scanResult').textContent = '❌ Сотрудник не найден';
-        document.getElementById('scanResult').style.color = 'var(--danger)';
+        resultEl.innerHTML = '❌ Сотрудник с таким ID не найден';
+        resultEl.style.color = 'var(--danger)';
         return;
     }
 
@@ -1212,28 +1210,29 @@ function processScannerScan(empId) {
     let sheet = DB.timesheets.find(t => t.employeeId === empId && t.date === today);
     
     if (!sheet || !sheet.timeIn) {
-        // Приход
         if (!sheet) {
             sheet = { id: genId(), employeeId: empId, date: today, timeIn: null, timeOut: null };
             DB.timesheets.push(sheet);
         }
         sheet.timeIn = new Date().toISOString();
-        document.getElementById('scanResult').innerHTML = `✅ <span style="color:var(--success)">${emp.name}</span>: Приход зафиксирован (${formatTime(sheet.timeIn)})`;
+        resultEl.innerHTML = `✅ <span style="color:var(--success)">${emp.name}</span>: Приход зафиксирован (${formatTime(sheet.timeIn)})`;
         notify(`✅ ${emp.name}: Приход зафиксирован`);
     } else if (sheet.timeIn && !sheet.timeOut) {
-        // Уход
         sheet.timeOut = new Date().toISOString();
         const hours = calcHours(sheet.timeIn, sheet.timeOut);
-        document.getElementById('scanResult').innerHTML = `🚪 <span style="color:var(--warning)">${emp.name}</span>: Уход зафиксирован (${hours} ч)`;
+        resultEl.innerHTML = `🚪 <span style="color:var(--warning)">${emp.name}</span>: Уход зафиксирован (${hours} ч)`;
         notify(`🚪 ${emp.name}: Уход зафиксирован`);
     } else {
-        document.getElementById('scanResult').textContent = `⚠️ ${emp.name} уже завершил смену сегодня`;
-        document.getElementById('scanResult').style.color = 'var(--warning)';
+        resultEl.innerHTML = `⚠️ <span style="color:var(--warning)">${emp.name}</span> уже завершил смену сегодня`;
+        resultEl.style.color = 'var(--warning)';
     }
     
     save();
     refreshAll();
     if (currentDetailEmpId === empId) renderEmployeeDetail();
+    
+    // Возвращаем фокус на поле для следующего сканирования
+    setTimeout(() => document.getElementById('scannerInput').focus(), 100);
 }
 
 function confirmClockAction(empId, action) {
