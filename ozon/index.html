@@ -1,1017 +1,1613 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fulfillment Pro - Единая система</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        header p { opacity: 0.9; font-size: 1.1em; }
-        
-        .nav-tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-            overflow-x: auto;
-        }
-        .nav-tab {
-            padding: 20px 30px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 1em;
-            font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s;
-            white-space: nowrap;
-            border-bottom: 3px solid transparent;
-        }
-        .nav-tab:hover { background: #e9ecef; color: #495057; }
-        .nav-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            background: white;
-        }
-        
-        .content { padding: 30px; }
-        .module { display: none; }
-        .module.active { display: block; animation: fadeIn 0.3s; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-        .card h3 {
-            color: #495057;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .stat-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            border: 2px solid #e9ecef;
-        }
-        .stat-box .value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .stat-box .label {
-            color: #6c757d;
-            margin-top: 5px;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        .btn-success:hover { background: #218838; }
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-danger:hover { background: #c82333; }
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover { background: #5a6268; }
-        
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e9ecef;
-        }
-        th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-        tr:hover { background: #f8f9fa; }
-        
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        input[type="text"], input[type="file"], select {
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 1em;
-            flex: 1;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .scanner-area {
-            background: #000;
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            color: white;
-            margin: 20px 0;
-        }
-        
-        .log {
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 15px;
-        }
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid #333;
-        }
-        
-        .mode-selector {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .mode-btn {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .mode-btn.active {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: #e9ecef;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        @media (max-width: 768px) {
-            .nav-tab { padding: 15px 20px; font-size: 0.9em; }
-            .content { padding: 15px; }
-            header h1 { font-size: 1.8em; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Сканер Отгрузки">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>📦 Контроль отгрузки Озон/WB</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white'>📦</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #232733; --surface3: #2c3040;
+      --border: #2e3348; --border-light: #3a3f55; --text: #e8eaf0; --text-secondary: #8b90a5;
+      --text-muted: #5c6178; --primary: #6366f1; --primary-light: #818cf8; --primary-dark: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.3); --success: #10b981; --success-light: #34d399;
+      --success-bg: rgba(16, 185, 129, 0.1); --danger: #ef4444; --danger-light: #f87171;
+      --danger-bg: rgba(239, 68, 68, 0.1); --warning: #f59e0b; --warning-bg: rgba(245, 158, 11, 0.1);
+      --info: #3b82f6; --info-bg: rgba(59, 130, 246, 0.1); --purple: #a855f7;
+      --purple-bg: rgba(168, 85, 247, 0.1); --orange: #f97316; --orange-bg: rgba(249, 115, 22, 0.1);
+      --cyan: #06b6d4; --radius: 12px; --radius-lg: 16px; --radius-xl: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3); --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body::before {
+      content: ''; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.04) 0%, transparent 50%);
+      z-index: -1; animation: bgShift 20s ease-in-out infinite alternate;
+    }
+    @keyframes bgShift { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(-2%, -2%) rotate(3deg); } }
+    .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;
+      padding: 20px 28px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); box-shadow: var(--shadow); backdrop-filter: blur(20px);
+    }
+    header h1 {
+      font-size: 1.6rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-light), var(--purple), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .voice-toggle {
+      display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary);
+      background: var(--surface2); padding: 8px 16px; border-radius: 50px; border: 1px solid var(--border);
+      cursor: pointer; transition: var(--transition);
+    }
+    .voice-toggle:hover { border-color: var(--primary); }
+    .voice-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: 24px; padding: 6px;
+      background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 10px 20px; border: none; background: transparent; color: var(--text-secondary);
+      cursor: pointer; border-radius: var(--radius); font-weight: 600; font-size: 0.85rem;
+      transition: var(--transition); white-space: nowrap; font-family: 'Inter', sans-serif;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface2); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; box-shadow: 0 4px 16px var(--primary-glow);
+    }
+    .panel {
+      background: var(--surface); padding: 28px; border-radius: var(--radius-xl);
+      border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .panel h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+    .panel h3 { font-size: 1.05rem; font-weight: 600; margin: 20px 0 12px; }
+    .panel > p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; line-height: 1.5; }
+    input[type="text"], input[type="number"], input[type="file"], select {
+      width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-size: 0.9rem; font-family: 'Inter', sans-serif;
+      transition: var(--transition); outline: none;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+    input::placeholder { color: var(--text-muted); }
+    input[type="file"] { padding: 20px; border: 2px dashed var(--border-light); cursor: pointer; text-align: center; }
+    input[type="file"]:hover { border-color: var(--primary); }
+    label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    button {
+      padding: 12px 24px; border: none; border-radius: var(--radius); font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif;
+      display: inline-flex; align-items: center; gap: 8px; justify-content: center; position: relative; overflow: hidden;
+    }
+    button:active { transform: scale(0.97); }
+    button { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    button:hover { box-shadow: 0 4px 20px var(--primary-glow); transform: translateY(-1px); }
+    button.secondary { background: var(--surface3); color: var(--text-secondary); }
+    button.secondary:hover { background: var(--border-light); color: var(--text); box-shadow: none; }
+    button.success { background: linear-gradient(135deg, var(--success), #059669); color: white; }
+    button.success:hover { box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+    button.danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
+    button.danger:hover { box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+    button.purple { background: linear-gradient(135deg, var(--purple), #9333ea); color: white; }
+    button.purple:hover { box-shadow: 0 4px 20px rgba(168,85,247,0.3); }
+    button.orange { background: linear-gradient(135deg, var(--orange), #ea580c); color: white; }
+    button.orange:hover { box-shadow: 0 4px 20px rgba(249,115,22,0.3); }
+    button.cyan { background: linear-gradient(135deg, var(--cyan), #0891b2); color: white; }
+    button.cyan:hover { box-shadow: 0 4px 20px rgba(6,182,212,0.3); }
+    table {
+      width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 12px;
+      font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    th {
+      background: var(--surface2); padding: 12px 14px; text-align: left; font-weight: 600;
+      font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+    .badge.success { background: var(--success-bg); color: var(--success-light); border: 1px solid rgba(16,185,129,0.2); }
+    .badge.warn { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+    .badge.error { background: var(--danger-bg); color: var(--danger-light); border: 1px solid rgba(239,68,68,0.2); }
+    .badge.info { background: var(--info-bg); color: var(--info); border: 1px solid rgba(59,130,246,0.2); }
+    .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .stat-card {
+      flex: 1; min-width: 140px; background: var(--surface2); padding: 18px;
+      border-radius: var(--radius-lg); text-align: center; border: 1px solid var(--border); transition: var(--transition);
+    }
+    .stat-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .stat-card .num {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-light), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-card .lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .scanner-box {
+      text-align: center; padding: 36px; background: var(--surface2);
+      border: 2px dashed var(--border-light); border-radius: var(--radius-lg); transition: var(--transition);
+    }
+    .scanner-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+    .scanner-box input {
+      font-size: 1.5rem; text-align: center; border: 2px solid var(--border); background: var(--surface);
+      letter-spacing: 2px; font-weight: 700; font-family: 'Courier New', monospace; padding: 16px;
+    }
+    .scanner-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+    .progress-bar { height: 8px; background: var(--surface3); border-radius: 50px; overflow: hidden; margin: 10px 0; }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--primary), var(--purple)); border-radius: 50px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+    }
+    .progress-fill::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    .label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 16px; }
+    .label-card {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 16px; cursor: pointer; transition: var(--transition); position: relative;
+    }
+    .label-card:hover { border-color: var(--primary); box-shadow: 0 8px 32px rgba(99,102,241,0.15); transform: translateY(-3px); }
+    .label-card.printed { border-color: var(--success); background: var(--success-bg); }
+    .label-card .copies-input { margin-top: 12px; display: flex; gap: 10px; align-items: center; }
+    .label-card .copies-input label { margin: 0; font-size: 0.8rem; text-transform: none; }
+    .label-card .copies-input input { width: 64px; text-align: center; padding: 6px; }
+    .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .chip {
+      padding: 7px 16px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface2);
+      cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); transition: var(--transition);
+    }
+    .chip:hover { border-color: var(--primary); color: var(--text); }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .search-box { position: relative; margin-bottom: 0; flex: 1; min-width: 200px; }
+    .search-box input { padding-left: 42px; }
+    .search-box::before { content: '🔍'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; z-index: 1; }
+    .print-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .print-toolbar .stat { font-size: 0.85rem; color: var(--text-muted); margin-left: auto; }
+    .print-toolbar button { padding: 8px 16px; font-size: 0.8rem; }
+    .print-summary {
+      background: var(--info-bg); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius);
+      padding: 14px 18px; margin-bottom: 16px; font-size: 0.85rem; color: var(--info);
+    }
+    .box-list { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .box-chip {
+      padding: 8px 16px; border-radius: 50px; border: 2px solid var(--border); background: var(--surface2);
+      cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: var(--transition);
+      display: flex; align-items: center; gap: 8px; color: var(--text-secondary);
+    }
+    .box-chip:hover { border-color: var(--primary); }
+    .box-chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 16px var(--primary-glow); }
+    .box-chip.fixed { background: var(--success-bg); border-color: var(--success); color: var(--success-light); cursor: default; }
+    .box-chip .box-count { background: var(--surface3); padding: 2px 10px; border-radius: 50px; font-size: 0.75rem; }
+    .box-chip.active .box-count { background: rgba(255,255,255,0.25); }
+    .box-chip.fixed .box-count { background: rgba(16,185,129,0.2); }
+    .box-summary-panel {
+      background: var(--success-bg); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg);
+      padding: 16px; margin-bottom: 16px; font-size: 0.85rem;
+    }
+    .box-summary-panel h4 { margin-bottom: 10px; color: var(--success-light); }
+    .pallet-assign-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .pallet-assign-row select { width: auto; min-width: 160px; }
+    .pallet-assign-row button { width: auto; }
+    .pallet-assign-row label { margin: 0; text-transform: none; font-size: 0.85rem; }
+    .report-container { padding: 4px; }
+    .report-header {
+      text-align: center; padding: 32px; background: linear-gradient(135deg, var(--primary-dark), var(--purple));
+      border-radius: var(--radius-xl); margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .report-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent 60%); }
+    .report-header h2 { font-size: 1.8rem; margin-bottom: 8px; color: white; position: relative; }
+    .report-header p { opacity: 0.85; font-size: 0.9rem; color: rgba(255,255,255,0.9); position: relative; }
+    .pallet-section { border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 20px; overflow: hidden; background: var(--surface2); }
+    .pallet-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;
+      padding: 14px 20px; font-size: 1.05rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+    }
+    .pallet-header .pallet-stats { font-size: 0.8rem; font-weight: 400; opacity: 0.85; }
+    .pallet-body { padding: 16px; }
+    .box-report-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--surface); transition: var(--transition); }
+    .box-report-card:hover { border-color: var(--primary); }
+    .box-report-header {
+      background: var(--surface2); padding: 12px 16px; font-weight: 600; font-size: 0.9rem;
+      display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+    }
+    .box-report-header:hover { background: var(--surface3); }
+    .box-report-header .box-badge { background: var(--primary); color: white; padding: 3px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+    .box-report-body { padding: 12px 16px; }
+    .box-report-body table { font-size: 0.8rem; }
+    .report-totals { background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius-lg); padding: 20px; margin-top: 20px; }
+    .report-totals h3 { color: var(--warning); margin-bottom: 12px; }
+    .report-totals .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(245,158,11,0.2); font-size: 0.9rem; }
+    .report-totals .total-row:last-child { border-bottom: none; }
+    .report-totals .total-val { font-weight: 700; color: var(--warning); }
+    .report-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+    .raw-headers { margin-top: 12px; padding: 12px; background: var(--warning-bg); border-radius: var(--radius); font-size: 0.85rem; border: 1px solid rgba(245,158,11,0.15); }
+    .raw-headers summary { cursor: pointer; font-weight: 600; color: var(--warning); }
+    .raw-headers .header-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .raw-headers .header-tag { background: var(--surface3); padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; color: var(--text-secondary); border: 1px solid var(--border); }
+    .mapping-preview { margin-top: 16px; padding: 14px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
+    .mapping-preview h4 { margin-bottom: 10px; }
+    .mapping-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    
+    .label-sheet {
+      width: 100%; max-width: 360px; aspect-ratio: 58/40; 
+      border: 3px solid #000 !important; border-radius: 4px; background: #fff !important;
+      padding: 2mm !important; font-family: 'Arial', sans-serif; display: flex; flex-direction: column; 
+      overflow: hidden; color: #000 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .label-sheet .lbl-header { font-size: 7pt; font-weight: 900; text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 1mm; margin-bottom: 1mm; line-height: 1.1; color: #000 !important; letter-spacing: 0.5px; }
+    .label-sheet .lbl-header-row { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 800; margin-bottom: 1mm; color: #000 !important; }
+    .label-sheet .lbl-article { font-weight: 800; font-size: 9pt; color: #000 !important; }
+    .label-sheet .lbl-counter { font-weight: 700; font-size: 8pt; color: #333 !important; }
+    .label-sheet .lbl-barcode-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 1mm 0; }
+    .label-sheet .lbl-barcode-area svg { width: 100% !important; height: 15mm !important; display: block; }
+    .label-sheet .lbl-barcode-num { font-size: 12pt; font-weight: 900; text-align: center; letter-spacing: 1px; margin-top: 1mm; font-family: 'Courier New', monospace; color: #000 !important; }
+    .label-sheet .lbl-desc { font-size: 7.5pt; font-weight: 600; line-height: 1.15; text-align: center; margin-bottom: 1mm; color: #000 !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .label-sheet .lbl-footer { border-top: 2px solid #000; padding-top: 1.5mm; margin-top: auto; }
+    .label-sheet .lbl-bottom-row { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; gap: 4px !important; }
+    .label-sheet .lbl-expiry { font-size: 8pt; font-weight: 900; color: #000 !important; }
+    .label-sheet .lbl-quantity { font-size: 8pt; font-weight: 900; color: #000 !important; }
+    .label-sheet .lbl-instruction { font-size: 6pt; font-weight: 700; line-height: 1.1; margin-top: 1.5mm; text-align: center; color: #000 !important; border-top: 1px dashed #000; padding-top: 1mm; }
+    
+    .tz-checkbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    #tzTableBody tr { cursor: pointer; }
+    #tzTableBody tr:hover { background: var(--surface2); }
+    #tzTableBody tr.selected { background: var(--primary-glow); }
+    
+    @media print {
+      @page { size: 58mm 40mm; margin: 0; }
+      body { margin: 0 !important; padding: 0 !important; }
+      body * { visibility: hidden !important; }
+      
+      #bulkPrintArea, #bulkPrintArea * { visibility: visible !important; }
+      #bulkPrintArea {
+        position: absolute; left: 0; top: 0; width: 58mm !important; margin: 0 !important; padding: 0 !important; background: #fff !important;
+      }
+      #bulkPrintArea .label-sheet {
+        width: 58mm !important; height: 40mm !important; max-width: 58mm !important; max-height: 40mm !important;
+        margin: 0 !important; padding: 1.5mm !important;
+        border: 2px solid #000 !important; border-radius: 2mm !important;
+        box-sizing: border-box !important; background: #fff !important; color: #000 !important;
+        display: flex !important; flex-direction: column !important;
+        overflow: hidden !important; page-break-after: always !important; page-break-inside: avoid !important;
+      }
+      #bulkPrintArea .lbl-header {
+        font-size: 6pt !important; font-weight: 900 !important; text-align: center !important;
+        border-bottom: 1px solid #000 !important; height: 3.5mm !important; line-height: 3.5mm !important;
+        margin-bottom: 1mm !important; overflow: hidden !important; white-space: nowrap !important; display: block !important;
+      }
+      #bulkPrintArea .lbl-header-row {
+        font-size: 7pt !important; font-weight: 800 !important; height: 4mm !important; line-height: 4mm !important;
+        margin-bottom: 1mm !important; display: flex !important; justify-content: space-between !important; overflow: hidden !important;
+      }
+      #bulkPrintArea .lbl-barcode-area {
+        height: 13mm !important; margin-bottom: 1mm !important;
+        display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
+      }
+      #bulkPrintArea .lbl-barcode-area svg {
+        width: 100% !important; height: 9mm !important; max-height: 9mm !important; display: block !important; margin: 0 auto !important;
+      }
+      #bulkPrintArea .lbl-barcode-num {
+        font-size: 9pt !important; font-weight: 900 !important; text-align: center !important;
+        height: 4mm !important; line-height: 4mm !important; font-family: 'Courier New', monospace !important; overflow: hidden !important; display: block !important;
+      }
+      #bulkPrintArea .lbl-desc {
+        font-size: 6.5pt !important; font-weight: 700 !important; text-align: center !important;
+        height: 5mm !important; max-height: 5mm !important; line-height: 1.1 !important; margin-bottom: 1mm !important;
+        overflow: hidden !important; text-overflow: ellipsis !important;
+        display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; color: #000 !important;
+      }
+      #bulkPrintArea .lbl-footer {
+        border-top: 1px solid #000 !important; padding-top: 1mm !important;
+        flex: 1 !important;
+        display: flex !important; flex-direction: column !important; justify-content: center !important;
+        min-height: 0 !important;
+      }
+      #bulkPrintArea .lbl-bottom-row {
+        display: flex !important; justify-content: space-between !important;
+        font-size: 6.5pt !important; font-weight: 800 !important; height: 3.5mm !important; line-height: 3.5mm !important; overflow: hidden !important;
+      }
+      #bulkPrintArea .lbl-instruction {
+        font-size: 5.5pt !important; font-weight: 700 !important; text-align: center !important;
+        height: 3.5mm !important; line-height: 3.5mm !important; margin-top: 0.5mm !important;
+        overflow: hidden !important; white-space: nowrap !important; text-overflow: ellipsis !important;
+        border-top: 1px dashed #000 !important; padding-top: 0.5mm !important; display: block !important;
+      }
+      
+      #reportPrintArea, #reportPrintArea * { visibility: visible !important; }
+      #reportPrintArea { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+      
+      #tzPrintArea, #tzPrintArea * { visibility: visible !important; }
+      #tzPrintArea { position: absolute; left: 0; top: 0; width: 100%; display: block; background: white !important; color: black !important; }
+      #tzPrintArea .tz-print-container { font-family: Arial, Helvetica, sans-serif !important; color: #000 !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+      #tzPrintArea .tz-print-header { text-align: center !important; margin-bottom: 20px !important; padding-bottom: 15px !important; border-bottom: 3px solid #000 !important; }
+      #tzPrintArea .tz-print-header h1 { font-size: 18pt !important; font-weight: 900 !important; margin: 0 0 8px 0 !important; color: #000 !important; }
+      #tzPrintArea .tz-print-header p { font-size: 11pt !important; margin: 4px 0 !important; color: #000 !important; font-weight: 600 !important; }
+      #tzPrintArea table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; margin-top: 15px !important; page-break-inside: auto !important; table-layout: fixed !important; }
+      #tzPrintArea table thead { display: table-header-group !important; }
+      #tzPrintArea table thead tr { background-color: #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      #tzPrintArea table th { border: 2px solid #000 !important; padding: 6px 4px !important; text-align: center !important; font-weight: 900 !important; font-size: 8.5pt !important; color: #fff !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; word-wrap: break-word !important; }
+      #tzPrintArea table td { border: 1px solid #000 !important; padding: 4px !important; text-align: left !important; font-size: 8.5pt !important; vertical-align: top !important; color: #000 !important; word-wrap: break-word !important; }
+      #tzPrintArea table tr { page-break-inside: avoid !important; }
+      #tzPrintArea table tbody tr:nth-child(even) { background-color: #fff !important; }
+      #tzPrintArea .tz-col-num { width: 28px !important; text-align: center !important; font-weight: 700 !important; }
+      #tzPrintArea .tz-col-art { width: 65px !important; font-weight: 800 !important; font-size: 8pt !important; word-wrap: break-word !important; }
+      #tzPrintArea .tz-col-bc { width: 85px !important; font-family: 'Courier New', monospace !important; font-weight: 700 !important; font-size: 7.5pt !important; word-wrap: break-word !important; }
+      #tzPrintArea .tz-col-name { width: 13% !important; font-size: 8pt !important; }
+      #tzPrintArea .tz-col-instr { width: 18% !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-size: 8pt !important; line-height: 1.15 !important; }
+      #tzPrintArea .tz-col-qty { width: 40px !important; text-align: center !important; font-weight: 700 !important; }
+      #tzPrintArea .tz-col-total { width: 40px !important; text-align: center !important; font-weight: 800 !important; }
+      #tzPrintArea .tz-col-box { width: 40px !important; text-align: center !important; font-weight: 800 !important; }
+      #tzPrintArea .tz-col-pal { width: 55px !important; text-align: center !important; font-weight: 700 !important; }
+      #tzPrintArea .tz-print-footer { margin-top: 25px !important; padding-top: 15px !important; border-top: 2px solid #000 !important; font-size: 11pt !important; }
+      #tzPrintArea .tz-print-footer .tz-summary { display: flex !important; justify-content: space-between !important; margin-bottom: 15px !important; font-weight: 700 !important; }
+      #tzPrintArea .tz-print-footer .tz-signature { margin-top: 30px !important; display: flex !important; justify-content: space-between !important; }
+      #tzPrintArea .tz-print-footer .tz-signature-line { display: inline-block !important; width: 200px !important; border-bottom: 1px solid #000 !important; margin-left: 10px !important; }
+    }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 50px; }
+    .hidden { display: none !important; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .scanning-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; margin-right: 6px; }
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { padding: 12px 20px; border-radius: var(--radius); font-size: 0.85rem; font-weight: 500; color: white; box-shadow: var(--shadow-lg); animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; max-width: 360px; }
+    .toast.success { background: linear-gradient(135deg, var(--success), #059669); }
+    .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+    .toast.info { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+    .toast.warning { background: linear-gradient(135deg, var(--warning), #d97706); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+    kbd { background: var(--surface3); padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border); }
+    .camera-scanner-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 20px; }
+    .camera-scanner-header { background: var(--surface3); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+    .camera-scanner-header h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+    #camera-reader-container { width: 100%; background: #000; min-height: 250px; display: flex; align-items: center; justify-content: center; position: relative; }
+    #camera-reader-container video { width: 100% !important; border-radius: 0 !important; }
+    #camera-status-bar { padding: 10px 18px; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    #camera-status-bar .status-text { font-size: 0.85rem; color: var(--text-secondary); }
+    #camera-status-bar .scan-result { font-size: 0.9rem; font-weight: 600; color: var(--success-light); font-family: 'Courier New', monospace; letter-spacing: 1px; }
+    .camera-select-row { display: flex; gap: 8px; align-items: center; padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .camera-select-row select { flex: 1; min-width: 150px; }
+    .camera-select-row button { width: auto; padding: 8px 16px; font-size: 0.8rem; }
+    .last-scanned-bar { padding: 10px 18px; background: var(--surface3); border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); }
+    .last-scanned-bar span { color: var(--cyan); font-family: monospace; font-weight: 600; }
+    .pwa-install-banner { background: linear-gradient(135deg, var(--primary-dark), var(--purple)); color: white; padding: 12px 18px; border-radius: var(--radius); margin-bottom: 16px; display: none; align-items: center; gap: 12px; cursor: pointer; transition: var(--transition); }
+    .pwa-install-banner:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--primary-glow); }
+    .pwa-install-banner .install-text { flex: 1; }
+    .pwa-install-banner .install-text strong { font-size: 0.95rem; display: block; }
+    .pwa-install-banner .install-text small { opacity: 0.8; }
+    .pwa-install-banner button { background: white; color: var(--primary-dark); width: auto; padding: 8px 16px; }
+    @media (max-width: 768px) {
+      .container { padding: 12px; }
+      header { padding: 14px 18px; flex-direction: column; align-items: flex-start; gap: 10px; }
+      header h1 { font-size: 1.3rem; }
+      .panel { padding: 18px; }
+      .label-grid { grid-template-columns: 1fr; }
+      .stats-row { flex-direction: column; }
+      .stat-card { min-width: 100%; }
+      .scanner-box { padding: 20px; }
+      .scanner-box input { font-size: 1.2rem; padding: 12px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 Fulfillment Pro</h1>
-            <p>Единая система управления фулфилментом</p>
-        </header>
-        
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchModule('dashboard')">📊 Главная</button>
-            <button class="nav-tab" onclick="switchModule('receiving')">📥 Приёмка</button>
-            <button class="nav-tab" onclick="switchModule('crm')">🏢 CRM FBO</button>
-            <button class="nav-tab" onclick="switchModule('wb')">📦 Wildberries</button>
-            <button class="nav-tab" onclick="switchModule('reports')">📈 Отчёты</button>
-        </div>
-        
-        <div class="content">
-            <!-- Dashboard -->
-            <div id="dashboard" class="module active">
-                <div class="stats">
-                    <div class="stat-box">
-                        <div class="value" id="total-orders">0</div>
-                        <div class="label">Всего заказов</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="value" id="processed-orders">0</div>
-                        <div class="label">Обработано</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="value" id="pending-orders">0</div>
-                        <div class="label">В ожидании</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="value" id="error-orders">0</div>
-                        <div class="label">Ошибки</div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📋 Быстрые действия</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="switchModule('receiving')">📥 Начать приёмку</button>
-                        <button class="btn btn-success" onclick="switchModule('crm')">🏢 CRM FBO</button>
-                        <button class="btn btn-secondary" onclick="switchModule('wb')">📦 Управление WB</button>
-                        <button class="btn btn-primary" onclick="switchModule('reports')">📈 Отчёты</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📊 Прогресс работы</h3>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%">0%</div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📜 Последние операции</h3>
-                    <div class="log" id="main-log">
-                        <div class="log-entry">[Система готова] Добро пожаловать в Fulfillment Pro!</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Receiving Module -->
-            <div id="receiving" class="module">
-                <div class="card">
-                    <h3>📥 Приёмка поставок</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value" id="recv-total">0</div>
-                            <div class="label">Всего</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="recv-accepted">0</div>
-                            <div class="label">Принято</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="recv-errors">0</div>
-                            <div class="label">Ошибки</div>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin: 20px 0 10px;">Метод ввода:</h4>
-                    <div class="mode-selector">
-                        <button class="mode-btn active" onclick="setScanMode('scanner', this)">⌨️ Сканер</button>
-                        <button class="mode-btn" onclick="setScanMode('camera', this)">📷 Камера</button>
-                        <button class="mode-btn" onclick="setScanMode('manual', this)">✍️ Вручную</button>
-                        <button class="mode-btn" onclick="setScanMode('rfid', this)">📡 RFID</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>🔍 Сканирование</h3>
-                    <div class="scanner-area">
-                        <p style="font-size: 1.2em; margin-bottom: 20px;">Наведите сканер на штрихкод</p>
-                        <input type="text" id="scan-input" placeholder="Штрихкод..." style="width: 100%; max-width: 400px; padding: 15px; font-size: 1.2em;">
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-success" onclick="processScan()">✅ Принять</button>
-                        <button class="btn btn-danger" onclick="clearScan()">↩️ Отменить</button>
-                        <button class="btn btn-secondary" onclick="resetReceiving()">🔄 Сброс</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📂 Загрузка плана поставки</h3>
-                    <div class="input-group">
-                        <input type="file" id="plan-file" accept=".xlsx,.xls,.csv,.json">
-                        <button class="btn btn-primary" onclick="loadPlan()">📂 Загрузить</button>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-secondary" onclick="downloadTemplate('xlsx')">⬇️ Excel шаблон</button>
-                        <button class="btn btn-secondary" onclick="downloadTemplate('json')">⬇️ JSON пример</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📜 Журнал операций</h3>
-                    <div class="log" id="recv-log"></div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="exportLog('excel')">📊 Экспорт в Excel</button>
-                        <button class="btn btn-secondary" onclick="exportLog('json')">💾 Экспорт в JSON</button>
-                        <button class="btn btn-danger" onclick="clearLog()">🗑️ Очистить</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- CRM FBO Module -->
-            <div id="crm" class="module">
-                <div class="card">
-                    <h3>🏢 CRM FBO - Управление отгрузками</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value" id="crm-sku">0</div>
-                            <div class="label">SKU</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="crm-plan">0</div>
-                            <div class="label">План</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="crm-pallets">0</div>
-                            <div class="label">Палетов</div>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin: 20px 0 10px;">Маркетплейс:</h4>
-                    <div class="mode-selector">
-                        <button class="mode-btn active" onclick="setMarketplace('wb', this)">🟣 Wildberries FBO</button>
-                        <button class="mode-btn" onclick="setMarketplace('ozon', this)">🔵 Ozon FBO</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>🏗️ Управление палетами</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="addPallet()">+ Добавить палет</button>
-                        <button class="btn btn-secondary" onclick="printPalletLabels()">🖨️ Печать этикеток</button>
-                    </div>
-                    <div id="pallets-list" style="margin-top: 15px;">
-                        <p style="color: #6c757d; text-align: center; padding: 20px;">Нет палетов</p>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📡 Сканирование</h3>
-                    <div class="scanner-area">
-                        <p style="font-size: 1.2em; margin-bottom: 20px;">🎯 Наведите рамку на штрихкод</p>
-                        <button class="btn btn-primary" onclick="toggleCamera()" id="camera-btn">📷 Включить камеру</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📦 Коробка</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value" id="box-positions">0</div>
-                            <div class="label">Позиций</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="box-weight">0.00 кг</div>
-                            <div class="label">Вес</div>
-                        </div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-success" onclick="closeBox()">✅ Закрыть коробку</button>
-                        <button class="btn btn-secondary" onclick="reprintLabel()">🔄 Повтор печати</button>
-                        <button class="btn btn-danger" onclick="clearBox()">🗑️ Очистить</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📋 Состав коробки</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ШК</th>
-                                <th>Артикул</th>
-                                <th>Название</th>
-                                <th>Кол-во</th>
-                            </tr>
-                        </thead>
-                        <tbody id="box-contents">
-                            <tr><td colspan="4" style="text-align: center; color: #6c757d;">Коробка пуста</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="card">
-                    <h3>🎯 План (ТЗ)</h3>
-                    <div class="input-group">
-                        <input type="file" id="crm-plan-file" accept=".xlsx,.xls">
-                        <button class="btn btn-primary" onclick="loadCRMPlan()">📂 Загрузить Excel</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📜 Экспорт</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="exportCRM('csv')">📤 CSV</button>
-                        <button class="btn btn-danger" onclick="resetCRM()">🔄 Сброс</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Wildberries Module -->
-            <div id="wb" class="module">
-                <div class="card">
-                    <h3>📦 Управление отгрузкой Wildberries</h3>
-                    <div class="input-group">
-                        <input type="file" id="wb-tz-file" accept=".xlsx,.xls">
-                        <button class="btn btn-primary" onclick="loadWBTask()">📂 Загрузить ТЗ</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>🗺️ Соответствие полей</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Системное поле</th>
-                                <th>Колонка Excel</th>
-                                <th>Пример</th>
-                            </tr>
-                        </thead>
-                        <tbody id="field-mapping">
-                            <tr><td colspan="3" style="text-align: center; color: #6c757d;">Загрузите файл для настройки</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="btn-group">
-                        <button class="btn btn-success" onclick="saveMapping()">✅ Сохранить</button>
-                        <button class="btn btn-secondary" onclick="previewMapping()">👁️ Предпросмотр</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>🏷️ Этикетки для сборки</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value" id="wb-positions">0</div>
-                            <div class="label">Позиций</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="wb-labels">0</div>
-                            <div class="label">Этикеток</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="wb-printed">0</div>
-                            <div class="label">Напечатано</div>
-                        </div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="printAllLabels()">🖨️ Печать всех</button>
-                        <button class="btn btn-secondary" onclick="printRemainingLabels()">🖨️ Оставшихся</button>
-                        <button class="btn btn-success" onclick="markAllPrinted()">✅ Все напечатаны</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📋 Техническое задание</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value" id="wb-tz-total">0</div>
-                            <div class="label">Всего позиций</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value" id="wb-tz-selected">0</div>
-                            <div class="label">Выбрано</div>
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" onchange="toggleAllWB(this)"></th>
-                                <th>Артикул</th>
-                                <th>ШК</th>
-                                <th>Наименование</th>
-                                <th>Кол-во</th>
-                                <th>Коробов</th>
-                                <th>Палет</th>
-                            </tr>
-                        </thead>
-                        <tbody id="wb-task-list">
-                            <tr><td colspan="7" style="text-align: center; color: #6c757d;">Нет загруженных данных</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="printWBTask()">🖨️ Печать ТЗ</button>
-                        <button class="btn btn-success" onclick="selectAllWB()">✅ Выбрать все</button>
-                        <button class="btn btn-danger" onclick="deselectAllWB()">❌ Снять выбор</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📦 Управление коробами</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="newWBBox()">📦 Новый короб</button>
-                    </div>
-                    <div class="scanner-area" style="margin-top: 20px;">
-                        <p style="margin-bottom: 15px;">Последний ШК: <span id="wb-last-scan">—</span></p>
-                        <input type="text" id="wb-scan-input" placeholder="Сканируйте или введите ШК..." style="width: 100%; max-width: 400px; padding: 15px;">
-                    </div>
-                    <div class="stats" style="margin-top: 15px;">
-                        <div class="stat-box">
-                            <div class="value" id="wb-box-items">0</div>
-                            <div class="label">Позиций в коробе</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📋 Содержимое текущего короба</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Артикул</th>
-                                <th>ШК</th>
-                                <th>Кол</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody id="wb-box-contents">
-                            <tr><td colspan="4" style="text-align: center; color: #6c757d;">Короб пуст</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="btn-group">
-                        <button class="btn btn-secondary" onclick="resetWBBox()">🔄 Сброс</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📊 Отчёт по отгрузке</h3>
-                    <h4 style="margin-bottom: 15px;">🏗️ Распределение по палетам</h4>
-                    <div class="input-group">
-                        <select id="wb-box-select">
-                            <option>Выберите короб...</option>
-                        </select>
-                        <select id="wb-pallet-select">
-                            <option>Выберите палет...</option>
-                        </select>
-                        <button class="btn btn-success" onclick="assignBoxToPallet()">✅ Назначить</button>
-                        <button class="btn btn-primary" onclick="autoAssign()">⚡ Авто</button>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="generateWBReport()">📊 Сформировать</button>
-                        <button class="btn btn-secondary" onclick="printWBReport()">🖨️ Печать</button>
-                        <button class="btn btn-success" onclick="exportWBExcel()">📥 Excel</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Reports Module -->
-            <div id="reports" class="module">
-                <div class="card">
-                    <h3>📈 Аналитика и отчёты</h3>
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="value">0</div>
-                            <div class="label">Приёмки за сегодня</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value">0</div>
-                            <div class="label">Отгрузки FBO</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value">0</div>
-                            <div class="label">Отгрузки WB</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="value">0%</div>
-                            <div class="label">Эффективность</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📊 Экспорт данных</h3>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="exportAllData('excel')">📊 Все данные в Excel</button>
-                        <button class="btn btn-secondary" onclick="exportAllData('json')">💾 Все данные в JSON</button>
-                        <button class="btn btn-success" onclick="exportAllData('pdf')">📄 Отчёт в PDF</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h3>📜 История операций</h3>
-                    <div class="log" id="reports-log">
-                        <div class="log-entry">[Информация] История операций будет отображаться здесь</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <header>
+      <h1>📦 Контроль отгрузки</h1>
+      <div class="voice-toggle">
+        <input type="checkbox" id="voiceToggle" checked>
+        <label for="voiceToggle" style="margin:0; text-transform:none; font-weight:500; font-size:0.85rem;">🔊 Голос</label>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('upload')">📥 Загрузка</button>
+      <button class="tab-btn" onclick="switchTab('mapping')">🗺️ Маппинг</button>
+      <button class="tab-btn" onclick="switchTab('labels')">🏷️ Этикетки</button>
+      <button class="tab-btn" onclick="switchTab('tz')">📋 ТЗ</button>
+      <button class="tab-btn" onclick="switchTab('scanner')">📷 Сканер</button>
+      <button class="tab-btn" onclick="switchTab('report')">📊 Отчёт</button>
     </div>
+
+    <section id="tab-upload" class="panel">
+      <h2>📥 Загрузка ТЗ</h2>
+      <p>Выберите файл Excel. Система автоматически распознает структуру.</p>
+      <div style="max-width:600px; margin-bottom:16px;">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+      </div>
+      <button onclick="parseFile()" class="success">📂 Загрузить</button>
+      <div id="uploadStatus" style="margin-top:14px;"></div>
+    </section>
+
+    <section id="tab-mapping" class="panel hidden">
+      <h2>🗺️ Соответствие полей</h2>
+      <p style="color: var(--warning); margin-bottom: 16px;">💡 Если колонка не определилась автоматически (стоит значок ⚠️), <strong>нажмите на выпадающий список</strong> и выберите нужное поле вручную.</p>
+      <details class="raw-headers"><summary>📋 Найденные колонки в файле</summary><div class="header-list" id="headerList"></div></details>
+      <table id="mappingTable"><thead><tr><th>Системное поле</th><th>Колонка Excel</th><th>Пример из 1-й строки</th></tr></thead><tbody id="mappingBody"></tbody></table>
+      <div class="mapping-actions">
+        <button onclick="saveMapping()" class="success" style="width:auto;">✅ Сохранить и продолжить</button>
+        <button onclick="previewMapping()" class="secondary" style="width:auto;">👁️ Предпросмотр</button>
+      </div>
+      <div id="mappingPreview" class="mapping-preview hidden"></div>
+    </section>
+
+    <section id="tab-labels" class="panel hidden">
+      <h2>🏷️ Этикетки для сборки</h2>
+      <p>Клик по карточке — печать. Копии указываются внизу.</p>
+      <div class="stats-row" id="labelStats">
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Позиций</div></div>
+        <div class="stat-card"><div class="num" id="statLabels">0</div><div class="lbl">Этикеток</div></div>
+        <div class="stat-card"><div class="num" id="statPrinted">0</div><div class="lbl">Напечатано</div></div>
+      </div>
+      <div id="printSummary" class="print-summary hidden"></div>
+      <div class="print-toolbar">
+        <button onclick="printAllLabels()" class="purple" style="width:auto;">🖨️ ВСЕХ</button>
+        <button onclick="printRemainingLabels()" class="orange" style="width:auto;">🖨️ ОСТАВШИХСЯ</button>
+        <button onclick="printSingleFromGrid()" class="secondary" style="width:auto;" id="printSingleBtn">🖨️ Выбранных</button>
+        <button onclick="markAllPrinted()" class="success" style="width:auto;">✅ Все</button>
+        <button onclick="resetPrintStatus()" class="secondary" style="width:auto;">🔄</button>
+        <span class="stat" id="printStat"></span>
+      </div>
+      <div class="filter-chips">
+        <div class="chip active" onclick="filterLabels('all', this)">Все</div>
+        <div class="chip" onclick="filterLabels('printed', this)">✅ Напечатанные</div>
+        <div class="chip" onclick="filterLabels('pending', this)">⏳ Не напечатаны</div>
+      </div>
+      <div class="search-box"><input type="text" id="labelSearch" placeholder="Поиск по артикулу, штрихкоду..." oninput="searchLabels()"></div>
+      <div class="label-grid" id="labelGrid" style="margin-top:16px;"></div>
+    </section>
+
+    <section id="tab-tz" class="panel hidden">
+      <h2>📋 Техническое задание</h2>
+      <p>Просмотр и печать ТЗ. Таблица автоматически отсортирована от меньшего количества к большему.</p>
+      <div class="stats-row">
+        <div class="stat-card"><div class="num" id="tzStatTotal">0</div><div class="lbl">Всего позиций</div></div>
+        <div class="stat-card"><div class="num" id="tzStatSelected">0</div><div class="lbl">Выбрано</div></div>
+      </div>
+      <div class="print-toolbar">
+        <button onclick="printTZ()" class="purple" style="width:auto;">🖨️ Печать ТЗ</button>
+        <button onclick="selectAllTZ()" class="success" style="width:auto;">✅ Выбрать все</button>
+        <button onclick="deselectAllTZ()" class="secondary" style="width:auto;">❌ Снять выбор</button>
+        <span class="stat" id="tzStats"></span>
+      </div>
+      <div class="filter-chips">
+        <div class="chip active" onclick="filterTZ('all', this)">Все</div>
+        <div class="chip" onclick="filterTZ('selected', this)">✅ Выбранные</div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+        <div class="search-box">
+          <input type="text" id="tzSearchInput" placeholder="Поиск по артикулу, ШК, наименованию..." oninput="searchTZ()">
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <label style="margin:0; font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap;">Кол-во:</label>
+          <input type="number" id="tzQtyFrom" placeholder="От" style="width: 70px; padding: 8px 12px;" oninput="searchTZ()">
+          <span style="color: var(--text-muted); font-weight: 600;">-</span>
+          <input type="number" id="tzQtyTo" placeholder="До" style="width: 70px; padding: 8px 12px;" oninput="searchTZ()">
+          <button class="secondary" style="width: auto; padding: 8px 12px; font-size: 0.8rem;" onclick="clearQtyFilter()" title="Сбросить фильтр количества">✖</button>
+        </div>
+      </div>
+
+      <div style="max-height: 600px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius);">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" class="tz-checkbox" onchange="if(this.checked) selectAllTZ(); else deselectAllTZ();"></th>
+              <th>Арт. произв.</th>
+              <th>Арт. этикет.</th>
+              <th>ШК произв.</th>
+              <th>ШК этикет.</th>
+              <th>Наименование</th>
+              <th>Инструкция / ТЗ</th>
+              <th>Кол-во</th>
+              <th style="cursor: pointer;" title="Отсортировано от меньшего к большему">Итого ↑</th>
+              <th style="text-align: center;">Коробов</th>
+              <th style="text-align: center;">Палет</th>
+            </tr>
+          </thead>
+          <tbody id="tzTableBody">
+            <tr><td colspan="11" style="text-align:center; padding:40px; color:var(--text-muted);">Нет загруженных данных</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-scanner" class="panel hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <h2 style="font-size:1.2rem; margin:0;">📦 Управление коробами</h2>
+        <span class="badge info" id="platformBadge">WB</span>
+      </div>
+      <div class="pwa-install-banner" id="pwaBanner">
+        <div class="install-text">
+          <strong>📲 Установить приложение</strong>
+          <small>Добавьте на домашний экран для быстрого доступа</small>
+        </div>
+        <button onclick="installPWA()">📥 Установить</button>
+      </div>
+      <p style="margin-bottom:16px; font-size:0.85rem; color:var(--text-muted);">Сканируйте камерой телефона или внешним сканером. «Новый короб» фиксирует текущий.</p>
+      <div class="box-list" id="boxList"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+        <button class="success" style="width:auto;" onclick="newBox()">📦 Новый короб</button>
+        <span id="currentBoxLabel" style="font-weight:600; font-size:0.9rem; color:var(--primary-light);"></span>
+      </div>
+      <div id="boxSummaryPanel" class="box-summary-panel hidden">
+        <h4>📋 Сводка</h4>
+        <table style="font-size:0.85rem;"><thead><tr><th>Короб</th><th>Позиций</th><th>Палет</th><th>Статус</th></tr></thead><tbody id="boxSummaryBody"></tbody></table>
+      </div>
+      <div class="camera-scanner-panel">
+        <div class="camera-scanner-header">
+          <h3>📷 Камера сканер</h3>
+          <button id="cameraStartBtn" onclick="toggleCameraScanner()" class="cyan" style="width:auto; padding:8px 14px; font-size:0.8rem;">▶️ Включить камеру</button>
+        </div>
+        <div class="camera-select-row hidden" id="cameraSelectRow">
+          <label style="margin:0; text-transform:none; font-size:0.8rem;">Камера:</label>
+          <select id="cameraSelect"></select>
+          <button onclick="switchCamera()" class="secondary" style="width:auto; padding:8px 12px; font-size:0.8rem;">🔄 Переключить</button>
+        </div>
+        <div id="camera-reader-container">
+          <div style="color:var(--text-muted); padding:40px; text-align:center;" id="camera-placeholder">
+            <div style="font-size:3rem; margin-bottom:10px;">📷</div>
+            <p>Нажмите «Включить камеру»</p>
+          </div>
+        </div>
+        <div id="camera-status-bar">
+          <span class="status-text" id="cameraStatusText">Камера выключена</span>
+          <span class="scan-result" id="cameraScanResult"></span>
+        </div>
+        <div class="last-scanned-bar hidden" id="lastScannedBar">
+          Последний ШК: <span id="lastScannedCode">—</span>
+        </div>
+      </div>
+      <div class="scanner-box">
+        <label style="margin-bottom:12px; color:var(--text-secondary);">⌨️ Внешний сканер / Ручной ввод</label>
+        <input type="text" id="scannerInput" placeholder="Отсканируйте или введите ШК..." autocomplete="off">
+        <div style="margin-top:12px; font-size:0.85rem; color:var(--text-muted);">После сканирования нажмите <kbd>Enter</kbd></div>
+      </div>
+      <div style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:600; color:var(--text-secondary);">Позиций в коробе:</span>
+          <span id="progressText" style="font-weight:800; font-size:1.3rem; color:var(--primary-light);">0</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <h3>📋 Содержимое текущего короба</h3>
+      <div style="max-height:300px; overflow-y:auto; border-radius:var(--radius); border:1px solid var(--border);">
+        <table id="scannedTable"><thead><tr><th>Артикул</th><th>ШК</th><th>Кол</th><th>Статус</th><th></th></tr></thead><tbody id="scannedBody"></tbody></table>
+      </div>
+      <button class="danger" style="margin-top:16px; width:auto;" onclick="resetSession()">🔄 Сброс</button>
+    </section>
+
+    <section id="tab-report" class="panel hidden">
+      <h2>📊 Отчёт по отгрузке</h2>
+      <p>Распределение коробов по палетам и содержимое.</p>
+      <div id="palletAssignSection">
+        <h3>🏗️ Распределение по палетам</h3>
+        <div class="pallet-assign-row">
+          <label>Короб:</label><select id="assignBoxSelect"></select>
+          <label>Палет:</label><select id="assignPalletSelect"></select>
+          <button onclick="assignBoxToPallet()" class="success" style="width:auto;">✅ Назначить</button>
+          <button onclick="autoAssignPallets()" class="purple" style="width:auto;">⚡ Авто</button>
+        </div>
+        <div id="palletAssignStatus" style="margin-top:8px; font-size:0.85rem;"></div>
+      </div>
+      <div class="report-actions" style="margin-top:20px;">
+        <button onclick="generateReport()" style="width:auto;">📊 Сформировать</button>
+        <button onclick="printReport()" class="purple" style="width:auto;">🖨️ Печать</button>
+        <button onclick="exportReportExcel()" class="success" style="width:auto;">📥 Excel</button>
+      </div>
+      <div id="reportContent" class="report-container"></div>
+    </section>
+  </div>
+
+  <div id="bulkPrintArea" class="hidden"></div>
+  <div id="reportPrintArea" class="hidden"></div>
+  <div id="tzPrintArea" class="hidden"></div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    var manifestData = {
+      name: "Система Контроля Отгрузки", short_name: "Сканер Отгрузки", description: "Сканер штрихкодов и контроль отгрузки для Озон/WB",
+      start_url: ".", display: "standalone", background_color: "#0f1117", theme_color: "#6366f1", orientation: "portrait",
+      icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%236366f1'/><text x='96' y='130' font-size='120' text-anchor='middle'>📦</text></svg>", sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" }]
+    };
+    var manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+    var manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest'; manifestLink.href = URL.createObjectURL(manifestBlob);
+    document.head.appendChild(manifestLink);
+
+    var deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault(); deferredPrompt = e; document.getElementById('pwaBanner').style.display = 'flex';
+    });
+    function installPWA() {
+      if(deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+          if(result.outcome === 'accepted') showToast('Приложение установлено!', 'success');
+          deferredPrompt = null; document.getElementById('pwaBanner').style.display = 'none';
+        });
+      } else { showToast('Меню браузера → «Установить» или «Добавить на главный экран»', 'info'); }
+    }
+
+    var excelData = [], mapping = {}, boxes = {1:{items:[],fixed:false}}, currentBox = 1, voiceEnabled = true;
+    var printedSet = new Set(), currentFilter = 'all', selectedIndices = new Set(), allHeaders = [];
+    var printCopies = {}, labelCounterMap = {}, pallets = {}, boxPalletMap = {}, nextPalletId = 1;
+    var tzSelectedIndices = new Set(), tzFilter = 'all', tzSearch = '';
+    var html5QrCode = null, cameraRunning = false, currentCameraId = null, cameraDevices = [];
+    var lastCameraScanTime = 0, lastCameraScanCode = '';
+
+    function showToast(msg, type) {
+      type = type || 'info';
+      var c = document.getElementById('toastContainer'), t = document.createElement('div');
+      t.className = 'toast ' + type; t.textContent = msg; c.appendChild(t);
+      setTimeout(function() { if(t.parentNode) t.parentNode.removeChild(t); }, 3200);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(function(p) { p.classList.add('hidden'); });
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+      var names = ['upload','mapping','labels','tz','scanner','report'];
+      document.querySelectorAll('.tab-btn')[names.indexOf(tab)].classList.add('active');
+      if(tab === 'scanner') { document.getElementById('scannerInput').focus(); renderBoxChips(); }
+      if(tab === 'labels') { calculateCounters(); renderLabelGrid(); updatePrintSummary(); }
+      if(tab === 'tz') { renderTZTable(); }
+      if(tab === 'mapping') { showRawHeaders(); previewMapping(); }
+      if(tab === 'report') { updatePalletAssignUI(); generateReport(); }
+    }
+
+    function speak(text) {
+      if(!voiceEnabled || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.1;
+      window.speechSynthesis.speak(u);
+    }
+    document.getElementById('voiceToggle').addEventListener('change', function(e) { voiceEnabled = e.target.checked; });
+
+    function parseFile() {
+      var file = document.getElementById('fileInput').files[0];
+      if(!file) { showToast('Выберите файл!', 'error'); return; }
+      
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var wb = XLSX.read(e.target.result, {type:'array', raw:false, defval:''});
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          excelData = XLSX.utils.sheet_to_json(sheet, {defval:'', raw:false});
+          
+          if(!excelData || excelData.length === 0) throw new Error('Файл пуст или не содержит данных');
+          
+          allHeaders = Object.keys(excelData[0]);
+          document.getElementById('uploadStatus').innerHTML = '<span class="badge success">✅ ' + excelData.length + ' строк, ' + allHeaders.length + ' колонок</span>';
+          
+          buildMappingUI(); 
+          switchTab('mapping'); 
+          showToast('Файл загружен! Проверьте соответствие колонок ниже.', 'success'); 
+          speak('Файл загружен. Проверьте маппинг.');
+        } catch(err) { 
+          showToast('Ошибка чтения файла: ' + err.message, 'error'); 
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    var SYSTEM_FIELDS = [
+      {key:'origin_article', label:'Артикул производителя', hints:['артикул производителя','арт произв','origin art','производитель','vendor','supplier art','артикул поставщика','арт поставщика','артикул постав','origin_article'], required:false},
+      {key:'label_article', label:'Артикул на этикетку', hints:['артикул на этикетку','арт этикет','label art','артикул wb','артикул озон','wb art','ozon art','артикул маркетплейс','артикул на этикет','label_article','артикул для этикетки'], required:true},
+      {key:'wb_article', label:'Артикул (основной)', hints:['артикул','article','код','sku','wb','art','код товара'], required:true},
+      {key:'origin_barcode', label:'ШК производителя', hints:['шк производителя','шк произв','origin barcode','штрихкод производителя','barcode производителя','vendor barcode','шк поставщика','штрихкод поставщика','origin_barcode','исходный шк'], required:false},
+      {key:'label_barcode', label:'ШК на этикетку', hints:['шк на этикетку','шк этикет','label barcode','штрихкод на этикетку','шк wb','шк озон','barcode wb','ean','label_barcode','шк для этикетки'], required:true},
+      {key:'product_name', label:'Наименование', hints:['наименование','название','описание','товар','продукт','product','desc','name','наим','наименов','заказ','основной','набор','goods'], required:true},
+      {key:'expiry', label:'Годен до', hints:['годен','срок','expiry','сг','годность','срок годности','годен до'], required:false},
+      {key:'packing_instructions', label:'Инструкция / ТЗ', hints:['тз','инструкция','instruction','примечание','упаковка','паковать','комментарий'], required:false},
+      {key:'quantity', label:'Квант / Кол-во', hints:['квант','кол','количество','qty','шт','quantity','count','amount','штук','квант спайки'], required:true},
+      {key:'total_quantity', label:'Итого к отгрузке', hints:['итого','total','отгрузка','к отгрузке','спаек','итого к отгрузке'], required:false}
+    ];
+
+    function findBestMatch(headers, hints) {
+      for(var hi=0; hi<hints.length; hi++) {
+        for(var j=0; j<headers.length; j++) {
+          if(headers[j].toLowerCase().replace(/\s+/g,'') === hints[hi].toLowerCase().replace(/\s+/g,'')) return headers[j];
+        }
+      }
+      for(var hi2=0; hi2<hints.length; hi2++) {
+        for(var j2=0; j2<headers.length; j2++) {
+          if(headers[j2].toLowerCase().includes(hints[hi2].toLowerCase())) return headers[j2];
+        }
+      }
+      return '';
+    }
+
+    function showRawHeaders() {
+      var list = document.getElementById('headerList');
+      if(!list || !allHeaders.length) return;
+      list.innerHTML = allHeaders.map(function(h){ return '<span class="header-tag">'+h+'</span>'; }).join('');
+    }
+
+    function buildMappingUI() {
+      if (!excelData || excelData.length === 0) {
+        showToast('Нет данных для маппинга. Сначала загрузите файл.', 'error');
+        return;
+      }
+      
+      var headers = Object.keys(excelData[0]);
+      allHeaders = headers;
+      var tbody = document.getElementById('mappingBody');
+      tbody.innerHTML = '';
+
+      if (headers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:20px;">Не удалось прочитать заголовки. Убедитесь, что первая строка файла содержит названия колонок.</td></tr>';
+        return;
+      }
+
+      SYSTEM_FIELDS.forEach(function(field) {
+        var best = findBestMatch(headers, field.hints);
+        var tr = document.createElement('tr');
+        
+        var reqMark = field.required ? '<span style="color:var(--danger); font-weight:bold;"> *</span>' : '';
+        var warningIcon = (field.required && !best) ? ' <span title="Необходимо выбрать вручную!" style="color:var(--warning); font-size: 1.1rem;">⚠️</span>' : '';
+
+        tr.innerHTML = 
+          '<td><strong>' + field.label + '</strong>' + reqMark + warningIcon + 
+          '<br><span style="color:var(--text-muted);font-size:0.7rem;">' + field.key + '</span></td>' +
+          '<td>' +
+            '<select id="map_' + field.key + '" style="width:100%; font-weight:600; cursor:pointer; background:var(--surface3); border: 1px solid var(--border-light);">' +
+            '<option value="">— Выберите вручную —</option>' +
+            headers.map(function(h) { 
+              return '<option value="' + h + '"' + (h === best ? ' selected' : '') + '>' + h + '</option>'; 
+            }).join('') +
+            '</select>' +
+          '</td>' +
+          '<td id="preview_' + field.key + '" style="color:var(--primary-light);font-weight:600; font-size:0.85rem;">—</td>';
+        
+        tbody.appendChild(tr);
+        
+        var sel = document.getElementById('map_' + field.key);
+        sel.addEventListener('change', function() { 
+          updateFieldPreview(field.key); 
+        });
+        updateFieldPreview(field.key);
+      });
+    }
+
+    function updateFieldPreview(key) {
+      var sel = document.getElementById('map_'+key), previewEl = document.getElementById('preview_'+key);
+      if(sel.value && excelData.length) {
+        var val = excelData[0][sel.value];
+        previewEl.textContent = (val!==undefined && val!=='') ? String(val).substring(0,50) : '(пусто)';
+      } else { previewEl.textContent = '—'; }
+    }
+
+    function previewMapping() {
+      var d = document.getElementById('mappingPreview');
+      if(!excelData.length) { d.classList.add('hidden'); return; }
+      d.classList.remove('hidden');
+      var html = '<h4>📋 Предпросмотр (первые 5 строк)</h4><table><thead><tr>';
+      var af = [];
+      SYSTEM_FIELDS.forEach(function(f){
+        var sel = document.getElementById('map_'+f.key);
+        if(sel && sel.value) { af.push({col:sel.value, label:f.label}); html += '<th>'+f.label+'</th>'; }
+      });
+      html += '</tr></thead><tbody>';
+      for(var i=0; i<Math.min(5, excelData.length); i++){
+        html += '<tr>';
+        af.forEach(function(f){
+          var v = excelData[i][f.col];
+          html += '<td>'+((v!==undefined && v!=='' && v!==null) ? String(v).substring(0,40) : '—')+'</td>';
+        });
+        html += '</tr>';
+      }
+      html += '</tbody></table>'; d.innerHTML = html;
+    }
+
+    function parseQuantityValue(rv) {
+      if(rv===undefined || rv===null || rv==='') return 1;
+      if(typeof rv==='number') return Number.isInteger(rv) && rv>0 ? rv : 1;
+      var c = String(rv).replace(/\s/g,'').replace(',','.');
+      var p = parseFloat(c); return (!isNaN(p) && p>0) ? Math.round(p) : 1;
+    }
+
+    function saveMapping() {
+      mapping = {}; 
+      var filled = 0, missing = [];
+      
+      SYSTEM_FIELDS.forEach(function(f){
+        var sel = document.getElementById('map_'+f.key);
+        var v = sel ? sel.value : '';
+        if(v) { 
+          mapping[f.key] = v; 
+          filled++; 
+        } else if(f.required) { 
+          missing.push(f.label); 
+        }
+      });
+      
+      if(missing.length > 0) { 
+        showToast('❌ Не выбраны обязательные поля: ' + missing.join(', '), 'error'); 
+        return; 
+      }
+      if(filled < 3) { 
+        showToast('❌ Сопоставьте минимум 3 поля для корректной работы!', 'error'); 
+        return; 
+      }
+      
+      printedSet.clear(); selectedIndices.clear(); labelCounterMap = {}; printCopies = {};
+      excelData.forEach(function(item, idx){
+        if(mapping.total_quantity && mapping.total_quantity!=='') printCopies[idx] = parseQuantityValue(item[mapping.total_quantity]);
+        else printCopies[idx] = 1;
+      });
+      
+      calculateCounters(); boxes = {1:{items:[],fixed:false}}; currentBox = 1;
+      pallets = {}; boxPalletMap = {}; nextPalletId = 1;
+      
+      switchTab('labels'); showToast('Маппинг успешно сохранён!', 'success'); speak('Маппинг сохранен.');
+    }
+
+    function getItemField(idx, key) {
+      if(!mapping[key] || mapping[key]==='') return '';
+      var v = excelData[idx][mapping[key]];
+      if(v===undefined || v===null || v==='') return '';
+      return String(v).trim();
+    }
     
-    <script>
-        let currentModule = 'dashboard';
-        let scanMode = 'scanner';
-        let marketplace = 'wb';
-        let scanLog = [];
-        let boxContents = [];
-        let wbData = [];
-        
-        function switchModule(moduleName) {
-            document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(moduleName).classList.add('active');
-            event.target.classList.add('active');
-            currentModule = moduleName;
-            addLog('main-log', `Переключено на модуль: ${moduleName}`);
-        }
-        
-        function setScanMode(mode, btn) {
-            scanMode = mode;
-            document.querySelectorAll('#receiving .mode-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            addLog('recv-log', `Режим сканирования: ${mode}`);
-        }
-        
-        function setMarketplace(mp, btn) {
-            marketplace = mp;
-            document.querySelectorAll('#crm .mode-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            addLog('main-log', `Маркетплейс: ${mp.toUpperCase()}`);
-        }
-        
-        function processScan() {
-            const input = document.getElementById('scan-input');
-            const barcode = input.value.trim();
-            if (!barcode) {
-                alert('Введите штрихкод!');
-                return;
-            }
-            
-            const timestamp = new Date().toLocaleTimeString();
-            addLog('recv-log', `[${timestamp}] Принят: ${barcode}`);
-            addLog('main-log', `[${timestamp}] Сканирование: ${barcode}`);
-            
-            const total = parseInt(document.getElementById('recv-total').textContent) + 1;
-            const accepted = parseInt(document.getElementById('recv-accepted').textContent) + 1;
-            document.getElementById('recv-total').textContent = total;
-            document.getElementById('recv-accepted').textContent = accepted;
-            document.getElementById('total-orders').textContent = total;
-            document.getElementById('processed-orders').textContent = accepted;
-            
-            input.value = '';
-            input.focus();
-        }
-        
-        function clearScan() {
-            document.getElementById('scan-input').value = '';
-            addLog('recv-log', 'Скан очищен');
-        }
-        
-        function resetReceiving() {
-            if (confirm('Сбросить все данные приёмки?')) {
-                document.getElementById('recv-total').textContent = '0';
-                document.getElementById('recv-accepted').textContent = '0';
-                document.getElementById('recv-errors').textContent = '0';
-                document.getElementById('recv-log').innerHTML = '';
-                addLog('recv-log', 'Приёмка сброшена');
-            }
-        }
-        
-        function loadPlan() {
-            const file = document.getElementById('plan-file').files[0];
-            if (!file) {
-                alert('Выберите файл!');
-                return;
-            }
-            addLog('recv-log', `Загружен файл: ${file.name}`);
-            addLog('main-log', `План поставки загружен: ${file.name}`);
-        }
-        
-        function downloadTemplate(type) {
-            addLog('recv-log', `Скачан шаблон: ${type}`);
-            alert(`Шаблон ${type} будет скачан`);
-        }
-        
-        function exportLog(type) {
-            addLog('recv-log', `Экспорт журнала в ${type}`);
-            alert(`Журнал экспортирован в ${type}`);
-        }
-        
-        function clearLog() {
-            if (confirm('Очистить журнал?')) {
-                document.getElementById('recv-log').innerHTML = '';
-            }
-        }
-        
-        function addPallet() {
-            const count = parseInt(document.getElementById('crm-pallets').textContent) + 1;
-            document.getElementById('crm-pallets').textContent = count;
-            addLog('main-log', `Добавлен палет #${count}`);
-            updatePalletsList();
-        }
-        
-        function updatePalletsList() {
-            const count = parseInt(document.getElementById('crm-pallets').textContent);
-            const list = document.getElementById('pallets-list');
-            if (count === 0) {
-                list.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">Нет палетов</p>';
-            } else {
-                let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">';
-                for (let i = 1; i <= count; i++) {
-                    html += `<div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #667eea;">
-                        <strong>Палет #${i}</strong>
-                    </div>`;
-                }
-                html += '</div>';
-                list.innerHTML = html;
-            }
-        }
-        
-        function printPalletLabels() {
-            addLog('main-log', 'Печать этикеток палетов');
-            alert('Этикетки отправлены на печать');
-        }
-        
-        function toggleCamera() {
-            const btn = document.getElementById('camera-btn');
-            if (btn.textContent.includes('Включить')) {
-                btn.textContent = '⏹️ Выключить камеру';
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-danger');
-                addLog('main-log', 'Камера включена');
-            } else {
-                btn.textContent = '📷 Включить камеру';
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-primary');
-                addLog('main-log', 'Камера выключена');
-            }
-        }
-        
-        function closeBox() {
-            if (boxContents.length === 0) {
-                alert('Коробка пуста!');
-                return;
-            }
-            addLog('main-log', `Коробка закрыта. Позиций: ${boxContents.length}`);
-            alert(`Коробка закрыта. Позиций: ${boxContents.length}`);
-            clearBox();
-        }
-        
-        function reprintLabel() {
-            addLog('main-log', 'Повторная печать этикетки');
-        }
-        
-        function clearBox() {
-            boxContents = [];
-            document.getElementById('box-positions').textContent = '0';
-            document.getElementById('box-weight').textContent = '0.00 кг';
-            document.getElementById('box-contents').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6c757d;">Коробка пуста</td></tr>';
-            addLog('main-log', 'Коробка очищена');
-        }
-        
-        function loadCRMPlan() {
-            const file = document.getElementById('crm-plan-file').files[0];
-            if (!file) {
-                alert('Выберите файл!');
-                return;
-            }
-            addLog('main-log', `CRM план загружен: ${file.name}`);
-        }
-        
-        function exportCRM(type) {
-            addLog('main-log', `CRM экспорт в ${type}`);
-            alert(`Данные экспортированы в ${type}`);
-        }
-        
-        function resetCRM() {
-            if (confirm('Сбросить все данные CRM?')) {
-                document.getElementById('crm-sku').textContent = '0';
-                document.getElementById('crm-plan').textContent = '0';
-                document.getElementById('crm-pallets').textContent = '0';
-                clearBox();
-                updatePalletsList();
-                addLog('main-log', 'CRM сброшен');
-            }
-        }
-        
-        function loadWBTask() {
-            const file = document.getElementById('wb-tz-file').files[0];
-            if (!file) {
-                alert('Выберите файл!');
-                return;
-            }
-            addLog('main-log', `ТЗ WB загружено: ${file.name}`);
-            
-            // Симуляция загрузки данных
-            wbData = [
-                { article: 'WB-001', barcode: '1234567890', name: 'Товар 1', qty: 10, boxes: 2, pallets: 1 },
-                { article: 'WB-002', barcode: '0987654321', name: 'Товар 2', qty: 15, boxes: 3, pallets: 1 }
-            ];
-            
-            document.getElementById('wb-positions').textContent = wbData.length;
-            document.getElementById('wb-tz-total').textContent = wbData.length;
-            
-            updateWBTaskList();
-        }
-        
-        function updateWBTaskList() {
-            const tbody = document.getElementById('wb-task-list');
-            if (wbData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6c757d;">Нет загруженных данных</td></tr>';
-            } else {
-                tbody.innerHTML = wbData.map((item, idx) => `
-                    <tr>
-                        <td><input type="checkbox" class="wb-item-check" data-index="${idx}"></td>
-                        <td>${item.article}</td>
-                        <td>${item.barcode}</td>
-                        <td>${item.name}</td>
-                        <td>${item.qty}</td>
-                        <td>${item.boxes}</td>
-                        <td>${item.pallets}</td>
-                    </tr>
-                `).join('');
-            }
-        }
-        
-        function toggleAllWB(checkbox) {
-            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = checkbox.checked);
-            updateWBSelectedCount();
-        }
-        
-        function selectAllWB() {
-            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = true);
-            updateWBSelectedCount();
-        }
-        
-        function deselectAllWB() {
-            document.querySelectorAll('.wb-item-check').forEach(cb => cb.checked = false);
-            updateWBSelectedCount();
-        }
-        
-        function updateWBSelectedCount() {
-            const count = document.querySelectorAll('.wb-item-check:checked').length;
-            document.getElementById('wb-tz-selected').textContent = count;
-        }
-        
-        function printWBTask() {
-            addLog('main-log', 'Печать ТЗ WB');
-            alert('ТЗ отправлено на печать');
-        }
-        
-        function printAllLabels() {
-            const labels = parseInt(document.getElementById('wb-labels').textContent);
-            document.getElementById('wb-printed').textContent = labels;
-            addLog('main-log', `Напечатано этикеток: ${labels}`);
-        }
-        
-        function printRemainingLabels() {
-            addLog('main-log', 'Печать оставшихся этикеток');
-        }
-        
-        function markAllPrinted() {
-            const labels = parseInt(document.getElementById('wb-labels').textContent);
-            document.getElementById('wb-printed').textContent = labels;
-            addLog('main-log', 'Все этикетки отмечены как напечатанные');
-        }
-        
-        function newWBBox() {
-            addLog('main-log', 'Создан новый короб WB');
-            document.getElementById('wb-box-items').textContent = '0';
-            document.getElementById('wb-box-contents').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6c757d;">Короб пуст</td></tr>';
-        }
-        
-        function resetWBBox() {
-            if (confirm('Сбросить содержимое короба?')) {
-                newWBBox();
-            }
-        }
-        
-        function assignBoxToPallet() {
-            addLog('main-log', 'Короб назначен на палет');
-            alert('Короб назначен на палет');
-        }
-        
-        function autoAssign() {
-            addLog('main-log', 'Автоматическое распределение коробов');
-            alert('Короба автоматически распределены');
-        }
-        
-        function generateWBReport() {
-            addLog('main-log', 'Сформирован отчёт по отгрузке WB');
-            alert('Отчёт сформирован');
-        }
-        
-        function printWBReport() {
-            addLog('main-log', 'Печать отчёта WB');
-            alert('Отчёт отправлен на печать');
-        }
-        
-        function exportWBExcel() {
-            addLog('main-log', 'Экспорт отчёта WB в Excel');
-            alert('Отчёт экспортирован в Excel');
-        }
-        
-        function exportAllData(type) {
-            addLog('main-log', `Экспорт всех данных в ${type}`);
-            alert(`Все данные экспортированы в ${type}`);
-        }
-        
-        function saveMapping() {
-            addLog('main-log', 'Соответствие полей сохранено');
-            alert('Соответствие полей сохранено');
-        }
-        
-        function previewMapping() {
-            addLog('main-log', 'Предпросмотр соответствия полей');
-            alert('Предпросмотр соответствия полей');
-        }
-        
-        function addLog(logId, message) {
-            const log = document.getElementById(logId);
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            const time = new Date().toLocaleTimeString();
-            entry.textContent = `[${time}] ${message}`;
-            log.insertBefore(entry, log.firstChild);
-            
-            // Ограничиваем количество записей
-            while (log.children.length > 50) {
-                log.removeChild(log.lastChild);
-            }
-        }
-        
-        // Обработка Enter в полях сканирования
-        document.getElementById('scan-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') processScan();
+    function getItemOriginArticle(idx) { return getItemField(idx, 'origin_article'); }
+    function getItemLabelArticle(idx) { return getItemField(idx, 'label_article'); }
+    function getItemOriginBarcode(idx) { return getItemField(idx, 'origin_barcode'); }
+    function getItemLabelBarcode(idx) { return getItemField(idx, 'label_barcode'); }
+    function getItemArticle(idx) { return getItemField(idx, 'wb_article'); }
+    function getItemBarcode(idx) { return getItemField(idx, 'label_barcode'); }
+    function getItemDescription(idx) { 
+      var desc = getItemField(idx, 'product_name');
+      if (!desc || String(desc).trim() === '') return '⚠️ НАИМЕНОВАНИЕ ОТСУТСТВУЕТ';
+      return String(desc).trim();
+    }
+    function getItemExpiry(idx) { return getItemField(idx, 'expiry'); }
+    function getItemInstruction(idx) { return getItemField(idx, 'packing_instructions'); }
+    function getItemQuantity(idx) { return getItemField(idx, 'quantity'); }
+
+    function calculateCounters() {
+      labelCounterMap = {};
+      excelData.forEach(function(_, idx){ labelCounterMap[idx] = {current:1, total:printCopies[idx]||1}; });
+    }
+
+    function createLabelHTML(idx, forPrint, copyNum, totalCopies) {
+      var art = getItemArticle(idx) || '---';
+      var bc = getItemBarcode(idx) || '---';
+      var desc = getItemDescription(idx);
+      var expiry = getItemExpiry(idx);
+      var instruction = getItemInstruction(idx);
+      var quantity = getItemQuantity(idx);
+      
+      var cNum = copyNum || 1;
+      var tCopies = totalCopies || (printCopies[idx] || 1);
+      var svgId = forPrint ? 'bp_svg_'+idx+'_'+cNum : 'grid_svg_'+idx;
+      
+      var expiryText = (expiry && String(expiry).trim() !== '') ? String(expiry).trim() : 'НЕ УКАЗАНО';
+      var qtyText = (quantity && String(quantity).trim() !== '' && String(quantity).trim() !== '0') ? String(quantity).trim() : 'НЕ УКАЗАНО';
+      
+      var br = '<span class="lbl-expiry">Годен: ' + expiryText + '</span>';
+      var qr = '<span class="lbl-quantity">Квант: ' + qtyText + '</span>';
+      var ih = (instruction && String(instruction).trim() !== '') ? '<div class="lbl-instruction">' + String(instruction).trim() + '</div>' : '';
+      
+      return '<div class="label-sheet" data-idx="'+idx+'">' +
+        '<div class="lbl-header">ЕДИНЫЙ ТОВАР НЕ ВСКРЫВАТЬ</div>' +
+        '<div class="lbl-header-row"><span class="lbl-article">Арт: '+art+'</span><span class="lbl-counter">'+cNum+'/'+tCopies+'</span></div>' +
+        '<div class="lbl-barcode-area"><svg id="'+svgId+'"></svg><div class="lbl-barcode-num">'+bc+'</div></div>' +
+        '<div class="lbl-desc">'+desc+'</div>' +
+        '<div class="lbl-footer">' +
+          '<div class="lbl-bottom-row">' + br + ' ' + qr + '</div>' +
+          ih +
+        '</div></div>';
+    }
+
+    function calcTotalLabels(indices) {
+      var t = 0; indices.forEach(function(idx){ t += (printCopies[idx]||1); }); return t;
+    }
+
+    function updatePrintSummary() {
+      var sd = document.getElementById('printSummary');
+      if(!excelData.length) { sd.classList.add('hidden'); return; }
+      var tl = 0; for(var i=0; i<excelData.length; i++) tl += (printCopies[i]||1);
+      var pl = 0; printedSet.forEach(function(idx){ pl += (printCopies[idx]||1); });
+      sd.classList.remove('hidden');
+      sd.innerHTML = '📊 Позиций: <b>'+excelData.length+'</b> · Этикеток: <b>'+tl+'</b> · Напечатано: <b>'+pl+'</b> · Осталось: <b>'+(tl-pl)+'</b>';
+      document.getElementById('statLabels').textContent = tl;
+    }
+
+    function isValidBarcode(idx) {
+      var bc = getItemBarcode(idx);
+      return bc && typeof bc === 'string' && bc.trim() !== '' && bc !== '---';
+    }
+
+    function renderLabelGrid() {
+      var grid = document.getElementById('labelGrid'); grid.innerHTML = '';
+      var st = (document.getElementById('labelSearch').value || '').toLowerCase(), cnt = 0;
+      excelData.forEach(function(item, idx){
+        var art = getItemArticle(idx), bc = getItemBarcode(idx), desc = getItemDescription(idx);
+        if(currentFilter==='printed' && !printedSet.has(idx)) return;
+        if(currentFilter==='pending' && printedSet.has(idx)) return;
+        if(st && !art.toLowerCase().includes(st) && !bc.toLowerCase().includes(st) && !desc.toLowerCase().includes(st)) return;
+        cnt++;
+        var card = document.createElement('div');
+        card.className = 'label-card' + (printedSet.has(idx) ? ' printed' : '');
+        card.onclick = function(e){
+          if(e.ctrlKey || e.metaKey){
+            if(selectedIndices.has(idx)) selectedIndices.delete(idx); else selectedIndices.add(idx);
+            updateSelectionUI();
+          } else { if(e.target.tagName !== 'INPUT') printSingleLabel(idx); }
+        };
+        var svgId = 'grid_svg_'+idx, copies = printCopies[idx] || 1;
+        card.innerHTML = createLabelHTML(idx, false, 1, copies) +
+          '<div class="copies-input"><label>Копий:</label><input type="number" value="'+copies+'" min="1" onchange="updateCopies('+idx+',this.value)" onclick="event.stopPropagation()"></div>';
+        grid.appendChild(card);
+        setTimeout(function(){ 
+          try { JsBarcode('#'+svgId, bc, {format:'CODE128', width:2, height:40, displayValue:false, margin:0}); } catch(e){} 
+        }, 0);
+      });
+      if(!cnt) grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>Ничего не найдено</p></div>';
+      updateLabelStats(); updateSelectionUI(); updatePrintSummary();
+    }
+
+    function updateCopies(idx, val) {
+      var n = parseInt(val); if(isNaN(n) || n<1) n = 1;
+      printCopies[idx] = n; labelCounterMap[idx] = {current:1, total:n};
+      updatePrintSummary(); renderLabelGrid();
+    }
+
+    function updateSelectionUI() {
+      document.querySelectorAll('.label-card').forEach(function(card){
+        var s = card.querySelector('.label-sheet'), idx = s ? parseInt(s.dataset.idx) : -1;
+        if(selectedIndices.has(idx)){ card.style.outline = '3px solid var(--primary)'; card.style.outlineOffset = '-3px'; }
+        else { card.style.outline = ''; }
+      });
+      var btn = document.getElementById('printSingleBtn');
+      if(selectedIndices.size > 0){ btn.textContent = '🖨️ Выбранных ('+selectedIndices.size+'/'+calcTotalLabels(Array.from(selectedIndices))+')'; btn.classList.add('purple'); }
+      else { btn.textContent = '🖨️ Выбранных'; btn.classList.remove('purple'); }
+    }
+
+    function updateLabelStats() {
+      document.getElementById('statTotal').textContent = excelData.length;
+      document.getElementById('statPrinted').textContent = printedSet.size;
+      document.getElementById('printStat').textContent = printedSet.size + ' / ' + excelData.length;
+    }
+
+    function filterLabels(f, el) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-chips .chip').forEach(function(c){ c.classList.remove('active'); });
+      if(el) el.classList.add('active'); renderLabelGrid();
+    }
+    function searchLabels() { renderLabelGrid(); }
+
+    function printSingleLabel(idx) {
+      if (!isValidBarcode(idx)) { showToast('Невозможно напечатать: отсутствует штрихкод', 'warning'); return; }
+      var copies = printCopies[idx] || 1;
+      if(copies > 1) { printMultipleLabels([idx]); return; }
+      var pa = document.getElementById('bulkPrintArea');
+      pa.innerHTML = createLabelHTML(idx, true, 1, copies); pa.classList.remove('hidden');
+      setTimeout(function(){
+        try { JsBarcode('#bp_svg_'+idx+'_1', getItemBarcode(idx), {format:'CODE128', width:1.5, height:30, displayValue:false, margin:0}); } catch(e){}
+        window.print();
+      }, 150);
+      setTimeout(function(){ pa.classList.add('hidden'); printedSet.add(idx); renderLabelGrid(); showToast('Этикетка напечатана', 'success'); }, 2500);
+    }
+
+    function printMultipleLabels(indices) {
+      var validIndices = indices.filter(function(idx) { return isValidBarcode(idx); });
+      var skippedCount = indices.length - validIndices.length;
+      if (validIndices.length === 0) { showToast('Нет позиций с корректным штрихкодом для печати', 'warning'); return; }
+      if (skippedCount > 0) { showToast('⚠️ Пропущено ' + skippedCount + ' поз. без ШК.', 'warning'); }
+      else { showToast('⚠️ ВАЖНО: В окне печати: Размер 58x40 мм, Масштаб 100%, Поля "Нет"', 'warning'); }
+      
+      var pa = document.getElementById('bulkPrintArea'); pa.innerHTML = ''; var tl = 0;
+      validIndices.forEach(function(idx){
+        var c = printCopies[idx] || 1;
+        for(var i=1; i<=c; i++){ pa.insertAdjacentHTML('beforeend', createLabelHTML(idx, true, i, c)); tl++; }
+      });
+      pa.classList.remove('hidden');
+      setTimeout(function(){
+        validIndices.forEach(function(idx){
+          var c = printCopies[idx] || 1, bc = getItemBarcode(idx);
+          for(var i=1; i<=c; i++){ 
+            try { JsBarcode('#bp_svg_'+idx+'_'+i, bc, {format:'CODE128', width:1.5, height:30, displayValue:false, margin:0}); } catch(e){} 
+          }
         });
-        
-        document.getElementById('wb-scan-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const barcode = this.value.trim();
-                if (barcode) {
-                    document.getElementById('wb-last-scan').textContent = barcode;
-                    const count = parseInt(document.getElementById('wb-box-items').textContent) + 1;
-                    document.getElementById('wb-box-items').textContent = count;
-                    addLog('main-log', `WB сканирование: ${barcode}`);
-                    this.value = '';
-                }
+        window.print();
+      }, 1200);
+      setTimeout(function(){
+        pa.classList.add('hidden'); validIndices.forEach(function(idx){ printedSet.add(idx); });
+        selectedIndices.clear(); renderLabelGrid(); showToast('Печать завершена!', 'success');
+      }, 4000);
+    }
+
+    function printSelectedLabels() {
+      if(!selectedIndices.size) { showToast('Выберите этикетки', 'warning'); return; }
+      printMultipleLabels(Array.from(selectedIndices).sort(function(a,b){return a-b;}));
+    }
+    function printSingleFromGrid() {
+      if(selectedIndices.size > 0) printSelectedLabels(); else showToast('Ctrl+клик для выбора', 'info');
+    }
+    function printAllLabels() {
+      if(!excelData.length) { showToast('Нет данных', 'warning'); return; }
+      var idx = []; for(var j=0; j<excelData.length; j++) idx.push(j); printMultipleLabels(idx);
+    }
+    function printRemainingLabels() {
+      var r = []; excelData.forEach(function(_, j){ if(!printedSet.has(j)) r.push(j); });
+      if(!r.length) { showToast('Все напечатаны', 'success'); return; } printMultipleLabels(r);
+    }
+    function markAllPrinted() {
+      if(!confirm('Отметить все?')) return;
+      printedSet = new Set(); for(var i=0; i<excelData.length; i++) printedSet.add(i);
+      renderLabelGrid(); showToast('Все отмечены', 'success');
+    }
+    function resetPrintStatus() {
+      if(!confirm('Сбросить?')) return;
+      printedSet.clear(); selectedIndices.clear(); renderLabelGrid(); showToast('Статус сброшен', 'info');
+    }
+
+    function calculateBoxStats() {
+      var boxStats = {};
+      excelData.forEach(function(item, idx) { boxStats[idx] = {boxCount: 0, palletIds: new Set()}; });
+      if(!excelData.length) return boxStats;
+      
+      var barcodeToIndices = {};
+      excelData.forEach(function(item, idx) {
+        var bc = getItemBarcode(idx);
+        var obc = getItemOriginBarcode(idx);
+        if(bc) { if(!barcodeToIndices[bc]) barcodeToIndices[bc] = []; barcodeToIndices[bc].push(idx); }
+        if(obc && obc !== bc) { if(!barcodeToIndices[obc]) barcodeToIndices[obc] = []; barcodeToIndices[obc].push(idx); }
+      });
+      
+      Object.keys(boxes).forEach(function(boxId) {
+        var box = boxes[boxId];
+        var processedIndices = new Set();
+        box.items.forEach(function(it) {
+          var itBc = String(it[mapping.label_barcode] || '').trim();
+          var itOb = String(it[mapping.origin_barcode] || '').trim();
+          var indices = [];
+          if(itBc && barcodeToIndices[itBc]) indices = indices.concat(barcodeToIndices[itBc]);
+          if(itOb && itOb !== itBc && barcodeToIndices[itOb]) indices = indices.concat(barcodeToIndices[itOb]);
+          indices.forEach(function(idx) {
+            if(!processedIndices.has(idx + '_' + boxId)) {
+              processedIndices.add(idx + '_' + boxId);
+              boxStats[idx].boxCount++;
+              if(boxPalletMap[boxId]) boxStats[idx].palletIds.add(boxPalletMap[boxId]);
             }
+          });
         });
+      });
+      return boxStats;
+    }
+
+    function renderTZTable() {
+      var container = document.getElementById('tzTableBody');
+      if(!container) return; container.innerHTML = '';
+      document.getElementById('tzStatTotal').textContent = excelData.length;
+      if(!excelData.length) {
+        container.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:40px; color:var(--text-muted);">Нет загруженных данных</td></tr>';
+        updateTZStats(); return;
+      }
+      
+      var boxStats = calculateBoxStats();
+      var st = tzSearch.toLowerCase(), visibleCount = 0;
+      
+      var qtyFromVal = document.getElementById('tzQtyFrom').value;
+      var qtyToVal = document.getElementById('tzQtyTo').value;
+      var qtyFrom = qtyFromVal !== '' ? parseFloat(qtyFromVal) : -Infinity;
+      var qtyTo = qtyToVal !== '' ? parseFloat(qtyToVal) : Infinity;
+
+      var sortedIndices = [];
+      for(var i = 0; i < excelData.length; i++) { sortedIndices.push(i); }
+
+      sortedIndices.sort(function(a, b) {
+        var totalA = parseQuantityValue(getItemField(a, 'total_quantity'));
+        var totalB = parseQuantityValue(getItemField(b, 'total_quantity'));
+        var qtyA = parseQuantityValue(getItemField(a, 'quantity'));
+        var qtyB = parseQuantityValue(getItemField(b, 'quantity'));
+
+        if (totalA !== totalB) return totalA - totalB;
+        if (qtyA !== qtyB) return qtyA - qtyB;
+        var artA = String(getItemArticle(a) || '').toLowerCase();
+        var artB = String(getItemArticle(b) || '').toLowerCase();
+        return artA.localeCompare(artB);
+      });
+
+      sortedIndices.forEach(function(idx) {
+        var origArt = getItemOriginArticle(idx);
+        var labelArt = getItemLabelArticle(idx);
+        var origBc = getItemOriginBarcode(idx);
+        var labelBc = getItemLabelBarcode(idx);
+        var desc = getItemDescription(idx);
+        var instr = getItemInstruction(idx);
+        var qty = getItemQuantity(idx), totalQty = getItemField(idx, 'total_quantity');
         
-        // Инициализация
-        addLog('main-log', 'Система инициализирована');
-        addLog('recv-log', 'Модуль приёмки готов к работе');
-    </script>
+        if(tzFilter === 'selected' && !tzSelectedIndices.has(idx)) return;
+        if(st) {
+          var searchFields = [origArt, labelArt, origBc, labelBc, desc, instr].map(function(f) { return (f || '').toLowerCase(); });
+          if(!searchFields.some(function(f) { return f.includes(st); })) return;
+        }
+        
+        var currentQty = parseQuantityValue(getItemField(idx, 'quantity'));
+        if (currentQty < qtyFrom || currentQty > qtyTo) return;
+        
+        visibleCount++;
+        var stats = boxStats[idx];
+        var palletStr = stats.palletIds.size > 0 ? Array.from(stats.palletIds).sort().map(function(p) { return 'П' + p; }).join(', ') : '—';
+        var boxStr = stats.boxCount > 0 ? stats.boxCount : '—';
+        
+        var tr = document.createElement('tr');
+        if(tzSelectedIndices.has(idx)) tr.className = 'selected';
+        tr.innerHTML = '<td><input type="checkbox" class="tz-checkbox" data-idx="'+idx+'" '+(tzSelectedIndices.has(idx)?'checked':'')+'></td>'+
+          '<td style="font-family:monospace; font-size:0.8rem;">'+(origArt || '—')+'</td>'+
+          '<td style="font-family:monospace; font-size:0.8rem;"><b>'+(labelArt || '—')+'</b></td>'+
+          '<td style="font-family:monospace; font-size:0.8rem;">'+(origBc || '—')+'</td>'+
+          '<td style="font-family:monospace; font-size:0.8rem;"><b>'+(labelBc || '—')+'</b></td>'+
+          '<td>'+desc+'</td>'+
+          '<td style="font-size:0.8rem; color:var(--text-secondary); max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="'+(instr || '')+'">'+(instr || '—')+'</td>'+
+          '<td><b>'+(qty||'—')+'</b></td><td><b>'+(totalQty||'—')+'</b></td>'+
+          '<td style="text-align:center;"><b>'+boxStr+'</b></td><td style="text-align:center;">'+palletStr+'</td>';
+        container.appendChild(tr);
+      });
+      
+      if(visibleCount === 0) container.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:40px; color:var(--text-muted);">Ничего не найдено</td></tr>';
+      document.querySelectorAll('.tz-checkbox').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var idx = parseInt(this.dataset.idx);
+          if(this.checked) tzSelectedIndices.add(idx); else tzSelectedIndices.delete(idx);
+          updateTZStats(); this.closest('tr').className = this.checked ? 'selected' : '';
+        });
+      });
+      updateTZStats();
+    }
+
+    function updateTZStats() {
+      document.getElementById('tzStatTotal').textContent = excelData.length;
+      document.getElementById('tzStatSelected').textContent = tzSelectedIndices.size;
+      var statsEl = document.getElementById('tzStats');
+      if(statsEl) statsEl.textContent = 'Всего: ' + excelData.length + ' · Выбрано: ' + tzSelectedIndices.size;
+    }
+
+    function selectAllTZ() { tzSelectedIndices.clear(); excelData.forEach(function(_, idx) { tzSelectedIndices.add(idx); }); renderTZTable(); }
+    function deselectAllTZ() { tzSelectedIndices.clear(); renderTZTable(); }
+    function filterTZ(filter, el) {
+      tzFilter = filter;
+      document.querySelectorAll('#tab-tz .filter-chips .chip').forEach(function(c) { c.classList.remove('active'); });
+      if(el) el.classList.add('active'); renderTZTable();
+    }
+    function searchTZ() { tzSearch = document.getElementById('tzSearchInput').value; renderTZTable(); }
+    
+    function clearQtyFilter() {
+      document.getElementById('tzQtyFrom').value = '';
+      document.getElementById('tzQtyTo').value = '';
+      renderTZTable();
+    }
+
+    function printTZ() {
+      if(!excelData.length) { showToast('Нет данных для печати', 'warning'); return; }
+      
+      var indicesToPrint = [];
+      if(tzSelectedIndices.size > 0) {
+        indicesToPrint = Array.from(tzSelectedIndices);
+      } else {
+        for(var i = 0; i < excelData.length; i++) indicesToPrint.push(i);
+      }
+      
+      if(indicesToPrint.length === 0) { showToast('Нет данных для печати', 'warning'); return; }
+      
+      var qtyFromVal = document.getElementById('tzQtyFrom').value;
+      var qtyToVal = document.getElementById('tzQtyTo').value;
+      var qtyFrom = qtyFromVal !== '' ? parseFloat(qtyFromVal) : -Infinity;
+      var qtyTo = qtyToVal !== '' ? parseFloat(qtyToVal) : Infinity;
+
+      indicesToPrint.sort(function(a, b) {
+        var totalA = parseQuantityValue(getItemField(a, 'total_quantity'));
+        var totalB = parseQuantityValue(getItemField(b, 'total_quantity'));
+        var qtyA = parseQuantityValue(getItemField(a, 'quantity'));
+        var qtyB = parseQuantityValue(getItemField(b, 'quantity'));
+
+        if (totalA !== totalB) return totalA - totalB;
+        if (qtyA !== qtyB) return qtyA - qtyB;
+        var artA = String(getItemArticle(a) || '').toLowerCase();
+        var artB = String(getItemArticle(b) || '').toLowerCase();
+        return artA.localeCompare(artB);
+      });
+      
+      var boxStats = calculateBoxStats();
+      
+      var printHTML = '<div class="tz-print-container">';
+      printHTML += '<div class="tz-print-header"><h1>Техническое задание на сборку</h1>';
+      var filterInfo = (qtyFromVal !== '' || qtyToVal !== '') ? ` (Фильтр кол-ва: ${qtyFromVal || '0'} - ${qtyToVal || '∞'})` : '';
+      printHTML += '<p>Дата формирования: ' + new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) + ' (Отсортировано по количеству ↑)' + filterInfo + '</p></div>';
+      printHTML += '<table><thead><tr>';
+      printHTML += '<th class="tz-col-num">№</th><th class="tz-col-art">Арт. произв.</th><th class="tz-col-art">Арт. этикет.</th>';
+      printHTML += '<th class="tz-col-bc">ШК произв.</th><th class="tz-col-bc">ШК этикет.</th>';
+      printHTML += '<th class="tz-col-name">Наименование</th><th class="tz-col-instr">Инструкция / ТЗ</th>';
+      printHTML += '<th class="tz-col-qty">Кол-во</th><th class="tz-col-total">Итого ↑</th>';
+      printHTML += '<th class="tz-col-box">Коробов</th><th class="tz-col-pal">Палет</th>';
+      printHTML += '</tr></thead><tbody>';
+      
+      var printCounter = 1;
+      indicesToPrint.forEach(function(idx) {
+        var currentQty = parseQuantityValue(getItemField(idx, 'quantity'));
+        if (currentQty < qtyFrom || currentQty > qtyTo) return;
+        
+        var origArt = getItemOriginArticle(idx);
+        var labelArt = getItemLabelArticle(idx);
+        var origBc = getItemOriginBarcode(idx);
+        var labelBc = getItemLabelBarcode(idx);
+        var desc = getItemDescription(idx);
+        var instr = getItemInstruction(idx);
+        var qty = getItemQuantity(idx), totalQty = getItemField(idx, 'total_quantity');
+        
+        var stats = boxStats[idx];
+        var palletStr = stats.palletIds.size > 0 ? Array.from(stats.palletIds).sort().map(function(p) { return 'П' + p; }).join(', ') : '—';
+        var boxStr = stats.boxCount > 0 ? stats.boxCount : '—';
+        
+        printHTML += '<tr>';
+        printHTML += '<td class="tz-col-num">' + printCounter + '</td>';
+        printHTML += '<td class="tz-col-art">' + (origArt || '—') + '</td>';
+        printHTML += '<td class="tz-col-art">' + (labelArt || '—') + '</td>';
+        printHTML += '<td class="tz-col-bc">' + (origBc || '—') + '</td>';
+        printHTML += '<td class="tz-col-bc">' + (labelBc || '—') + '</td>';
+        printHTML += '<td class="tz-col-name">' + desc + '</td>';
+        printHTML += '<td class="tz-col-instr">' + (instr || '—') + '</td>';
+        printHTML += '<td class="tz-col-qty">' + (qty || '—') + '</td>';
+        printHTML += '<td class="tz-col-total">' + (totalQty || '—') + '</td>';
+        printHTML += '<td class="tz-col-box">' + boxStr + '</td>';
+        printHTML += '<td class="tz-col-pal">' + palletStr + '</td>';
+        printHTML += '</tr>';
+        printCounter++;
+      });
+      
+      printHTML += '</tbody></table>';
+      printHTML += '<div class="tz-print-footer">';
+      printHTML += '<div class="tz-summary"><span>Всего позиций в документе: <b>' + (printCounter - 1) + '</b></span></div>';
+      printHTML += '<div class="tz-signature">';
+      printHTML += '<div>Составил: <span class="tz-signature-line"></span></div>';
+      printHTML += '<div>Проверил: <span class="tz-signature-line"></span></div>';
+      printHTML += '</div></div></div>';
+      
+      var printArea = document.getElementById('tzPrintArea');
+      if(!printArea) { printArea = document.createElement('div'); printArea.id = 'tzPrintArea'; printArea.className = 'hidden'; document.body.appendChild(printArea); }
+      printArea.innerHTML = printHTML; printArea.classList.remove('hidden');
+      setTimeout(function() { window.print(); }, 300);
+      setTimeout(function() { printArea.classList.add('hidden'); showToast('ТЗ отправлено на печать (' + (printCounter - 1) + ' позиций)', 'success'); }, 2000);
+    }
+
+    function renderBoxChips() {
+      var c = document.getElementById('boxList'); c.innerHTML = '';
+      var ids = Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
+      ids.forEach(function(id){
+        var box = boxes[id], chip = document.createElement('div');
+        chip.className = 'box-chip';
+        if(id===currentBox && !box.fixed) chip.className += ' active';
+        if(box.fixed) chip.className += ' fixed';
+        var li = box.fixed ? '🔒' : '', pl = boxPalletMap[id] ? ' 🏗️П'+boxPalletMap[id] : '';
+        chip.innerHTML = '📦 Короб '+id+' <span class="box-count">'+box.items.length+' шт.</span>'+pl+' '+li;
+        if(!box.fixed && id!==currentBox) chip.onclick = function(){ selectBox(id); };
+        c.appendChild(chip);
+      });
+      var cb = boxes[currentBox], le = document.getElementById('currentBoxLabel');
+      if(cb && !cb.fixed) le.innerHTML = '<span class="scanning-indicator"></span> Короб '+currentBox+' ('+cb.items.length+')';
+      else le.textContent = '⚠️ Выберите активный короб';
+      document.getElementById('progressText').textContent = cb ? cb.items.length : 0;
+      updateBoxSummary();
+    }
+
+    function updateBoxSummary() {
+      var ids = Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
+      var p = document.getElementById('boxSummaryPanel'), tb = document.getElementById('boxSummaryBody');
+      if(ids.length <= 1 && !boxes[1].fixed) { p.classList.add('hidden'); return; }
+      p.classList.remove('hidden'); tb.innerHTML = '';
+      ids.forEach(function(id){
+        var box = boxes[id], tr = document.createElement('tr');
+        var sb = box.fixed ? '<span class="badge success">🔒 Зафиксирован</span>' : '<span class="badge info">✏️ Активный</span>';
+        var pi = boxPalletMap[id] ? 'Палет '+boxPalletMap[id] : '—';
+        tr.innerHTML = '<td><b>Короб '+id+'</b></td><td>'+box.items.length+'</td><td>'+pi+'</td><td>'+sb+'</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    function newBox() {
+      if(boxes[currentBox]) boxes[currentBox].fixed = true;
+      var ids = Object.keys(boxes).map(Number), next = Math.max.apply(null, ids) + 1;
+      boxes[next] = {items:[], fixed:false}; currentBox = next;
+      renderBoxChips(); updateScannerUI();
+      showToast('Короб '+(next-1)+' зафиксирован. Новый: '+next, 'success'); speak('Создан короб номер '+next);
+    }
+
+    function selectBox(id) {
+      if(boxes[id] && !boxes[id].fixed){ currentBox = id; renderBoxChips(); updateScannerUI(); showToast('Выбран короб '+id, 'info'); }
+    }
+
+    function updateScannerUI() {
+      var list = boxes[currentBox] ? boxes[currentBox].items : [];
+      document.getElementById('progressText').textContent = list.length;
+      var tb = document.getElementById('scannedBody'); tb.innerHTML = '';
+      var g = {}, so = [];
+      list.forEach(function(item){
+        var bc = String(item[mapping.label_barcode] || '').trim();
+        if(!g[bc]){ g[bc] = {item:item, count:0}; so.push(bc); } g[bc].count++;
+      });
+      so.forEach(function(bc){
+        var gg = g[bc], tr = document.createElement('tr');
+        var av = gg.item[mapping.wb_article] || '-';
+        var isF = boxes[currentBox] && boxes[currentBox].fixed;
+        var ab = isF ? '<span style="color:var(--text-muted);">🔒</span>' : '<button class="secondary" style="padding:4px 10px;width:auto;font-size:0.75rem;" onclick="removeOneFromBox(\''+bc.replace(/'/g,"\\'")+'\')">✖</button>';
+        tr.innerHTML = '<td><b>'+av+'</b></td><td style="font-family:monospace;">'+bc+'</td><td><b>'+gg.count+'</b></td><td><span class="badge success">Принято</span></td><td>'+ab+'</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    function removeOneFromBox(barcode) {
+      if(!boxes[currentBox] || boxes[currentBox].fixed){ showToast('Короб зафиксирован', 'warning'); return; }
+      var idx = boxes[currentBox].items.findIndex(function(it){
+        return String(it[mapping.label_barcode]||'').trim()===barcode || String(it[mapping.origin_barcode]||'').trim()===barcode;
+      });
+      if(idx !== -1){ boxes[currentBox].items.splice(idx, 1); renderBoxChips(); updateScannerUI(); showToast('Удалено', 'info'); }
+    }
+
+    function processScan(barcode) {
+      if(!barcode) return;
+      if(!mapping || !mapping.label_barcode) { showToast('Сначала загрузите ТЗ и настройте маппинг!', 'error'); return; }
+      if(!boxes[currentBox] || boxes[currentBox].fixed) { showToast('Короб зафиксирован. Создайте новый.', 'warning'); speak('Короб зафиксирован.'); return; }
+      var foundItem = null;
+      excelData.forEach(function(row) {
+        var lb = String(row[mapping.label_barcode] || '').trim(), ob = String(row[mapping.origin_barcode] || '').trim();
+        if(lb === barcode || ob === barcode) foundItem = row;
+      });
+      if(!foundItem) { showToast('ШК '+barcode+' не найден!', 'error'); speak('Штрихкод не найден.'); return; }
+      var maxQty = 1;
+      if(mapping.total_quantity && mapping.total_quantity!=='' && foundItem[mapping.total_quantity]) maxQty = parseQuantityValue(foundItem[mapping.total_quantity]);
+      var currentCount = 0;
+      boxes[currentBox].items.forEach(function(it) {
+        var itLb = String(it[mapping.label_barcode] || '').trim(), itOb = String(it[mapping.origin_barcode] || '').trim();
+        if(itLb === barcode || itOb === barcode) currentCount++;
+      });
+      if(currentCount >= maxQty) { showToast('Лимит '+maxQty+' для ШК '+barcode, 'warning'); speak('Лимит достигнут.'); return; }
+      boxes[currentBox].items.push(foundItem); renderBoxChips(); updateScannerUI();
+      showToast('✅ '+(currentCount+1)+'/'+maxQty+' — '+foundItem[mapping.wb_article], 'success');
+      speak('Принято '+(currentCount+1)+' из '+maxQty);
+    }
+
+    var scannerInput = document.getElementById('scannerInput'), scanTimeout = null;
+    scannerInput.addEventListener('input', function() {
+      clearTimeout(scanTimeout); var self = this;
+      scanTimeout = setTimeout(function() { if(self.value.trim()) processScan(self.value.trim()); self.value = ''; }, 300);
+    });
+    scannerInput.addEventListener('keydown', function(e) {
+      if(e.key === 'Enter') { e.preventDefault(); processScan(scannerInput.value.trim()); scannerInput.value = ''; }
+    });
+
+    function toggleCameraScanner() {
+      var btn = document.getElementById('cameraStartBtn');
+      if(cameraRunning) { stopCameraScanner(); btn.textContent = '▶️ Включить камеру'; btn.className = 'cyan'; }
+      else { startCameraScanner(); }
+    }
+
+    function startCameraScanner() {
+      var btn = document.getElementById('cameraStartBtn'), placeholder = document.getElementById('camera-placeholder'), selectRow = document.getElementById('cameraSelectRow');
+      if(typeof Html5Qrcode === 'undefined') { showToast('Библиотека сканера не загружена. Проверьте интернет.', 'error'); return; }
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast('Камера не поддерживается в этом браузере', 'error'); return; }
+      Html5Qrcode.getCameras().then(function(devices) {
+        if(!devices || devices.length === 0) { showToast('Камера не найдена', 'error'); return; }
+        cameraDevices = devices;
+        var sel = document.getElementById('cameraSelect'); sel.innerHTML = '';
+        devices.forEach(function(d, i) {
+          var opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.label || ('Камера ' + (i+1)); sel.appendChild(opt);
+        });
+        var backCamera = devices.find(function(d) {
+          var lbl = d.label.toLowerCase(); return lbl.includes('back') || lbl.includes('rear') || lbl.includes('задн') || lbl.includes('environment');
+        });
+        if(backCamera) { currentCameraId = backCamera.id; sel.value = backCamera.id; } else { currentCameraId = devices[0].id; }
+        if(placeholder) placeholder.style.display = 'none'; selectRow.classList.remove('hidden');
+        if(html5QrCode) { try { html5QrCode.clear(); } catch(e){} }
+        html5QrCode = new Html5Qrcode("camera-reader-container");
+        html5QrCode.start(currentCameraId, { fps: 15, qrbox: {width: 280, height: 120}, aspectRatio: 1.5 }, function(decodedText) { onCameraScanSuccess(decodedText); }, function() {}).then(function() {
+          cameraRunning = true; btn.textContent = '⏹️ Выключить'; btn.className = 'danger';
+          document.getElementById('cameraStatusText').textContent = '🟢 Камера активна — сканирование...';
+          document.getElementById('cameraStatusText').style.color = 'var(--success-light)';
+          showToast('Камера включена. Наведите на штрихкод.', 'success');
+        }).catch(function(err) { showToast('Ошибка камеры: '+err.message, 'error'); console.error(err); });
+      }).catch(function(err) { showToast('Ошибка доступа к камере: '+err.message, 'error'); console.error(err); });
+    }
+
+    function switchCamera() {
+      if(cameraDevices.length <= 1) { showToast('Доступна только одна камера', 'warning'); return; }
+      var sel = document.getElementById('cameraSelect'), idx = -1;
+      for(var i=0; i<cameraDevices.length; i++) { if(cameraDevices[i].id === currentCameraId) { idx = i; break; } }
+      var nextIdx = (idx + 1) % cameraDevices.length; currentCameraId = cameraDevices[nextIdx].id; sel.value = currentCameraId;
+      stopCameraScanner();
+      setTimeout(function() { startCameraScanner(); document.getElementById('cameraStartBtn').textContent = '⏹️ Выключить'; document.getElementById('cameraStartBtn').className = 'danger'; }, 500);
+    }
+
+    function stopCameraScanner() {
+      if(html5QrCode && cameraRunning) { html5QrCode.stop().catch(function(){}); try { html5QrCode.clear(); } catch(e){} }
+      cameraRunning = false; document.getElementById('cameraStatusText').textContent = 'Камера выключена';
+      document.getElementById('cameraStatusText').style.color = '';
+      var placeholder = document.getElementById('camera-placeholder'); if(placeholder) placeholder.style.display = '';
+    }
+
+    function onCameraScanSuccess(decodedText) {
+      var now = Date.now();
+      if(decodedText === lastCameraScanCode && (now - lastCameraScanTime) < 2000) return;
+      lastCameraScanCode = decodedText; lastCameraScanTime = now;
+      document.getElementById('cameraScanResult').textContent = '📦 ' + decodedText;
+      document.getElementById('lastScannedBar').classList.remove('hidden');
+      document.getElementById('lastScannedCode').textContent = decodedText;
+      if(navigator.vibrate) navigator.vibrate(100);
+      processScan(decodedText);
+    }
+
+    function resetSession() {
+      if(!confirm('Сбросить все данные?')) return;
+      boxes = {1:{items:[],fixed:false}}; currentBox = 1; pallets = {}; boxPalletMap = {}; nextPalletId = 1;
+      renderBoxChips(); updateScannerUI(); showToast('Сессия сброшена', 'info'); speak('Сессия сброшена.');
+    }
+
+    function getPalletIds() { return Object.keys(pallets).map(Number).sort(function(a,b){return a-b;}); }
+    function createPallet() { var id=nextPalletId++; pallets[id]=[]; return id; }
+
+    function assignBoxToPallet() {
+      var boxSel = document.getElementById('assignBoxSelect'), palletSel = document.getElementById('assignPalletSelect');
+      var boxId = parseInt(boxSel.value), palletId = parseInt(palletSel.value);
+      if(isNaN(boxId) || !boxes[boxId]) { showToast('Выберите короб!', 'error'); return; }
+      if(isNaN(palletId)) { showToast('Выберите палет!', 'error'); return; }
+      if(boxPalletMap[boxId]) {
+        var oldPallet = boxPalletMap[boxId];
+        if(pallets[oldPallet]) { pallets[oldPallet] = pallets[oldPallet].filter(function(b){return b!==boxId;}); if(!pallets[oldPallet].length) delete pallets[oldPallet]; }
+      }
+      if(!pallets[palletId]) pallets[palletId] = [];
+      pallets[palletId].push(boxId); boxPalletMap[boxId] = palletId;
+      document.getElementById('palletAssignStatus').innerHTML = '<span class="badge success">✅ Короб '+boxId+' → Палет '+palletId+'</span>';
+      updatePalletAssignUI(); renderBoxChips(); showToast('Короб '+boxId+' → Палет '+palletId, 'success');
+    }
+
+    function autoAssignPallets() {
+      var ids = Object.keys(boxes).map(Number).sort(function(a,b){return a-b;});
+      var wi = ids.filter(function(id){return boxes[id].items.length>0;}), ua = wi.filter(function(id){return !boxPalletMap[id];});
+      if(!ua.length) { showToast('Все распределены', 'info'); updatePalletAssignUI(); renderBoxChips(); return; }
+      var pId = createPallet(); pallets[pId] = [];
+      ua.forEach(function(boxId){pallets[pId].push(boxId); boxPalletMap[boxId]=pId;});
+      document.getElementById('palletAssignStatus').innerHTML = '<span class="badge success">⚡ '+ua.length+' коробов → Палет '+pId+'</span>';
+      updatePalletAssignUI(); renderBoxChips(); showToast(ua.length+' коробов → Палет '+pId, 'success');
+    }
+
+    function updatePalletAssignUI() {
+      var boxSel = document.getElementById('assignBoxSelect'), palletSel = document.getElementById('assignPalletSelect');
+      boxSel.innerHTML = '';
+      Object.keys(boxes).map(Number).sort(function(a,b){return a-b;}).forEach(function(id){
+        var box = boxes[id], pi = boxPalletMap[id] ? ' (П'+boxPalletMap[id]+')' : '', st = box.fixed ? '🔒' : '✏️';
+        var opt = document.createElement('option'); opt.value = id;
+        opt.textContent = 'Короб '+id+' — '+box.items.length+' шт. '+st+pi; boxSel.appendChild(opt);
+      });
+      palletSel.innerHTML = '';
+      getPalletIds().forEach(function(pid){
+        var opt = document.createElement('option'); opt.value = pid;
+        opt.textContent = 'Палет '+pid+' ('+pallets[pid].length+' коробов)'; palletSel.appendChild(opt);
+      });
+      var no = document.createElement('option'); no.value = nextPalletId; no.textContent = '🆕 Новый палет '+nextPalletId; palletSel.appendChild(no);
+    }
+
+    function getBoxGroupedItems(boxId) {
+      var items = boxes[boxId] ? boxes[boxId].items : [], g = {}, o = [];
+      items.forEach(function(item){
+        var art = String(item[mapping.wb_article]||'').trim(), bc = String(item[mapping.label_barcode]||'').trim();
+        var key = art+'||'+bc;
+        if(!g[key]){ g[key] = { article: art, barcode: bc, name: String(item[mapping.product_name]||'').trim(), quantity: String(item[mapping.quantity]||'').trim(), expiry: String(item[mapping.expiry]||'').trim(), count: 0 }; o.push(key); }
+        g[key].count++;
+      });
+      return {grouped:g, order:o, totalItems:items.length};
+    }
+
+    function generateReport() {
+      var container = document.getElementById('reportContent');
+      var ids = Object.keys(boxes).map(Number).sort(function(a,b){return a-b;}), wi = ids.filter(function(id){return boxes[id].items.length>0;});
+      if(!wi.length) { container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Нет данных</p></div>'; return; }
+      var ua = wi.filter(function(id){return !boxPalletMap[id];});
+      if(ua.length){ var ap = createPallet(); pallets[ap] = []; ua.forEach(function(b){pallets[ap].push(b); boxPalletMap[b]=ap;}); }
+      var pIds = getPalletIds().filter(function(pid){return pallets[pid]&&pallets[pid].length>0;}), now = new Date();
+      var ds = now.toLocaleDateString('ru-RU')+' '+now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      var html = '<div class="report-header"><h2>📦 Отчёт по отгрузке</h2><p>'+ds+' · Палетов: '+pIds.length+' · Коробов: '+wi.length+'</p></div>';
+      var gti = 0, gtb = 0;
+      pIds.forEach(function(pid){
+        var pb = pallets[pid].sort(function(a,b){return a-b;}), pti = 0;
+        pb.forEach(function(bid){pti+=boxes[bid].items.length;}); gti += pti; gtb += pb.length;
+        html += '<div class="pallet-section"><div class="pallet-header"><span>🏗️ Палет '+pid+'</span><span class="pallet-stats">'+pb.length+' коробов · '+pti+' позиций</span></div><div class="pallet-body">';
+        pb.forEach(function(bid){
+          var bd = getBoxGroupedItems(bid);
+          html += '<div class="box-report-card"><div class="box-report-header" onclick="this.nextElementSibling.classList.toggle(\'hidden\')"><span>📦 Короб '+bid+'</span><span class="box-badge">'+bd.totalItems+' шт.</span></div><div class="box-report-body"><table><thead><tr><th>Артикул</th><th>ШК</th><th>Наименование</th><th>Кол-во</th></tr></thead><tbody>';
+          bd.order.forEach(function(key){
+            var gg = bd.grouped[key];
+            html += '<tr><td><b>'+gg.article+'</b></td><td style="font-family:monospace;font-size:0.8rem;">'+gg.barcode+'</td><td>'+gg.name+'</td><td><b>'+gg.count+'</b></td></tr>';
+          });
+          html += '</tbody></table></div></div>';
+        });
+        html += '</div></div>';
+      });
+      html += '<div class="report-totals"><h3>📊 Итого</h3>';
+      html += '<div class="total-row"><span>Палетов:</span><span class="total-val">'+pIds.length+'</span></div>';
+      html += '<div class="total-row"><span>Коробов:</span><span class="total-val">'+gtb+'</span></div>';
+      html += '<div class="total-row"><span>Всего позиций:</span><span class="total-val">'+gti+'</span></div>';
+      var aa = {};
+      wi.forEach(function(bid){ boxes[bid].items.forEach(function(item){
+        var art = String(item[mapping.wb_article]||'').trim();
+        if(!aa[art]) aa[art] = {name:String(item[mapping.product_name]||'').trim(), count:0}; aa[art].count++;
+      });});
+      html += '<div class="total-row"><span>Уникальных артикулов:</span><span class="total-val">'+Object.keys(aa).length+'</span></div></div>';
+      html += '<div style="margin-top:16px;"><h3 style="margin-bottom:10px;">📋 Сводка по артикулам</h3><table><thead><tr><th>Артикул</th><th>Наименование</th><th>Отгружено</th></tr></thead><tbody>';
+      Object.keys(aa).sort().forEach(function(art){
+        var info = aa[art]; html += '<tr><td><b>'+art+'</b></td><td>'+info.name+'</td><td><b>'+info.count+'</b></td></tr>';
+      });
+      html += '</tbody></table></div>'; container.innerHTML = html;
+    }
+
+    function printReport() {
+      var rc = document.getElementById('reportContent');
+      if(!rc.innerHTML || rc.innerHTML.includes('empty-state')) generateReport();
+      var pa = document.getElementById('reportPrintArea'); pa.innerHTML = rc.innerHTML; pa.classList.remove('hidden');
+      setTimeout(function(){ window.print(); }, 300); setTimeout(function(){ pa.classList.add('hidden'); }, 3000);
+    }
+
+    function exportReportExcel() {
+      var ids = Object.keys(boxes).map(Number).sort(function(a,b){return a-b;}), wi = ids.filter(function(id){return boxes[id].items.length>0;});
+      if(!wi.length) { showToast('Нет данных', 'error'); return; }
+      var ua = wi.filter(function(id){return !boxPalletMap[id];});
+      if(ua.length){ var ap = createPallet(); pallets[ap] = []; ua.forEach(function(b){pallets[ap].push(b); boxPalletMap[b]=ap;}); }
+      var rows = [];
+      rows.push(['Отчёт по отгрузке']);
+      rows.push(['Дата: '+new Date().toLocaleDateString('ru-RU')+' '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})]);
+      rows.push([]); rows.push(['Палет','Короб','Артикул производителя','Артикул на этикетку','Артикул','ШК производителя','ШК на этикетку','Наименование','Кол-во','Квант','Годен до']);
+      var pIds = getPalletIds().filter(function(pid){return pallets[pid]&&pallets[pid].length>0;});
+      pIds.forEach(function(pid){
+        pallets[pid].sort(function(a,b){return a-b;}).forEach(function(bid){
+          var bd = getBoxGroupedItems(bid);
+          bd.order.forEach(function(key){
+            var gg = bd.grouped[key];
+            var origIdx = excelData.findIndex(function(item) {
+              return String(item[mapping.wb_article]||'').trim() === gg.article && String(item[mapping.label_barcode]||'').trim() === gg.barcode;
+            });
+            var origArt = origIdx >= 0 ? getItemOriginArticle(origIdx) : '';
+            var labelArt = origIdx >= 0 ? getItemLabelArticle(origIdx) : '';
+            var origBc = origIdx >= 0 ? getItemOriginBarcode(origIdx) : '';
+            rows.push(['Палет '+pid,'Короб '+bid,origArt,labelArt,gg.article,origBc,gg.barcode,gg.name,gg.count,gg.quantity,gg.expiry]);
+          });
+        });
+      });
+      rows.push([]); rows.push(['ИТОГО']); rows.push(['Палетов:', pIds.length]); rows.push(['Коробов:', wi.length]);
+      var t = 0; wi.forEach(function(bid){ t += boxes[bid].items.length; }); rows.push(['Всего позиций:', t]);
+      var ws = XLSX.utils.aoa_to_sheet(rows), wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
+      XLSX.writeFile(wb, 'Отчёт_отгрузка_'+new Date().toISOString().slice(0,10)+'.xlsx');
+      showToast('Отчёт экспортирован!', 'success');
+    }
+
+    window.onload = function() { document.getElementById('scannerInput').focus(); speak('Система готова.'); };
+  </script>
 </body>
 </html>
