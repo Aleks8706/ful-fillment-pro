@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FBO Отгрузка v7.4 | ТЗ города с палетами</title>
+<title>FBO Отгрузка v7.5 | ТЗ города с палетами</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
@@ -55,6 +55,12 @@ th{background:#f5f5f5}
 .alert.show{display:block}
 .alert.err{background:#ffe6e6;color:#842029;border:1px solid #ffcdd2}
 .alert.ok{background:#d1e7dd;color:#0f5132;border:1px solid #badbcc}
+.voice-ctrl{display:flex;gap:6px;align-items:center;padding:8px;background:#f8f9fa;border-radius:5px;margin-bottom:8px;font-size:12px}
+.voice-ctrl label{min-width:auto;margin:0;font-weight:600}
+.voice-ctrl select{flex:1;margin:0;padding:5px;font-size:11px}
+.voice-ctrl input[type=range]{flex:1;margin:0}
+.voice-ctrl input[type=checkbox]{width:auto;margin:0}
+.voice-test{padding:4px 8px;font-size:11px;margin:0;width:auto}
 
 /* ===== ЭТИКЕТКА КОРОБА 120×75 мм (WB FBO) ===== */
 .label-120{width:120mm;height:75mm;background:#fff;border:1.5pt solid #000;padding:3mm 4mm;font-family:Arial,sans-serif;font-size:8.5pt;position:relative;display:inline-block;margin:3mm;vertical-align:top;page-break-inside:avoid;overflow:hidden;color:#000}
@@ -141,7 +147,7 @@ th{background:#f5f5f5}
 </head>
 <body>
 
-<h1> FBO Отгрузка v7.4 | ТЗ города с палетами и коробами</h1>
+<h1>🔊 FBO Отгрузка v7.5 | ТЗ города с палетами и коробами</h1>
 
 <!-- МОДАЛКА МАППИНГА -->
 <div class="modal no-print" id="mapModal">
@@ -164,7 +170,7 @@ th{background:#f5f5f5}
     <div id="rContent" style="max-height:500px;overflow-y:auto"></div>
     <div class="modal-btns">
       <button onclick="window.print()">🖨 Печать</button>
-      <button class="green" onclick="exportReport()"> Excel</button>
+      <button class="green" onclick="exportReport()">📥 Excel</button>
       <button class="gray" onclick="document.getElementById('reportModal').classList.remove('show')">✕ Закрыть</button>
     </div>
   </div>
@@ -206,18 +212,45 @@ th{background:#f5f5f5}
       </div>
     </div>
     <div class="card">
-      <h2>️ Параметры</h2>
-      <select id="mp" onchange="save()"><option value="WB"> Wildberries FBO</option><option value="OZON">🔵 Ozon FBO</option></select>
-      <input type="text" id="city" placeholder=" Город" value="Екатеринбург" onchange="save()">
-      <input type="text" id="palletName" placeholder=" Название палета" value="1" onchange="save()">
-      <input type="text" id="palInput" placeholder=" Активный палет ID" readonly style="background:#f0f8ff">
+      <h2>⚙️ Параметры</h2>
+      <select id="mp" onchange="save()"><option value="WB">🔴 Wildberries FBO</option><option value="OZON">🔵 Ozon FBO</option></select>
+      <input type="text" id="city" placeholder="🏙 Город" value="Екатеринбург" onchange="save()">
+      <input type="text" id="palletName" placeholder="🏗 Название палета" value="1" onchange="save()">
+      <input type="text" id="palInput" placeholder="🆔 Активный палет ID" readonly style="background:#f0f8ff">
       <div id="errMsg" class="alert err"></div>
+    </div>
+    <div class="card">
+      <h2>🔊 Голосовое сопровождение</h2>
+      <div class="voice-ctrl">
+        <input type="checkbox" id="voiceOn" checked onchange="saveVoice()">
+        <label for="voiceOn">Вкл/Выкл</label>
+      </div>
+      <div class="voice-ctrl">
+        <label>🎙 Голос:</label>
+        <select id="voiceSelect" onchange="saveVoice()"></select>
+      </div>
+      <div class="voice-ctrl">
+        <label>⚡ Скорость:</label>
+        <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1" onchange="saveVoice()">
+        <span id="voiceRateVal">1.0</span>
+      </div>
+      <div class="voice-ctrl">
+        <label>🎵 Тон:</label>
+        <input type="range" id="voicePitch" min="0" max="2" step="0.1" value="1" onchange="saveVoice()">
+        <span id="voicePitchVal">1.0</span>
+      </div>
+      <div class="voice-ctrl">
+        <label>🔉 Громкость:</label>
+        <input type="range" id="voiceVol" min="0" max="1" step="0.1" value="1" onchange="saveVoice()">
+        <span id="voiceVolVal">1.0</span>
+      </div>
+      <button class="cyan voice-test" onclick="speak('Голосовое сопровождение включено. Система готова к работе.')">🔊 Тест голоса</button>
     </div>
     <div class="card">
       <h2>🏗 Палеты</h2>
       <div class="row" style="margin-bottom:8px">
         <button class="green" onclick="newPallet()" style="flex:2">+ Палет</button>
-        <button class="gray" onclick="printPallet()" id="btnPalPrint" disabled></button>
+        <button class="gray" onclick="printPallet()" id="btnPalPrint" disabled>🖨</button>
       </div>
       <div id="palList" style="max-height:200px;overflow-y:auto"></div>
     </div>
@@ -225,7 +258,7 @@ th{background:#f5f5f5}
       <h2>💾 Данные</h2>
       <button class="cyan" onclick="exportAll()">📥 Бэкап</button>
       <input type="file" id="impFile" accept=".json" style="display:none" onchange="importAll(event)">
-      <button class="orange" onclick="document.getElementById('impFile').click()"> Восстановить</button>
+      <button class="orange" onclick="document.getElementById('impFile').click()">♻️ Восстановить</button>
       <button class="red" onclick="resetAll()">🔄 Сброс</button>
     </div>
   </div>
@@ -236,7 +269,7 @@ th{background:#f5f5f5}
       <h2>📡 Сканирование</h2>
       <input type="text" id="scanner" class="scanner-input" placeholder="🔤 Сканируйте или введите ШК" autocomplete="off">
       <div class="row" style="margin-top:6px">
-        <button class="gray" id="camBtn" onclick="toggleCam()"> Камера</button>
+        <button class="gray" id="camBtn" onclick="toggleCam()">📷 Камера</button>
       </div>
       <div id="camArea" style="width:100%;height:180px;background:#000;border-radius:6px;display:none;margin-top:8px;position:relative"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:30%;border:2px solid #28a745;pointer-events:none"></div></div>
     </div>
@@ -278,7 +311,7 @@ th{background:#f5f5f5}
 <div id="tzPrintBox" class="print-only" style="display:none"></div>
 
 <script>
-const CFG={v:'7.4',key:'fbo_v74',w:0.15};
+const CFG={v:'7.5',key:'fbo_v75',w:0.15};
 
 const FIELDS=[
   {key:'sku',label:'Артикул',req:true,kw:['артикул','sku','код','озон id']},
@@ -297,6 +330,122 @@ const FIELDS=[
 let S={db:{},targets:[],box:{},history:[],bCnt:1,pals:{},pal:null,filters:{city:'',mp:''}};
 let tmpHeaders=[],tmpData=[],quaggaOn=false,scanLock=new Set(),curReport=null,curTZCity=null;
 
+// ============================================
+// ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ
+// ============================================
+let voices=[];
+let voiceQueue=[];
+let isSpeaking=false;
+
+function loadVoices(){
+  voices=window.speechSynthesis.getVoices();
+  const sel=$('voiceSelect');
+  if(!sel)return;
+  sel.innerHTML='';
+  // Приоритет: русские голоса
+  const ruVoices=voices.filter(v=>/ru|рус/i.test(v.lang+v.name));
+  const others=voices.filter(v=>!/ru|рус/i.test(v.lang+v.name));
+  const sorted=[...ruVoices,...others];
+  if(!sorted.length){
+    const o=document.createElement('option');
+    o.value='';o.textContent='Голоса не найдены';
+    sel.appendChild(o);
+    return;
+  }
+  sorted.forEach((v,i)=>{
+    const o=document.createElement('option');
+    o.value=voices.indexOf(v);
+    o.textContent=`${v.name} (${v.lang})`;
+    sel.appendChild(o);
+  });
+  // Восстановить сохранённый выбор
+  const saved=localStorage.getItem(CFG.key+'_voice');
+  if(saved){
+    try{
+      const cfg=JSON.parse(saved);
+      if(cfg.voiceIdx!==undefined&&voices[cfg.voiceIdx])sel.value=cfg.voiceIdx;
+      if(cfg.rate!==undefined){$('voiceRate').value=cfg.rate;$('voiceRateVal').textContent=parseFloat(cfg.rate).toFixed(1)}
+      if(cfg.pitch!==undefined){$('voicePitch').value=cfg.pitch;$('voicePitchVal').textContent=parseFloat(cfg.pitch).toFixed(1)}
+      if(cfg.vol!==undefined){$('voiceVol').value=cfg.vol;$('voiceVolVal').textContent=parseFloat(cfg.vol).toFixed(1)}
+      if(cfg.on!==undefined)$('voiceOn').checked=cfg.on;
+    }catch(e){}
+  }
+}
+
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged=loadVoices;
+  setTimeout(loadVoices,500);
+}else{
+  console.warn('SpeechSynthesis не поддерживается');
+}
+
+function saveVoice(){
+  const cfg={
+    on:$('voiceOn').checked,
+    voiceIdx:$('voiceSelect').value,
+    rate:$('voiceRate').value,
+    pitch:$('voicePitch').value,
+    vol:$('voiceVol').value
+  };
+  $('voiceRateVal').textContent=parseFloat(cfg.rate).toFixed(1);
+  $('voicePitchVal').textContent=parseFloat(cfg.pitch).toFixed(1);
+  $('voiceVolVal').textContent=parseFloat(cfg.vol).toFixed(1);
+  localStorage.setItem(CFG.key+'_voice',JSON.stringify(cfg));
+}
+
+function speak(text,priority=false){
+  if(!('speechSynthesis' in window))return;
+  if(!$('voiceOn').checked)return;
+  if(!text||!text.trim())return;
+  
+  try{
+    // Очистить очередь если приоритетное сообщение
+    if(priority){
+      window.speechSynthesis.cancel();
+      voiceQueue=[];
+      isSpeaking=false;
+    }
+    
+    const utter=new SpeechSynthesisUtterance(text);
+    const idx=parseInt($('voiceSelect').value);
+    if(!isNaN(idx)&&voices[idx])utter.voice=voices[idx];
+    utter.lang='ru-RU';
+    utter.rate=parseFloat($('voiceRate').value)||1;
+    utter.pitch=parseFloat($('voicePitch').value)||1;
+    utter.volume=parseFloat($('voiceVol').value)||1;
+    
+    // Ограничение длины для быстрой озвучки
+    if(text.length>150)text=text.substring(0,150)+'...';
+    
+    if(priority){
+      window.speechSynthesis.speak(utter);
+    }else{
+      // Небольшая задержка чтобы не перекрывать быстрые сканы
+      setTimeout(()=>{
+        if($('voiceOn').checked)window.speechSynthesis.speak(utter);
+      },50);
+    }
+  }catch(e){
+    console.warn('Speak error:',e);
+  }
+}
+
+function beep(freq=800,duration=100){
+  // Звуковой сигнал через Web Audio API
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=freq;
+    osc.type='sine';
+    gain.gain.setValueAtTime(0.1,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration/1000);
+    osc.start();
+    osc.stop(ctx.currentTime+duration/1000);
+  }catch(e){}
+}
+
 const $=id=>document.getElementById(id);
 const log=(m,t='i')=>{
   const el=$('logBox');if(!el)return;
@@ -304,8 +453,17 @@ const log=(m,t='i')=>{
   el.innerHTML+=`<span style="color:${c}">[${new Date().toLocaleTimeString('ru')}] ${m}</span>\n`;
   el.scrollTop=el.scrollHeight;
 };
-const err=m=>{const el=$('errMsg');el.textContent='️ '+m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),5000);log(m,'e')};
-const ok=m=>{const el=$('statusMsg');el.textContent=m;el.className='alert ok show';setTimeout(()=>el.classList.remove('show'),4000)};
+const err=m=>{
+  const el=$('errMsg');el.textContent='⚠️ '+m;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),5000);
+  log(m,'e');
+  speak('Ошибка. '+m,true);
+  beep(300,200);
+};
+const ok=m=>{
+  const el=$('statusMsg');el.textContent=m;el.className='alert ok show';
+  setTimeout(()=>el.classList.remove('show'),4000);
+};
 const clean=v=>String(v||'').replace(/[^\dA-Za-z]/g,'').trim();
 const pNum=v=>parseInt(String(v||'').replace(/[^\d]/g,''))||0;
 
@@ -313,11 +471,13 @@ load();
 $('fileInput').addEventListener('change',handleFile);
 $('scanner').addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();doScan($('scanner').value.trim());$('scanner').value='';setTimeout(()=>$('scanner').classList.remove('success'),400)}});
 $('scanner').addEventListener('focus',()=>$('scanner').select());
-log('🚀 FBO v'+CFG.v+' готова. Этикетки 120×75 мм + ТЗ города','s');
+log('🚀 FBO v'+CFG.v+' готова. Голосовое сопровождение активно.','s');
+setTimeout(()=>speak('Система готова к работе'),800);
 
 function handleFile(e){
   const f=e.target.files[0];if(!f)return;
   log('📥 '+f.name,'i');
+  speak('Загрузка файла');
   if(typeof XLSX==='undefined'){err('XLSX не загружен');return}
   const r=new FileReader();
   r.onload=ev=>{
@@ -333,6 +493,7 @@ function handleFile(e){
       log(`Колонок: ${tmpHeaders.length}, строк: ${tmpData.length}`,'s');
       log('Колонки: '+tmpHeaders.join(' | '),'i');
       showMapping();
+      speak('Файл загружен. Настройте колонки.');
     }catch(e){err('Ошибка: '+e.message);log(e.message,'e')}
   };
   r.readAsArrayBuffer(f);e.target.value='';
@@ -388,6 +549,7 @@ function applyMap(){
   processData(map);
   $('mapModal').classList.remove('show');
   ok('✅ ТЗ загружено!');
+  speak('Техническое задание загружено. Можно начинать сборку.');
 }
 
 function processData(map){
@@ -428,7 +590,7 @@ function processData(map){
   $('planCount').textContent=total.toLocaleString('ru');
   const cities=[...new Set(S.targets.map(t=>t.city).filter(c=>c&&c!=='Не указан'))].sort();
   const sel=$('fCity');
-  sel.innerHTML='<option value=""> Все города</option>';
+  sel.innerHTML='<option value="">🏙 Все города</option>';
   cities.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)});
   renderTargets();save();
   log(`✅ Загружено: ${S.targets.length} SKU, ${total} шт., ${Object.keys(S.db).length} ШК`,'s');
@@ -460,13 +622,35 @@ function doScan(bc){
   if(!S.pal){err('Создайте палет');return}
   let t=S.db[bc];
   if(!t){const f=Object.keys(S.db).find(k=>k.includes(bc)||bc.includes(k));if(f)t=S.db[f]}
-  if(!t){err(`ШК не найден: ${bc}`);return}
-  if(t.packedPcs>=t.targetPcs){err('План выполнен');return}
+  if(!t){
+    err(`ШК не найден: ${bc}`);
+    beep(200,300);
+    return;
+  }
+  if(t.packedPcs>=t.targetPcs){
+    err('План выполнен');
+    speak('План по артикулу '+t.sku+' выполнен');
+    return;
+  }
   S.box[bc]=(S.box[bc]||0)+1;
   t.packedPcs++;
   renderBox();renderTargets();updateUI();
-  log(` ${bc} | ${t.sku} | ${t.packedPcs}/${t.targetPcs}`,'s');
+  log(`✅ ${bc} | ${t.sku} | ${t.packedPcs}/${t.targetPcs}`,'s');
   $('scanner').classList.add('success');
+  beep(1200,60);
+  
+  // Голосовое сопровождение сканирования
+  const remaining=t.targetPcs-t.packedPcs;
+  if(t.packedPcs===t.targetPcs){
+    speak(`Артикул ${t.sku}. План выполнен полностью. Осталось ${remaining} позиций.`);
+  }else if(remaining<=3){
+    speak(`${t.sku}. Осталось ${remaining}.`);
+  }else if(t.packedPcs%5===0){
+    // Каждые 5 штук озвучиваем прогресс
+    speak(`${t.sku}. ${t.packedPcs} из ${t.targetPcs}.`);
+  }else{
+    speak(t.sku);
+  }
 }
 
 async function toggleCam(){
@@ -480,6 +664,7 @@ async function toggleCam(){
     await new Promise((r,j)=>Quagga.init({inputStream:{name:'Live',type:'LiveStream',target:$('camArea'),constraints:{facingMode:'environment'}},decoder:{readers:['code_128_reader','ean_reader','ean_8_reader']}},e=>e?j(e):r()));
     Quagga.start();quaggaOn=true;
     log('📷 Камера активна','s');
+    speak('Камера включена');
     Quagga.onDetected(res=>{
       const c=res.codeResult.code;
       if(scanLock.has(c))return;
@@ -496,6 +681,7 @@ function stopCam(){
   $('camArea').style.display='none';
   $('camBtn').textContent='📷 Камера';
   $('camBtn').className='gray';
+  speak('Камера выключена');
 }
 
 function renderBox(){
@@ -515,6 +701,7 @@ function rmItem(bc){
   delete S.box[bc];
   if(S.db[bc])S.db[bc].packedPcs-=q;
   renderBox();updateUI();
+  speak('Товар удалён');
 }
 
 function closeBox(){
@@ -534,6 +721,9 @@ function closeBox(){
   clearBox();
   renderTargets();renderPals();
   log(`📦 ${id} закрыт (${weight.toFixed(1)} кг)`,'s');
+  beep(800,150);
+  setTimeout(()=>beep(1000,150),180);
+  speak(`Короб ${S.bCnt-1} закрыт. Вес ${weight.toFixed(1)} килограмм. Палет ${palletName}.`,true);
   setTimeout(()=>window.print(),300);
 }
 
@@ -553,6 +743,7 @@ function reopenBox(){
   if(p){p.boxes=p.boxes.filter(b=>b!==lb.id);p.weight-=lb.weight}
   save();renderBox();renderTargets();renderPals();updateUI();
   log('↩️ '+lb.id,'w');
+  speak('Короб переоткрыт');
 }
 
 function newPallet(){
@@ -565,12 +756,17 @@ function newPallet(){
   $('btnPalPrint').disabled=false;
   renderPals();updateUI();save();
   log('🏗 '+id,'s');
+  beep(600,100);
+  setTimeout(()=>beep(900,100),120);
+  speak(`Новый палет ${$('palletName').value||'1'}. ID ${id}.`);
 }
 
 function selectPal(id){
   S.pal=id;
   $('palInput').value=id;
   renderPals();updateUI();save();
+  const p=S.pals[id];
+  speak(`Палет ${p.name||id}. ${p.boxes.length} коробов.`);
 }
 
 function renderPals(){
@@ -674,6 +870,7 @@ function printPallet(){
     `;
     c.appendChild(d);
   }
+  speak('Печать палетного листа');
   setTimeout(()=>window.print(),300);
 }
 
@@ -684,11 +881,9 @@ function showTZCity(){
   const city=$('city').value.trim();
   if(!city){err('Укажите город');return}
   
-  // Собираем короба по городу, группируем по палетам
   const cityBoxes=S.history.filter(b=>b.city===city);
   if(!cityBoxes.length){err('Нет коробов по городу "'+city+'". Сначала соберите короба.');return}
   
-  // Группировка по палетам (с учётом имени палета)
   const palletGroups={};
   cityBoxes.forEach(b=>{
     const palId=b.pal;
@@ -705,14 +900,12 @@ function showTZCity(){
     palletGroups[palId].weight+=b.weight;
   });
   
-  // Сортировка палетов по имени
   const pallets=Object.values(palletGroups).sort((a,b)=>{
     const an=parseInt(a.name)||0;
     const bn=parseInt(b.name)||0;
     return an-bn;
   });
   
-  // Суммарная статистика
   const totalBoxes=cityBoxes.length;
   const totalWeight=pallets.reduce((s,p)=>s+p.weight,0);
   const allItems={};
@@ -723,10 +916,8 @@ function showTZCity(){
   const uniqueSKU=Object.keys(allItems).length;
   const mp=cityBoxes[0].mp;
   
-  // Сохраняем для экспорта
   curTZCity={city,pallets,totalBoxes,totalWeight,totalQty,uniqueSKU,mp,allItems,date:new Date().toLocaleString('ru')};
   
-  // Формируем HTML
   $('tzCityName').textContent=city;
   
   const content=$('tzCityContent');
@@ -736,7 +927,6 @@ function showTZCity(){
     const page=document.createElement('div');
     page.className='tz-city-a4';
     
-    // Сводка по палету
     const palBoxesCount=pal.boxes.length;
     const palItems={};
     pal.boxes.forEach(b=>{
@@ -744,7 +934,6 @@ function showTZCity(){
     });
     const palTotalQty=Object.values(palItems).reduce((s,q)=>s+q,0);
     
-    // Формируем таблицу коробов с содержимым
     const boxesRows=pal.boxes.map((b,bi)=>{
       const bItems=Object.entries(b.items);
       const bTotalQty=bItems.reduce((s,[,q])=>s+q,0);
@@ -767,19 +956,19 @@ function showTZCity(){
       <div class="page-info">Стр. ${pi+1} / ${pallets.length}</div>
       <div class="hdr">
         <h1>📦 ТЕХНИЧЕСКОЕ ЗАДАНИЕ НА ОТГРУЗКУ</h1>
-        <div class="mp-badge ${mp.toLowerCase()}">${mp==='WB'?'🔴 WILDBERRIES FBO':' OZON FBO'}</div>
+        <div class="mp-badge ${mp.toLowerCase()}">${mp==='WB'?'🔴 WILDBERRIES FBO':'🔵 OZON FBO'}</div>
         <div class="sub">Город: <b>${city}</b> | Дата формирования: ${curTZCity.date}</div>
       </div>
       
       <div class="meta">
-        <div><strong> Город</strong><div class="v">${city}</div></div>
-        <div><strong> Всего палетов</strong><div class="v">${pallets.length}</div></div>
+        <div><strong>🏙 Город</strong><div class="v">${city}</div></div>
+        <div><strong>🏗 Всего палетов</strong><div class="v">${pallets.length}</div></div>
         <div><strong>📦 Всего коробов</strong><div class="v">${totalBoxes}</div></div>
         <div><strong>⚖️ Общий вес</strong><div class="v">${totalWeight.toFixed(1)} кг</div></div>
       </div>
       
       <div style="margin-bottom:5mm;padding:3mm;background:#fffbe6;border:1pt solid #ffc107;border-radius:3mm;font-size:9pt">
-        <b> Итого по городу ${city}:</b> ${uniqueSKU} SKU | ${totalQty} штук | ${totalBoxes} коробов | ${pallets.length} палет(ов)
+        <b>📊 Итого по городу ${city}:</b> ${uniqueSKU} SKU | ${totalQty} штук | ${totalBoxes} коробов | ${pallets.length} палет(ов)
       </div>
       
       <div class="pallet-section">
@@ -787,7 +976,7 @@ function showTZCity(){
           <span>📦 ПАЛЕТ № ${pal.name} (ID: ${pal.id})</span>
           <div class="info">
             <span>📦 ${palBoxesCount} кор.</span>
-            <span> ${Object.keys(palItems).length} поз.</span>
+            <span>📋 ${Object.keys(palItems).length} поз.</span>
             <span>🔢 ${palTotalQty} шт.</span>
             <span>⚖️ ${pal.weight.toFixed(1)} кг</span>
           </div>
@@ -806,7 +995,7 @@ function showTZCity(){
               <th style="width:10%">Позиций</th>
               <th style="width:10%">Штук</th>
               <th style="width:10%">Вес</th>
-              <th style="width:55%"> Содержимое (ШК | Кол-во | Название)</th>
+              <th style="width:55%">📋 Содержимое (ШК | Кол-во | Название)</th>
             </tr>
           </thead>
           <tbody>
@@ -823,7 +1012,7 @@ function showTZCity(){
         </div>
         
         <div style="margin-top:4mm;font-size:8pt">
-          <b> Состав палета (все товары):</b>
+          <b>📋 Состав палета (все товары):</b>
           <table style="width:100%;border-collapse:collapse;margin-top:2mm;font-size:7.5pt">
             <thead><tr style="background:#f0f0f0">
               <th style="border:1pt solid #999;padding:1mm;text-align:left">ШК</th>
@@ -835,7 +1024,6 @@ function showTZCity(){
             <tbody>
               ${Object.entries(palItems).sort((a,b)=>b[1]-a[1]).map(([bc,q])=>{
                 const t=S.db[bc]||{sku:'?',name:'?'};
-                // Находим в каких коробах
                 const inBoxes=pal.boxes.filter(b=>b.items[bc]).map(b=>b.id.replace('BOX-','').substring(0,12)).join(', ');
                 return `<tr>
                   <td style="border:1pt solid #ccc;padding:1mm;font-family:monospace;font-weight:700">${bc}</td>
@@ -861,28 +1049,26 @@ function showTZCity(){
   $('tzCityModal').style.display='flex';
   $('tzCityModal').classList.add('show');
   log(`📋 ТЗ по городу ${city}: ${pallets.length} палет, ${totalBoxes} коробов`,'s');
+  speak(`Техническое задание по городу ${city}. ${pallets.length} палетов, ${totalBoxes} коробов.`);
 }
 
-// Печать ТЗ города
 function printTZCity(){
   const content=$('tzCityContent').innerHTML;
   const printBox=$('tzPrintBox');
   printBox.innerHTML=content;
   printBox.style.display='block';
-  
+  speak('Печать технического задания');
   setTimeout(()=>{
     window.print();
     setTimeout(()=>{printBox.style.display='none'},500);
   },300);
 }
 
-// Экспорт ТЗ города в Excel
 function exportTZCityExcel(){
   if(!curTZCity){err('Нет данных');return}
   
   const wb=XLSX.utils.book_new();
   
-  // Лист 1: Сводка
   const summary=[
     ['ТЕХНИЧЕСКОЕ ЗАДАНИЕ НА ОТГРУЗКУ'],
     ['Город',curTZCity.city],
@@ -904,7 +1090,6 @@ function exportTZCityExcel(){
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Сводка');
   
-  // Лист 2: Детализация по коробам
   const details=[['Палет №','ID Палета','ID Короба','ШК','Артикул','Название','Кол-во','Вес короба (кг)']];
   curTZCity.pallets.forEach(p=>{
     p.boxes.forEach(b=>{
@@ -916,7 +1101,6 @@ function exportTZCityExcel(){
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(details),'Короба и товары');
   
-  // Лист 3: По палетам (сводная)
   const byPallet=[['Палет №','ШК','Артикул','Название','Всего на палете']];
   curTZCity.pallets.forEach(p=>{
     const pi={};
@@ -930,9 +1114,9 @@ function exportTZCityExcel(){
   
   XLSX.writeFile(wb,`ТЗ_${curTZCity.city}_${new Date().toISOString().slice(0,10)}.xlsx`);
   ok('✅ Excel ТЗ скачан');
+  speak('Эксель файл скачан');
 }
 
-// ЗАКРЫТИЕ ГОРОДА
 function closeCity(){
   const city=$('city').value.trim();
   if(!city){err('Укажите город');return}
@@ -961,6 +1145,10 @@ function closeCity(){
   $('rContent').innerHTML=html;
   $('reportModal').classList.add('show');
   log('✅ '+city+': '+tb+' кор., '+tw.toFixed(1)+' кг','s');
+  beep(600,100);
+  setTimeout(()=>beep(900,100),120);
+  setTimeout(()=>beep(1200,150),240);
+  speak(`Город ${city} закрыт. ${Object.keys(pals).length} палетов, ${tb} коробов, ${tw.toFixed(1)} килограмм.`);
 }
 
 function exportReport(){
@@ -980,7 +1168,6 @@ function exportReport(){
   ok('Excel скачан');
 }
 
-// СОХРАНЕНИЕ
 function save(){
   try{localStorage.setItem(CFG.key,JSON.stringify({t:S.targets,h:S.history,bc:S.bCnt,p:S.pals,pal:S.pal,f:S.filters,city:$('city').value,mp:$('mp').value,palletName:$('palletName').value}))}catch(e){}
 }
@@ -1002,6 +1189,7 @@ function exportAll(){
   const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='fbo_'+new Date().toISOString().slice(0,10)+'.json';a.click();
   ok('Бэкап скачан');
+  speak('Резервная копия сохранена');
 }
 function importAll(e){
   const f=e.target.files[0];if(!f)return;
@@ -1021,4 +1209,3 @@ function resetAll(){
 </script>
 </body>
 </html>
-
