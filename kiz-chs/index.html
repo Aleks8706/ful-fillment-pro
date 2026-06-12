@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сборка в короба + Честный ЗНАК</title>
+    <!-- Tailwind CSS для интерфейса -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Библиотека для генерации ВСЕХ видов штрихкодов (включая DataMatrix) -->
+    <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
+    
+    <style>
+        /* --- НАСТРОЙКИ ПЕЧАТИ --- */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            
+            /* Формат этикетки Честный Знак 30x20 мм */
+            .print-cz { 
+                width: 30mm; 
+                height: 20mm; 
+                page-break-after: always;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #ddd; /* Рамка для обрезки, можно убрать */
+                box-sizing: border-box;
+                padding: 1mm;
+            }
+            .print-cz canvas { max-width: 28mm; max-height: 14mm; }
+            .print-cz .cz-text { font-size: 8px; text-align: center; word-break: break-all; margin-top: 1mm; }
+
+            /* Формат этикетки Короба (например, 75x120 мм или 58x40 мм, сделаем 58x40 для примера) */
+            .print-box {
+                width: 58mm;
+                height: 40mm;
+                page-break-after: always;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #000;
+                box-sizing: border-box;
+                padding: 2mm;
+            }
+            .print-box canvas { max-width: 50mm; max-height: 20mm; }
+            .print-box .box-title { font-size: 14px; font-weight: bold; margin-bottom: 2mm; }
+            .print-box .box-info { font-size: 10px; text-align: center; }
+        }
+
+        /* Скрытая область для печати */
+        #printArea { display: none; }
+        @media print {
+            #printArea { display: block !important; }
+        }
+
+        /* Анимации сканирования */
+        .scan-ok { animation: flashGreen 0.4s; }
+        .scan-err { animation: flashRed 0.4s; }
+        @keyframes flashGreen { 0% { background-color: #dcfce7; } 100% { background-color: white; } }
+        @keyframes flashRed { 0% { background-color: #fee2e2; } 100% { background-color: white; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
+
+    <!-- Верхняя панель -->
+    <header class="bg-indigo-700 text-white p-4 shadow-md no-print">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                📦 Сборка в короба + Честный ЗНАК
+            </h1>
+            <div class="text-right">
+                <div class="text-sm opacity-80">Текущий короб:</div>
+                <div class="text-2xl font-mono font-bold text-yellow-300" id="currentBoxIdDisplay">BOX-001</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- ЛЕВАЯ КОЛОНКА: Сканирование -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📡 Сканирование Честного ЗНАКа</h2>
+                <p class="text-sm text-gray-500 mb-4">Нажмите на поле ниже и используйте сканер. Система автоматически считает Enter.</p>
+                
+                <input type="text" id="scanInput" 
+                    class="w-full text-xl border-2 border-indigo-300 p-4 rounded-lg focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 mb-4 font-mono" 
+                    placeholder="Кликните сюда и сканируйте DataMatrix..." autocomplete="off">
+                
+                <div id="scanFeedback" class="hidden p-3 rounded-lg mb-4 text-center font-bold"></div>
+
+                <div class="flex gap-2 mb-4">
+                    <button onclick="printLastCZ()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 font-bold text-sm">
+                        🖨️ Перепечатать последнюю этикетку 30x20
+                    </button>
+                    <button onclick="clearScanInput()" class="px-4 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-bold">
+                        Очистить
+                    </button>
+                </div>
+
+                <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">Товары в текущем коробе (<span id="itemCount">0</span> шт.):</h3>
+                <div class="h-64 overflow-y-auto border rounded-lg bg-gray-50 p-2" id="boxItemsList">
+                    <p class="text-gray-400 text-center mt-10 italic">Короб пуст. Отсканируйте первый товар.</p>
+                </div>
+            </div>
+
+            <!-- ПРАВАЯ КОЛОНКА: Управление коробом -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500 flex flex-col">
+                <h2 class="text-xl font-bold mb-4">📦 Управление коробом</h2>
+                
+                <div class="bg-green-50 p-4 rounded-lg mb-6 border border-green-200">
+                    <div class="text-sm text-green-800 mb-1">Всего уникальных кодов:</div>
+                    <div class="text-3xl font-bold text-green-700" id="totalUniqueItems">0</div>
+                </div>
+
+                <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 text-white text-xl py-4 rounded-lg hover:bg-green-700 font-bold shadow-lg mb-4 flex items-center justify-center gap-2">
+                    ✅ ЗАКРЫТЬ КОРОБ И ПЕЧАТАТЬ ЯРЛЫК
+                </button>
+
+                <div class="mt-auto">
+                    <h3 class="font-bold text-gray-700 mb-2 text-sm">История закрытых коробов:</h3>
+                    <div class="h-40 overflow-y-auto border rounded-lg bg-gray-50 p-2 text-sm" id="closedBoxesList">
+                        <p class="text-gray-400 text-center mt-4 italic">История пуста</p>
+                    </div>
+                    <button onclick="resetAllData()" class="w-full mt-3 text-red-500 text-xs hover:underline">⚠️ Сбросить все данные</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- СКРЫТАЯ ОБЛАСТЬ ДЛЯ ПЕЧАТИ -->
+    <div id="printArea"></div>
+
+    <script>
+        // --- СОСТОЯНИЕ ПРИЛОЖЕНИЯ ---
+        let currentBoxId = localStorage.getItem('wms_current_box_id') || 'BOX-' + Date.now().toString().slice(-6);
+        let currentBoxItems = JSON.parse(localStorage.getItem('wms_current_box_items')) || [];
+        let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
+        
+        // Глобальный реестр всех отсканированных кодов для возможности перепечатки
+        let scannedRegistry = JSON.parse(localStorage.getItem('wms_scanned_registry')) || {};
+
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
+        updateUI();
+        
+        // Фокус на поле сканирования при загрузке и после любого клика (чтобы сканер всегда работал)
+        window.addEventListener('click', (e) => {
+            if(!e.target.closest('button') && !e.target.closest('input')) {
+                document.getElementById('scanInput').focus();
+            }
+        });
+
+        // --- ОБРАБОТКА СКАНИРОВАНИЯ ---
+        const scanInput = document.getElementById('scanInput');
+        scanInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processScan();
+            }
+        });
+
+        function processScan() {
+            let code = scanInput.value.trim();
+            if (!code) return;
+
+            // Проверка на дубликат в текущем коробе
+            if (currentBoxItems.includes(code)) {
+                showFeedback('⚠️ УЖЕ ЕСТЬ В ЭТОМ КОРОБЕ!', 'error');
+                scanInput.value = '';
+                return;
+            }
+
+            // Добавляем в короб
+            currentBoxItems.push(code);
+            
+            // Добавляем в глобальный реестр (сохраняем время для справки)
+            scannedRegistry[code] = { 
+                boxId: currentBoxId, 
+                timestamp: new Date().toLocaleString() 
+            };
+
+            saveData();
+            showFeedback(`✅ ДОБАВЛЕНО: ${code.substring(0, 15)}...`, 'success');
+            
+            // Автоматически предлагаем распечатать этикетку для этого кода
+            // (В реальном сценарии можно делать auto-print, но браузеры блокируют это без клика)
+            
+            scanInput.value = '';
+            scanInput.focus();
+            updateUI();
+        }
+
+        function showFeedback(msg, type) {
+            const fb = document.getElementById('scanFeedback');
+            fb.innerText = msg;
+            fb.className = `p-3 rounded-lg mb-4 text-center font-bold ${type === 'success' ? 'bg-green-100 text-green-800 scan-ok' : 'bg-red-100 text-red-800 scan-err'}`;
+            fb.classList.remove('hidden');
+            setTimeout(() => fb.classList.add('hidden'), 2000);
+        }
+
+        function clearScanInput() {
+            scanInput.value = '';
+            scanInput.focus();
+        }
+
+        // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
+        function updateUI() {
+            document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
+            document.getElementById('itemCount').innerText = currentBoxItems.length;
+            document.getElementById('totalUniqueItems').innerText = currentBoxItems.length;
+
+            // Список товаров в коробе
+            const list = document.getElementById('boxItemsList');
+            list.innerHTML = '';
+            if (currentBoxItems.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-center mt-10 italic">Короб пуст.</p>';
+            } else {
+                // Показываем последние добавленные сверху
+                [...currentBoxItems].reverse().forEach((code, index) => {
+                    const realIndex = currentBoxItems.length - 1 - index;
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center p-2 border-b bg-white rounded mb-1 text-sm font-mono";
+                    div.innerHTML = `
+                        <span class="truncate flex-1" title="${code}">${code}</span>
+                        <button onclick="printSpecificCZ('${code}')" class="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200">🖨️ 30x20</button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            // История коробов
+            const histList = document.getElementById('closedBoxesList');
+            histList.innerHTML = '';
+            if (closedBoxes.length === 0) {
+                histList.innerHTML = '<p class="text-gray-400 text-center mt-4 italic">История пуста</p>';
+            } else {
+                [...closedBoxes].reverse().forEach(box => {
+                    const div = document.createElement('div');
+                    div.className = "p-2 border-b bg-white rounded mb-1 flex justify-between items-center";
+                    div.innerHTML = `
+                        <div>
+                            <div class="font-bold text-indigo-700">${box.id}</div>
+                            <div class="text-xs text-gray-500">${box.date} | ${box.itemsCount} шт.</div>
+                        </div>
+                        <button onclick="reprintBoxLabel('${box.id}')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">Ярлык</button>
+                    `;
+                    histList.appendChild(div);
+                });
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('wms_current_box_id', currentBoxId);
+            localStorage.setItem('wms_current_box_items', JSON.stringify(currentBoxItems));
+            localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
+            localStorage.setItem('wms_scanned_registry', JSON.stringify(scannedRegistry));
+        }
+
+        // --- ЛОГИКА ПЕЧАТИ ---
+
+        // 1. Печать этикетки Честного ЗНАКа (30x20 мм)
+        function printSpecificCZ(code) {
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = ''; // Очистить старое
+
+            const container = document.createElement('div');
+            container.className = 'print-cz';
+            
+            const canvas = document.createElement('canvas');
+            const textDiv = document.createElement('div');
+            textDiv.className = 'cz-text';
+            // Обрезаем для отображения, но в штрихкоде полный код
+            textDiv.innerText = code.length > 20 ? code.substring(0, 10) + '...' + code.substring(code.length-10) : code;
+
+            container.appendChild(canvas);
+            container.appendChild(textDiv);
+            printArea.appendChild(container);
+
+            // Генерация DataMatrix
+            try {
+                bwipjs.toCanvas(canvas, {
+                    bcid: 'datamatrix',       // Тип штрихкода
+                    text: code,                // Полный код ЧЗ
+                    scale: 3,                  // Масштаб для четкости
+                    width: 30,                 // Ширина в мм (примерно)
+                    height: 20,                // Высота в мм
+                    includetext: false,        // Текст внутри штрихкода не нужен, он снизу
+                });
+                setTimeout(() => window.print(), 300);
+            } catch (e) {
+                alert('Ошибка генерации DataMatrix: ' + e);
+            }
+        }
+
+        function printLastCZ() {
+            if (currentBoxItems.length > 0) {
+                printSpecificCZ(currentBoxItems[currentBoxItems.length - 1]);
+            } else {
+                alert('Короб пуст, нечего печатать');
+            }
+        }
+
+        // 2. Закрытие короба и печать ярлыка короба
+        function closeBoxAndPrint() {
+            if (currentBoxItems.length === 0) {
+                if(!confirm('Короб пуст. Вы уверены, что хотите закрыть и распечатать пустой ярлык?')) return;
+            }
+
+            const boxId = currentBoxId;
+            const itemCount = currentBoxItems.length;
+            const dateStr = new Date().toLocaleString();
+
+            // Сохраняем в историю
+            closedBoxes.push({
+                id: boxId,
+                itemsCount: itemCount,
+                date: dateStr,
+                items: [...currentBoxItems] // Копия массива
+            });
+
+            // Генерируем ярлык короба
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = '';
+
+            const container = document.createElement('div');
+            container.className = 'print-box';
+            
+            const title = document.createElement('div');
+            title.className = 'box-title';
+            title.innerText = `КОРОБ: ${boxId}`;
+            
+            const canvas = document.createElement('canvas');
+            
+            const info = document.createElement('div');
+            info.className = 'box-info';
+            info.innerHTML = `Товаров: <b>${itemCount} шт.</b><br>${dateStr}`;
+
+            container.appendChild(title);
+            container.appendChild(canvas);
+            container.appendChild(info);
+            printArea.appendChild(container);
+
+            // Генерация штрихкода короба (Code128, хорошо читается складами)
+            try {
+                bwipjs.toCanvas(canvas, {
+                    bcid: 'code128',
+                    text: boxId,
+                    scale: 3,
+                    height: 15,
+                    includetext: true,
+                    textxalign: 'center',
+                });
+                
+                // Очищаем текущий короб и создаем новый ID
+                currentBoxItems = [];
+                currentBoxId = 'BOX-' + Date.now().toString().slice(-6);
+                saveData();
+                updateUI();
+                
+                setTimeout(() => window.print(), 300);
+            } catch (e) {
+                alert('Ошибка генерации штрихкода короба: ' + e);
+            }
+        }
+
+        function reprintBoxLabel(boxId) {
+            const box = closedBoxes.find(b => b.id === boxId);
+            if (!box) return;
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = '';
+
+            const container = document.createElement('div');
+            container.className = 'print-box';
+            
+            const title = document.createElement('div');
+            title.className = 'box-title';
+            title.innerText = `КОРОБ: ${box.id} (ПЕРЕПЕЧАТЬ)`;
+            
+            const canvas = document.createElement('canvas');
+            
+            const info = document.createElement('div');
+            info.className = 'box-info';
+            info.innerHTML = `Товаров: <b>${box.itemsCount} шт.</b><br>${box.date}`;
+
+            container.appendChild(title);
+            container.appendChild(canvas);
+            container.appendChild(info);
+            printArea.appendChild(container);
+
+            try {
+                bwipjs.toCanvas(canvas, {
+                    bcid: 'code128',
+                    text: box.id,
+                    scale: 3,
+                    height: 15,
+                    includetext: true,
+                    textxalign: 'center',
+                });
+                setTimeout(() => window.print(), 300);
+            } catch (e) {
+                alert('Ошибка: ' + e);
+            }
+        }
+
+        function resetAllData() {
+            if(confirm('ВНИМАНИЕ: Это удалит всю историю коробов и текущие данные. Продолжить?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
