@@ -3,295 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS: Честный ЗНАК + Сборка в короба</title>
+    <title>WMS: Честный ЗНАК (Исправленная версия)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Генерация штрихкодов (DataMatrix и Code128) -->
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
-    <!-- Чтение PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    
     <style>
-        /* --- НАСТРОЙКИ ПЕЧАТИ --- */
         @media print {
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; }
             
-            /* Этикетка КИЗ: строго 30x20 мм */
+            /* Этикетка КИЗ 30x20 мм */
             .print-kiz { 
-                width: 30mm; 
-                height: 20mm; 
-                page-break-after: always;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                box-sizing: border-box;
-                padding: 1mm;
-                /* border: 1px dashed #ccc; Раскомментируйте для видимости границ при отладке */
+                width: 30mm; height: 20mm; page-break-after: always;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                box-sizing: border-box; padding: 1mm;
             }
             .print-kiz canvas { max-width: 28mm; max-height: 15mm; }
             .print-kiz .kiz-text { font-size: 7px; text-align: center; word-break: break-all; margin-top: 1mm; color: #333; }
 
-            /* Этикетка КОРОБА: 58x40 мм (можно изменить под ваш принтер) */
+            /* Этикетка КОРОБА 58x40 мм */
             .print-box {
-                width: 58mm;
-                height: 40mm;
-                page-break-after: always;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                border: 1px solid #000;
-                box-sizing: border-box;
-                padding: 2mm;
+                width: 58mm; height: 40mm; page-break-after: always;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                border: 1px solid #000; box-sizing: border-box; padding: 2mm;
             }
             .print-box canvas { max-width: 50mm; max-height: 18mm; }
             .print-box .box-title { font-size: 14px; font-weight: bold; margin-bottom: 2mm; text-transform: uppercase; }
             .print-box .box-info { font-size: 10px; text-align: center; line-height: 1.2; }
         }
-
         #printArea { display: none; }
         @media print { #printArea { display: block !important; } }
-
         .scan-ok { animation: flashGreen 0.4s; }
         .scan-err { animation: flashRed 0.4s; }
         @keyframes flashGreen { 0% { background-color: #dcfce7; } 100% { background-color: white; } }
         @keyframes flashRed { 0% { background-color: #fee2e2; } 100% { background-color: white; } }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        cz: '#0063B0', // Фирменный синий цвет Честного Знака
-                    }
-                }
-            }
-        }
-    </script>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
 
-    <!-- Верхняя панель -->
-    <header class="bg-cz text-white p-4 shadow-md no-print">
+    <header class="bg-blue-700 text-white p-4 shadow-md no-print">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold flex items-center gap-2">
-                📦 WMS: Честный ЗНАК + Короба
-            </h1>
-            <div class="text-right bg-white/10 px-4 py-2 rounded-lg">
-                <div class="text-xs opacity-80">Текущий короб:</div>
-                <div class="text-2xl font-mono font-bold text-yellow-300" id="currentBoxIdDisplay">BOX-000000</div>
+            <h1 class="text-xl font-bold">📦 WMS: Честный ЗНАК + Короба</h1>
+            <div class="text-right bg-white/10 px-3 py-1 rounded">
+                <div class="text-xs opacity-80">Короб:</div>
+                <div class="text-xl font-mono font-bold text-yellow-300" id="currentBoxIdDisplay">BOX-000</div>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto p-4 md:p-6">
-        
+    <main class="container mx-auto p-4">
         <!-- Навигация -->
-        <div class="flex gap-2 mb-6 no-print overflow-x-auto">
-            <button onclick="showTab('tab-catalog')" class="tab-btn flex-1 bg-white px-4 py-3 rounded-lg shadow font-bold text-cz border-b-4 border-cz hover:bg-gray-50">1. Товары и КИЗ</button>
-            <button onclick="showTab('tab-print-kiz')" class="tab-btn flex-1 bg-white px-4 py-3 rounded-lg shadow font-bold text-gray-500 border-b-4 border-transparent hover:bg-gray-50">2. Печать КИЗ (30x20)</button>
-            <button onclick="showTab('tab-packing')" class="tab-btn flex-1 bg-green-50 px-4 py-3 rounded-lg shadow font-bold text-green-700 border-b-4 border-green-600 hover:bg-green-100">3. Сборка в короб</button>
+        <div class="flex gap-2 mb-4 no-print">
+            <button onclick="showTab('tab-catalog')" class="flex-1 bg-white px-4 py-2 rounded shadow font-bold text-blue-700 border-b-4 border-blue-700">1. Товары и КИЗ</button>
+            <button onclick="showTab('tab-print')" class="flex-1 bg-white px-4 py-2 rounded shadow font-bold text-gray-500 border-b-4 border-transparent">2. Печать 30x20</button>
+            <button onclick="showTab('tab-packing')" class="flex-1 bg-green-50 px-4 py-2 rounded shadow font-bold text-green-700 border-b-4 border-green-600">3. Сборка</button>
         </div>
 
-        <!-- ВКЛАДКА 1: Товары и загрузка КИЗ -->
+        <!-- ВКЛАДКА 1: Товары -->
         <div id="tab-catalog" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Добавление товара -->
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h2 class="text-xl font-bold mb-4 text-cz">Добавить товар</h2>
-                    <input type="text" id="newSku" placeholder="Артикул (SKU)" class="w-full border p-2 rounded mb-3 focus:ring-2 focus:ring-cz outline-none">
-                    <input type="text" id="newName" placeholder="Название товара" class="w-full border p-2 rounded mb-3 focus:ring-2 focus:ring-cz outline-none">
-                    <button onclick="addProduct()" class="w-full bg-cz text-white py-2 rounded font-bold hover:bg-blue-800">Создать карточку товара</button>
-                </div>
-
-                <!-- Загрузка КИЗ -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                    <h2 class="text-xl font-bold mb-4 text-cz">Загрузить КИЗ для товара</h2>
-                    <select id="kizProductSelect" class="w-full border p-2 rounded mb-4 focus:ring-2 focus:ring-cz outline-none">
-                        <option value="">Выберите товар...</option
-                    </select>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition">
-                            <p class="text-sm font-bold mb-2">Способ А: Загрузить PDF</p>
-                            <input type="file" id="pdfFileInput" accept=".pdf" class="text-sm mb-2 w-full">
-                            <button onclick="processPDF()" class="bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800">Извлечь коды из PDF</button>
-                            <p class="text-xs text-gray-500 mt-2">*Работает, если в PDF есть текстовый слой</p>
-                        </div>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition">
-                            <p class="text-sm font-bold mb-2">Способ Б: Вставить текстом (Рекомендуется)</p>
-                            <textarea id="manualKizInput" rows="3" placeholder="Скопируйте столбец кодов из Excel или кабинета ЧЗ и вставьте сюда..." class="w-full border p-2 rounded text-xs mb-2 font-mono"></textarea>
-                            <button onclick="processManualKiz()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">Добавить коды</button>
-                        </div
-                    </div>
+            <div class="bg-white p-4 rounded shadow mb-4">
+                <h2 class="font-bold mb-2">1. Добавить товар</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="newSku" placeholder="Артикул (напр. TSHIRT-01)" class="border p-2 rounded flex-1">
+                    <input type="text" id="newName" placeholder="Название" class="border p-2 rounded flex-1">
+                    <button onclick="addProduct()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">Добавить</button>
                 </div>
             </div>
 
-            <!-- Список товаров -->
-            <div class="bg-white p-6 rounded-xl shadow-md mt-6">
-                <h2 class="text-xl font-bold mb-4">Реестр товаров и КИЗ</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="p-3 rounded-tl-lg">Артикул</th>
-                                <th class="p-3">Название</th>
-                                <th class="p-3 text-center">Всего КИЗ</th>
-                                <th class="p-3 text-center">В коробах</th>
-                                <th class="p-3 text-center">Свободно</th>
-                                <th class="p-3 rounded-tr-lg text-right">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productsTableBody"></tbody>
-                    </table>
-                </div>
+            <div class="bg-white p-4 rounded shadow mb-4">
+                <h2 class="font-bold mb-2">2. Загрузить коды КИЗ (Самый надежный способ)</h2>
+                <select id="kizProductSelect" class="w-full border p-2 rounded mb-2"><option value="">Выберите товар...</option></select>
+                <textarea id="manualKizInput" rows="4" placeholder="Откройте выгрузку из Честного ЗНАКа или Excel, скопируйте столбец с кодами и вставьте сюда (Ctrl+V)" class="w-full border p-2 rounded text-xs font-mono mb-2"></textarea>
+                <button onclick="processManualKiz()" class="bg-green-600 text-white px-4 py-2 rounded font-bold w-full">✅ Добавить коды в базу</button>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow">
+                <h2 class="font-bold mb-2">Список товаров</h2>
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-100"><tr><th class="p-2">Артикул</th><th class="p-2">Название</th><th class="p-2 text-center">Всего КИЗ</th><th class="p-2 text-right">Действие</th></tr></thead>
+                    <tbody id="productsTableBody"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- ВКЛАДКА 2: Печать КИЗ -->
-        <div id="tab-print-kiz" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-xl shadow-md mb-6 no-print flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-bold text-cz">Печать этикеток КИЗ (30x20 мм)</h2>
-                    <p class="text-sm text-gray-500">Выберите товар, чтобы распечатать этикетки для всех его свободных КИЗ.</p>
+        <!-- ВКЛАДКА 2: Печать -->
+        <div id="tab-print" class="tab-content hidden">
+            <div class="bg-white p-4 rounded shadow mb-4 no-print flex gap-2 items-end">
+                <div class="flex-1">
+                    <label class="text-sm font-bold block mb-1">Выберите товар для печати этикеток:</label>
+                    <select id="printKizProductSelect" class="w-full border p-2 rounded"></select>
                 </div>
-                <div class="flex gap-3">
-                    <select id="printKizProductSelect" class="border p-2 rounded w-64 focus:ring-2 focus:ring-cz outline-none">
-                        <option value="">Выберите товар...</option>
-                    </select>
-                    <button onclick="printAllKizForProduct()" class="bg-cz text-white px-6 py-2 rounded font-bold hover:bg-blue-800 flex items-center gap-2">
-                        🖨️ Печать всех
-                    </button>
-                </div>
+                <button onclick="printAllKizForProduct()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold h-10">🖨️ Печать всех (30x20)</button>
             </div>
-            <div id="kizPreviewArea" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 no-print">
-                <!-- Предпросмотр этикеток -->
-            </div>
+            <div id="kizPreviewArea" class="grid grid-cols-3 md:grid-cols-6 gap-2 no-print"></div>
         </div>
 
-        <!-- ВКЛАДКА 3: Сборка в короб -->
+        <!-- ВКЛАДКА 3: Сборка -->
         <div id="tab-packing" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Сканирование -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border-t-4 border-cz">
-                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📡 Сканирование при сборке</h2>
-                    <p class="text-sm text-gray-500 mb-4">Кликните в поле и используйте сканер. Система проверит, принадлежит ли КИЗ к отгружаемым товарам.</p>
-                    
-                    <input type="text" id="scanInput" 
-                        class="w-full text-xl border-2 border-cz p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4 font-mono tracking-wide" 
-                        placeholder="Отсканируйте DataMatrix КИЗ..." autocomplete="off">
-                    
-                    <div id="scanFeedback" class="hidden p-3 rounded-lg mb-4 text-center font-bold text-lg"></div>
-
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="document.getElementById('scanInput').value=''; document.getElementById('scanInput').focus();" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 font-bold text-sm">
-                            Очистить поле
-                        </button>
-                    </div>
-
-                    <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">Товары в текущем коробе (<span id="boxItemCount">0</span> шт.):</h3>
-                    <div class="h-64 overflow-y-auto border rounded-lg bg-gray-50 p-2" id="boxItemsList">
-                        <p class="text-gray-400 text-center mt-10 italic">Короб пуст.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2 bg-white p-4 rounded shadow border-t-4 border-blue-600">
+                    <h2 class="font-bold mb-2">Сканирование КИЗ</h2>
+                    <input type="text" id="scanInput" class="w-full text-lg border-2 border-blue-300 p-3 rounded mb-2 font-mono" placeholder="Кликните сюда и сканируйте..." autocomplete="off">
+                    <div id="scanFeedback" class="hidden p-2 rounded mb-2 text-center font-bold"></div>
+                    <div class="h-48 overflow-y-auto border rounded bg-gray-50 p-2" id="boxItemsList">
+                        <p class="text-gray-400 text-center mt-16 italic">Короб пуст</p>
                     </div>
                 </div>
-
-                <!-- Управление коробом -->
-                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-green-500 flex flex-col">
-                    <h2 class="text-xl font-bold mb-4 text-green-700">📦 Короб</h2>
-                    
-                    <div class="bg-green-50 p-4 rounded-lg mb-6 border border-green-200 text-center">
-                        <div class="text-sm text-green-800 mb-1">Отсканировано КИЗ:</div>
-                        <div class="text-4xl font-bold text-green-700" id="totalScannedCount">0</div>
+                <div class="bg-white p-4 rounded shadow border-t-4 border-green-600 flex flex-col">
+                    <h2 class="font-bold mb-2 text-green-700">Короб</h2>
+                    <div class="bg-green-50 p-3 rounded mb-4 text-center border border-green-200">
+                        <div class="text-sm text-green-800">Отсканировано:</div>
+                        <div class="text-3xl font-bold text-green-700" id="totalScannedCount">0</div>
                     </div>
-
-                    <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 text-white text-xl py-4 rounded-lg hover:bg-green-700 font-bold shadow-lg mb-4 flex items-center justify-center gap-2 transition transform hover:scale-105">
-                        ✅ ЗАКРЫТЬ КОРОБ И ПЕЧАТАТЬ ЯРЛЫК
-                    </button>
-
+                    <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 text-white py-3 rounded font-bold shadow mb-4">✅ ЗАКРЫТЬ И ПЕЧАТАТЬ ЯРЛЫК</button>
                     <div class="mt-auto">
-                        <h3 class="font-bold text-gray-700 mb-2 text-sm">История коробов:</h3>
-                        <div class="h-40 overflow-y-auto border rounded-lg bg-gray-50 p-2 text-sm" id="closedBoxesList">
-                            <p class="text-gray-400 text-center mt-4 italic">Пусто</p>
-                        </div>
+                        <h3 class="font-bold text-xs text-gray-500 mb-1">История:</h3>
+                        <div class="h-32 overflow-y-auto border rounded bg-gray-50 p-1 text-xs" id="closedBoxesList"></div>
                     </div>
                 </div>
             </div>
         </div>
-
     </main>
 
-    <!-- СКРЫТАЯ ОБЛАСТЬ ДЛЯ ПЕЧАТИ -->
     <div id="printArea"></div>
 
     <script>
-        // --- СОСТОЯНИЕ ПРИЛОЖЕНИЯ ---
-        // Структура: { "SKU123": { name: "Товар", kiz_list: ["код1", "код2"], packed_count: 0 } }
         let products = JSON.parse(localStorage.getItem('cz_products')) || {};
-        let currentBoxId = localStorage.getItem('cz_current_box') || 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        let currentBoxId = localStorage.getItem('cz_current_box') || 'BOX-' + Math.floor(Math.random() * 10000);
         let currentBoxItems = JSON.parse(localStorage.getItem('cz_current_box_items')) || [];
         let closedBoxes = JSON.parse(localStorage.getItem('cz_closed_boxes')) || [];
 
-        // --- ИНИЦИАЛИЗАЦИЯ ---
         document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
         updateAllUI();
-        
-        // Автофокус на поле сканирования
+
         window.addEventListener('click', (e) => {
             if(!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('select') && !e.target.closest('textarea')) {
                 document.getElementById('scanInput').focus();
             }
         });
 
-        // --- УПРАВЛЕНИЕ ВКЛАДКАМИ ---
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('border-cz', 'text-cz', 'border-green-600', 'text-green-700', 'bg-green-50');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            
-            // Подсветка активной кнопки (упрощенно)
-            const activeBtn = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
-            if(tabId === 'tab-packing') {
-                activeBtn.classList.add('border-green-600', 'text-green-700', 'bg-green-50');
-                activeBtn.classList.remove('border-transparent', 'text-gray-500');
-                setTimeout(() => document.getElementById('scanInput').focus(), 100);
-            } else {
-                activeBtn.classList.add('border-cz', 'text-cz');
-                activeBtn.classList.remove('border-transparent', 'text-gray-500');
-            }
-
             if(tabId === 'tab-catalog') renderProductsTable();
-            if(tabId === 'tab-print-kiz') updatePrintSelect();
-            if(tabId === 'tab-packing') updatePackingUI();
+            if(tabId === 'tab-print') { updateSelects(); renderPrintPreview(); }
+            if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput').focus(), 100); }
         }
 
-        // --- ЛОГИКА ТОВАРОВ И КИЗ ---
         function addProduct() {
             const sku = document.getElementById('newSku').value.trim().toUpperCase();
             const name = document.getElementById('newName').value.trim();
-            if(!sku || !name) return alert("Заполните Артикул и Название");
-            if(products[sku]) return alert("Такой артикул уже существует");
-
+            if(!sku || !name) return alert("Заполните оба поля");
+            if(products[sku]) return alert("Такой артикул уже есть");
             products[sku] = { name: name, kiz_list: [], packed_count: 0 };
             saveData();
             document.getElementById('newSku').value = '';
             document.getElementById('newName').value = '';
-            renderProductsTable();
-            updateSelects();
+            updateAllUI();
+        }
+
+        function processManualKiz() {
+            const sku = document.getElementById('kizProductSelect').value;
+            if(!sku) return alert("Выберите товар");
+            const text = document.getElementById('manualKizInput').value.trim();
+            if(!text) return;
+            const codes = text.split(/[\n,\s]+/).map(c => c.trim()).filter(c => c.length > 10);
+            const uniqueNewCodes = [...new Set(codes)];
+            
+            const existing = new Set(products[sku].kiz_list);
+            uniqueNewCodes.forEach(code => {
+                if(!existing.has(code)) {
+                    products[sku].kiz_list.push(code);
+                    existing.add(code);
+                }
+            });
+            saveData();
+            document.getElementById('manualKizInput').value = '';
+            alert(`Добавлено ${uniqueNewCodes.length} кодов.`);
+            updateAllUI();
         }
 
         function updateSelects() {
             const selects = ['kizProductSelect', 'printKizProductSelect'];
-            selects.forEach(id =>
+            selects.forEach(id => {
                 const sel = document.getElementById(id);
-                const currentVal = sel.value;
+                const val = sel.value;
                 sel.innerHTML = '<option value="">Выберите товар...</option>';
                 Object.keys(products).forEach(sku => {
                     const opt = document.createElement('option');
@@ -299,85 +194,8 @@
                     opt.innerText = `${sku} - ${products[sku].name}`;
                     sel.appendChild(opt);
                 });
-                sel.value = currentVal;
+                sel.value = val;
             });
-        }
-
-        // Обработка PDF (извлечение текста)
-        async function processPDF() {
-            const sku = document.getElementById('kizProductSelect').value;
-            if(!sku) return alert("Сначала выберите товар");
-            const fileInput = document.getElementById('pdfFileInput');
-            if(!fileInput.files.length) return alert("Выберите PDF файл");
-
-            const file = fileInput.files[0];
-            const arrayBuffer = await file.arrayBuffer();
-            
-            try {
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                let fullText = "";
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(" ") + "\n";
-                }
-
-                // Ищем потенциальные КИЗ (длинные alphanumeric строки, типичные для GS1)
-                // Обычно это 01+GTIN(14)+21+Serial(до 20) или просто длинная строка > 20 символов
-                const words = fullText.split(/\s+/);
-                const potentialKiz = words.filter(w => w.length >= 20 && /^[A-Za-z0-9]+$/.test(w));
-                
-                if(potentialKiz.length === 0) {
-                    alert("Не удалось найти коды в PDF. Возможно, это скан-картинка.\nИспользуйте 'Способ Б: Вставить текстом', скопировав данные из кабинета ЧЗ.");
-                    return;
-                }
-
-                addKizToProduct(sku, potentialKiz);
-                alert(`Успешно извлечено ${potentialKiz.length} кодов из PDF!`);
-                fileInput.value = '';
-            } catch(e) {
-                alert("Ошибка чтения PDF: " + e.message);
-            }
-        }
-
-        function processManualKiz() {
-            const sku = document.getElementById('kizProductSelect').value;
-            if(!sku) return alert("Сначала выберите товар");
-            const text = document.getElementById('manualKizInput').value.trim();
-            if(!text) return;
-
-            // Разбиваем по переносу строки, запятой или пробелу, чистим от мусора
-            const codes = text.split(/[\n,\s]+/).map(c => c.trim()).filter(c => c.length > 10);
-            
-            // Удаляем дубликаты внутри нового списка
-            const uniqueNewCodes = [...new Set(codes)];
-            
-            addKizToProduct(sku, uniqueNewCodes);
-            document.getElementById('manualKizInput').value = '';
-            alert(`Добавлено ${uniqueNewCodes.length} уникальных кодов КИЗ.`);
-        }
-
-        function addKizToProduct(sku, newCodes) {
-            const existing = new Set(products[sku].kiz_list);
-            let addedCount = 0;
-            newCodes.forEach(code => {
-                if(!existing.has(code)) {
-                    products[sku].kiz_list.push(code);
-                    existing.add(code);
-                    addedCount++;
-                }
-            });
-            saveData();
-            renderProductsTable();
-        }
-
-        function deleteProduct(sku) {
-            if(confirm(`Удалить товар ${sku} и все его КИЗ?`)) {
-                delete products[sku];
-                saveData();
-                renderProductsTable();
-                updateSelects();
-            }
         }
 
         function renderProductsTable() {
@@ -385,76 +203,72 @@
             tbody.innerHTML = '';
             Object.keys(products).forEach(sku => {
                 const p = products[sku];
-                const free = p.kiz_list.length - p.packed_count;
                 const tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-gray-50";
+                tr.className = "border-b";
                 tr.innerHTML = `
-                    <td class="p-3 font-mono font-bold text-cz">${sku}</td>
-                    <td class="p-3">${p.name}</td>
-                    <td class="p-3 text-center font-bold">${p.kiz_list.length}</td>
-                    <td class="p-3 text-center text-gray-500">${p.packed_count}</td>
-                    <td class="p-3 text-center font-bold text-green-600">${free}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteProduct('${sku}')" class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 px-2 py-1 rounded">Удалить</button>
-                    </td>
+                    <td class="p-2 font-mono font-bold text-blue-700">${sku}</td>
+                    <td class="p-2">${p.name}</td>
+                    <td class="p-2 text-center font-bold">${p.kiz_list.length}</td>
+                    <td class="p-2 text-right"><button onclick="deleteProduct('${sku}')" class="text-red-500 text-xs font-bold">Удалить</button></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- ЛОГИКА ПЕЧАТИ КИЗ (30x20) ---
-        function updatePrintSelect() {
-            updateSelects(); // Синхронизируем
+        function deleteProduct(sku) {
+            if(confirm(`Удалить ${sku}?`)) {
+                delete products[sku];
+                saveData();
+                updateAllUI();
+            }
+        }
+
+        function renderPrintPreview() {
+            const sku = document.getElementById('printKizProductSelect').value;
+            const container = document.getElementById('kizPreviewArea');
+            container.innerHTML = '';
+            if(!sku || !products[sku]) return;
+
+            products[sku].kiz_list.slice(0, 12).forEach(code => { // Показываем превью первых 12
+                const div = document.createElement('div');
+                div.className = 'bg-white p-2 border rounded flex flex-col items-center';
+                const canvas = document.createElement('canvas');
+                const text = document.createElement('div');
+                text.className = 'text-[8px] text-center mt-1 truncate w-full';
+                text.innerText = code;
+                div.appendChild(canvas);
+                div.appendChild(text);
+                container.appendChild(div);
+                try {
+                    bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 2, width: 28, height: 15, includetext: false });
+                } catch(e) {}
+            });
         }
 
         function printAllKizForProduct() {
             const sku = document.getElementById('printKizProductSelect').value;
-            if(!sku) return alert("Выберите товар");
-            
-            const p = products[sku];
-            // Печатаем только те, что еще не в коробах (или можно все, если нужно перевыпустить)
-            // Для надежности печатаем все, но помечаем статус
-            const codesToPrint = p.kiz_list; 
-            
-            if(codesToPrint.length === 0) return alert("Нет кодов для печати");
-
+            if(!sku || !products[sku]) return alert("Выберите товар");
             const printArea = document.getElementById('printArea');
             printArea.innerHTML = '';
-
-            codesToPrint.forEach(code => {
+            
+            products[sku].kiz_list.forEach(code => {
                 const div = document.createElement('div');
                 div.className = 'print-kiz';
-                
                 const canvas = document.createElement('canvas');
-                const textDiv = document.createElement('div');
-                textDiv.className = 'kiz-text';
-                // Обрезаем длинный код для читаемости, но в штрихкоде он полный
-                textDiv.innerText = code.length > 25 ? code.substring(0, 12) + '...' + code.substring(code.length-10) : code;
-
+                const text = document.createElement('div');
+                text.className = 'kiz-text';
+                text.innerText = code.length > 25 ? code.substring(0, 12) + '...' + code.substring(code.length-10) : code;
                 div.appendChild(canvas);
-                div.appendChild(textDivCI);
+                div.appendChild(text);
                 printArea.appendChild(div);
-
                 try {
-                    bwipjs.toCanvas(canvas, {
-                        bcid: 'datamatrix',
-                        text: code,
-                        scale: 3, // Высокое качество для маленького размера
-                        width: 28, // мм
-                        height: 15, // мм
-                        includetext: false, // Текст рисуем отдельно, чтобы контролировать шрифт
-                    });
-                } catch(e) {
-                    console.error("Ошибка генерации DataMatrix:", e);
-                }
+                    bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 3, width: 28, height: 15, includetext: false });
+                } catch(e) {}
             });
-
-            setTimeout(() => window.print(), 500);
+            setTimeout(() => window.print(), 300);
         }
 
-        // --- ЛОГИКА СБОРКИ В КОРОБ ---
-        const scanInput = document.getElementById('scanInput');
-        scanInput.addEventListener('keypress', function (e) {
+        document.getElementById('scanInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 processScan();
@@ -462,190 +276,95 @@
         });
 
         function processScan() {
-            let code = scanInput.value.trim();
+            let code = document.getElementById('scanInput').value.trim();
             if (!code) return;
 
-            // 1. Ищем, какому товару принадлежит этот КИЗ
             let foundSku = null;
-            let isAlreadyPacked = false;
-
             for (const [sku, data] of Object.entries(products)) {
-                if (data.kiz_list.includes(code)) {
-                    foundSku = sku;
-                    // Проверяем, не был ли он уже отсканирован в этом или прошлом коробе
-                    // Для простоты: считаем packed_count глобально. 
-                    // В реальной системе нужна детальная история по каждому КИЗ.
-                    // Здесь мы проверяем, есть ли он в currentBoxItems или closedBoxes
-                    break;
-                }
+                if (data.kiz_list.includes(code)) { foundSku = sku; break; }
             }
 
             const feedback = document.getElementById('scanFeedback');
-
             if (!foundSku) {
-                feedback.innerHTML = `❌ НЕИЗВЕСТНЫЙ КИЗ!<br><span class="text-sm font-normal">Код "${code.substring(0,15)}..." не найден в базе товаров.</span>`;
-                feedback.className = "p-3 rounded-lg mb-4 text-center font-bold text-lg bg-red-100 text-red-800 border-2 border-red-500 scan-err block";
+                feedback.innerHTML = `❌ НЕИЗВЕСТНЫЙ КОД`;
+                feedback.className = "p-2 rounded mb-2 text-center font-bold bg-red-100 text-red-800 border border-red-500 scan-err block";
             } else if (currentBoxItems.includes(code)) {
-                feedback.innerHTML = `⚠️ УЖЕ В ЭТОМ КОРОБЕ!<br><span class="text-sm font-normal">${products[foundSku].name}</span>`;
-                feedback.className = "p-3 rounded-lg mb-4 text-center font-bold text-lg bg-yellow-100 text-yellow-800 border-2 border-yellow-500 scan-err block";
+                feedback.innerHTML = `⚠️ УЖЕ В ЭТОМ КОРОБЕ`;
+                feedback.className = "p-2 rounded mb-2 text-center font-bold bg-yellow-100 text-yellow-800 border border-yellow-500 scan-err block";
             } else {
-                // Успех!
                 currentBoxItems.push(code);
                 products[foundSku].packed_count += 1;
                 saveData();
-                
-                feedback.innerHTML = `✅ ВЕРНО!<br><span class="text-sm font-normal text-green-700">${products[foundSku].name} (${foundSku})</span>`;
-                feedback.className = "p-3 rounded-lg mb-4 text-center font-bold text-lg bg-green-100 text-green-800 border-2 border-green-500 scan-ok block";
+                feedback.innerHTML = `✅ ВЕРНО: ${products[foundSku].name}`;
+                feedback.className = "p-2 rounded mb-2 text-center font-bold bg-green-100 text-green-800 border border-green-500 scan-ok block";
             }
-
-            scanInput.value = '';
-            scanInput.focus();
+            document.getElementById('scanInput').value = '';
+            document.getElementById('scanInput').focus();
             updatePackingUI();
         }
 
         function updatePackingUI() {
             document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
-            document.getElementById('boxItemCount').innerText = currentBoxItems.length;
             document.getElementById('totalScannedCount').innerText = currentBoxItems.length;
-
+            
             const list = document.getElementById('boxItemsList');
             list.innerHTML = '';
             if (currentBoxItems.length === 0) {
-                list.innerHTML = '<p class="text-gray-400 text-center mt-10 italic">Короб пуст.</p>';
+                list.innerHTML = '<p class="text-gray-400 text-center mt-16 italic">Короб пуст</p>';
             } else {
                 [...currentBoxItems].reverse().forEach(code => {
-                    // Находим имя товара для отображения
-                    let pName = "Неизвестный товар";
+                    let pName = "Неизвестно";
                     for(const [sku, data] of Object.entries(products)) {
                         if(data.kiz_list.includes(code)) { pName = data.name; break; }
                     }
-                    
                     const div = document.createElement('div');
                     div.className = "flex justify-between items-center p-2 border-b bg-white rounded mb-1 text-xs";
-                    div.innerHTML = `
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-800">${pName}</div>
-                            <div class="font-mono text-gray-500 truncate w-48" title="${code}">${code}</div>
-                        </div>
-                        <button onclick="printSingleKizLabel('${code}')" class="ml-2 text-xs bg-cz text-white px-2 py-1 rounded hover:bg-blue-800">Этикетка</button>
-                    `;
+                    div.innerHTML = `<div class="flex-1"><div class="font-bold">${pName}</div><div class="font-mono text-gray-500 truncate">${code}</div></div>`;
                     list.appendChild(div);
                 });
             }
 
-            // История
             const histList = document.getElementById('closedBoxesList');
             histList.innerHTML = '';
-            if (closedBoxes.length === 0) {
-                histList.innerHTML = '<p class="text-gray-400 text-center mt-4 italic">Пусто</p>';
-            } else {
-                [...closedBoxes].reverse().forEach(box => {
-                    const div = document.createElement('div');
-                    div.className = "p-2 border-b bg-white rounded mb-1 flex justify-between items-center";
-                    div.innerHTML = `
-                        <div>
-                            <div class="font-bold text-cz">${box.id}</div>
-                            <div class="text-xs text-gray-500">${box.date} | ${box.itemsCount} шт.</div>
-                        </div>
-                        <button onclick="reprintBoxLabel('${box.id}')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">Ярлык</button>
-                    `;
-                    histList.appendChild(div);
-                });
-            }
+            [...closedBoxes].reverse().forEach(box => {
+                const div = document.createElement('div');
+                div.className = "p-1 border-b bg-white rounded mb-1 flex justify-between";
+                div.innerHTML = `<span class="font-bold">${box.id}</span><span class="text-gray-500">${box.itemsCount} шт.</span>`;
+                histList.appendChild(div);
+            });
         }
 
-        function printSingleKizLabel(code) {
-            const printArea = document.getElementById('printArea');
-            printArea.innerHTML = '';
-            const div = document.createElement('div');
-            div.className = 'print-kiz';
-            const canvas = document.createElement('canvas');
-            const textDiv = document.createElement('div');
-            textDiv.className = 'kiz-text';
-            textDiv.innerText = code.length > 25 ? code.substring(0, 12) + '...' + code.substring(code.length-10) : code;
-            div.appendChild(canvas);
-            div.appendChild(textDiv);
-            printArea.appendChild(div);
-            
-            bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 3, width: 28, height: 15, includetext: false });
-            setTimeout(() => window.print(), 300);
-        }
-
-        // --- ЗАКРЫТИЕ КОРОБА ---
         function closeBoxAndPrint() {
-            if (currentBoxItems.length === 0 && !confirm('Короб пуст. Распечатать пустой ярлык?')) return;
+            if (currentBoxItems.length === 0 && !confirm('Короб пуст. Печатать?')) return;
 
             const boxId = currentBoxId;
             const itemCount = currentBoxItems.length;
-            const dateStr = new Date().toLocaleString();
-
-            closedBoxes.push({ id: boxId, itemsCount: itemCount, date: dateStr });
+            closedBoxes.push({ id: boxId, itemsCount: itemCount, date: new Date().toLocaleString() });
             
-            // Печать ярлыка короба
             const printArea = document.getElementById('printArea');
             printArea.innerHTML = '';
             const div = document.createElement('div');
             div.className = 'print-box';
-            
             const title = document.createElement('div');
             title.className = 'box-title';
             title.innerText = `КОРОБ: ${boxId}`;
-            
             const canvas = document.createElement('canvas');
-            
             const info = document.createElement('div');
             info.className = 'box-info';
-            info.innerHTML = `КИЗ внутри: <b>${itemCount} шт.</b><br>${dateStr}<br><span class="text-xs text-gray-500">Честный ЗНАК</span>`;
-
+            info.innerHTML = `КИЗ внутри: <b>${itemCount} шт.</b><br>${new Date().toLocaleString()}`;
             div.appendChild(title);
             div.appendChild(canvas);
             div.appendChild(info);
             printArea.appendChild(div);
 
             try {
-                bwipjs.toCanvas(canvas, {
-                    bcid: 'code128',
-                    text: boxId,
-                    scale: 3,
-                    height: 15,
-                    includetext: true,
-                    textxalign: 'center',
-                });
+                bwipjs.toCanvas(canvas, { bcid: 'code128', text: boxId, scale: 3, height: 15, includetext: true, textxalign: 'center' });
             } catch(e) {}
 
-            // Сброс для нового короба
             currentBoxItems = [];
-            currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            currentBoxId = 'BOX-' + Math.floor(Math.random() * 10000);
             saveData();
             updatePackingUI();
-            
-            setTimeout(() => window.print(), 500);
-        }
-
-        function reprintBoxLabel(boxId) {
-            const box = closedBoxes.find(b => b.id === boxId);
-            if(!box) return;
-            
-            const printArea = document.getElementById('printArea');
-            printArea.innerHTML = '';
-            const div = document.createElement('div');
-            div.className = 'print-box';
-            
-            const title = document.createElement('div');
-            title.className = 'box-title';
-            title.innerText = `КОРОБ: ${box.id} (КОПИЯ)`;
-            
-            const canvas = document.createElement('canvas');
-            const info = document.createElement('div');
-            info.className = 'box-info';
-            info.innerHTML = `КИЗ внутри: <b>${box.itemsCount} шт.</b><br>${box.date}`;
-
-            div.appendChild(title);
-            div.appendChild(canvas);
-            div.appendChild(info);
-            printArea.appendChild(div);
-
-            bwipjs.toCanvas(canvas, { bcid: 'code128', text: box.id, scale: 3, height: 15, includetext: true, textxalign: 'center' });
             setTimeout(() => window.print(), 300);
         }
 
@@ -661,8 +380,6 @@
             updateSelects();
             updatePackingUI();
         }
-
-        // Старт
         showTab('tab-catalog');
     </script>
 </body>
