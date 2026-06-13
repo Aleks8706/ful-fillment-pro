@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro: Ручная настройка столбцов Excel</title>
+    <title>WMS Pro: Загрузка товаров (Версия 5.1)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
+    <!-- Стабильная версия библиотеки для Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <style>
         @media print {
             .no-print { display: none !important; }
@@ -42,7 +39,7 @@
                 <div class="bg-white text-indigo-700 p-2 rounded-lg font-black text-xl">WMS</div>
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Честный ЗНАК + Excel</h1>
-                    <p class="text-xs text-indigo-200">Версия 5.0 (Ручное распределение столбцов)</p>
+                    <p class="text-xs text-indigo-200">Версия 5.1 (Исправлена загрузка)</p>
                 </div>
             </div>
             <div class="text-right bg-indigo-800 px-4 py-2 rounded-lg border border-indigo-600">
@@ -62,28 +59,40 @@
         <!-- ВКЛАДКА 1: Каталог и Загрузка -->
         <div id="tab-catalog" class="tab-content space-y-4">
             
-            <!-- ЗАГРУЗКА EXCEL С РУЧНЫМ ВЫБОРОМ СТОЛБЦОВ -->
+            <!-- ЗАГРУЗКА ДАННЫХ -->
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-sm border border-blue-200">
-                <h2 class="font-bold text-lg mb-3 text-blue-800 flex items-center gap-2">📊 Загрузка товаров из Excel (Ручная настройка)</h2>
+                <h2 class="font-bold text-lg mb-4 text-blue-800 flex items-center gap-2">📊 Загрузка товаров (2 способа)</h2>
                 
-                <div class="bg-white p-4 rounded-lg border border-blue-200 mb-4">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">1. Выберите файл Excel (.xlsx или .csv)</label>
-                    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"/>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Способ 1: Вставка из Excel (САМЫЙ НАДЕЖНЫЙ) -->
+                    <div class="bg-white p-5 rounded-lg border-2 border-green-300 shadow-sm">
+                        <h3 class="font-bold text-green-800 mb-2 flex items-center gap-2">⭐ Способ А: Копировать и Вставить (Рекомендуется)</h3>
+                        <p class="text-xs text-slate-600 mb-3">1. Откройте ваш Excel.<br>2. Выделите нужные ячейки (включая заголовки).<br>3. Нажмите <b>Ctrl+C</b>.<br>4. Кликните в поле ниже и нажмите <b>Ctrl+V</b>.</p>
+                        <textarea id="pasteArea" rows="6" placeholder="Вставьте данные из Excel сюда (Ctrl+V)..." class="w-full border-2 border-green-200 p-3 rounded-lg text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none resize-none mb-3"></textarea>
+                        <button onclick="processPastedData()" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-700 transition">✅ Распознать вставленные данные</button>
+                    </div>
+
+                    <!-- Способ 2: Загрузка файла -->
+                    <div class="bg-white p-5 rounded-lg border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-2">Способ Б: Загрузка файла (.xlsx)</h3>
+                        <p class="text-xs text-slate-500 mb-3">Убедитесь, что файл сохранен в формате <b>.xlsx</b> (не .xls!).</p>
+                        <input type="file" id="excelFileInput" accept=".xlsx" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 mb-3"/>
+                        <div id="fileError" class="text-xs text-red-600 font-bold mb-2 hidden"></div>
+                        <button onclick="readExcelFile()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition">📂 Прочитать файл</button>
+                    </div>
                 </div>
 
                 <!-- Область предпросмотра и настройки (скрыта по умолчанию) -->
-                <div id="mappingArea" class="hidden bg-white p-4 rounded-lg border border-blue-200">
-                    <h3 class="font-bold text-slate-700 mb-3">2. Укажите, что содержит каждый столбец:</h3>
+                <div id="mappingArea" class="hidden mt-6 bg-white p-5 rounded-lg border-2 border-indigo-200 shadow-md">
+                    <h3 class="font-bold text-indigo-800 mb-3 text-lg">🎯 Распределите столбцы:</h3>
+                    <p class="text-sm text-slate-600 mb-3">Выберите в выпадающих списках, что содержится в каждом столбце, затем нажмите "Загрузить в систему".</p>
                     <div class="overflow-x-auto custom-scroll mb-4">
-                        <table class="w-full text-sm text-left border-collapse" id="mappingTable">
-                            <!-- Сюда JavaScript вставит таблицу с выпадающими списками -->
-                        </table>
+                        <table class="w-full text-sm text-left border-collapse" id="mappingTable"></table>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="executeExcelImport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition text-lg">✅ ЗАГРУЗИТЬ ДАННЫЕ В СИСТЕМУ</button>
-                        <button onclick="downloadExcelTemplate()" class="px-6 bg-white border-2 border-slate-300 text-slate-700 py-3 rounded-lg font-bold hover:bg-slate-50 transition">📄 Скачать шаблон</button>
+                        <button onclick="executeImport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition text-lg shadow-lg">✅ ЗАГРУЗИТЬ ДАННЫЕ В СИСТЕМУ</button>
+                        <button onclick="cancelImport()" class="px-6 bg-slate-200 text-slate-700 py-3 rounded-lg font-bold hover:bg-slate-300 transition">Отмена</button>
                     </div>
-                    <div id="excelStatus" class="mt-3 text-sm font-bold min-h-[40px]"></div>
                 </div>
             </div>
 
@@ -171,7 +180,7 @@
         let currentBoxId = localStorage.getItem('cz_current_box') || 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = JSON.parse(localStorage.getItem('cz_current_box_items')) || [];
         let closedBoxes = JSON.parse(localStorage.getItem('cz_closed_boxes')) || [];
-        let currentExcelData = null; // Для хранения данных файла до нажатия "Загрузить"
+        let currentData = null; // Хранит распарсенные данные до подтверждения
 
         document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
         updateAllUI();
@@ -198,70 +207,123 @@
         }
 
         // ============================================
-        // 1. ЧТЕНИЕ ФАЙЛА И ПОКАЗ ПРЕДПРОСМОТРА
+        // 1. ОБРАБОТКА ВСТАВКИ ИЗ EXCEL (САМЫЙ НАДЕЖНЫЙ СПОСОБ)
         // ============================================
-        document.getElementById('excelFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+        function processPastedData() {
+            const text = document.getElementById('pasteArea').value.trim();
+            if(!text) return alert("Поле пустое! Сначала скопируйте данные из Excel и вставьте их сюда (Ctrl+V).");
+
+            try {
+                // Excel при копировании разделяет столбцы табуляцией (\t), а строки переносом (\n)
+                const rows = text.split(/\r?\n/).map(row => row.split('\t'));
+                
+                if(rows.length < 2) return alert("Недостаточно данных. Убедитесь, что вы скопировали хотя бы заголовки и одну строку данных.");
+
+                currentData = rows;
+                document.getElementById('fileError').classList.add('hidden');
+                renderMappingTable(currentData);
+                document.getElementById('mappingArea').classList.remove('hidden');
+                // Прокрутка к таблице
+                document.getElementById('mappingArea').scrollIntoView({ behavior: 'smooth' });
+            } catch(err) {
+                alert("Ошибка обработки вставленных данных: " + err.message);
+            }
+        }
+
+        // ============================================
+        // 2. ЧТЕНИЕ ФАЙЛА EXCEL (С ПОЛНОЙ ОБРАБОТКОЙ ОШИБОК)
+        // ============================================
+        function readExcelFile() {
+            const fileInput = document.getElementById('excelFileInput');
+            const errorDiv = document.getElementById('fileError');
+            
+            if(!fileInput.files.length) {
+                errorDiv.innerText = "⚠️ Сначала выберите файл!";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            // Проверка расширения
+            if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                errorDiv.innerText = "⚠️ Поддерживаются только файлы .xlsx или .xls";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            errorDiv.innerText = "Чтение файла...";
+            errorDiv.classList.remove('hidden');
+            errorDiv.className = "text-xs text-blue-600 font-bold mb-2";
 
             const reader = new FileReader();
+            
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    // Получаем все данные в виде массива массивов
-                    currentExcelData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: ""});
+                    currentData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: ""});
                     
-                    if(currentExcelData.length < 2) {
-                        alert("Файл пуст или содержит только одну строку!");
-                        return;
+                    if(currentData.length < 2) {
+                        throw new Error("Файл пуст или содержит только одну строку (заголовки).");
                     }
-                    renderMappingTable(currentExcelData);
+                    
+                    errorDiv.classList.add('hidden');
+                    renderMappingTable(currentData);
                     document.getElementById('mappingArea').classList.remove('hidden');
-                    document.getElementById('excelStatus').innerHTML = "";
+                    document.getElementById('mappingArea').scrollIntoView({ behavior: 'smooth' });
                 } catch(err) {
-                    alert("Ошибка чтения файла: " + err.message);
+                    console.error(err);
+                    errorDiv.className = "text-xs text-red-600 font-bold mb-2";
+                    errorDiv.innerHTML = `❌ Ошибка чтения: ${err.message}.<br>💡 Попробуйте открыть файл в Excel и сохранить его как "Книга Excel (*.xlsx)", либо используйте Способ А (Копировать/Вставить).`;
                 }
             };
-            reader.readAsArrayBuffer(file);
-        });
+            
+            reader.onerror = function() {
+                errorDiv.className = "text-xs text-red-600 font-bold mb-2";
+                errorDiv.innerText = "❌ Ошибка доступа к файлу. Возможно, файл открыт в другой программе или поврежден.";
+            };
 
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ============================================
+        // 3. ОТРИСОВКА ТАБЛИЦЫ РАСПРЕДЕЛЕНИЯ
+        // ============================================
         function renderMappingTable(data) {
             const table = document.getElementById('mappingTable');
             table.innerHTML = '';
             
-            // Берем первые 4 строки для предпросмотра (0 - заголовки, 1-3 - данные)
-            const previewRows = data.slice(0, 4);
+            const previewRows = data.slice(0, 5); // Показываем до 5 строк
             const numCols = Math.max(...previewRows.map(r => r.length));
 
-            // Создаем заголовки с выпадающими списками
             const thead = document.createElement('thead');
             const trHead = document.createElement('tr');
             
             for(let i = 0; i < numCols; i++) {
                 const th = document.createElement('th');
-                th.className = "p-2 border bg-slate-50 text-center align-bottom";
+                th.className = "p-2 border bg-slate-50 text-center align-bottom min-w-[120px]";
                 
                 const label = document.createElement('div');
                 label.className = "text-xs font-bold text-slate-500 mb-1";
-                label.innerText = `Столбец ${String.fromCharCode(65 + i)}`; // A, B, C...
+                label.innerText = `Столбец ${String.fromCharCode(65 + i)}`;
                 
                 const select = document.createElement('select');
-                select.className = "w-full text-sm border border-blue-300 rounded p-1 font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none";
+                select.className = "w-full text-sm border border-blue-300 rounded p-1.5 font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none bg-white";
                 select.id = `map_col_${i}`;
                 select.innerHTML = `
-                    <option value="none">-- Не импортировать --</option>
+                    <option value="none">-- Игнорировать --</option>
                     <option value="sku">🏷️ Артикул (SKU)</option>
                     <option value="name">📝 Название товара</option>
                     <option value="kiz">🔲 КИЗ (Маркировка)</option>
                 `;
                 
-                // Попытка автовыбора по содержимому первой строки (для удобства)
+                // Автовыбор по заголовку
                 const headerText = String(previewRows[0][i] || "").toLowerCase();
-                if(headerText.includes('артикул') || headerText.includes('sku') || headerText.includes('код')) select.value = 'sku';
-                else if(headerText.includes('название') || headerText.includes('товар') || headerText.includes('name')) select.value = 'name';
-                else if(headerText.includes('киз') || headerText.includes('честный') || headerText.includes('маркировка') || headerText.includes('datamatrix')) select.value = 'kiz';
+                if(headerText.includes('артикул') || headerText.includes('sku') || headerText.includes('код') || headerText.includes('article')) select.value = 'sku';
+                else if(headerText.includes('название') || headerText.includes('товар') || headerText.includes('name') || headerText.includes('наименование')) select.value = 'name';
+                else if(headerText.includes('киз') || headerText.includes('честный') || headerText.includes('маркировка') || headerText.includes('datamatrix') || headerText.includes('штрихкод')) select.value = 'kiz';
 
                 th.appendChild(label);
                 th.appendChild(select);
@@ -270,7 +332,6 @@
             thead.appendChild(trHead);
             table.appendChild(thead);
 
-            // Создаем тело с предпросмотром данных
             const tbody = document.createElement('tbody');
             for(let r = 1; r < previewRows.length; r++) {
                 const tr = document.createElement('tr');
@@ -278,7 +339,7 @@
                     const td = document.createElement('td');
                     td.className = "p-2 border text-xs text-slate-600 truncate max-w-[150px]";
                     td.innerText = previewRows[r][c] || "";
-                    td.title = previewRows[r][c] || ""; // Подсказка при наведении
+                    td.title = previewRows[r][c] || "";
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
@@ -287,14 +348,13 @@
         }
 
         // ============================================
-        // 2. ВЫПОЛНЕНИЕ ИМПОРТА ПО ВЫБРАННЫМ СТОЛБЦАМ
+        // 4. ВЫПОЛНЕНИЕ ИМПОРТА
         // ============================================
-        function executeExcelImport() {
-            if(!currentExcelData) return;
+        function executeImport() {
+            if(!currentData) return;
 
-            // Считываем выбор пользователя
             let skuCol = -1, nameCol = -1, kizCol = -1;
-            const numCols = currentExcelData[0].length;
+            const numCols = currentData[0].length;
             
             for(let i = 0; i < numCols; i++) {
                 const val = document.getElementById(`map_col_${i}`).value;
@@ -304,12 +364,12 @@
             }
 
             if(skuCol === -1 || nameCol === -1) {
-                document.getElementById('excelStatus').innerHTML = "<span class='text-red-600'>❌ Ошибка: Вы должны обязательно выбрать столбцы для 'Артикул' и 'Название'!</span>";
+                alert("❌ Ошибка: Вы должны обязательно выбрать столбцы для 'Артикул' и 'Название' в таблице выше!");
                 return;
             }
 
             let created = 0, updated = 0, skipped = 0;
-            const rows = currentExcelData.slice(1); // Пропускаем строку заголовков
+            const rows = currentData.slice(1);
 
             rows.forEach(row => {
                 const sku = String(row[skuCol] || "").trim().toUpperCase();
@@ -342,28 +402,22 @@
             });
 
             saveData();
-            document.getElementById('excelStatus').innerHTML = `<span class='text-green-700'>✅ Успешно! Создано: <b>${created}</b>, Обновлено (добавлены КИЗ): <b>${updated}</b>, Пропущено пустых: <b>${skipped}</b></span>`;
-            document.getElementById('excelFileInput').value = '';
-            document.getElementById('mappingArea').classList.add('hidden');
-            currentExcelData = null;
+            alert(`✅ Успешно загружено!\n\nСоздано новых товаров: ${created}\nОбновлено (добавлены КИЗ): ${updated}\nПропущено пустых строк: ${skipped}`);
+            
+            cancelImport(); // Очистить форму
             updateAllUI();
         }
 
-        function downloadExcelTemplate() {
-            const wb = XLSX.utils.book_new();
-            const ws_data = [
-                ['Артикул', 'Название товара', 'КИЗ (можно несколько через запятую)'],
-                ['TSHIRT-001', 'Футболка белая M', '010460123456789021ABC123'],
-                ['TSHIRT-002', 'Футболка белая L', '010460123456789121DEF456, 010460123456789221GHI789'],
-                ['JEANS-001', 'Джинсы синие 32', ''],
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            XLSX.utils.book_append_sheet(wb, ws, "Шаблон");
-            XLSX.writeFile(wb, "Шаблон_для_загрузки_WMS.xlsx");
+        function cancelImport() {
+            document.getElementById('mappingArea').classList.add('hidden');
+            document.getElementById('pasteArea').value = '';
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('fileError').classList.add('hidden');
+            currentData = null;
         }
 
         // ============================================
-        // ОСНОВНЫЕ ФУНКЦИИ (Без изменений)
+        // ОСНОВНЫЕ ФУНКЦИИ
         // ============================================
         function addProduct() {
             const sku = document.getElementById('newSku').value.trim().toUpperCase();
@@ -555,14 +609,14 @@
         }
 
         function saveData() {
-            localStorage.setItem('cz_products', JSON.stringify(products));
-            localStorage.setItem('cz_current_box', currentBoxId);
-            localStorage.setItem('cz_current_box_items', JSON.stringify(currentBoxItems));
-            localStorage.setItem('cz_closed_boxes', JSON.stringify(closedBoxes));
-        }
-
-        function resetAllData() {
-            if(confirm("⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ?")) { localStorage.clear(); location.reload(); }
+            try {
+                localStorage.setItem('cz_products', JSON.stringify(products));
+                localStorage.setItem('cz_current_box', currentBoxId);
+                localStorage.setItem('cz_current_box_items', JSON.stringify(currentBoxItems));
+                localStorage.setItem('cz_closed_boxes', JSON.stringify(closedBoxes));
+            } catch(e) {
+                alert("Ошибка сохранения: переполнена память браузера. Очистите старые данные.");
+            }
         }
 
         function updateAllUI() {
