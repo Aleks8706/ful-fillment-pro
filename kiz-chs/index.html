@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro: Честный ЗНАК + Умный Excel (Версия 4.1)</title>
+    <title>WMS Pro: Ручная настройка столбцов Excel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -15,20 +15,12 @@
         @media print {
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-            .print-kiz { 
-                width: 30mm; height: 20mm; page-break-after: always;
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                box-sizing: border-box; padding: 1mm; overflow: hidden;
-            }
+            .print-kiz { width: 30mm; height: 20mm; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; padding: 1mm; overflow: hidden; }
             .print-kiz canvas { max-width: 28mm; max-height: 14mm; }
             .print-kiz .kiz-text { font-size: 6px; text-align: center; word-break: break-all; margin-top: 1mm; color: #000; font-family: monospace; }
-            .print-box {
-                width: 58mm; height: 40mm; page-break-after: always;
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                border: 1px solid #000; box-sizing: border-box; padding: 2mm;
-            }
+            .print-box { width: 58mm; height: 40mm; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #000; box-sizing: border-box; padding: 2mm; }
             .print-box canvas { max-width: 50mm; max-height: 16mm; }
-            .print-box .box-title { font-size: 16px; font-weight: 900; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 1px; }
+            .print-box .box-title { font-size: 16px; font-weight: 900; margin-bottom: 2mm; text-transform: uppercase; }
             .print-box .box-info { font-size: 11px; text-align: center; line-height: 1.3; }
         }
         #printArea { display: none; }
@@ -49,8 +41,8 @@
             <div class="flex items-center gap-3">
                 <div class="bg-white text-indigo-700 p-2 rounded-lg font-black text-xl">WMS</div>
                 <div>
-                    <h1 class="text-lg font-bold leading-tight">Честный ЗНАК + Умный Excel</h1>
-                    <p class="text-xs text-indigo-200">Версия 4.1 (Авто-распознавание столбцов)</p>
+                    <h1 class="text-lg font-bold leading-tight">Честный ЗНАК + Excel</h1>
+                    <p class="text-xs text-indigo-200">Версия 5.0 (Ручное распределение столбцов)</p>
                 </div>
             </div>
             <div class="text-right bg-indigo-800 px-4 py-2 rounded-lg border border-indigo-600">
@@ -63,42 +55,41 @@
     <main class="container mx-auto p-4 max-w-7xl">
         <div class="flex gap-2 mb-6 no-print bg-white p-2 rounded-xl shadow-sm">
             <button onclick="showTab('tab-catalog')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500">📦 1. Товары и КИЗ</button>
-            <button onclick="showTab('tab-print')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">🖨️ 2. Печать этикеток</button>
-            <button onclick="showTab('tab-packing')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">📡 3. Сборка в короб</button>
+            <button onclick="showTab('tab-print')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">🖨️ 2. Печать</button>
+            <button onclick="showTab('tab-packing')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">📡 3. Сборка</button>
         </div>
 
         <!-- ВКЛАДКА 1: Каталог и Загрузка -->
         <div id="tab-catalog" class="tab-content space-y-4">
             
-            <!-- МАССОВАЯ ЗАГРУЗКА ИЗ EXCEL -->
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl shadow-sm border border-green-200">
-                <h2 class="font-bold text-lg mb-3 text-green-800 flex items-center gap-2">📊 Массовая загрузка товаров из Excel</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white p-4 rounded-lg border border-green-200">
-                        <p class="text-sm font-bold text-slate-700 mb-2">📥 Загрузить файл Excel (.xlsx)</p>
-                        <p class="text-xs text-slate-500 mb-3">Программа <b>сама найдет</b> столбцы по ключевым словам: "Артикул", "Название", "КИЗ", "Маркировка".</p>
-                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 mb-3"/>
-                        <div class="flex gap-2">
-                            <button onclick="importFromExcel()" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">Загрузить товары</button>
-                            <button onclick="downloadExcelTemplate()" class="px-4 bg-white border-2 border-green-600 text-green-700 py-2 rounded-lg font-bold hover:bg-green-50 transition">📄 Шаблон</button>
-                        </div>
-                        <div id="excelStatus" class="mt-3 text-sm font-bold min-h-[40px]"></div>
+            <!-- ЗАГРУЗКА EXCEL С РУЧНЫМ ВЫБОРОМ СТОЛБЦОВ -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-sm border border-blue-200">
+                <h2 class="font-bold text-lg mb-3 text-blue-800 flex items-center gap-2">📊 Загрузка товаров из Excel (Ручная настройка)</h2>
+                
+                <div class="bg-white p-4 rounded-lg border border-blue-200 mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">1. Выберите файл Excel (.xlsx или .csv)</label>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"/>
+                </div>
+
+                <!-- Область предпросмотра и настройки (скрыта по умолчанию) -->
+                <div id="mappingArea" class="hidden bg-white p-4 rounded-lg border border-blue-200">
+                    <h3 class="font-bold text-slate-700 mb-3">2. Укажите, что содержит каждый столбец:</h3>
+                    <div class="overflow-x-auto custom-scroll mb-4">
+                        <table class="w-full text-sm text-left border-collapse" id="mappingTable">
+                            <!-- Сюда JavaScript вставит таблицу с выпадающими списками -->
+                        </table>
                     </div>
-                    <div class="bg-white p-4 rounded-lg border border-green-200">
-                        <p class="text-sm font-bold text-slate-700 mb-2">📋 Как это работает:</p>
-                        <ul class="text-xs text-slate-600 space-y-1.5">
-                            <li>• Программа читает <b>первую строку</b> вашего файла как заголовки.</li>
-                            <li>• Ищет слова: <i>артикул, sku, код, название, товар, киз, маркировка, datamatrix</i>.</li>
-                            <li>• Порядок столбцов <b>не важен</b> (они могут быть в любом месте).</li>
-                            <li>• Если столбец КИЗ не найден, товары создадутся без кодов (их можно добавить позже).</li>
-                        </ul>
+                    <div class="flex gap-3">
+                        <button onclick="executeExcelImport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition text-lg">✅ ЗАГРУЗИТЬ ДАННЫЕ В СИСТЕМУ</button>
+                        <button onclick="downloadExcelTemplate()" class="px-6 bg-white border-2 border-slate-300 text-slate-700 py-3 rounded-lg font-bold hover:bg-slate-50 transition">📄 Скачать шаблон</button>
                     </div>
+                    <div id="excelStatus" class="mt-3 text-sm font-bold min-h-[40px]"></div>
                 </div>
             </div>
 
             <!-- РУЧНОЕ ДОБАВЛЕНИЕ -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="font-bold text-lg mb-3 text-slate-700 flex items-center gap-2">➕ Добавить товар вручную</h2>
+                <h2 class="font-bold text-lg mb-3 text-slate-700">➕ Добавить товар вручную</h2>
                 <div class="flex flex-col md:flex-row gap-3">
                     <input type="text" id="newSku" placeholder="Артикул (SKU)" class="border border-slate-300 p-2.5 rounded-lg flex-1 focus:ring-2 focus:ring-indigo-500 outline-none font-mono uppercase">
                     <input type="text" id="newName" placeholder="Название товара" class="border border-slate-300 p-2.5 rounded-lg flex-[2] focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -106,34 +97,11 @@
                 </div>
             </div>
 
-            <!-- ЗАГРУЗКА КИЗ ДЛЯ СУЩЕСТВУЮЩЕГО ТОВАРА -->
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="font-bold text-lg mb-3 text-slate-700 flex items-center gap-2">📥 Дозагрузка кодов КИЗ</h2>
-                <select id="kizProductSelect" class="w-full border border-slate-300 p-2.5 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                    <option value="">-- Сначала выберите товар из списка --</option>
-                </select>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="border-2 border-dashed border-green-200 rounded-lg p-4 bg-green-50/50 hover:bg-green-50 transition text-center">
-                        <p class="text-sm font-bold text-green-800 mb-2">⭐ Загрузка CSV/TXT (Рекомендуется)</p>
-                        <input type="file" id="csvFileInput" accept=".csv,.txt" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[11px] file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 mb-3"/>
-                        <button onclick="importCodesFromFile()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition text-sm">Загрузить файл</button>
-                    </div>
-
-                    <div class="border-2 border-dashed border-indigo-200 rounded-lg p-4 bg-indigo-50/50 hover:bg-indigo-50 transition text-center">
-                        <p class="text-sm font-bold text-indigo-800 mb-2">Загрузка PDF</p>
-                        <input type="file" id="pdfFileInput" accept=".pdf" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 mb-3"/>
-                        <button onclick="processPDF()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition text-sm">Извлечь из PDF</button>
-                        <div id="pdfStatus" class="mt-2 text-[11px] font-bold min-h-[30px]"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- ТАБЛИЦА ТОВАРОВ -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="font-bold text-lg text-slate-700">Реестр товаров (<span id="totalProductsCount">0</span>)</h2>
-                    <input type="text" id="searchProduct" placeholder="🔍 Поиск по артикулу или названию..." class="border border-slate-300 p-2 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderProductsTable()">
+                    <input type="text" id="searchProduct" placeholder="🔍 Поиск..." class="border border-slate-300 p-2 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderProductsTable()">
                 </div>
                 <div class="overflow-x-auto custom-scroll max-h-96">
                     <table class="w-full text-sm text-left">
@@ -157,13 +125,13 @@
         <div id="tab-print" class="tab-content hidden space-y-4">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 no-print flex flex-col md:flex-row gap-4 items-end">
                 <div class="flex-1 w-full">
-                    <label class="text-sm font-bold text-slate-600 block mb-1">Выберите товар для печати всех КИЗ:</label>
+                    <label class="text-sm font-bold text-slate-600 block mb-1">Выберите товар для печати:</label>
                     <select id="printKizProductSelect" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white" onchange="renderPrintPreview()"></select>
                 </div>
-                <button onclick="printAllKizForProduct()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition flex items-center justify-center gap-2">🖨️ Печать ВСЕХ (30x20 мм)</button>
+                <button onclick="printAllKizForProduct()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition">🖨️ Печать ВСЕХ (30x20 мм)</button>
             </div>
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
-                <p class="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wide">Предпросмотр (первые 6 шт.):</p>
+                <p class="text-xs text-slate-500 mb-2 font-bold uppercase">Предпросмотр (первые 6 шт.):</p>
                 <div id="kizPreviewArea" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
             </div>
         </div>
@@ -172,43 +140,24 @@
         <div id="tab-packing" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-indigo-600">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-lg text-slate-700">📡 Сканирование КИЗ</h2>
-                        <button onclick="document.getElementById('scanInput').focus()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded font-bold text-slate-600 transition">Фокус на поле (F2)</button>
-                    </div>
-                    <div class="relative mb-4">
-                        <input type="text" id="scanInput" class="w-full text-xl border-2 border-indigo-200 p-4 rounded-xl focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 font-mono tracking-wide transition" placeholder="Кликните сюда и сканируйте..." autocomplete="off">
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold hidden md:block">ENTER</div>
-                    </div>
+                    <h2 class="font-bold text-lg text-slate-700 mb-4">📡 Сканирование КИЗ</h2>
+                    <input type="text" id="scanInput" class="w-full text-xl border-2 border-indigo-200 p-4 rounded-xl focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 font-mono tracking-wide transition mb-4" placeholder="Кликните сюда и сканируйте..." autocomplete="off">
                     <div id="scanFeedback" class="hidden p-4 rounded-xl mb-4 text-center font-bold text-lg shadow-sm"></div>
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-bold text-slate-600 text-sm uppercase tracking-wide">Содержимое короба:</h3>
-                        <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full" id="boxItemCountBadge">0 шт.</span>
-                    </div>
                     <div class="h-64 overflow-y-auto custom-scroll border border-slate-200 rounded-xl bg-slate-50 p-2" id="boxItemsList">
-                        <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                            <span class="text-4xl mb-2">📭</span>
-                            <p class="italic">Короб пуст. Отсканируйте первый КИЗ.</p>
-                        </div>
+                        <div class="flex flex-col items-center justify-center h-full text-slate-400"><span class="text-4xl mb-2">📭</span><p class="italic">Короб пуст</p></div>
                     </div>
                 </div>
-
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-green-500 flex flex-col">
                     <h2 class="font-bold text-lg text-slate-700 mb-4">📦 Управление</h2>
                     <div class="bg-green-50 p-5 rounded-xl mb-6 border border-green-200 text-center">
-                        <div class="text-sm text-green-800 font-medium mb-1">Отсканировано КИЗ:</div>
+                        <div class="text-sm text-green-800 font-medium mb-1">Отсканировано:</div>
                         <div class="text-5xl font-black text-green-700" id="totalScannedCount">0</div>
                     </div>
-                    <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 rounded-xl font-black shadow-lg shadow-green-200 mb-6 flex items-center justify-center gap-2 transition transform hover:scale-[1.02] active:scale-95">✅ ЗАКРЫТЬ КОРОБ И ПЕЧАТАТЬ</button>
+                    <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 rounded-xl font-black shadow-lg mb-6">✅ ЗАКРЫТЬ КОРОБ И ПЕЧАТАТЬ</button>
                     <div class="mt-auto">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="font-bold text-slate-600 text-xs uppercase tracking-wide">История коробов:</h3>
-                            <button onclick="exportHistoryToCSV()" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded font-bold transition flex items-center gap-1">📥 Скачать CSV</button>
-                        </div>
-                        <div class="h-40 overflow-y-auto custom-scroll border border-slate-200 rounded-xl bg-slate-50 p-2 text-sm" id="closedBoxesList">
-                            <p class="text-slate-400 text-center mt-12 italic text-xs">История пуста</p>
-                        </div>
-                        <button onclick="resetAllData()" class="w-full mt-3 text-red-400 hover:text-red-600 text-xs font-medium transition flex items-center justify-center gap-1">⚠️ Очистить все данные</button>
+                        <h3 class="font-bold text-slate-600 text-xs uppercase mb-2">История:</h3>
+                        <div class="h-40 overflow-y-auto custom-scroll border border-slate-200 rounded-xl bg-slate-50 p-2 text-sm" id="closedBoxesList"></div>
+                        <button onclick="exportHistoryToCSV()" class="w-full mt-2 text-xs bg-blue-50 text-blue-600 py-2 rounded font-bold hover:bg-blue-100">📥 Скачать отчет CSV</button>
                     </div>
                 </div>
             </div>
@@ -222,6 +171,7 @@
         let currentBoxId = localStorage.getItem('cz_current_box') || 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = JSON.parse(localStorage.getItem('cz_current_box_items')) || [];
         let closedBoxes = JSON.parse(localStorage.getItem('cz_closed_boxes')) || [];
+        let currentExcelData = null; // Для хранения данных файла до нажатия "Загрузить"
 
         document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
         updateAllUI();
@@ -232,13 +182,7 @@
                 document.getElementById('scanInput').focus();
             }
         });
-        
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'F2') {
-                e.preventDefault();
-                document.getElementById('scanInput').focus();
-            }
-        });
+        window.addEventListener('keydown', (e) => { if (e.key === 'F2') { e.preventDefault(); document.getElementById('scanInput').focus(); } });
 
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -248,152 +192,178 @@
             });
             const activeBtn = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
             activeBtn.className = 'nav-btn flex-1 py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500';
-
             if(tabId === 'tab-catalog') renderProductsTable();
             if(tabId === 'tab-print') { updateSelects(); renderPrintPreview(); }
             if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput').focus(), 100); }
         }
 
         // ============================================
-        // УМНАЯ ЗАГРУЗКА ИЗ EXCEL (АВТО-РАСПОЗНАВАНИЕ СТОЛБЦОВ)
+        // 1. ЧТЕНИЕ ФАЙЛА И ПОКАЗ ПРЕДПРОСМОТРА
         // ============================================
+        document.getElementById('excelFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    // Получаем все данные в виде массива массивов
+                    currentExcelData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: ""});
+                    
+                    if(currentExcelData.length < 2) {
+                        alert("Файл пуст или содержит только одну строку!");
+                        return;
+                    }
+                    renderMappingTable(currentExcelData);
+                    document.getElementById('mappingArea').classList.remove('hidden');
+                    document.getElementById('excelStatus').innerHTML = "";
+                } catch(err) {
+                    alert("Ошибка чтения файла: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function renderMappingTable(data) {
+            const table = document.getElementById('mappingTable');
+            table.innerHTML = '';
+            
+            // Берем первые 4 строки для предпросмотра (0 - заголовки, 1-3 - данные)
+            const previewRows = data.slice(0, 4);
+            const numCols = Math.max(...previewRows.map(r => r.length));
+
+            // Создаем заголовки с выпадающими списками
+            const thead = document.createElement('thead');
+            const trHead = document.createElement('tr');
+            
+            for(let i = 0; i < numCols; i++) {
+                const th = document.createElement('th');
+                th.className = "p-2 border bg-slate-50 text-center align-bottom";
+                
+                const label = document.createElement('div');
+                label.className = "text-xs font-bold text-slate-500 mb-1";
+                label.innerText = `Столбец ${String.fromCharCode(65 + i)}`; // A, B, C...
+                
+                const select = document.createElement('select');
+                select.className = "w-full text-sm border border-blue-300 rounded p-1 font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none";
+                select.id = `map_col_${i}`;
+                select.innerHTML = `
+                    <option value="none">-- Не импортировать --</option>
+                    <option value="sku">🏷️ Артикул (SKU)</option>
+                    <option value="name">📝 Название товара</option>
+                    <option value="kiz">🔲 КИЗ (Маркировка)</option>
+                `;
+                
+                // Попытка автовыбора по содержимому первой строки (для удобства)
+                const headerText = String(previewRows[0][i] || "").toLowerCase();
+                if(headerText.includes('артикул') || headerText.includes('sku') || headerText.includes('код')) select.value = 'sku';
+                else if(headerText.includes('название') || headerText.includes('товар') || headerText.includes('name')) select.value = 'name';
+                else if(headerText.includes('киз') || headerText.includes('честный') || headerText.includes('маркировка') || headerText.includes('datamatrix')) select.value = 'kiz';
+
+                th.appendChild(label);
+                th.appendChild(select);
+                trHead.appendChild(th);
+            }
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            // Создаем тело с предпросмотром данных
+            const tbody = document.createElement('tbody');
+            for(let r = 1; r < previewRows.length; r++) {
+                const tr = document.createElement('tr');
+                for(let c = 0; c < numCols; c++) {
+                    const td = document.createElement('td');
+                    td.className = "p-2 border text-xs text-slate-600 truncate max-w-[150px]";
+                    td.innerText = previewRows[r][c] || "";
+                    td.title = previewRows[r][c] || ""; // Подсказка при наведении
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+        }
+
+        // ============================================
+        // 2. ВЫПОЛНЕНИЕ ИМПОРТА ПО ВЫБРАННЫМ СТОЛБЦАМ
+        // ============================================
+        function executeExcelImport() {
+            if(!currentExcelData) return;
+
+            // Считываем выбор пользователя
+            let skuCol = -1, nameCol = -1, kizCol = -1;
+            const numCols = currentExcelData[0].length;
+            
+            for(let i = 0; i < numCols; i++) {
+                const val = document.getElementById(`map_col_${i}`).value;
+                if(val === 'sku') skuCol = i;
+                if(val === 'name') nameCol = i;
+                if(val === 'kiz') kizCol = i;
+            }
+
+            if(skuCol === -1 || nameCol === -1) {
+                document.getElementById('excelStatus').innerHTML = "<span class='text-red-600'>❌ Ошибка: Вы должны обязательно выбрать столбцы для 'Артикул' и 'Название'!</span>";
+                return;
+            }
+
+            let created = 0, updated = 0, skipped = 0;
+            const rows = currentExcelData.slice(1); // Пропускаем строку заголовков
+
+            rows.forEach(row => {
+                const sku = String(row[skuCol] || "").trim().toUpperCase();
+                const name = String(row[nameCol] || "").trim();
+                
+                if(!sku || !name) {
+                    skipped++;
+                    return;
+                }
+
+                let kizList = [];
+                if(kizCol !== -1 && row[kizCol]) {
+                    const kizRaw = String(row[kizCol]).trim();
+                    kizList = kizRaw.split(/[,;\n]+/).map(k => k.trim()).filter(k => k.length > 10);
+                }
+
+                if(products[sku]) {
+                    const existing = new Set(products[sku].kiz_list);
+                    kizList.forEach(code => {
+                        if(!existing.has(code)) {
+                            products[sku].kiz_list.push(code);
+                            existing.add(code);
+                        }
+                    });
+                    updated++;
+                } else {
+                    products[sku] = { name: name, kiz_list: kizList, packed_count: 0 };
+                    created++;
+                }
+            });
+
+            saveData();
+            document.getElementById('excelStatus').innerHTML = `<span class='text-green-700'>✅ Успешно! Создано: <b>${created}</b>, Обновлено (добавлены КИЗ): <b>${updated}</b>, Пропущено пустых: <b>${skipped}</b></span>`;
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('mappingArea').classList.add('hidden');
+            currentExcelData = null;
+            updateAllUI();
+        }
+
         function downloadExcelTemplate() {
             const wb = XLSX.utils.book_new();
             const ws_data = [
-                ['Артикул (SKU)', 'Название товара', 'КИЗ (DataMatrix)'],
+                ['Артикул', 'Название товара', 'КИЗ (можно несколько через запятую)'],
                 ['TSHIRT-001', 'Футболка белая M', '010460123456789021ABC123'],
                 ['TSHIRT-002', 'Футболка белая L', '010460123456789121DEF456, 010460123456789221GHI789'],
                 ['JEANS-001', 'Джинсы синие 32', ''],
             ];
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "Шаблон");
-            XLSX.writeFile(wb, "WMS_Шаблон_товаров.xlsx");
-        }
-
-        function importFromExcel() {
-            const fileInput = document.getElementById('excelFileInput');
-            if(!fileInput.files.length) return alert("Выберите файл Excel (.xlsx или .csv)");
-
-            const statusDiv = document.getElementById('excelStatus');
-            statusDiv.innerHTML = "<span class='text-blue-700'>⏳ Анализ структуры файла...</span>";
-
-            try {
-                const file = fileInput.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, {type: 'array'});
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: ""});
-
-                        if(jsonData.length < 2) {
-                            statusDiv.innerHTML = "<span class='text-red-600'>❌ Файл пуст или содержит только одну строку (заголовки).</span>";
-                            return;
-                        }
-
-                        // 1. Умный поиск столбцов по заголовкам (первая строка)
-                        const headers = jsonData[0].map(h => String(h).toLowerCase().trim());
-                        
-                        // Функция для поиска индекса столбца по списку ключевых слов
-                        const findCol = (keywords) => headers.findIndex(h => keywords.some(k => h.includes(k)));
-
-                        const skuIdx = findCol(['артикул', 'sku', 'код', 'article', 'код товара', 'номенклатура']);
-                        const nameIdx = findCol(['название', 'товар', 'name', 'описание', 'наименование']);
-                        const kizIdx = findCol(['киз', 'честный', 'маркировка', 'datamatrix', 'код чз', 'serial', 'штрихкод', 'data matrix']);
-
-                        if (skuIdx === -1 || nameIdx === -1) {
-                            statusDiv.innerHTML = `<span class='text-red-600'>❌ Не удалось найти столбцы "Артикул" и "Название".<br>Убедитесь, что первая строка файла содержит эти заголовки.<br>Программа увидела такие заголовки: <b>"${headers.join('", "')}"</b></span>`;
-                            return;
-                        }
-
-                        let colInfo = `✅ Найдены столбцы: Артикул (Кол. ${skuIdx + 1}), Название (Кол. ${nameIdx + 1})`;
-                        if (kizIdx !== -1) {
-                            colInfo += `, КИЗ (Кол. ${kizIdx + 1})`;
-                        } else {
-                            colInfo += `. <span class="text-orange-600">Столбец КИЗ не найден, товары будут созданы без кодов (их можно добавить позже).</span>`;
-                        }
-
-                        // 2. Обработка данных
-                        const rows = jsonData.slice(1);
-                        let created = 0;
-                        let updated = 0;
-                        let skipped = 0;
-                        let errors = [];
-
-                        rows.forEach((row, index) => {
-                            // Пропускаем полностью пустые строки
-                            if (!row[skuIdx] && !row[nameIdx]) return;
-
-                            const sku = String(row[skuIdx] || '').trim().toUpperCase();
-                            const name = String(row[nameIdx] || '').trim();
-                            
-                            if(!sku || !name) {
-                                skipped++;
-                                errors.push(`Строка ${index + 2}: пустой Артикул или Название`);
-                                return;
-                            }
-
-                            let kizList = [];
-                            if (kizIdx !== -1 && row[kizIdx]) {
-                                const kizRaw = String(row[kizIdx]).trim();
-                                // Разделяем по запятой, точке с запятой или переносу строки
-                                kizList = kizRaw.split(/[,;\n]+/).map(k => k.trim()).filter(k => k.length > 10);
-                            }
-
-                            if(products[sku]) {
-                                // Товар существует - добавляем КИЗы
-                                const existing = new Set(products[sku].kiz_list);
-                                kizList.forEach(code => {
-                                    if(!existing.has(code)) {
-                                        products[sku].kiz_list.push(code);
-                                        existing.add(code);
-                                    }
-                                });
-                                updated++;
-                            } else {
-                                // Создаем новый товар
-                                products[sku] = {
-                                    name: name,
-                                    kiz_list: kizList,
-                                    packed_count: 0
-                                };
-                                created++;
-                            }
-                        });
-
-                        saveData();
-                        
-                        let report = `<span class='text-green-700'>${colInfo}<br><br>`;
-                        report += `📦 Создано новых товаров: <b>${created}</b><br>`;
-                        report += `🔄 Обновлено (добавлены КИЗы): <b>${updated}</b><br>`;
-                        report += `⚠️ Пропущено (ошибки): <b>${skipped}</b></span>`;
-                        
-                        if(errors.length > 0 && errors.length <= 5) {
-                            report += `<br><span class='text-orange-600 text-xs'>Ошибки: ${errors.join('; ')}</span>`;
-                        } else if(errors.length > 5) {
-                            report += `<br><span class='text-orange-600 text-xs'>И еще ${errors.length - 5} ошибок (проверьте файл)</span>`;
-                        }
-                        
-                        statusDiv.innerHTML = report;
-                        fileInput.value = '';
-                        updateAllUI();
-
-                    } catch(err) {
-                        statusDiv.innerHTML = `<span class='text-red-600'>❌ Ошибка чтения Excel: ${err.message}</span>`;
-                        console.error(err);
-                    }
-                };
-                
-                reader.readAsArrayBuffer(file);
-            } catch(err) {
-                statusDiv.innerHTML = `<span class='text-red-600'>❌ Ошибка: ${err.message}</span>`;
-            }
+            XLSX.writeFile(wb, "Шаблон_для_загрузки_WMS.xlsx");
         }
 
         // ============================================
-        // ОСНОВНЫЕ ФУНКЦИИ
+        // ОСНОВНЫЕ ФУНКЦИИ (Без изменений)
         // ============================================
         function addProduct() {
             const sku = document.getElementById('newSku').value.trim().toUpperCase();
@@ -404,107 +374,20 @@
             saveData();
             document.getElementById('newSku').value = '';
             document.getElementById('newName').value = '';
-            document.getElementById('newSku').focus();
             updateAllUI();
         }
 
         function updateSelects() {
-            const selects = ['kizProductSelect', 'printKizProductSelect'];
-            selects.forEach(id => {
-                const sel = document.getElementById(id);
-                const val = sel.value;
-                sel.innerHTML = '<option value="">-- Выберите товар --</option>';
-                Object.keys(products).forEach(sku => {
-                    const opt = document.createElement('option');
-                    opt.value = sku;
-                    opt.innerText = `${sku} | ${products[sku].name} (Всего: ${products[sku].kiz_list.length})`;
-                    sel.appendChild(opt);
-                });
-                sel.value = val;
+            const sel = document.getElementById('printKizProductSelect');
+            const val = sel.value;
+            sel.innerHTML = '<option value="">-- Выберите товар --</option>';
+            Object.keys(products).forEach(sku => {
+                const opt = document.createElement('option');
+                opt.value = sku;
+                opt.innerText = `${sku} | ${products[sku].name} (Всего: ${products[sku].kiz_list.length})`;
+                sel.appendChild(opt);
             });
-        }
-
-        function extractCodesFromText(text) {
-            let cleanText = text.replace(/[\r\n]+/g, ' ');
-            const gs1Regex = /01\s*\d{14}\s*21\s*[A-Za-z0-9]{1,20}/g;
-            let matches = cleanText.match(gs1Regex) || [];
-            matches = matches.map(m => m.replace(/\s+/g, ''));
-            const longStringRegex = /[A-Za-z0-9]{30,}/g;
-            let longMatches = cleanText.match(longStringRegex) || [];
-            return [...new Set([...matches, ...longMatches])];
-        }
-
-        async function processPDF() {
-            const sku = document.getElementById('kizProductSelect').value;
-            if(!sku) return alert("Сначала выберите товар!");
-            
-            const fileInput = document.getElementById('pdfFileInput');
-            if(!fileInput.files.length) return alert("Выберите PDF файл!");
-
-            const statusDiv = document.getElementById('pdfStatus');
-            statusDiv.innerHTML = "<span class='text-indigo-600'>⏳ Чтение PDF...</span>";
-
-            try {
-                const arrayBuffer = await fileInput.files[0].arrayBuffer();
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                let fullText = "";
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(" ") + " ";
-                }
-
-                const extractedCodes = extractCodesFromText(fullText);
-
-                if (extractedCodes.length === 0) {
-                    statusDiv.innerHTML = "<span class='text-red-600'>❌ Коды не найдены. Используйте CSV/TXT</span>";
-                    return;
-                }
-
-                processKizCodes(sku, extractedCodes);
-                statusDiv.innerHTML = `<span class='text-green-600'>✅ Найдено: ${extractedCodes.length}</span>`;
-                fileInput.value = '';
-
-            } catch (error) {
-                statusDiv.innerHTML = `<span class='text-red-600'>❌ Ошибка: ${error.message}</span>`;
-            }
-        }
-
-        function importCodesFromFile() {
-            const sku = document.getElementById('kizProductSelect').value;
-            if(!sku) return alert("Сначала выберите товар!");
-            const fileInput = document.getElementById('csvFileInput');
-            if(!fileInput.files.length) return alert("Выберите файл");
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const codes = text.split(/[\r\n,]+/).map(c => c.replace(/["\s]/g, '').trim()).filter(c => c.length > 25);
-                processKizCodes(sku, codes);
-                fileInput.value = '';
-            };
-            reader.readAsText(fileInput.files[0]);
-        }
-
-        function processKizCodes(sku, newCodes) {
-            const existing = new Set(products[sku].kiz_list);
-            let addedCount = 0;
-            let duplicateCount = 0;
-            
-            newCodes.forEach(code => {
-                if(!existing.has(code)) {
-                    products[sku].kiz_list.push(code);
-                    existing.add(code);
-                    addedCount++;
-                } else {
-                    duplicateCount++;
-                }
-            });
-            
-            saveData();
-            alert(`✅ ЗАГРУЗКА ЗАВЕРШЕНА!\n\nНайдено: ${newCodes.length}\nДобавлено: ${addedCount}\nДубликаты: ${duplicateCount}\n\nВсего в базе: ${products[sku].kiz_list.length}`);
-            updateAllUI();
+            sel.value = val;
         }
 
         function renderProductsTable() {
@@ -527,9 +410,9 @@
                     <td class="p-3 text-center font-bold">${p.kiz_list.length}</td>
                     <td class="p-3 text-center font-bold text-indigo-600">${p.packed_count}</td>
                     <td class="p-3 text-center font-bold ${free === 0 ? 'text-red-500' : 'text-green-600'}">${free}</td>
-                    <td class="p-3 text-right flex justify-end gap-2">
-                        <button onclick="printSpecificProductKiz('${sku}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition">🖨️ КИЗ</button>
-                        <button onclick="deleteProduct('${sku}')" class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">Удалить</button>
+                    <td class="p-3 text-right">
+                        <button onclick="document.getElementById('printKizProductSelect').value='${sku}'; showTab('tab-print'); setTimeout(printAllKizForProduct, 300);" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition">🖨️ КИЗ</button>
+                        <button onclick="deleteProduct('${sku}')" class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition ml-1">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -550,7 +433,6 @@
             const container = document.getElementById('kizPreviewArea');
             container.innerHTML = '';
             if(!sku || !products[sku]) return;
-            
             products[sku].kiz_list.slice(0, 6).forEach(code => {
                 const div = document.createElement('div');
                 div.className = 'bg-white p-2 border border-slate-200 rounded-lg flex flex-col items-center shadow-sm';
@@ -569,12 +451,10 @@
             const sku = document.getElementById('printKizProductSelect').value;
             if(!sku || !products[sku]) return alert("Выберите товар!");
             if(products[sku].kiz_list.length === 0) return alert("Нет кодов КИЗ!");
-            
             if(products[sku].kiz_list.length > 100 && !confirm(`Печать ${products[sku].kiz_list.length} этикеток. Продолжить?`)) return;
 
             const printArea = document.getElementById('printArea');
             printArea.innerHTML = '';
-            
             products[sku].kiz_list.forEach(code => {
                 const div = document.createElement('div');
                 div.className = 'print-kiz';
@@ -587,14 +467,7 @@
                 printArea.appendChild(div);
                 try { bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 3, width: 28, height: 14, includetext: false }); } catch(e) {}
             });
-            
             setTimeout(() => window.print(), 500);
-        }
-
-        function printSpecificProductKiz(sku) {
-            document.getElementById('printKizProductSelect').value = sku;
-            showTab('tab-print');
-            setTimeout(() => printAllKizForProduct(), 300);
         }
 
         document.getElementById('scanInput').addEventListener('keypress', function (e) {
@@ -612,51 +485,24 @@
             if (!foundSku) {
                 feedback.innerHTML = `❌ ОШИБКА: Неизвестный КИЗ`;
                 feedback.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-red-50 text-red-800 border-2 border-red-200 scan-err block";
-                playBeep('error');
             } else if (currentBoxItems.includes(code)) {
                 feedback.innerHTML = `⚠️ УЖЕ В КОРОБЕ`;
                 feedback.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-yellow-50 text-yellow-800 border-2 border-yellow-200 scan-err block";
-                playBeep('error');
             } else {
                 currentBoxItems.push(code);
                 products[foundSku].packed_count += 1;
                 saveData();
                 feedback.innerHTML = `✅ ${products[foundSku].name}`;
                 feedback.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-green-50 text-green-800 border-2 border-green-200 scan-ok block";
-                playBeep('success');
             }
             document.getElementById('scanInput').value = '';
             document.getElementById('scanInput').focus();
             updatePackingUI();
         }
 
-        function playBeep(type) {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                if(type === 'success') {
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-                } else {
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
-                }
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.3);
-            } catch(e) {}
-        }
-
         function updatePackingUI() {
             document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
             document.getElementById('totalScannedCount').innerText = currentBoxItems.length;
-            document.getElementById('boxItemCountBadge').innerText = `${currentBoxItems.length} шт.`;
             const list = document.getElementById('boxItemsList');
             list.innerHTML = '';
             if (currentBoxItems.length === 0) {
@@ -669,12 +515,7 @@
                     }
                     const div = document.createElement('div');
                     div.className = "flex justify-between items-center p-3 border-b border-slate-100 bg-white rounded-lg mb-2 shadow-sm";
-                    div.innerHTML = `
-                        <div class="flex-1 min-w-0">
-                            <div class="font-bold text-slate-800 truncate">${pName}</div>
-                            <div class="font-mono text-xs text-slate-500 truncate">${code}</div>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="flex-1 min-w-0"><div class="font-bold text-slate-800 truncate">${pName}</div><div class="font-mono text-xs text-slate-500 truncate">${code}</div></div>`;
                     list.appendChild(div);
                 });
             }
@@ -694,7 +535,6 @@
             const canvas = document.createElement('canvas');
             div.insertBefore(canvas, div.lastElementChild);
             printArea.appendChild(div);
-            
             try { bwipjs.toCanvas(canvas, { bcid: 'code128', text: boxId, scale: 3, height: 15, includetext: true }); } catch(e) {}
             
             currentBoxItems = [];
@@ -707,9 +547,7 @@
         function exportHistoryToCSV() {
             if(closedBoxes.length === 0) return alert("История пуста");
             let csv = "data:text/csv;charset=utf-8,\uFEFFID Короба;Дата;Количество;КИЗ\n";
-            closedBoxes.forEach(b => {
-                csv += `${b.id};${b.date};${b.itemsCount};"${b.items.join(', ')}"\n`;
-            });
+            closedBoxes.forEach(b => { csv += `${b.id};${b.date};${b.itemsCount};"${b.items.join(', ')}"\n`; });
             const link = document.createElement("a");
             link.href = encodeURI(csv);
             link.download = `короба_${new Date().toISOString().slice(0,10)}.csv`;
@@ -724,10 +562,7 @@
         }
 
         function resetAllData() {
-            if(confirm("⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ?")) {
-                localStorage.clear();
-                location.reload();
-            }
+            if(confirm("⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ?")) { localStorage.clear(); location.reload(); }
         }
 
         function updateAllUI() {
