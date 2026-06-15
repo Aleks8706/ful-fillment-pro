@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro - Честный ЗНАК (Исправление PDF)</title>
+    <title>WMS Pro - Автопечать при сканировании</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -69,8 +69,6 @@
 
         <main class="flex-1 p-4 lg:p-8 overflow-auto">
             <div id="tab-catalog" class="tab-content space-y-6 animate-fade-in">
-                
-                <!-- ПРЕДУПРЕЖДЕНИЕ О PDF -->
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -78,21 +76,19 @@
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
-                                <strong>Важно:</strong> Если PDF загружает меньше кодов, чем есть в файле (например, 12 из 120), значит файл сгенерирован как изображение. 
-                                <strong>Решение:</strong> Скачайте этот же список из Кабинета ЧЗ в формате <strong>CSV или Excel</strong>, откройте его, скопируйте столбец с кодами и вставьте в зеленую зону "Вставить из Excel" ниже. Это работает в 100% случаев.
+                                <strong>Важно:</strong> Если PDF загружает меньше кодов, скачайте этот же список из Кабинета ЧЗ в формате <strong>CSV или Excel</strong>, скопируйте столбец с кодами и вставьте в зеленую зону "Вставка из Excel" ниже.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- DRAG & DROP ЗОНА -->
                 <div class="glass-card rounded-2xl p-1 bg-gradient-to-r from-indigo-500 to-purple-600">
                     <div class="bg-white rounded-xl p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">📥 Быстрая загрузка КИЗ</h2>
                         <div id="pdfDropZone" class="drop-zone rounded-xl p-8 text-center cursor-pointer relative">
-                            <input type="file" id="pdfFileInputHidden" accept=".pdf,.csv,.txt,.xlsx,.xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <input type="file" id="pdfFileInputHidden" accept=".pdf,.csv,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                             <svg class="w-12 h-12 mx-auto text-indigo-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                            <p class="text-indigo-700 font-semibold text-lg">Перетащите PDF, CSV или Excel сюда</p>
+                            <p class="text-indigo-700 font-semibold text-lg">Перетащите PDF или CSV сюда</p>
                             <p class="text-sm text-gray-500 mt-1">или нажмите для выбора файла</p>
                             <div id="pdfDropStatus" class="mt-3 text-sm font-medium min-h-[24px]"></div>
                         </div>
@@ -109,15 +105,12 @@
                     </div>
                 </div>
 
-                <!-- ВСТАВКА ИЗ EXCEL (САМЫЙ НАДЕЖНЫЙ СПОСОБ) -->
                 <div class="glass-card rounded-2xl p-6 border-2 border-green-200 bg-green-50/30">
                     <h2 class="text-lg font-bold text-green-800 mb-2 flex items-center gap-2">⭐ Самый надежный способ: Вставка из Excel/CSV</h2>
-                    <p class="text-sm text-gray-600 mb-3">Если PDF не работает, скопируйте столбец с кодами из файла Excel и вставьте его сюда.</p>
                     <textarea id="pasteArea" rows="4" placeholder="Нажмите Ctrl+V сюда, чтобы вставить коды..." class="w-full input-modern rounded-xl p-4 text-sm font-mono resize-none bg-white"></textarea>
                     <button onclick="processPastedData()" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition">✅ Распознать и добавить к товару</button>
                 </div>
 
-                <!-- Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="glass-card rounded-2xl p-6">
                         <p class="text-sm text-gray-500 mb-1">Всего товаров</p>
@@ -133,7 +126,6 @@
                     </div>
                 </div>
 
-                <!-- Products Table -->
                 <div class="glass-card rounded-2xl p-6">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <h2 class="text-lg font-bold text-gray-800">📦 Реестр товаров <span class="text-gray-400 font-normal" id="totalProductsCount">(0)</span></h2>
@@ -159,14 +151,12 @@
                     </div>
                 </div>
 
-                <!-- Danger Zone -->
                 <div class="glass-card rounded-2xl p-6 border-2 border-red-200">
                     <h2 class="text-lg font-bold text-red-600 mb-2">⚠️ Опасная зона</h2>
                     <button onclick="resetAllData()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2">🗑️ Полностью очистить все данные</button>
                 </div>
             </div>
 
-            <!-- Tab: Print -->
             <div id="tab-print" class="tab-content hidden space-y-6 animate-fade-in">
                 <div class="glass-card rounded-2xl p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">🖨️ Печать этикеток КИЗ (30×20 мм)</h2>
@@ -183,11 +173,19 @@
                 </div>
             </div>
 
-            <!-- Tab: Packing -->
             <div id="tab-packing" class="tab-content hidden space-y-6 animate-fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass-card rounded-2xl p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-4">📡 Сканирование КИЗ</h2>
+                        
+                        <!-- НОВАЯ ФУНКЦИЯ: АВТОПЕЧАТЬ -->
+                        <div class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-200">
+                            <input type="checkbox" id="autoPrintScan" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                            <label for="autoPrintScan" class="text-sm font-semibold text-indigo-800 cursor-pointer select-none">
+                                🖨️ Печатать этикетку 30x20 мм сразу после успешного сканирования
+                            </label>
+                        </div>
+
                         <div class="relative mb-4">
                             <input type="text" id="scanInput" class="w-full input-modern rounded-xl px-4 py-4 text-lg font-mono" placeholder="Кликните сюда и сканируйте..." autocomplete="off">
                             <div class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 hidden md:block">ENTER</div>
@@ -257,37 +255,23 @@
             if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput')?.focus(), 100); }
         }
 
-        // ==========================================
-        // УЛУЧШЕННЫЙ ПАРСЕР (Агрессивная очистка)
-        // ==========================================
         function extractKizCodes(text) {
             const codes = new Set();
-            
-            // 1. Создаем версию текста БЕЗ пробелов и переносов строк, чтобы склеить разорванные коды
             const cleanText = text.replace(/[^0-9A-Za-z]/g, '');
-            
-            // 2. Ищем строгий паттерн GS1: 01 + 14 цифр + 21 + от 4 до 20 символов
             const gs1Regex = /01\d{14}21[0-9A-Za-z]{4,20}/g;
             const gs1Matches = cleanText.match(gs1Regex) || [];
             gs1Matches.forEach(code => codes.add(code));
-            
-            // 3. Запасной вариант: ищем в исходном тексте слова, которые после очистки от мусора имеют длину 23-30 символов и содержат цифры и буквы
             text.split(/\s+/).forEach(word => {
                 const cleanWord = word.replace(/[^0-9A-Za-z]/g, '');
                 if (cleanWord.length >= 23 && cleanWord.length <= 35 && /\d/.test(cleanWord) && /[A-Za-z]/.test(cleanWord)) {
-                    // Дополнительная проверка: начинается ли с 01 и содержит 21 где-то в середине (приблизительно)
                     if (cleanWord.startsWith('01') && cleanWord.includes('21')) {
                         codes.add(cleanWord);
                     }
                 }
             });
-            
             return Array.from(codes);
         }
 
-        // ==========================================
-        // DRAG & DROP И ОБРАБОТКА ФАЙЛОВ
-        // ==========================================
         const dropZone = document.getElementById('pdfDropZone');
         const fileInput = document.getElementById('pdfFileInputHidden');
 
@@ -322,13 +306,13 @@
                     const text = await file.text();
                     tempExtractedKiz = text.split(/[\r\n,]+/).map(c => c.replace(/[^0-9A-Za-z]/g, '').trim()).filter(c => c.length >= 23);
                 } else {
-                    showToast('Для Excel файлов используйте зону "Вставка из Excel" ниже', 'error');
+                    showToast('Для Excel файлов используйте зону "Вставка из Excel"', 'error');
                     statusDiv.innerHTML = '';
                     return;
                 }
 
                 if (tempExtractedKiz.length === 0) {
-                    statusDiv.innerHTML = '<span class="text-red-600">❌ Коды не найдены. Файл, скорее всего, является сканом-картинкой. Используйте метод "Вставка из Excel".</span>';
+                    statusDiv.innerHTML = '<span class="text-red-600">❌ Коды не найдены. Используйте метод "Вставка из Excel".</span>';
                     return;
                 }
 
@@ -378,9 +362,8 @@
             const text = document.getElementById('pasteArea').value.trim();
             if(!text) return showToast('Вставьте данные из Excel', 'error');
             
-            const sku = document.getElementById('pdfTargetProduct')?.value; // Пытаемся использовать тот же селект
+            const sku = document.getElementById('pdfTargetProduct')?.value;
             if(!sku) {
-                // Если товар не выбран, просим выбрать или создаем новый (упрощенно: просим выбрать)
                 const select = document.getElementById('pdfTargetProduct');
                 if(select.options.length <= 1) {
                     showToast('Сначала добавьте хотя бы один товар в систему!', 'error');
@@ -408,9 +391,6 @@
             updateAllUI();
         }
 
-        // ==========================================
-        // ОСНОВНЫЕ ФУНКЦИИ
-        // ==========================================
         function addProductManual() {
             const sku = prompt("Введите Артикул (SKU):"); if(!sku) return;
             const name = prompt("Введите Название товара:"); if(!name) return;
@@ -504,17 +484,88 @@
             setTimeout(() => window.print(), 500);
         }
 
-        document.getElementById('scanInput')?.addEventListener('keypress', function(e) { if(e.key==='Enter') { e.preventDefault(); processScan(); } });
+        // ==========================================
+        // ФУНКЦИЯ МГНОВЕННОЙ ПЕЧАТИ ОДНОГО КОДА
+        // ==========================================
+        function printSingleCodeImmediately(code) {
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = ''; // Очищаем предыдущее
+            
+            const div = document.createElement('div');
+            div.className = 'print-kiz';
+            const canvas = document.createElement('canvas');
+            const text = document.createElement('div');
+            text.className = 'kiz-text';
+            text.innerText = code.length > 25 ? code.substring(0,12)+'...'+code.substring(code.length-10) : code;
+            
+            div.appendChild(canvas);
+            div.appendChild(text);
+            printArea.appendChild(div);
+
+            try {
+                bwipjs.toCanvas(canvas, { 
+                    bcid: 'datamatrix', 
+                    text: code, 
+                    scale: 3, 
+                    width: 28, 
+                    height: 16, 
+                    includetext: false 
+                });
+                
+                // Небольшая задержка для рендеринга canvas перед вызовом печати
+                setTimeout(() => {
+                    window.print();
+                    // Очищаем область печати после закрытия диалога
+                    setTimeout(() => { printArea.innerHTML = ''; }, 1000);
+                }, 300);
+            } catch(e) {
+                console.error("Ошибка печати:", e);
+            }
+        }
+
+        document.getElementById('scanInput')?.addEventListener('keypress', function(e) { 
+            if(e.key==='Enter') { 
+                e.preventDefault(); 
+                processScan(); 
+            } 
+        });
         
         function processScan() {
-            const code = document.getElementById('scanInput').value.trim(); if(!code) return;
+            const code = document.getElementById('scanInput').value.trim(); 
+            if(!code) return;
+            
             let foundSku = null;
-            for(const [sku, data] of Object.entries(products)) { if(data.kiz_list.includes(code)) { foundSku = sku; break; } }
+            for(const [sku, data] of Object.entries(products)) { 
+                if(data.kiz_list.includes(code)) { 
+                    foundSku = sku; 
+                    break; 
+                } 
+            }
             
             const fb = document.getElementById('scanFeedback');
-            if(!foundSku) { fb.innerHTML = '❌ Неизвестный КИЗ'; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 block'; showToast('Неизвестный код', 'error'); }
-            else if(currentBoxItems.includes(code)) { fb.innerHTML = '⚠️ Уже в этом коробе'; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-yellow-100 text-yellow-700 block'; showToast('Уже отсканирован', 'error'); }
-            else { currentBoxItems.push(code); products[foundSku].packed_count++; saveData(); fb.innerHTML = `✅ ${products[foundSku].name}`; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 block'; showToast('Добавлен в короб', 'success'); }
+            if(!foundSku) { 
+                fb.innerHTML = '❌ Неизвестный КИЗ'; 
+                fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 block'; 
+                showToast('Неизвестный код', 'error'); 
+            }
+            else if(currentBoxItems.includes(code)) { 
+                fb.innerHTML = '⚠️ Уже в этом коробе'; 
+                fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-yellow-100 text-yellow-700 block'; 
+                showToast('Уже отсканирован', 'error'); 
+            }
+            else { 
+                currentBoxItems.push(code); 
+                products[foundSku].packed_count++; 
+                saveData(); 
+                fb.innerHTML = `✅ ${products[foundSku].name}`; 
+                fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 block'; 
+                showToast('Добавлен в короб', 'success'); 
+                
+                // ПРОВЕРКА: ВКЛЮЧЕНА ЛИ АВТОПЕЧАТЬ
+                if (document.getElementById('autoPrintScan').checked) {
+                    printSingleCodeImmediately(code);
+                }
+            }
             
             document.getElementById('scanInput').value = '';
             document.getElementById('scanInput').focus();
