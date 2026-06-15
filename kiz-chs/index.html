@@ -3,186 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro: Честный ЗНАК + PDF + Excel (Версия 5.2)</title>
+    <title>WMS Pro - Современная система управления складом</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
-    <!-- Библиотека для чтения PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // Настройка воркера pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        success: { 500: '#10b981', 600: '#059669' },
+                        danger: { 500: '#ef4444', 600: '#dc2626' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
     </script>
     <style>
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-            .print-kiz { width: 30mm; height: 20mm; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; padding: 1mm; overflow: hidden; }
-            .print-kiz canvas { max-width: 28mm; max-height: 14mm; }
-            .print-kiz .kiz-text { font-size: 6px; text-align: center; word-break: break-all; margin-top: 1mm; color: #000; font-family: monospace; }
-            .print-box { width: 58mm; height: 40mm; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #000; box-sizing: border-box; padding: 2mm; }
-            .print-box canvas { max-width: 50mm; max-height: 16mm; }
-            .print-box .box-title { font-size: 16px; font-weight: 900; margin-bottom: 2mm; text-transform: uppercase; }
-            .print-box .box-info { font-size: 11px; text-align: center; line-height: 1.3; }
-        }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .glass-card { background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: all 0.3s ease; }
+        .glass-card:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); }
+        .input-modern { border: 2px solid #e5e7eb; transition: all 0.3s ease; }
+        .input-modern:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); outline: none; }
+        .nav-item { transition: all 0.3s ease; position: relative; }
+        .nav-item::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 2px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: width 0.3s ease; }
+        .nav-item:hover::after, .nav-item.active::after { width: 80%; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .scan-success { animation: scanSuccess 0.5s ease; }
+        .scan-error { animation: scanError 0.5s ease; }
+        @keyframes scanSuccess { 0%, 100% { background-color: white; } 50% { background-color: #d1fae5; } }
+        @keyframes scanError { 0%, 100% { background-color: white; } 50% { background-color: #fee2e2; } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+        @media print { .no-print { display: none !important; } body { background: white; } .print-kiz { width: 30mm; height: 20mm; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1mm; } .print-kiz canvas { max-width: 28mm; max-height: 14mm; } .print-box { width: 58mm; height: 40mm; page-break-after: always; border: 1px solid #000; padding: 2mm; } }
         #printArea { display: none; }
         @media print { #printArea { display: block !important; } }
-        .scan-ok { animation: flashGreen 0.5s; }
-        .scan-err { animation: flashRed 0.5s; }
-        @keyframes flashGreen { 0% { background-color: #86efac; } 100% { background-color: white; } }
-        @keyframes flashRed { 0% { background-color: #fca5a5; } 100% { background-color: white; } }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+<body class="antialiased">
 
-    <header class="bg-indigo-700 text-white p-4 shadow-lg no-print sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-white text-indigo-700 p-2 rounded-lg font-black text-xl">WMS</div>
-                <div>
-                    <h1 class="text-lg font-bold leading-tight">Честный ЗНАК + PDF/Excel</h1>
-                    <p class="text-xs text-indigo-200">Версия 5.2 (PDF восстановлен)</p>
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col lg:flex-row">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="no-print w-full lg:w-64 glass lg:min-h-screen lg:sticky lg:top-0 z-40">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">W</div>
+                    <div>
+                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro</h1>
+                        <p class="text-xs text-gray-500">Честный ЗНАК</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <button onclick="showTab('tab-catalog')" id="nav-catalog" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-indigo-50 font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Товары и КИЗ
+                    </button>
+                    <button onclick="showTab('tab-print')" id="nav-print" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-indigo-50 font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Печать этикеток
+                    </button>
+                    <button onclick="showTab('tab-packing')" id="nav-packing" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-indigo-50 font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Сборка коробов
+                        <span id="nav-box-count" class="ml-auto bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+                    </button>
+                </nav>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white">
+                        <p class="text-xs opacity-80 mb-1">Текущий короб</p>
+                        <p class="text-2xl font-bold font-mono" id="sidebar-box-id">BOX-0000</p>
+                        <p class="text-xs mt-2 opacity-75" id="sidebar-box-items">0 товаров</p>
+                    </div>
                 </div>
             </div>
-            <div class="text-right bg-indigo-800 px-4 py-2 rounded-lg border border-indigo-600">
-                <div class="text-[10px] uppercase tracking-wider text-indigo-300">Текущий короб</div>
-                <div class="text-2xl font-mono font-black text-yellow-400" id="currentBoxIdDisplay">BOX-0000</div>
-            </div>
-        </div>
-    </header>
+        </aside>
 
-    <main class="container mx-auto p-4 max-w-7xl">
-        <div class="flex gap-2 mb-6 no-print bg-white p-2 rounded-xl shadow-sm">
-            <button onclick="showTab('tab-catalog')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500">📦 1. Товары и КИЗ</button>
-            <button onclick="showTab('tab-print')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">🖨️ 2. Печать</button>
-            <button onclick="showTab('tab-packing')" class="nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">📡 3. Сборка</button>
-        </div>
-
-        <!-- ВКЛАДКА 1: Каталог и Загрузка -->
-        <div id="tab-catalog" class="tab-content space-y-4">
+        <!-- Main Content -->
+        <main class="flex-1 p-4 lg:p-8 overflow-auto">
             
-            <!-- ЗАГРУЗКА EXCEL / ВСТАВКА -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-sm border border-blue-200">
-                <h2 class="font-bold text-lg mb-4 text-blue-800 flex items-center gap-2">📊 Загрузка товаров (Excel)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-5 rounded-lg border-2 border-green-300 shadow-sm">
-                        <h3 class="font-bold text-green-800 mb-2">⭐ Способ А: Копировать и Вставить</h3>
-                        <p class="text-xs text-slate-600 mb-3">1. Выделите ячейки в Excel (включая заголовки).<br>2. <b>Ctrl+C</b> → кликните в поле → <b>Ctrl+V</b>.</p>
-                        <textarea id="pasteArea" rows="5" placeholder="Вставьте данные из Excel сюда (Ctrl+V)..." class="w-full border-2 border-green-200 p-3 rounded-lg text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none resize-none mb-3"></textarea>
-                        <button onclick="processPastedData()" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-700 transition">✅ Распознать вставленные данные</button>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-lg border border-slate-200">
-                        <h3 class="font-bold text-slate-700 mb-2">Способ Б: Загрузка файла (.xlsx)</h3>
-                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 mb-3"/>
-                        <div id="fileError" class="text-xs text-red-600 font-bold mb-2 hidden"></div>
-                        <button onclick="readExcelFile()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition">📂 Прочитать файл</button>
-                    </div>
-                </div>
-
-                <div id="excelMappingArea" class="hidden mt-6 bg-white p-5 rounded-lg border-2 border-indigo-200 shadow-md">
-                    <h3 class="font-bold text-indigo-800 mb-2">🎯 Распределите столбцы Excel:</h3>
-                    <div class="overflow-x-auto custom-scroll mb-4">
-                        <table class="w-full text-sm text-left border-collapse" id="mappingTable"></table>
-                    </div>
-                    <div class="flex gap-3">
-                        <button onclick="executeExcelImport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition text-lg shadow-lg">✅ ЗАГРУЗИТЬ В СИСТЕМУ</button>
-                        <button onclick="cancelImport()" class="px-6 bg-slate-200 text-slate-700 py-3 rounded-lg font-bold hover:bg-slate-300 transition">Отмена</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ЗАГРУЗКА КИЗ ИЗ PDF -->
-            <div class="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-6 rounded-xl shadow-sm border border-purple-200">
-                <h2 class="font-bold text-lg mb-3 text-purple-800 flex items-center gap-2">📥 Загрузка КИЗ из PDF (Честный ЗНАК)</h2>
+            <!-- Tab: Catalog & Import -->
+            <div id="tab-catalog" class="tab-content space-y-6 animate-fade-in">
+                
+                <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-bold text-slate-700 mb-1">1. Выберите товар:</label>
-                        <select id="pdfProductSelect" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white">
-                            <option value="">-- Сначала создайте товар --</option>
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Всего товаров</p>
+                                <p class="text-3xl font-bold text-gray-800" id="stat-total-products">0</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Всего КИЗ</p>
+                                <p class="text-3xl font-bold text-gray-800" id="stat-total-kiz">0</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Свободно КИЗ</p>
+                                <p class="text-3xl font-bold text-gray-800" id="stat-free-kiz">0</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Быстрые действия
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="addProductManual()" class="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition group">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-semibold text-gray-800">Добавить товар</p>
+                                <p class="text-sm text-gray-500">Вручную создать карточку</p>
+                            </div>
+                        </button>
+                        <button onclick="document.getElementById('excelFileInput').click()" class="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-green-200 hover:border-green-400 hover:bg-green-50 transition group">
+                            <div class="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-semibold text-gray-800">Импорт из Excel</p>
+                                <p class="text-sm text-gray-500">Массовая загрузка</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import Section -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">📥 Импорт данных</h2>
+                    
+                    <!-- Tabs for import methods -->
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="switchImportTab('paste')" id="import-tab-paste" class="flex-1 py-2 px-4 rounded-lg bg-indigo-600 text-white font-medium transition">📋 Вставить из Excel</button>
+                        <button onclick="switchImportTab('file')" id="import-tab-file" class="flex-1 py-2 px-4 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">📁 Загрузить файл</button>
+                        <button onclick="switchImportTab('pdf')" id="import-tab-pdf" class="flex-1 py-2 px-4 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">📄 Из PDF (КИЗ)</button>
+                    </div>
+
+                    <!-- Paste Method -->
+                    <div id="import-method-paste" class="import-method">
+                        <textarea id="pasteArea" rows="6" placeholder="Скопируйте данные из Excel (Ctrl+C) и вставьте сюда (Ctrl+V)..." class="w-full input-modern rounded-xl p-4 text-sm font-mono resize-none"></textarea>
+                        <button onclick="processPastedData()" class="mt-3 btn-primary text-white px-6 py-3 rounded-xl font-semibold w-full">✅ Распознать данные</button>
+                    </div>
+
+                    <!-- File Method -->
+                    <div id="import-method-file" class="import-method hidden">
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 transition cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                            <p class="text-gray-700 font-medium mb-1">Нажмите для загрузки или перетащите файл</p>
+                            <p class="text-sm text-gray-500">Поддерживаются .xlsx, .xls, .csv</p>
+                            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="readExcelFile()">
+                        </div>
+                        <div id="fileError" class="mt-3 text-sm text-red-600 hidden"></div>
+                    </div>
+
+                    <!-- PDF Method -->
+                    <div id="import-method-pdf" class="import-method hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Выберите товар для добавления КИЗ:</label>
+                            <select id="pdfProductSelect" class="w-full input-modern rounded-xl p-3">
+                                <option value="">-- Выберите товар --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Загрузите PDF с кодами:</label>
+                            <input type="file" id="pdfFileInput" accept=".pdf" class="w-full input-modern rounded-xl p-3">
+                        </div>
+                        <button onclick="processPDF()" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold w-full">🔍 Извлечь КИЗы из PDF</button>
+                        <div id="pdfStatus" class="text-sm font-medium min-h-[40px]"></div>
+                    </div>
+
+                    <!-- Mapping Area -->
+                    <div id="excelMappingArea" class="hidden mt-6 pt-6 border-t border-gray-200">
+                        <h3 class="font-bold text-gray-800 mb-3">📋 Распределите столбцы:</h3>
+                        <div class="overflow-x-auto custom-scrollbar mb-4">
+                            <table class="w-full text-sm" id="mappingTable"></table>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="executeExcelImport()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition">✅ Загрузить в систему</button>
+                            <button onclick="cancelImport()" class="px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Table -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <h2 class="text-lg font-bold text-gray-800">📦 Реестр товаров <span class="text-gray-400 font-normal" id="totalProductsCount">(0)</span></h2>
+                        <div class="relative">
+                            <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <input type="text" id="searchProduct" placeholder="Поиск товаров..." class="input-modern rounded-xl pl-10 pr-4 py-2 w-full md:w-64" oninput="renderProductsTable()">
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar max-h-96 rounded-xl border border-gray-200">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                                <tr>
+                                    <th class="p-4 font-semibold">Артикул</th>
+                                    <th class="p-4 font-semibold">Название</th>
+                                    <th class="p-4 font-semibold text-center">Всего КИЗ</th>
+                                    <th class="p-4 font-semibold text-center">Упаковано</th>
+                                    <th class="p-4 font-semibold text-center">Свободно</th>
+                                    <th class="p-4 font-semibold text-right">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="glass-card rounded-2xl p-6 border-2 border-red-200">
+                    <h2 class="text-lg font-bold text-red-600 mb-2">⚠️ Опасная зона</h2>
+                    <p class="text-sm text-gray-600 mb-4">Полный сброс всех данных системы. Это действие нельзя отменить.</p>
+                    <button onclick="resetAllData()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Полностью очистить все данные
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: Print -->
+            <div id="tab-print" class="tab-content hidden space-y-6 animate-fade-in">
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">🖨️ Печать этикеток КИЗ</h2>
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <select id="printKizProductSelect" class="flex-1 input-modern rounded-xl p-3" onchange="renderPrintPreview()">
+                            <option value="">-- Выберите товар --</option>
                         </select>
+                        <button onclick="printAllKizForProduct()" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold whitespace-nowrap">
+                            🖨️ Печать всех (30×20 мм)
+                        </button>
                     </div>
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-bold text-slate-700 mb-1">2. Загрузите PDF:</label>
-                        <input type="file" id="pdfFileInput" accept=".pdf" class="block w-full text-sm text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 mb-1"/>
-                        <div id="pdfStatus" class="text-xs font-bold min-h-[30px] mt-1"></div>
-                    </div>
-                    <div class="md:col-span-1 flex items-end">
-                        <button onclick="processPDF()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg font-bold transition shadow-md">🔍 Извлечь и добавить КИЗы</button>
-                    </div>
+                    <div id="kizPreviewArea" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
                 </div>
-                <p class="text-xs text-slate-500 mt-2">*Работает с текстовыми PDF из Кабинета ЧЗ. Если кодов мало, значит в файле они отрисованы как картинки (используйте Excel).</p>
             </div>
 
-            <!-- ТАБЛИЦА ТОВАРОВ -->
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="font-bold text-lg text-slate-700">Реестр товаров (<span id="totalProductsCount">0</span>)</h2>
-                    <input type="text" id="searchProduct" placeholder="🔍 Поиск..." class="border border-slate-300 p-2 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderProductsTable()">
-                </div>
-                <div class="overflow-x-auto custom-scroll max-h-96">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0">
-                            <tr>
-                                <th class="p-3 rounded-tl-lg">Артикул</th>
-                                <th class="p-3">Название</th>
-                                <th class="p-3 text-center">Всего КИЗ</th>
-                                <th class="p-3 text-center text-indigo-600">Упаковано</th>
-                                <th class="p-3 text-center text-green-600">Свободно</th>
-                                <th class="p-3 rounded-tr-lg text-right">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productsTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+            <!-- Tab: Packing -->
+            <div id="tab-packing" class="tab-content hidden space-y-6 animate-fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Scanner -->
+                    <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">📡 Сканирование КИЗ</h2>
+                        <div class="relative mb-4">
+                            <svg class="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                            <input type="text" id="scanInput" class="w-full input-modern rounded-xl pl-12 pr-4 py-4 text-lg font-mono" placeholder="Наведите сканер или введите код..." autocomplete="off">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 hidden md:block">ENTER</div>
+                        </div>
+                        <div id="scanFeedback" class="hidden p-4 rounded-xl mb-4 text-center font-semibold text-lg"></div>
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-gray-700">Содержимое короба</h3>
+                            <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold" id="boxItemCountBadge">0 шт.</span>
+                        </div>
+                        <div class="h-64 overflow-y-auto custom-scrollbar bg-gray-50 rounded-xl p-3 border border-gray-200" id="boxItemsList">
+                            <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                                <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                                <p>Короб пуст. Отсканируйте первый КИЗ.</p>
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- ВКЛАДКА 2: Печать -->
-        <div id="tab-print" class="tab-content hidden space-y-4">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 no-print flex flex-col md:flex-row gap-4 items-end">
-                <div class="flex-1 w-full">
-                    <label class="text-sm font-bold text-slate-600 block mb-1">Выберите товар для печати:</label>
-                    <select id="printKizProductSelect" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white" onchange="renderPrintPreview()"></select>
+                    <!-- Box Control -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">📦 Управление</h2>
+                        <div class="stat-card rounded-2xl p-6 mb-6 text-center">
+                            <p class="text-sm opacity-80 mb-2">Отсканировано КИЗ</p>
+                            <p class="text-5xl font-bold" id="totalScannedCount">0</p>
+                        </div>
+                        <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg mb-6 transition transform hover:scale-105">
+                            ✅ Закрыть и печатать
+                        </button>
+                        
+                        <div class="mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-700 text-sm">История коробов</h3>
+                                <button onclick="exportHistoryToCSV()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">📥 CSV</button>
+                            </div>
+                            <div class="h-40 overflow-y-auto custom-scrollbar bg-gray-50 rounded-xl p-2 border border-gray-200 text-sm" id="closedBoxesList">
+                                <p class="text-gray-400 text-center py-8 text-xs">История пуста</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="printAllKizForProduct()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition">🖨️ Печать ВСЕХ (30x20 мм)</button>
             </div>
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
-                <p class="text-xs text-slate-500 mb-2 font-bold uppercase">Предпросмотр (первые 6 шт.):</p>
-                <div id="kizPreviewArea" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
-            </div>
-        </div>
 
-        <!-- ВКЛАДКА 3: Сборка -->
-        <div id="tab-packing" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-indigo-600">
-                    <h2 class="font-bold text-lg text-slate-700 mb-4">📡 Сканирование КИЗ</h2>
-                    <input type="text" id="scanInput" class="w-full text-xl border-2 border-indigo-200 p-4 rounded-xl focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 font-mono tracking-wide transition mb-4" placeholder="Кликните сюда и сканируйте..." autocomplete="off">
-                    <div id="scanFeedback" class="hidden p-4 rounded-xl mb-4 text-center font-bold text-lg shadow-sm"></div>
-                    <div class="h-64 overflow-y-auto custom-scroll border border-slate-200 rounded-xl bg-slate-50 p-2" id="boxItemsList">
-                        <div class="flex flex-col items-center justify-center h-full text-slate-400"><span class="text-4xl mb-2">📭</span><p class="italic">Короб пуст</p></div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-green-500 flex flex-col">
-                    <h2 class="font-bold text-lg text-slate-700 mb-4">📦 Управление</h2>
-                    <div class="bg-green-50 p-5 rounded-xl mb-6 border border-green-200 text-center">
-                        <div class="text-sm text-green-800 font-medium mb-1">Отсканировано:</div>
-                        <div class="text-5xl font-black text-green-700" id="totalScannedCount">0</div>
-                    </div>
-                    <button onclick="closeBoxAndPrint()" class="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 rounded-xl font-black shadow-lg mb-6">✅ ЗАКРЫТЬ КОРОБ И ПЕЧАТАТЬ</button>
-                    <div class="mt-auto">
-                        <h3 class="font-bold text-slate-600 text-xs uppercase mb-2">История:</h3>
-                        <div class="h-40 overflow-y-auto custom-scroll border border-slate-200 rounded-xl bg-slate-50 p-2 text-sm" id="closedBoxesList"></div>
-                        <button onclick="exportHistoryToCSV()" class="w-full mt-2 text-xs bg-blue-50 text-blue-600 py-2 rounded font-bold hover:bg-blue-100">📥 Скачать отчет CSV</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <div id="printArea"></div>
 
@@ -193,65 +349,81 @@
         let closedBoxes = JSON.parse(localStorage.getItem('cz_closed_boxes')) || [];
         let currentExcelData = null;
 
-        document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
+        document.getElementById('sidebar-box-id').innerText = currentBoxId;
         updateAllUI();
+
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colors = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            toast.className = `${colors} text-white px-6 py-3 rounded-xl shadow-lg animate-slide-up flex items-center gap-2`;
+            toast.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${type === 'success' ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'}"/></svg> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
 
         window.addEventListener('click', (e) => {
             const tag = e.target.tagName.toLowerCase();
-            if(tag !== 'input' && tag !== 'textarea' && tag !== 'select' && tag !== 'button') {
-                document.getElementById('scanInput').focus();
+            if(tag !== 'input' && tag !== 'textarea' && tag !== 'select' && tag !== 'button' && !e.target.closest('.nav-item')) {
+                document.getElementById('scanInput')?.focus();
             }
         });
-        window.addEventListener('keydown', (e) => { if (e.key === 'F2') { e.preventDefault(); document.getElementById('scanInput').focus(); } });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'F2') { e.preventDefault(); document.getElementById('scanInput')?.focus(); }
+            if (e.ctrlKey && e.key === 'k') { e.preventDefault(); document.getElementById('searchProduct')?.focus(); }
+        });
 
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = 'nav-btn flex-1 py-3 rounded-lg font-bold text-sm text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2';
-            });
-            const activeBtn = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
-            activeBtn.className = 'nav-btn flex-1 py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500';
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active', 'bg-indigo-50'));
+            document.getElementById(`nav-${tabId.split('-')[1]}`)?.classList.add('active', 'bg-indigo-50');
+            
             if(tabId === 'tab-catalog') renderProductsTable();
             if(tabId === 'tab-print') { updateSelects(); renderPrintPreview(); }
-            if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput').focus(), 100); }
+            if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput')?.focus(), 100); }
         }
 
-        // ============================================
-        // УТИЛИТА: ИЗВЛЕЧЕНИЕ КИЗОВ ИЗ ТЕКСТА
-        // ============================================
+        function switchImportTab(method) {
+            ['paste', 'file', 'pdf'].forEach(m => {
+                document.getElementById(`import-method-${m}`).classList.add('hidden');
+                document.getElementById(`import-tab-${m}`).classList.remove('bg-indigo-600', 'text-white');
+                document.getElementById(`import-tab-${m}`).classList.add('bg-gray-100', 'text-gray-700');
+            });
+            document.getElementById(`import-method-${method}`).classList.remove('hidden');
+            document.getElementById(`import-tab-${method}`).classList.remove('bg-gray-100', 'text-gray-700');
+            document.getElementById(`import-tab-${method}`).classList.add('bg-indigo-600', 'text-white');
+        }
+
         function extractKizCodes(text) {
-            let cleanText = text.replace(/[\r\n]+/g, ' ');
-            // 1. Строгий GS1 формат: 01 + 14 цифр + 21 + символы
-            const gs1Regex = /01\s*\d{14}\s*21\s*[A-Za-z0-9]{1,20}/g;
-            let matches = cleanText.match(gs1Regex) || [];
-            matches = matches.map(m => m.replace(/\s+/g, ''));
-            
-            // 2. Запасной: любые длинные буквенно-цифровые строки > 28 символов
-            const longStringRegex = /[A-Za-z0-9]{28,}/g;
-            let longMatches = cleanText.match(longStringRegex) || [];
-            
-            return [...new Set([...matches, ...longMatches])];
+            const codes = new Set();
+            const cleanText = text.replace(/[^A-Za-z0-9]/g, '');
+            const gs1Matches = cleanText.match(/01\d{14}21[A-Za-z0-9]{1,20}/g) || [];
+            gs1Matches.forEach(code => codes.add(code));
+            text.split(/\s+/).forEach(word => {
+                const cleanWord = word.replace(/[^A-Za-z0-9]/g, '');
+                if (cleanWord.length >= 28 && cleanWord.length <= 45 && /\d/.test(cleanWord) && /[A-Za-z]/.test(cleanWord)) {
+                    codes.add(cleanWord);
+                }
+            });
+            return Array.from(codes);
         }
 
-        // ============================================
-        // 1. ОБРАБОТКА PDF
-        // ============================================
         async function processPDF() {
             const sku = document.getElementById('pdfProductSelect').value;
-            if(!sku || !products[sku]) return alert("Сначала создайте и выберите товар из списка!");
-            
+            if(!sku || !products[sku]) return showToast('Выберите товар', 'error');
             const fileInput = document.getElementById('pdfFileInput');
-            if(!fileInput.files.length) return alert("Выберите PDF файл!");
+            if(!fileInput.files.length) return showToast('Выберите PDF файл', 'error');
 
             const statusDiv = document.getElementById('pdfStatus');
-            statusDiv.innerHTML = "<span class='text-purple-700'>⏳ Чтение и анализ PDF...</span>";
+            statusDiv.innerHTML = '<span class="text-indigo-600">⏳ Чтение PDF...</span>';
 
             try {
                 const arrayBuffer = await fileInput.files[0].arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 let fullText = "";
-
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
@@ -259,113 +431,107 @@
                 }
 
                 const extractedCodes = extractKizCodes(fullText);
-
                 if (extractedCodes.length === 0) {
-                    statusDiv.innerHTML = "<span class='text-red-600'>❌ Коды не найдены. PDF содержит их как картинки. Используйте Excel.</span>";
+                    statusDiv.innerHTML = '<span class="text-red-600">❌ Коды не найдены. Используйте импорт из Excel.</span>';
                     return;
                 }
 
-                // Добавляем в товар
                 const existing = new Set(products[sku].kiz_list);
                 let added = 0;
-                extractedCodes.forEach(code => {
-                    if(!existing.has(code)) {
-                        products[sku].kiz_list.push(code);
-                        existing.add(code);
-                        added++;
-                    }
-                });
-                
+                extractedCodes.forEach(code => { if(!existing.has(code)) { products[sku].kiz_list.push(code); existing.add(code); added++; } });
                 saveData();
-                statusDiv.innerHTML = `<span class='text-green-700'>✅ Найдено: ${extractedCodes.length}. Добавлено новых: <b>${added}</b>. Дубликатов: ${extractedCodes.length - added}</span>`;
+                statusDiv.innerHTML = `<span class="text-green-600">✅ Добавлено ${added} новых КИЗ</span>`;
                 fileInput.value = '';
                 updateAllUI();
-
             } catch (error) {
-                console.error(error);
-                statusDiv.innerHTML = `<span class='text-red-600'>❌ Ошибка чтения PDF: ${error.message}</span>`;
+                statusDiv.innerHTML = `<span class="text-red-600">❌ Ошибка: ${error.message}</span>`;
             }
         }
 
-        // ============================================
-        // 2. EXCEL: ВСТАВКА
-        // ============================================
         function processPastedData() {
             const text = document.getElementById('pasteArea').value.trim();
-            if(!text) return alert("Поле пустое! Сначала скопируйте данные из Excel и вставьте их сюда (Ctrl+V).");
-
+            if(!text) return showToast('Вставьте данные из Excel', 'error');
             try {
-                currentExcelData = text.split(/\r?\n/).map(row => row.split('\t'));
-                if(currentExcelData.length < 2) return alert("Недостаточно данных. Скопируйте хотя бы заголовки и одну строку.");
+                const lines = text.split(/\r?\n/);
+                const isJustCodes = lines.every(line => line.trim().length > 20 && !line.toLowerCase().includes('артикул'));
                 
-                document.getElementById('fileError').classList.add('hidden');
+                if (isJustCodes && lines.length > 0) {
+                    const sku = document.getElementById('pdfProductSelect').value;
+                    if(!sku || !products[sku]) return showToast('Выберите товар для добавления КИЗ', 'error');
+                    const codes = lines.map(l => l.replace(/[^A-Za-z0-9]/g, '').trim()).filter(l => l.length >= 28);
+                    const existing = new Set(products[sku].kiz_list);
+                    let added = 0;
+                    codes.forEach(code => { if(!existing.has(code)) { products[sku].kiz_list.push(code); existing.add(code); added++; } });
+                    saveData();
+                    showToast(`Добавлено ${added} КИЗ`, 'success');
+                    document.getElementById('pasteArea').value = '';
+                    updateAllUI();
+                    return;
+                }
+
+                currentExcelData = text.split(/\r?\n/).map(row => row.split('\t'));
+                if(currentExcelData.length < 2) return showToast('Недостаточно данных', 'error');
                 renderMappingTable(currentExcelData);
                 document.getElementById('excelMappingArea').classList.remove('hidden');
                 document.getElementById('excelMappingArea').scrollIntoView({ behavior: 'smooth' });
-            } catch(err) { alert("Ошибка: " + err.message); }
+            } catch(err) { showToast('Ошибка: ' + err.message, 'error'); }
         }
 
         function readExcelFile() {
             const fileInput = document.getElementById('excelFileInput');
             const errorDiv = document.getElementById('fileError');
-            if(!fileInput.files.length) { errorDiv.innerText = "⚠️ Выберите файл!"; errorDiv.classList.remove('hidden'); return; }
-
-            const file = fileInput.files[0];
-            errorDiv.innerText = "Чтение файла...";
-            errorDiv.classList.remove('hidden');
-            errorDiv.className = "text-xs text-blue-600 font-bold mb-2";
-
+            if(!fileInput.files.length) return;
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const workbook = XLSX.read(data, {type: 'array'});
                     currentExcelData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
-                    if(currentExcelData.length < 2) throw new Error("Файл пуст или только заголовки.");
+                    if(currentExcelData.length < 2) throw new Error("Пустой файл");
                     errorDiv.classList.add('hidden');
                     renderMappingTable(currentExcelData);
                     document.getElementById('excelMappingArea').classList.remove('hidden');
-                    document.getElementById('excelMappingArea').scrollIntoView({ behavior: 'smooth' });
+                    showToast('Файл загружен. Распределите столбцы.', 'success');
                 } catch(err) {
-                    errorDiv.className = "text-xs text-red-600 font-bold mb-2";
-                    errorDiv.innerHTML = `❌ Ошибка: ${err.message}.<br>💡 Попробуйте сохранить файл как .xlsx или используйте Способ А (Вставка).`;
+                    errorDiv.innerText = '❌ ' + err.message;
+                    errorDiv.classList.remove('hidden');
                 }
             };
-            reader.onerror = () => { errorDiv.className = "text-xs text-red-600 font-bold mb-2"; errorDiv.innerText = "❌ Ошибка доступа к файлу."; };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(fileInput.files[0]);
         }
 
         function renderMappingTable(data) {
-            const table = document.getElementById('mappingTable');
-            table.innerHTML = '';
+            const table = document.getElementById('mappingTable'); table.innerHTML = '';
             const previewRows = data.slice(0, 5);
             const numCols = Math.max(...previewRows.map(r => r.length));
             const thead = document.createElement('thead');
-            const trHead = document.createElement('tr');
             
             for(let i = 0; i < numCols; i++) {
                 const th = document.createElement('th');
-                th.className = "p-2 border bg-slate-50 text-center align-bottom min-w-[120px]";
-                th.innerHTML = `<div class="text-xs font-bold text-slate-500 mb-1">Столбец ${String.fromCharCode(65 + i)}</div>`;
+                th.className = "p-3 border-b-2 border-gray-200 text-left";
+                th.innerHTML = `<div class="text-xs text-gray-500 mb-1">Столбец ${String.fromCharCode(65 + i)}</div>`;
                 const sel = document.createElement('select');
-                sel.className = "w-full text-sm border border-blue-300 rounded p-1.5 font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none bg-white";
+                sel.className = "w-full input-modern rounded-lg p-2 text-sm";
                 sel.id = `map_col_${i}`;
-                sel.innerHTML = `<option value="none">-- Игнорировать --</option><option value="sku">🏷️ Артикул</option><option value="name">📝 Название</option><option value="kiz">🔲 КИЗ</option>`;
+                sel.innerHTML = `<option value="none">Игнорировать</option><option value="sku">Артикул</option><option value="name">Название</option><option value="kiz">КИЗ</option>`;
                 const h = String(previewRows[0][i] || "").toLowerCase();
-                if(h.includes('артикул') || h.includes('sku') || h.includes('код')) sel.value = 'sku';
-                else if(h.includes('название') || h.includes('товар') || h.includes('name')) sel.value = 'name';
-                else if(h.includes('киз') || h.includes('честный') || h.includes('datamatrix')) sel.value = 'kiz';
-                th.appendChild(sel); trHead.appendChild(th);
+                if(h.includes('артикул') || h.includes('sku')) sel.value = 'sku';
+                else if(h.includes('название') || h.includes('name')) sel.value = 'name';
+                else if(h.includes('киз') || h.includes('datamatrix')) sel.value = 'kiz';
+                th.appendChild(sel);
+                thead.appendChild(th);
             }
-            thead.appendChild(trHead); table.appendChild(thead);
+            table.appendChild(thead);
 
             const tbody = document.createElement('tbody');
             for(let r = 1; r < previewRows.length; r++) {
                 const tr = document.createElement('tr');
                 for(let c = 0; c < numCols; c++) {
                     const td = document.createElement('td');
-                    td.className = "p-2 border text-xs text-slate-600 truncate max-w-[150px]";
-                    td.innerText = previewRows[r][c] || ""; td.appendChild(td); tr.appendChild(td);
+                    td.className = "p-3 border-b border-gray-100 text-xs text-gray-600 truncate max-w-[150px]";
+                    td.innerText = previewRows[r][c] || "";
+                    tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
             }
@@ -373,14 +539,13 @@
         }
 
         function executeExcelImport() {
-            if(!currentExcelData) return;
             let skuCol = -1, nameCol = -1, kizCol = -1;
             const numCols = currentExcelData[0].length;
             for(let i = 0; i < numCols; i++) {
                 const v = document.getElementById(`map_col_${i}`).value;
                 if(v === 'sku') skuCol = i; if(v === 'name') nameCol = i; if(v === 'kiz') kizCol = i;
             }
-            if(skuCol === -1 || nameCol === -1) return alert("❌ Обязательно выберите столбцы для Артикула и Названия!");
+            if(skuCol === -1 || nameCol === -1) return showToast('Выберите Артикул и Название', 'error');
 
             let created = 0, updated = 0;
             currentExcelData.slice(1).forEach(row => {
@@ -388,109 +553,149 @@
                 const name = String(row[nameCol] || "").trim();
                 if(!sku || !name) return;
                 let kizList = kizCol !== -1 ? String(row[kizCol]).split(/[,;\n]+/).map(k=>k.trim()).filter(k=>k.length>10) : [];
-                if(products[sku]) { const e = new Set(products[sku].kiz_list); kizList.forEach(c => { if(!e.has(c)) { products[sku].kiz_list.push(c); e.add(c); } }); updated++; }
+                if(products[sku]) { const e = new Set(products[sku].kiz_list); kizList.forEach(c => { if(!e.has(c)) products[sku].kiz_list.push(c); }); updated++; }
                 else { products[sku] = { name, kiz_list: kizList, packed_count: 0 }; created++; }
             });
-            saveData(); alert(`✅ Готово! Создано: ${created}, Обновлено: ${updated}`); cancelImport(); updateAllUI();
+            saveData();
+            showToast(`Загружено! Создано: ${created}, Обновлено: ${updated}`, 'success');
+            cancelImport();
+            updateAllUI();
         }
 
         function cancelImport() {
             document.getElementById('excelMappingArea').classList.add('hidden');
-            document.getElementById('pasteArea').value = ''; document.getElementById('excelFileInput').value = '';
-            document.getElementById('fileError').classList.add('hidden'); currentExcelData = null;
+            document.getElementById('pasteArea').value = '';
+            document.getElementById('excelFileInput').value = '';
+            currentExcelData = null;
         }
 
-        // ============================================
-        // ОСНОВНЫЕ ФУНКЦИИ
-        // ============================================
-        function addProduct() {
-            const sku = document.getElementById('newSku')?.value.trim().toUpperCase(); // На случай если поле удалено в упрощенной версии, проверю наличие
-            if(!sku) {
-                // Если поле newSku нет в HTML (я его убрал в предыдущем шаге для компактности, верну его в таблицу или добавлю логику)
-                // Вернем простое модальное окно или оставим как есть, но лучше добавить инпуты
-                return alert("Поле ввода товара не найдено. Перезагрузите страницу.");
-            }
+        function addProductManual() {
+            const sku = prompt("Артикул (SKU):"); if(!sku) return;
+            const name = prompt("Название товара:"); if(!name) return;
+            if(products[sku.toUpperCase()]) return showToast('Такой артикул уже существует', 'error');
+            products[sku.toUpperCase()] = { name, kiz_list: [], packed_count: 0 };
+            saveData(); updateAllUI();
+            showToast('Товар добавлен', 'success');
         }
-        // *ИСПРАВЛЕНИЕ:* Я заметил, что в упрощенном HTML я случайно убрал блок ручного добавления. Верну его в код ниже для полной работоспособности.
-        
+
         function updateSelects() {
             ['printKizProductSelect', 'pdfProductSelect'].forEach(id => {
                 const sel = document.getElementById(id); if(!sel) return;
                 const val = sel.value; sel.innerHTML = '<option value="">-- Выберите товар --</option>';
                 Object.keys(products).forEach(sku => {
                     const opt = document.createElement('option'); opt.value = sku;
-                    opt.innerText = `${sku} | ${products[sku].name} (КИЗ: ${products[sku].kiz_list.length})`;
+                    opt.innerText = `${sku} | ${products[sku].name} (${products[sku].kiz_list.length} КИЗ)`;
                     sel.appendChild(opt);
-                }); sel.value = val;
+                });
+                sel.value = val;
             });
         }
 
         function renderProductsTable() {
             const tbody = document.getElementById('productsTableBody'); tbody.innerHTML = '';
             const search = document.getElementById('searchProduct')?.value.toLowerCase() || '';
-            document.getElementById('totalProductsCount').innerText = Object.keys(products).length;
-            let hasData = false;
+            document.getElementById('totalProductsCount').innerText = `(${Object.keys(products).length})`;
+            
+            let totalKiz = 0, freeKiz = 0;
             Object.keys(products).forEach(sku => {
                 const p = products[sku];
                 if(search && !sku.toLowerCase().includes(search) && !p.name.toLowerCase().includes(search)) return;
-                hasData = true;
+                totalKiz += p.kiz_list.length;
+                freeKiz += p.kiz_list.length - p.packed_count;
+                
                 const free = p.kiz_list.length - p.packed_count;
-                const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50 transition";
-                tr.innerHTML = `<td class="p-3 font-mono font-bold text-indigo-700">${sku}</td><td class="p-3 text-slate-700">${p.name}</td><td class="p-3 text-center font-bold">${p.kiz_list.length}</td><td class="p-3 text-center font-bold text-indigo-600">${p.packed_count}</td><td class="p-3 text-center font-bold ${free===0?'text-red-500':'text-green-600'}">${free}</td><td class="p-3 text-right"><button onclick="document.getElementById('printKizProductSelect').value='${sku}'; showTab('tab-print'); setTimeout(printAllKizForProduct,300);" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition">🖨️ КИЗ</button></td>`;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono font-semibold text-indigo-600">${sku}</td>
+                    <td class="p-4 text-gray-700">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.kiz_list.length}</td>
+                    <td class="p-4 text-center text-indigo-600">${p.packed_count}</td>
+                    <td class="p-4 text-center font-semibold ${free===0?'text-red-500':'text-green-600'}">${free}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="document.getElementById('printKizProductSelect').value='${sku}'; showTab('tab-print'); setTimeout(printAllKizForProduct,300);" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition">Печать</button>
+                    </td>
+                `;
                 tbody.appendChild(tr);
             });
-            if(!hasData) tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Товары не найдены</td></tr>`;
+            
+            document.getElementById('stat-total-products').innerText = Object.keys(products).length;
+            document.getElementById('stat-total-kiz').innerText = totalKiz;
+            document.getElementById('stat-free-kiz').innerText = freeKiz;
+            
+            if(!tbody.children.length) tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">Товары не найдены</td></tr>`;
         }
 
         function renderPrintPreview() {
-            const sku = document.getElementById('printKizProductSelect').value; const container = document.getElementById('kizPreviewArea'); container.innerHTML = '';
+            const sku = document.getElementById('printKizProductSelect').value;
+            const container = document.getElementById('kizPreviewArea');
+            container.innerHTML = '';
             if(!sku || !products[sku]) return;
+            
             products[sku].kiz_list.slice(0, 6).forEach(code => {
-                const div = document.createElement('div'); div.className = 'bg-white p-2 border border-slate-200 rounded-lg flex flex-col items-center shadow-sm';
-                const canvas = document.createElement('canvas'); const text = document.createElement('div');
-                text.className = 'text-[7px] text-center mt-1 truncate w-full font-mono text-slate-600'; text.innerText = code;
-                div.appendChild(canvas); div.appendChild(text); container.appendChild(div);
+                const div = document.createElement('div');
+                div.className = 'glass-card rounded-xl p-3 flex flex-col items-center';
+                const canvas = document.createElement('canvas');
+                const text = document.createElement('div');
+                text.className = 'text-[7px] text-center mt-2 truncate w-full font-mono text-gray-600';
+                text.innerText = code;
+                div.appendChild(canvas);
+                div.appendChild(text);
+                container.appendChild(div);
                 try { bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 2, width: 28, height: 14, includetext: false }); } catch(e) {}
             });
         }
 
         function printAllKizForProduct() {
             const sku = document.getElementById('printKizProductSelect').value;
-            if(!sku || !products[sku]) return alert("Выберите товар!"); if(products[sku].kiz_list.length === 0) return alert("Нет кодов!");
-            if(products[sku].kiz_list.length > 100 && !confirm(`Печать ${products[sku].kiz_list.length} этикеток. Продолжить?`)) return;
+            if(!sku || !products[sku]) return showToast('Выберите товар', 'error');
+            if(products[sku].kiz_list.length === 0) return showToast('Нет кодов для печати', 'error');
+            if(products[sku].kiz_list.length > 100 && !confirm(`Печать ${products[sku].kiz_list.length} этикеток?`)) return;
+            
             const printArea = document.getElementById('printArea'); printArea.innerHTML = '';
             products[sku].kiz_list.forEach(code => {
                 const div = document.createElement('div'); div.className = 'print-kiz';
-                const canvas = document.createElement('canvas'); const text = document.createElement('div');
-                text.className = 'kiz-text'; text.innerText = code.length > 25 ? code.substring(0,12)+'...'+code.substring(code.length-10) : code;
+                const canvas = document.createElement('canvas');
+                const text = document.createElement('div'); text.className = 'text-[6px] text-center mt-1';
+                text.innerText = code.length > 25 ? code.substring(0,12)+'...'+code.substring(code.length-10) : code;
                 div.appendChild(canvas); div.appendChild(text); printArea.appendChild(div);
                 try { bwipjs.toCanvas(canvas, { bcid: 'datamatrix', text: code, scale: 3, width: 28, height: 14, includetext: false }); } catch(e) {}
             });
             setTimeout(() => window.print(), 500);
         }
 
-        document.getElementById('scanInput').addEventListener('keypress', function(e) { if(e.key==='Enter') { e.preventDefault(); processScan(); } });
+        document.getElementById('scanInput')?.addEventListener('keypress', function(e) { if(e.key==='Enter') { e.preventDefault(); processScan(); } });
+        
         function processScan() {
-            let code = document.getElementById('scanInput').value.trim(); if(!code) return;
+            const code = document.getElementById('scanInput').value.trim(); if(!code) return;
             let foundSku = null;
             for(const [sku, data] of Object.entries(products)) { if(data.kiz_list.includes(code)) { foundSku = sku; break; } }
+            
             const fb = document.getElementById('scanFeedback');
-            if(!foundSku) { fb.innerHTML = `❌ ОШИБКА: Неизвестный КИЗ`; fb.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-red-50 text-red-800 border-2 border-red-200 scan-err block"; }
-            else if(currentBoxItems.includes(code)) { fb.innerHTML = `⚠️ УЖЕ В КОРОБЕ`; fb.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-yellow-50 text-yellow-800 border-2 border-yellow-200 scan-err block"; }
-            else { currentBoxItems.push(code); products[foundSku].packed_count += 1; saveData(); fb.innerHTML = `✅ ${products[foundSku].name}`; fb.className = "p-4 rounded-xl mb-4 text-center font-bold text-lg bg-green-50 text-green-800 border-2 border-green-200 scan-ok block"; }
-            document.getElementById('scanInput').value = ''; document.getElementById('scanInput').focus(); updatePackingUI();
+            if(!foundSku) { fb.innerHTML = '❌ Неизвестный КИЗ'; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 scan-error block'; showToast('Неизвестный код', 'error'); }
+            else if(currentBoxItems.includes(code)) { fb.innerHTML = '⚠️ Уже в коробе'; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-yellow-100 text-yellow-700 scan-error block'; showToast('Уже отсканирован', 'error'); }
+            else { currentBoxItems.push(code); products[foundSku].packed_count++; saveData(); fb.innerHTML = `✅ ${products[foundSku].name}`; fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 scan-success block'; showToast('Добавлен в короб', 'success'); }
+            
+            document.getElementById('scanInput').value = '';
+            document.getElementById('scanInput').focus();
+            updatePackingUI();
         }
 
         function updatePackingUI() {
-            document.getElementById('currentBoxIdDisplay').innerText = currentBoxId;
+            document.getElementById('sidebar-box-id').innerText = currentBoxId;
+            document.getElementById('sidebar-box-items').innerText = `${currentBoxItems.length} товаров`;
+            document.getElementById('nav-box-count').innerText = currentBoxItems.length;
             document.getElementById('totalScannedCount').innerText = currentBoxItems.length;
+            document.getElementById('boxItemCountBadge').innerText = `${currentBoxItems.length} шт.`;
+            
             const list = document.getElementById('boxItemsList'); list.innerHTML = '';
-            if(currentBoxItems.length === 0) list.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-400"><span class="text-4xl mb-2">📭</span><p class="italic">Короб пуст</p></div>`;
-            else {
+            if(currentBoxItems.length === 0) {
+                list.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400"><svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg><p>Короб пуст</p></div>';
+            } else {
                 [...currentBoxItems].reverse().forEach(code => {
-                    let pName = "Неизвестный товар";
+                    let pName = "Неизвестно";
                     for(const [sku, data] of Object.entries(products)) { if(data.kiz_list.includes(code)) { pName = data.name; break; } }
-                    list.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-slate-100 bg-white rounded-lg mb-2 shadow-sm"><div class="flex-1 min-w-0"><div class="font-bold text-slate-800 truncate">${pName}</div><div class="font-mono text-xs text-slate-500 truncate">${code}</div></div></div>`;
+                    list.innerHTML += `<div class="p-3 bg-white rounded-lg mb-2 shadow-sm border border-gray-100"><div class="font-medium text-gray-800 truncate">${pName}</div><div class="text-xs text-gray-500 font-mono truncate">${code}</div></div>`;
                 });
             }
         }
@@ -499,43 +704,42 @@
             if(currentBoxItems.length === 0 && !confirm('Короб пуст. Закрыть?')) return;
             const boxId = currentBoxId, itemCount = currentBoxItems.length;
             closedBoxes.push({ id: boxId, itemsCount: itemCount, date: new Date().toLocaleString(), items: [...currentBoxItems] });
+            
             const printArea = document.getElementById('printArea'); printArea.innerHTML = '';
             const div = document.createElement('div'); div.className = 'print-box';
-            div.innerHTML = `<div class="box-title">КОРОБ: ${boxId}</div><div class="box-info">КИЗ: <b>${itemCount} шт.</b><br>${new Date().toLocaleString()}</div>`;
+            div.innerHTML = `<div class="text-center font-bold text-lg mb-2">КОРОБ: ${boxId}</div><div class="text-center text-sm">КИЗ: ${itemCount} шт.<br>${new Date().toLocaleString()}</div>`;
             const canvas = document.createElement('canvas'); div.insertBefore(canvas, div.lastElementChild); printArea.appendChild(div);
             try { bwipjs.toCanvas(canvas, { bcid: 'code128', text: boxId, scale: 3, height: 15, includetext: true }); } catch(e) {}
-            currentBoxItems = []; currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase(); saveData(); updatePackingUI(); setTimeout(() => window.print(), 400);
+            
+            currentBoxItems = []; currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase(); saveData(); updatePackingUI();
+            showToast('Короб закрыт', 'success');
+            setTimeout(() => window.print(), 400);
         }
 
         function exportHistoryToCSV() {
-            if(closedBoxes.length === 0) return alert("История пуста");
-            let csv = "data:text/csv;charset=utf-8,\uFEFFID Короба;Дата;Количество;КИЗ\n";
+            if(closedBoxes.length === 0) return showToast('История пуста', 'error');
+            let csv = "data:text/csv;charset=utf-8,\uFEFFID;Дата;Количество;КИЗ\n";
             closedBoxes.forEach(b => { csv += `${b.id};${b.date};${b.itemsCount};"${b.items.join(', ')}"\n`; });
             const link = document.createElement("a"); link.href = encodeURI(csv); link.download = `короба_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+            showToast('Отчет скачан', 'success');
         }
 
-        function saveData() { try { localStorage.setItem('cz_products', JSON.stringify(products)); localStorage.setItem('cz_current_box', currentBoxId); localStorage.setItem('cz_current_box_items', JSON.stringify(currentBoxItems)); localStorage.setItem('cz_closed_boxes', JSON.stringify(closedBoxes)); } catch(e) { alert("Ошибка сохранения: переполнена память браузера."); } }
+        function saveData() {
+            try {
+                localStorage.setItem('cz_products', JSON.stringify(products));
+                localStorage.setItem('cz_current_box', currentBoxId);
+                localStorage.setItem('cz_current_box_items', JSON.stringify(currentBoxItems));
+                localStorage.setItem('cz_closed_boxes', JSON.stringify(closedBoxes));
+            } catch(e) { showToast('Ошибка сохранения', 'error'); }
+        }
+
+        function resetAllData() {
+            if(confirm('⚠️ Удалить ВСЕ данные? Это нельзя отменить!') && confirm('Вы ТОЧНО уверены?')) {
+                localStorage.clear(); location.reload();
+            }
+        }
+
         function updateAllUI() { renderProductsTable(); updateSelects(); updatePackingUI(); }
-
-        // Добавляем обратно ручной ввод товара, так как он был потерян при рефакторинге
-        function addProductManual() {
-            const sku = prompt("Введите Артикул (SKU):");
-            if(!sku) return;
-            const name = prompt("Введите Название товара:");
-            if(!name) return;
-            if(products[sku.toUpperCase()]) return alert("Такой артикул уже существует!");
-            products[sku.toUpperCase()] = { name, kiz_list: [], packed_count: 0 };
-            saveData(); updateAllUI();
-        }
-        // Привязываем к кнопке в шапке или создаем плавающую
-        document.addEventListener('DOMContentLoaded', () => {
-            const btn = document.createElement('button');
-            btn.innerText = "➕ Товар";
-            btn.className = "fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 z-50 font-bold";
-            btn.onclick = addProductManual;
-            document.body.appendChild(btn);
-        });
-
         showTab('tab-catalog');
     </script>
 </body>
