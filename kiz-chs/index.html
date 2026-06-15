@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro: Честный ЗНАК (Версия 5.3 - Улучшенный PDF)</title>
+    <title>WMS Pro: Честный ЗНАК + PDF + Excel (Версия 5.2)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
+    <!-- Библиотека для чтения PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <script>
+        // Настройка воркера pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <style>
@@ -42,7 +44,7 @@
                 <div class="bg-white text-indigo-700 p-2 rounded-lg font-black text-xl">WMS</div>
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Честный ЗНАК + PDF/Excel</h1>
-                    <p class="text-xs text-indigo-200">Версия 5.3 (Умный парсер КИЗ)</p>
+                    <p class="text-xs text-indigo-200">Версия 5.2 (PDF восстановлен)</p>
                 </div>
             </div>
             <div class="text-right bg-indigo-800 px-4 py-2 rounded-lg border border-indigo-600">
@@ -67,9 +69,9 @@
                 <h2 class="font-bold text-lg mb-4 text-blue-800 flex items-center gap-2">📊 Загрузка товаров (Excel)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-lg border-2 border-green-300 shadow-sm">
-                        <h3 class="font-bold text-green-800 mb-2">⭐ Способ А: Копировать и Вставить (100% надежность)</h3>
-                        <p class="text-xs text-slate-600 mb-3">Если PDF загружает не все коды, используйте этот способ:<br>1. Скачайте из Кабинета ЧЗ файл <b>.csv или .xlsx</b>.<br>2. Откройте его, выделите столбец с кодами.<br>3. <b>Ctrl+C</b> → кликните в поле → <b>Ctrl+V</b>.</p>
-                        <textarea id="pasteArea" rows="5" placeholder="Вставьте коды или таблицу из Excel сюда (Ctrl+V)..." class="w-full border-2 border-green-200 p-3 rounded-lg text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none resize-none mb-3"></textarea>
+                        <h3 class="font-bold text-green-800 mb-2">⭐ Способ А: Копировать и Вставить</h3>
+                        <p class="text-xs text-slate-600 mb-3">1. Выделите ячейки в Excel (включая заголовки).<br>2. <b>Ctrl+C</b> → кликните в поле → <b>Ctrl+V</b>.</p>
+                        <textarea id="pasteArea" rows="5" placeholder="Вставьте данные из Excel сюда (Ctrl+V)..." class="w-full border-2 border-green-200 p-3 rounded-lg text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none resize-none mb-3"></textarea>
                         <button onclick="processPastedData()" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-700 transition">✅ Распознать вставленные данные</button>
                     </div>
 
@@ -82,7 +84,7 @@
                 </div>
 
                 <div id="excelMappingArea" class="hidden mt-6 bg-white p-5 rounded-lg border-2 border-indigo-200 shadow-md">
-                    <h3 class="font-bold text-indigo-800 mb-2">🎯 Распределите столбцы:</h3>
+                    <h3 class="font-bold text-indigo-800 mb-2">🎯 Распределите столбцы Excel:</h3>
                     <div class="overflow-x-auto custom-scroll mb-4">
                         <table class="w-full text-sm text-left border-collapse" id="mappingTable"></table>
                     </div>
@@ -106,22 +108,20 @@
                     <div class="md:col-span-1">
                         <label class="block text-sm font-bold text-slate-700 mb-1">2. Загрузите PDF:</label>
                         <input type="file" id="pdfFileInput" accept=".pdf" class="block w-full text-sm text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 mb-1"/>
-                        <div id="pdfStatus" class="text-xs font-bold min-h-[40px] mt-1 leading-tight"></div>
+                        <div id="pdfStatus" class="text-xs font-bold min-h-[30px] mt-1"></div>
                     </div>
                     <div class="md:col-span-1 flex items-end">
                         <button onclick="processPDF()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg font-bold transition shadow-md">🔍 Извлечь и добавить КИЗы</button>
                     </div>
                 </div>
+                <p class="text-xs text-slate-500 mt-2">*Работает с текстовыми PDF из Кабинета ЧЗ. Если кодов мало, значит в файле они отрисованы как картинки (используйте Excel).</p>
             </div>
 
             <!-- ТАБЛИЦА ТОВАРОВ -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="font-bold text-lg text-slate-700">Реестр товаров (<span id="totalProductsCount">0</span>)</h2>
-                    <div class="flex gap-2">
-                        <button onclick="addProductManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition">➕ Добавить товар</button>
-                        <input type="text" id="searchProduct" placeholder="🔍 Поиск..." class="border border-slate-300 p-2 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderProductsTable()">
-                    </div>
+                    <input type="text" id="searchProduct" placeholder="🔍 Поиск..." class="border border-slate-300 p-2 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none" oninput="renderProductsTable()">
                 </div>
                 <div class="overflow-x-auto custom-scroll max-h-96">
                     <table class="w-full text-sm text-left">
@@ -218,34 +218,20 @@
         }
 
         // ============================================
-        // УЛУЧШЕННЫЙ ПАРСЕР КИЗОВ (РЕШАЕТ ПРОБЛЕМУ НЕДОГРУЗКИ)
+        // УТИЛИТА: ИЗВЛЕЧЕНИЕ КИЗОВ ИЗ ТЕКСТА
         // ============================================
         function extractKizCodes(text) {
-            const codes = new Set();
+            let cleanText = text.replace(/[\r\n]+/g, ' ');
+            // 1. Строгий GS1 формат: 01 + 14 цифр + 21 + символы
+            const gs1Regex = /01\s*\d{14}\s*21\s*[A-Za-z0-9]{1,20}/g;
+            let matches = cleanText.match(gs1Regex) || [];
+            matches = matches.map(m => m.replace(/\s+/g, ''));
             
-            // 1. Убираем ВСЕ пробелы, переносы строк и спецсимволы, оставляем только буквы и цифры.
-            // Это решает проблему, когда pdf.js разбивает код на части с пробелами или невидимыми символами.
-            const cleanText = text.replace(/[^A-Za-z0-9]/g, '');
+            // 2. Запасной: любые длинные буквенно-цифровые строки > 28 символов
+            const longStringRegex = /[A-Za-z0-9]{28,}/g;
+            let longMatches = cleanText.match(longStringRegex) || [];
             
-            // 2. Ищем строгий формат GS1: 01 + 14 цифр + 21 + от 1 до 20 символов
-            const gs1Regex = /01\d{14}21[A-Za-z0-9]{1,20}/g;
-            const gs1Matches = cleanText.match(gs1Regex) || [];
-            gs1Matches.forEach(code => codes.add(code));
-            
-            // 3. Запасной вариант: если маркеры 01/21 потерялись при рендеринге PDF, 
-            // ищем любые непрерывные последовательности букв и цифр длиной от 28 до 45 символов
-            const words = text.split(/\s+/);
-            words.forEach(word => {
-                const cleanWord = word.replace(/[^A-Za-z0-9]/g, '');
-                if (cleanWord.length >= 28 && cleanWord.length <= 45) {
-                    // Дополнительная проверка: содержит ли и цифры, и буквы (как настоящий КИЗ)
-                    if (/\d/.test(cleanWord) && /[A-Za-z]/.test(cleanWord)) {
-                        codes.add(cleanWord);
-                    }
-                }
-            });
-
-            return Array.from(codes);
+            return [...new Set([...matches, ...longMatches])];
         }
 
         // ============================================
@@ -259,7 +245,7 @@
             if(!fileInput.files.length) return alert("Выберите PDF файл!");
 
             const statusDiv = document.getElementById('pdfStatus');
-            statusDiv.innerHTML = "<span class='text-purple-700'>⏳ Чтение и анализ PDF (это может занять несколько секунд)...</span>";
+            statusDiv.innerHTML = "<span class='text-purple-700'>⏳ Чтение и анализ PDF...</span>";
 
             try {
                 const arrayBuffer = await fileInput.files[0].arrayBuffer();
@@ -275,27 +261,23 @@
                 const extractedCodes = extractKizCodes(fullText);
 
                 if (extractedCodes.length === 0) {
-                    statusDiv.innerHTML = "<span class='text-red-600'>❌ Коды не найдены. Ваш PDF содержит коды как картинки (скан), а не как текст.<br>💡 <b>Решение:</b> Скачайте выгрузку из Кабинета ЧЗ в формате .csv или .xlsx, откройте её, скопируйте столбец с кодами и вставьте в зеленое поле 'Способ А' выше. Это работает в 100% случаев.</span>";
+                    statusDiv.innerHTML = "<span class='text-red-600'>❌ Коды не найдены. PDF содержит их как картинки. Используйте Excel.</span>";
                     return;
                 }
 
                 // Добавляем в товар
                 const existing = new Set(products[sku].kiz_list);
                 let added = 0;
-                let duplicates = 0;
-                
                 extractedCodes.forEach(code => {
                     if(!existing.has(code)) {
                         products[sku].kiz_list.push(code);
                         existing.add(code);
                         added++;
-                    } else {
-                        duplicates++;
                     }
                 });
                 
                 saveData();
-                statusDiv.innerHTML = `<span class='text-green-700'>✅ Успешно!<br>Найдено в файле: <b>${extractedCodes.length}</b><br>Добавлено новых: <b>${added}</b><br>Пропущено дубликатов: ${duplicates}</span>`;
+                statusDiv.innerHTML = `<span class='text-green-700'>✅ Найдено: ${extractedCodes.length}. Добавлено новых: <b>${added}</b>. Дубликатов: ${extractedCodes.length - added}</span>`;
                 fileInput.value = '';
                 updateAllUI();
 
@@ -306,42 +288,15 @@
         }
 
         // ============================================
-        // 2. EXCEL: ВСТАВКА (САМЫЙ НАДЕЖНЫЙ СПОСОБ)
+        // 2. EXCEL: ВСТАВКА
         // ============================================
         function processPastedData() {
             const text = document.getElementById('pasteArea').value.trim();
             if(!text) return alert("Поле пустое! Сначала скопируйте данные из Excel и вставьте их сюда (Ctrl+V).");
 
             try {
-                // Если пользователь вставил просто список кодов (без заголовков)
-                const lines = text.split(/\r?\n/);
-                const isJustCodes = lines.every(line => line.trim().length > 20 && !line.toLowerCase().includes('артикул') && !line.toLowerCase().includes('название'));
-                
-                if (isJustCodes && lines.length > 0) {
-                    // Простой режим: просто добавляем коды к выбранному товару
-                    const sku = document.getElementById('pdfProductSelect').value;
-                    if(!sku || !products[sku]) return alert("Для вставки просто списка кодов, сначала выберите товар в выпадающем списке выше (в фиолетовом блоке)!");
-                    
-                    const codes = lines.map(l => l.replace(/[^A-Za-z0-9]/g, '').trim()).filter(l => l.length >= 28);
-                    const existing = new Set(products[sku].kiz_list);
-                    let added = 0;
-                    codes.forEach(code => {
-                        if(!existing.has(code)) {
-                            products[sku].kiz_list.push(code);
-                            existing.add(code);
-                            added++;
-                        }
-                    });
-                    saveData();
-                    alert(`✅ Добавлено ${added} новых кодов к товару ${sku}!`);
-                    document.getElementById('pasteArea').value = '';
-                    updateAllUI();
-                    return;
-                }
-
-                // Режим таблицы Excel
                 currentExcelData = text.split(/\r?\n/).map(row => row.split('\t'));
-                if(currentExcelData.length < 2) return alert("Недостаточно данных. Скопируйте хотя бы заголовки и одну строку данных.");
+                if(currentExcelData.length < 2) return alert("Недостаточно данных. Скопируйте хотя бы заголовки и одну строку.");
                 
                 document.getElementById('fileError').classList.add('hidden');
                 renderMappingTable(currentExcelData);
@@ -366,7 +321,7 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                     currentExcelData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
-                    if(currentExcelData.length < 2) throw new Error("Файл пуст или содержит только заголовки.");
+                    if(currentExcelData.length < 2) throw new Error("Файл пуст или только заголовки.");
                     errorDiv.classList.add('hidden');
                     renderMappingTable(currentExcelData);
                     document.getElementById('excelMappingArea').classList.remove('hidden');
@@ -410,8 +365,7 @@
                 for(let c = 0; c < numCols; c++) {
                     const td = document.createElement('td');
                     td.className = "p-2 border text-xs text-slate-600 truncate max-w-[150px]";
-                    td.innerText = previewRows[r][c] || ""; 
-                    tr.appendChild(td);
+                    td.innerText = previewRows[r][c] || ""; td.appendChild(td); tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
             }
@@ -449,15 +403,15 @@
         // ============================================
         // ОСНОВНЫЕ ФУНКЦИИ
         // ============================================
-        function addProductManual() {
-            const sku = prompt("Введите Артикул (SKU):");
-            if(!sku) return;
-            const name = prompt("Введите Название товара:");
-            if(!name) return;
-            if(products[sku.toUpperCase()]) return alert("Такой артикул уже существует!");
-            products[sku.toUpperCase()] = { name, kiz_list: [], packed_count: 0 };
-            saveData(); updateAllUI();
+        function addProduct() {
+            const sku = document.getElementById('newSku')?.value.trim().toUpperCase(); // На случай если поле удалено в упрощенной версии, проверю наличие
+            if(!sku) {
+                // Если поле newSku нет в HTML (я его убрал в предыдущем шаге для компактности, верну его в таблицу или добавлю логику)
+                // Вернем простое модальное окно или оставим как есть, но лучше добавить инпуты
+                return alert("Поле ввода товара не найдено. Перезагрузите страницу.");
+            }
         }
+        // *ИСПРАВЛЕНИЕ:* Я заметил, что в упрощенном HTML я случайно убрал блок ручного добавления. Верну его в код ниже для полной работоспособности.
         
         function updateSelects() {
             ['printKizProductSelect', 'pdfProductSelect'].forEach(id => {
@@ -562,6 +516,25 @@
 
         function saveData() { try { localStorage.setItem('cz_products', JSON.stringify(products)); localStorage.setItem('cz_current_box', currentBoxId); localStorage.setItem('cz_current_box_items', JSON.stringify(currentBoxItems)); localStorage.setItem('cz_closed_boxes', JSON.stringify(closedBoxes)); } catch(e) { alert("Ошибка сохранения: переполнена память браузера."); } }
         function updateAllUI() { renderProductsTable(); updateSelects(); updatePackingUI(); }
+
+        // Добавляем обратно ручной ввод товара, так как он был потерян при рефакторинге
+        function addProductManual() {
+            const sku = prompt("Введите Артикул (SKU):");
+            if(!sku) return;
+            const name = prompt("Введите Название товара:");
+            if(!name) return;
+            if(products[sku.toUpperCase()]) return alert("Такой артикул уже существует!");
+            products[sku.toUpperCase()] = { name, kiz_list: [], packed_count: 0 };
+            saveData(); updateAllUI();
+        }
+        // Привязываем к кнопке в шапке или создаем плавающую
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.createElement('button');
+            btn.innerText = "➕ Товар";
+            btn.className = "fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 z-50 font-bold";
+            btn.onclick = addProductManual;
+            document.body.appendChild(btn);
+        });
 
         showTab('tab-catalog');
     </script>
