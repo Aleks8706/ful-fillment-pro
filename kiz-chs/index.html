@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro - Автопечать при сканировании</title>
+    <title>WMS Pro - Идеальная печать КИЗ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -22,17 +22,95 @@
         .drop-zone { border: 3px dashed #cbd5e1; transition: all 0.3s ease; background: #f8fafc; }
         .drop-zone.dragover { border-color: #4f46e5; background: #eef2ff; transform: scale(1.01); }
         
+        /* === АБСОЛЮТНО ПУЛЕНЕПРОБИВАЕМЫЕ СТИЛИ ПЕЧАТИ === */
         @media print {
             @page { margin: 0 !important; size: 30mm 20mm !important; }
-            .no-print { display: none !important; }
-            body { background: white !important; margin: 0 !important; padding: 0 !important; }
-            .print-kiz { width: 30mm !important; height: 20mm !important; page-break-after: always !important; margin: 0 !important; padding: 1mm !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; border: 0.5px dashed #999 !important; }
-            .print-kiz canvas { width: 28mm !important; height: 16mm !important; max-width: 28mm !important; max-height: 16mm !important; }
-            .print-kiz .kiz-text { font-size: 7px !important; text-align: center !important; word-break: break-all !important; margin-top: 1mm !important; color: #000 !important; font-family: monospace !important; line-height: 1 !important; }
-            .print-box { width: 58mm !important; height: 40mm !important; page-break-after: always !important; border: 1px solid #000 !important; padding: 2mm !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }
+            
+            /* 1. Скрываем АБСОЛЮТНО ВСЁ на странице */
+            body * {
+                display: none !important;
+            }
+            
+            /* 2. Показываем ТОЛЬКО контейнер печати и всё внутри него */
+            #printArea, #printArea * {
+                display: block !important;
+            }
+            
+            /* 3. Жесткое позиционирование области печати */
+            #printArea {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 30mm !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                z-index: 9999 !important;
+            }
+            
+            /* 4. Строгие размеры этикетки 30x20 мм */
+            .print-kiz {
+                display: flex !important;
+                width: 30mm !important;
+                height: 20mm !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                margin: 0 !important;
+                padding: 1mm !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                box-sizing: border-box !important;
+                border: 0.5px dashed #ccc !important; /* Помогает выровнять этикетку */
+            }
+            
+            .print-kiz canvas {
+                display: block !important;
+                width: 28mm !important;
+                height: 16mm !important;
+                max-width: 28mm !important;
+                max-height: 16mm !important;
+            }
+            
+            .print-kiz .kiz-text {
+                display: block !important;
+                font-size: 8px !important;
+                text-align: center !important;
+                word-break: break-all !important;
+                margin-top: 1mm !important;
+                color: #000 !important;
+                font-family: monospace !important;
+                line-height: 1.1 !important;
+                max-width: 28mm !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+            }
+
+            /* Стили для печати ярлыка короба (58x40 мм) */
+            .print-box {
+                display: flex !important;
+                width: 58mm !important;
+                height: 40mm !important;
+                page-break-after: always !important;
+                border: 1px solid #000 !important;
+                padding: 2mm !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                box-sizing: border-box !important;
+            }
+            .print-box canvas {
+                display: block !important;
+                width: 50mm !important;
+                height: 16mm !important;
+                max-width: 50mm !important;
+            }
         }
+        
         #printArea { display: none; }
         @media print { #printArea { display: block !important; } }
+        
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -67,8 +145,9 @@
             </div>
         </aside>
 
-        <main class="flex-1 p-4 lg:p-8 overflow-auto">
+        <main class="no-print flex-1 p-4 lg:p-8 overflow-auto">
             <div id="tab-catalog" class="tab-content space-y-6 animate-fade-in">
+                
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -76,7 +155,7 @@
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
-                                <strong>Важно:</strong> Если PDF загружает меньше кодов, скачайте этот же список из Кабинета ЧЗ в формате <strong>CSV или Excel</strong>, скопируйте столбец с кодами и вставьте в зеленую зону "Вставка из Excel" ниже.
+                                <strong>Важно:</strong> Если под штрихкодом печатаются странные символы (например, `...5z6g7`), значит, исходный PDF был поврежден или содержал артефакты распознавания. Программа печатает ровно тот код, который смогла извлечь. Для идеальных этикеток используйте выгрузку в <strong>CSV или Excel</strong>.
                             </p>
                         </div>
                     </div>
@@ -161,7 +240,10 @@
                 <div class="glass-card rounded-2xl p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">🖨️ Печать этикеток КИЗ (30×20 мм)</h2>
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
-                        <strong>💡 Важно для идеальной печати:</strong> В окне печати браузера установите: <b>Поля: "Нет"</b>, <b>Масштаб: "100%"</b>, <b>Фоновые цвета: Вкл</b>.
+                        <strong>💡 Настройки печати в браузере (ОБЯЗАТЕЛЬНО):</strong><br>
+                        1. <b>Поля (Margins):</b> "Нет" (None)<br>
+                        2. <b>Масштаб (Scale):</b> "100%" или "По размеру страницы"<br>
+                        3. <b>Дополнительно:</b> Снимите галочку "Колонтитулы" (Headers and footers)
                     </div>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <select id="printKizProductSelect" class="flex-1 input-modern rounded-xl p-3" onchange="renderPrintPreview()">
@@ -178,7 +260,6 @@
                     <div class="lg:col-span-2 glass-card rounded-2xl p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-4">📡 Сканирование КИЗ</h2>
                         
-                        <!-- НОВАЯ ФУНКЦИЯ: АВТОПЕЧАТЬ -->
                         <div class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-200">
                             <input type="checkbox" id="autoPrintScan" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
                             <label for="autoPrintScan" class="text-sm font-semibold text-indigo-800 cursor-pointer select-none">
@@ -261,6 +342,7 @@
             const gs1Regex = /01\d{14}21[0-9A-Za-z]{4,20}/g;
             const gs1Matches = cleanText.match(gs1Regex) || [];
             gs1Matches.forEach(code => codes.add(code));
+            
             text.split(/\s+/).forEach(word => {
                 const cleanWord = word.replace(/[^0-9A-Za-z]/g, '');
                 if (cleanWord.length >= 23 && cleanWord.length <= 35 && /\d/.test(cleanWord) && /[A-Za-z]/.test(cleanWord)) {
@@ -312,7 +394,7 @@
                 }
 
                 if (tempExtractedKiz.length === 0) {
-                    statusDiv.innerHTML = '<span class="text-red-600">❌ Коды не найдены. Используйте метод "Вставка из Excel".</span>';
+                    statusDiv.innerHTML = '<span class="text-red-600">❌ Коды не найдены. PDF поврежден. Используйте метод "Вставка из Excel".</span>';
                     return;
                 }
 
@@ -458,7 +540,7 @@
                 const canvas = document.createElement('canvas');
                 const text = document.createElement('div');
                 text.className = 'text-[7px] text-center mt-2 truncate w-full font-mono text-gray-600';
-                text.innerText = code;
+                text.innerText = code.length > 25 ? code.substring(0,12)+'...'+code.substring(code.length-10) : code;
                 div.appendChild(canvas);
                 div.appendChild(text);
                 container.appendChild(div);
@@ -484,19 +566,17 @@
             setTimeout(() => window.print(), 500);
         }
 
-        // ==========================================
-        // ФУНКЦИЯ МГНОВЕННОЙ ПЕЧАТИ ОДНОГО КОДА
-        // ==========================================
         function printSingleCodeImmediately(code) {
             const printArea = document.getElementById('printArea');
-            printArea.innerHTML = ''; // Очищаем предыдущее
+            printArea.innerHTML = ''; 
             
             const div = document.createElement('div');
             div.className = 'print-kiz';
             const canvas = document.createElement('canvas');
             const text = document.createElement('div');
             text.className = 'kiz-text';
-            text.innerText = code.length > 25 ? code.substring(0,12)+'...'+code.substring(code.length-10) : code;
+            // Защита от "разъехавшегося" текста: обрезаем слишком длинные/поврежденные коды
+            text.innerText = code.length > 25 ? code.substring(0,12) + '...' + code.substring(code.length-10) : code;
             
             div.appendChild(canvas);
             div.appendChild(text);
@@ -512,10 +592,8 @@
                     includetext: false 
                 });
                 
-                // Небольшая задержка для рендеринга canvas перед вызовом печати
                 setTimeout(() => {
                     window.print();
-                    // Очищаем область печати после закрытия диалога
                     setTimeout(() => { printArea.innerHTML = ''; }, 1000);
                 }, 300);
             } catch(e) {
@@ -561,7 +639,6 @@
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 block'; 
                 showToast('Добавлен в короб', 'success'); 
                 
-                // ПРОВЕРКА: ВКЛЮЧЕНА ЛИ АВТОПЕЧАТЬ
                 if (document.getElementById('autoPrintScan').checked) {
                     printSingleCodeImmediately(code);
                 }
