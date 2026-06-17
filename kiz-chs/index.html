@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v13 - Пуленепробиваемый импорт</title>
+    <title>WMS Pro v13.1 - Исправление загрузки Excel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Используем максимально надежный CDN для Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -52,6 +53,12 @@
 </head>
 <body class="antialiased text-gray-800">
 
+    <!-- ПРОВЕРКА ЗАГРУЗКИ БИБЛИОТЕКИ -->
+    <div id="libErrorBanner" class="hidden fixed top-0 left-0 w-full bg-red-600 text-white p-4 z-[100] text-center font-bold shadow-lg">
+        ⚠️ Блокировщик рекламы (AdBlock/uBlock) или антивирус заблокировал загрузку библиотеки Excel. 
+        Пожалуйста, отключите его для этого файла или откройте файл в режиме "Инкогнито".
+    </div>
+
     <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <div class="min-h-screen flex flex-col lg:flex-row">
@@ -60,8 +67,8 @@
                 <div class="flex items-center gap-3 mb-8">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v13</h1>
-                        <p class="text-xs text-gray-500">Пуленепробиваемый импорт</p>
+                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v13.1</h1>
+                        <p class="text-xs text-gray-500">Исправление загрузки Excel</p>
                     </div>
                 </div>
                 <nav class="space-y-2">
@@ -77,7 +84,6 @@
             <!-- ВКЛАДКА 1: ЗАГРУЗКА ТОВАРОВ -->
             <div id="tab-catalog" class="tab-content space-y-6 animate-fade-in">
                 
-                <!-- ВАЖНОЕ ПРЕДУПРЕЖДЕНИЕ -->
                 <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -86,7 +92,7 @@
                         <div class="ml-3">
                             <h3 class="text-sm font-bold text-red-800">Почему ваш PDF-файл не загружается:</h3>
                             <p class="text-sm text-red-700 mt-1">
-                                Мы проанализировали ваш файл <b>Гель_для_душа...pdf</b>. В нем <b>физически нет настоящих кодов КИЗ</b>. Вместо серийных номеров там записан "мусор" (ошибки распознавания), например: <code>0104681937216236215z_6 g7</code> или <code>0104681937216236215yrN lh</code>. 
+                                Мы проанализировали ваш файл <b>Гель_для_душа...pdf</b>. В нем <b>физически нет настоящих кодов КИЗ</b>. Вместо серийных номеров там записан "мусор" (ошибки распознавания), например: <code>0104681937216236215z_6 g7</code>. 
                                 <br><br>
                                 <b>Решение:</b> Зайдите в Кабинет Честного ЗНАКа, найдите этот документ и нажмите <b>"Скачать в CSV"</b> или <b>"Скачать в Excel"</b>. Не используйте PDF для выгрузки кодов!
                             </p>
@@ -210,9 +216,10 @@
     <div id="printArea"></div>
 
     <script>
-        // Проверка загрузки библиотеки Excel
+        // === ПРОВЕРКА ЗАГРУЗКИ БИБЛИОТЕКИ XLSX ===
         if (typeof XLSX === 'undefined') {
-            alert('ВНИМАНИЕ: Не удалось загрузить библиотеку для чтения Excel. Проверьте подключение к интернету или отключите блокировщики рекламы (AdBlock), затем обновите страницу.');
+            document.getElementById('libErrorBanner').classList.remove('hidden');
+            console.error('Библиотека XLSX не загрузилась. Проверьте подключение к интернету или отключите AdBlock.');
         }
 
         let products = JSON.parse(localStorage.getItem('wms_products_v13')) || {};
@@ -247,16 +254,18 @@
             if(tabId === 'tab-packing') { updatePackingUI(); setTimeout(() => document.getElementById('scanInput')?.focus(), 100); }
         }
 
-        // ==========================================
-        // ПУЛЕНЕПРОБИВАЕМЫЙ ПАРСЕР EXCEL
-        // ==========================================
         function handleExcelUpload(input) {
             const file = input.files[0];
             if (!file) return;
 
-            // БЛОКИРОВКА PDF В СЛОТЕ ДЛЯ EXCEL
+            if (typeof XLSX === 'undefined') {
+                showToast('Библиотека Excel не загрузилась. Отключите AdBlock/uBlock или откройте файл в режиме Инкогнито.', 'error');
+                input.value = '';
+                return;
+            }
+
             if (file.name.toLowerCase().endsWith('.pdf')) {
-                showToast('Вы пытаетесь загрузить PDF в слот для Excel. Этот файл поврежден и не содержит читаемых кодов. Пожалуйста, скачайте список в формате CSV или Excel из Кабинета Честного ЗНАКа.', 'error');
+                showToast('Вы пытаетесь загрузить PDF в слот для Excel. Этот файл поврежден и не содержит читаемых кодов. Скачайте список в формате CSV или Excel из Кабинета Честного ЗНАКа.', 'error');
                 input.value = '';
                 return;
             }
@@ -269,7 +278,6 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
                     
-                    // Умный поиск строки заголовков (ищем в первых 20 строках)
                     let headerRowIndex = 0;
                     let found = false;
                     for (let i = 0; i < Math.min(rawData.length, 20); i++) {
@@ -287,7 +295,7 @@
                         return;
                     }
 
-                    currentExcelData = rawData.slice(headerRowIndex); // Обрезаем весь мусор сверху
+                    currentExcelData = rawData.slice(headerRowIndex);
                     
                     if (currentExcelData.length < 2) {
                         showToast('Файл пуст или не содержит данных после заголовков', 'error');
@@ -310,7 +318,7 @@
         function renderMappingTable(data) {
             const table = document.getElementById('mappingTable');
             table.innerHTML = '';
-            const previewRows = data.slice(0, 5); // Показываем заголовок + 4 строки данных
+            const previewRows = data.slice(0, 5);
             const numCols = Math.max(...previewRows.map(r => r.length));
             
             const thead = document.createElement('thead');
@@ -340,7 +348,6 @@
                 `;
                 
                 const select = th.querySelector('select');
-                // Улучшенная эвристика для вашего конкретного файла
                 if (headerText.includes("артикул вб") || headerText.includes("исходный артикул")) select.value = 'sku';
                 else if (headerText.includes("наименование")) select.value = 'name';
                 else if (headerText.includes("шк на этикетку вб") || headerText.includes("шк исход")) select.value = 'barcode';
@@ -421,9 +428,6 @@
             currentExcelData = null;
         }
 
-        // ==========================================
-        // ПРИВЯЗКА КИЗ К ТОВАРУ
-        // ==========================================
         function updateKizSelect() {
             const sel = document.getElementById('kizTargetProduct');
             sel.innerHTML = '<option value="">-- Выберите товар --</option>';
@@ -513,9 +517,6 @@
             reader.readAsText(file);
         }
 
-        // ==========================================
-        // ОТОБРАЖЕНИЕ И ПЕЧАТЬ
-        // ==========================================
         function renderProductsTable() {
             const tbody = document.getElementById('productsTableBody'); tbody.innerHTML = '';
             const search = document.getElementById('searchProduct')?.value.toLowerCase() || '';
