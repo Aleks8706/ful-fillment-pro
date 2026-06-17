@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v12 - Умный импорт + Привязка КИЗ</title>
+    <title>WMS Pro v13 - Пуленепробиваемый импорт</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         tailwind.config = {
             theme: {
                 extend: {
@@ -35,15 +33,7 @@
             body * { display: none !important; }
             #printArea, #printArea * { display: block !important; }
             #printArea { position: absolute !important; top: 0 !important; left: 0 !important; width: 58mm !important; background: white !important; z-index: 9999 !important; }
-            
-            .print-combined {
-                width: 58mm !important; height: 40mm !important;
-                page-break-after: always !important; page-break-inside: avoid !important;
-                margin: 0 !important; padding: 2mm !important;
-                display: flex !important; flex-direction: column !important;
-                box-sizing: border-box !important; border: 0.5px dashed #ccc !important;
-                font-family: 'Inter', sans-serif !important;
-            }
+            .print-combined { width: 58mm !important; height: 40mm !important; page-break-after: always !important; margin: 0 !important; padding: 2mm !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important; border: 0.5px dashed #ccc !important; font-family: 'Inter', sans-serif !important; }
             .lbl-header { font-size: 9px; font-weight: 800; text-align: center; line-height: 1.1; margin-bottom: 1mm; max-height: 10mm; overflow: hidden; text-transform: uppercase; }
             .lbl-sub { font-size: 8px; color: #444; text-align: center; margin-bottom: 1mm; font-weight: 600; }
             .lbl-barcode-area { display: flex; justify-content: center; align-items: flex-end; height: 10mm; margin-bottom: 1mm; }
@@ -70,8 +60,8 @@
                 <div class="flex items-center gap-3 mb-8">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v12</h1>
-                        <p class="text-xs text-gray-500">Умный импорт + КИЗ</p>
+                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v13</h1>
+                        <p class="text-xs text-gray-500">Пуленепробиваемый импорт</p>
                     </div>
                 </div>
                 <nav class="space-y-2">
@@ -86,9 +76,27 @@
             
             <!-- ВКЛАДКА 1: ЗАГРУЗКА ТОВАРОВ -->
             <div id="tab-catalog" class="tab-content space-y-6 animate-fade-in">
+                
+                <!-- ВАЖНОЕ ПРЕДУПРЕЖДЕНИЕ -->
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-bold text-red-800">Почему ваш PDF-файл не загружается:</h3>
+                            <p class="text-sm text-red-700 mt-1">
+                                Мы проанализировали ваш файл <b>Гель_для_душа...pdf</b>. В нем <b>физически нет настоящих кодов КИЗ</b>. Вместо серийных номеров там записан "мусор" (ошибки распознавания), например: <code>0104681937216236215z_6 g7</code> или <code>0104681937216236215yrN lh</code>. 
+                                <br><br>
+                                <b>Решение:</b> Зайдите в Кабинет Честного ЗНАКа, найдите этот документ и нажмите <b>"Скачать в CSV"</b> или <b>"Скачать в Excel"</b>. Не используйте PDF для выгрузки кодов!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="glass-card rounded-2xl p-6 border-2 border-indigo-200">
                     <h2 class="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">📊 Шаг 1: Импорт товаров из Excel</h2>
-                    <p class="text-sm text-gray-600 mb-4">Программа <b>автоматически пропустит служебные строки</b> (даты, названия заказчиков) и найдет настоящие заголовки столбцов.</p>
+                    <p class="text-sm text-gray-600 mb-4">Программа автоматически пропустит служебные строки (даты, названия заказчиков) и найдет настоящие заголовки столбцов.</p>
                     
                     <label class="block w-full cursor-pointer mb-4">
                         <div class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center hover:bg-indigo-50 transition flex flex-col items-center justify-center">
@@ -137,7 +145,7 @@
             <div id="tab-kiz" class="tab-content hidden space-y-6 animate-fade-in">
                 <div class="glass-card rounded-2xl p-6 border-2 border-green-200 bg-green-50/30">
                     <h2 class="text-lg font-bold text-green-800 mb-2 flex items-center gap-2">🔲 Шаг 2: Привязка КИЗ к товару</h2>
-                    <p class="text-sm text-gray-600 mb-4">Выберите товар из списка и загрузите для него коды маркировки любым удобным способом.</p>
+                    <p class="text-sm text-gray-600 mb-4">Выберите товар из списка и загрузите для него <b>чистые</b> коды маркировки (из CSV/Excel выгрузки Кабинета ЧЗ).</p>
                     
                     <div class="mb-6">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">1. Выберите товар для привязки:</label>
@@ -146,30 +154,20 @@
                         </select>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Способ А: Вставка -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white p-4 rounded-xl border border-gray-200">
-                            <h3 class="font-bold text-sm text-gray-700 mb-2">⭐ А. Вставка из Excel/CSV</h3>
-                            <p class="text-xs text-gray-500 mb-2">Скопируйте столбец с кодами и вставьте сюда.</p>
-                            <textarea id="pasteKizArea" rows="4" placeholder="Ctrl+V" class="w-full input-modern rounded-lg p-2 text-xs font-mono resize-none mb-2"></textarea>
+                            <h3 class="font-bold text-sm text-gray-700 mb-2">⭐ А. Вставка из Excel/CSV (Рекомендуется)</h3>
+                            <p class="text-xs text-gray-500 mb-2">Откройте правильную выгрузку из ЧЗ, скопируйте столбец с кодами и вставьте сюда.</p>
+                            <textarea id="pasteKizArea" rows="6" placeholder="Нажмите Ctrl+V сюда..." class="w-full input-modern rounded-lg p-2 text-xs font-mono resize-none mb-2"></textarea>
                             <button onclick="processPastedKiz()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold text-sm transition">Добавить коды</button>
                         </div>
 
-                        <!-- Способ Б: Файл CSV/TXT -->
                         <div class="bg-white p-4 rounded-xl border border-gray-200">
-                            <h3 class="font-bold text-sm text-gray-700 mb-2">Б. Загрузка CSV / TXT</h3>
-                            <p class="text-xs text-gray-500 mb-2">Самый надежный способ из Кабинета ЧЗ.</p>
+                            <h3 class="font-bold text-sm text-gray-700 mb-2">Б. Загрузка файла CSV / TXT</h3>
+                            <p class="text-xs text-gray-500 mb-2">Загрузите текстовый файл с чистыми кодами, скачанный из Кабинета ЧЗ.</p>
                             <input type="file" id="csvKizInput" accept=".csv,.txt" class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 mb-3"/>
                             <button onclick="processFileKiz('csv')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm transition">Загрузить файл</button>
-                        </div>
-
-                        <!-- Способ В: Файл PDF -->
-                        <div class="bg-white p-4 rounded-xl border border-gray-200">
-                            <h3 class="font-bold text-sm text-gray-700 mb-2">В. Загрузка PDF</h3>
-                            <p class="text-xs text-red-500 mb-2 font-semibold">⚠️ PDF из Кабинета ЧЗ часто содержат "мусор" (пробелы, разрывы). Если кодов мало, используйте способ А или Б.</p>
-                            <input type="file" id="pdfKizInput" accept=".pdf" class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 mb-3"/>
-                            <button onclick="processFileKiz('pdf')" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-semibold text-sm transition">Извлечь из PDF</button>
-                            <div id="pdfKizStatus" class="mt-2 text-xs font-medium min-h-[30px]"></div>
+                            <div id="csvKizStatus" class="mt-2 text-xs font-medium min-h-[30px]"></div>
                         </div>
                     </div>
                 </div>
@@ -212,12 +210,16 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v12')) || {};
+        // Проверка загрузки библиотеки Excel
+        if (typeof XLSX === 'undefined') {
+            alert('ВНИМАНИЕ: Не удалось загрузить библиотеку для чтения Excel. Проверьте подключение к интернету или отключите блокировщики рекламы (AdBlock), затем обновите страницу.');
+        }
+
+        let products = JSON.parse(localStorage.getItem('wms_products_v13')) || {};
         let currentBoxId = localStorage.getItem('wms_current_box') || 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = JSON.parse(localStorage.getItem('wms_current_box_items')) || [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
         let currentExcelData = null;
-        let tempKizCodes = [];
 
         updateAllUI();
 
@@ -246,11 +248,18 @@
         }
 
         // ==========================================
-        // УМНЫЙ ПАРСЕР EXCEL (ПРОПУСКАЕТ МУСОР)
+        // ПУЛЕНЕПРОБИВАЕМЫЙ ПАРСЕР EXCEL
         // ==========================================
         function handleExcelUpload(input) {
             const file = input.files[0];
             if (!file) return;
+
+            // БЛОКИРОВКА PDF В СЛОТЕ ДЛЯ EXCEL
+            if (file.name.toLowerCase().endsWith('.pdf')) {
+                showToast('Вы пытаетесь загрузить PDF в слот для Excel. Этот файл поврежден и не содержит читаемых кодов. Пожалуйста, скачайте список в формате CSV или Excel из Кабинета Честного ЗНАКа.', 'error');
+                input.value = '';
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -260,31 +269,41 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
                     
-                    // Умный поиск строки заголовков (ищем "Артикул", "наименование" или "ШК" в первых 20 строках)
+                    // Умный поиск строки заголовков (ищем в первых 20 строках)
                     let headerRowIndex = 0;
+                    let found = false;
                     for (let i = 0; i < Math.min(rawData.length, 20); i++) {
                         const rowStr = rawData[i].join(" ").toLowerCase();
                         if (rowStr.includes("артикул") || rowStr.includes("наименование") || rowStr.includes("шк") || rowStr.includes("barcode")) {
                             headerRowIndex = i;
+                            found = true;
                             break;
                         }
+                    }
+
+                    if (!found) {
+                        showToast('Не удалось найти строку с заголовками ("Артикул", "Наименование", "ШК"). Убедитесь, что это правильный файл заказа.', 'error');
+                        input.value = '';
+                        return;
                     }
 
                     currentExcelData = rawData.slice(headerRowIndex); // Обрезаем весь мусор сверху
                     
                     if (currentExcelData.length < 2) {
-                        showToast('Файл пуст или не содержит распознанных заголовков', 'error');
+                        showToast('Файл пуст или не содержит данных после заголовков', 'error');
                         return;
                     }
                     
                     renderMappingTable(currentExcelData);
                     document.getElementById('mappingArea').classList.remove('hidden');
                     document.getElementById('mappingArea').scrollIntoView({ behavior: 'smooth' });
-                    showToast('Файл прочитан. Проверьте столбцы.', 'success');
+                    showToast(`Файл прочитан. Найдена строка заголовков №${headerRowIndex + 1}. Проверьте столбцы.`, 'success');
                 } catch (err) {
-                    showToast('Ошибка чтения файла: ' + err.message, 'error');
+                    showToast('Ошибка чтения файла: ' + err.message + '. Убедитесь, что файл не открыт в Excel в этот момент.', 'error');
+                    console.error(err);
                 }
             };
+            reader.onerror = () => showToast('Ошибка доступа к файлу. Возможно, он открыт в другой программе.', 'error');
             reader.readAsArrayBuffer(file);
         }
 
@@ -314,18 +333,19 @@
                 
                 th.innerHTML = `
                     <div class="text-xs text-gray-500 mb-1 font-semibold">Столбец ${String.fromCharCode(65 + i)}</div>
-                    <div class="text-[10px] text-gray-400 mb-1 truncate px-1">"${previewRows[0][i] || 'пусто'}"</div>
+                    <div class="text-[10px] text-gray-400 mb-1 truncate px-1 font-mono">"${previewRows[0][i] || 'пусто'}"</div>
                     <select id="map_col_${i}" class="w-full text-xs border border-indigo-300 rounded p-1.5 font-medium text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
                         ${mappingOptions}
                     </select>
                 `;
                 
                 const select = th.querySelector('select');
-                if (headerText.includes("артикул на этикетку") || headerText.includes("исходный артикул") || headerText.includes("sku")) select.value = 'sku';
-                else if (headerText.includes("наименование") || headerText.includes("название") || headerText.includes("товар")) select.value = 'name';
-                else if (headerText.includes("шк на этикетку") || headerText.includes("шк исход")) select.value = 'barcode';
-                else if (headerText.includes("годен до") || headerText.includes("срок")) select.value = 'expiry';
-                else if (headerText.includes("квант") || headerText.includes("кол-во")) select.value = 'qty';
+                // Улучшенная эвристика для вашего конкретного файла
+                if (headerText.includes("артикул вб") || headerText.includes("исходный артикул")) select.value = 'sku';
+                else if (headerText.includes("наименование")) select.value = 'name';
+                else if (headerText.includes("шк на этикетку вб") || headerText.includes("шк исход")) select.value = 'barcode';
+                else if (headerText.includes("годен до")) select.value = 'expiry';
+                else if (headerText.includes("квант спайки")) select.value = 'qty';
                 
                 trHead.appendChild(th);
             }
@@ -371,7 +391,7 @@
             rows.forEach(row => {
                 const sku = String(row[skuCol] || "").trim().toUpperCase();
                 const name = String(row[nameCol] || "").trim();
-                if (!sku || !name || sku === "ИТОГО") { skipped++; return; } // Игнорируем строки итогов
+                if (!sku || !name || sku === "ИТОГО" || sku === "ОТГРУЗКА") { skipped++; return; }
 
                 const barcode = barcodeCol !== -1 ? String(row[barcodeCol] || "").trim() : "";
                 const expiry = expiryCol !== -1 ? String(row[expiryCol] || "").trim() : "";
@@ -416,10 +436,9 @@
         }
 
         function cleanAndValidateKiz(rawText) {
-            // Разделяем по любым разделителям, чистим от мусора, оставляем только длинные строки
             return rawText.split(/[\r\n,;\s]+/)
                 .map(k => k.replace(/[^0-9A-Za-z]/g, '').trim())
-                .filter(k => k.length >= 23); // Минимальная длина валидного КИЗ
+                .filter(k => k.length >= 23 && k.length <= 40);
         }
 
         function addKizToProduct(sku, newCodes) {
@@ -428,13 +447,10 @@
             let added = 0, invalid = 0;
             
             newCodes.forEach(code => {
-                // Простая валидация: должен содержать цифры и буквы, и быть похож на GS1
-                if (code.length >= 23 && code.length <= 40) {
-                    if (!existing.has(code)) {
-                        products[sku].kiz_list.push(code);
-                        existing.add(code);
-                        added++;
-                    }
+                if (!existing.has(code)) {
+                    products[sku].kiz_list.push(code);
+                    existing.add(code);
+                    added++;
                 } else {
                     invalid++;
                 }
@@ -454,7 +470,7 @@
             const codes = cleanAndValidateKiz(text);
             const result = addKizToProduct(sku, codes);
             
-            showToast(`Добавлено: ${result.added}. Отбраковано (слишком короткие): ${result.invalid}`, 'success');
+            showToast(`Добавлено: ${result.added}. Отбраковано (мусор/короткие): ${result.invalid}`, result.added > 0 ? 'success' : 'error');
             document.getElementById('pasteKizArea').value = '';
         }
 
@@ -462,41 +478,36 @@
             const sku = document.getElementById('kizTargetProduct').value;
             if (!sku) return showToast('Выберите товар', 'error');
 
-            const inputId = type === 'pdf' ? 'pdfKizInput' : 'csvKizInput';
+            const inputId = type === 'csv' ? 'csvKizInput' : 'pdfKizInput';
             const fileInput = document.getElementById(inputId);
-            const statusDiv = type === 'pdf' ? document.getElementById('pdfKizStatus') : null;
+            const statusDiv = document.getElementById('csvKizStatus');
 
             if (!fileInput.files.length) return showToast('Выберите файл', 'error');
             const file = fileInput.files[0];
 
-            if (statusDiv) statusDiv.innerHTML = '<span class="text-purple-600">⏳ Обработка...</span>';
+            if (file.name.toLowerCase().endsWith('.pdf')) {
+                showToast('Не используйте PDF для загрузки КИЗ! Скачайте файл в формате CSV или Excel из Кабинета Честного ЗНАКа.', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            statusDiv.innerHTML = '<span class="text-blue-600">⏳ Обработка...</span>';
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    let rawText = "";
-                    if (type === 'csv' || type === 'txt') {
-                        rawText = e.target.result;
-                    } else if (type === 'pdf') {
-                        // Для PDF используем упрощенный парсер, так как полный pdf.js тяжелый для этой вкладки
-                        // Но мы можем извлечь текст, если это не скан
-                        showToast('Для PDF используйте вкладку импорта или конвертируйте в TXT/CSV для надежности', 'error');
-                        if (statusDiv) statusDiv.innerHTML = '';
-                        return;
-                    }
-
+                    const rawText = e.target.result;
                     const codes = cleanAndValidateKiz(rawText);
                     const result = addKizToProduct(sku, codes);
                     
                     let msg = `✅ Добавлено: ${result.added}`;
-                    if (result.invalid > 0) msg += `. ⚠️ Отбраковано (мусор/короткие): ${result.invalid}`;
+                    if (result.invalid > 0) msg += `. ⚠️ Отбраковано (мусор): ${result.invalid}`;
                     showToast(msg, result.added > 0 ? 'success' : 'error');
-                    
-                    if (statusDiv) statusDiv.innerHTML = `<span class="text-green-600">${msg}</span>`;
+                    statusDiv.innerHTML = `<span class="text-green-600">${msg}</span>`;
                     fileInput.value = '';
                 } catch (err) {
                     showToast('Ошибка чтения файла', 'error');
-                    if (statusDiv) statusDiv.innerHTML = '';
+                    statusDiv.innerHTML = '';
                 }
             };
             reader.readAsText(file);
@@ -657,11 +668,11 @@
 
         function saveData() {
             try {
-                localStorage.setItem('wms_products_v12', JSON.stringify(products));
+                localStorage.setItem('wms_products_v13', JSON.stringify(products));
                 localStorage.setItem('wms_current_box', currentBoxId);
                 localStorage.setItem('wms_current_box_items', JSON.stringify(currentBoxItems));
                 localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
-            } catch (e) { showToast('Ошибка сохранения: переполнена память', 'error'); }
+            } catch (e) { showToast('Ошибка сохранения: переполнена память браузера', 'error'); }
         }
 
         function updateAllUI() { renderProductsTable(); updateKizSelect(); updatePackingUI(); }
