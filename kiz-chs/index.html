@@ -100,7 +100,6 @@
                     <button onclick="testVoice()" class="w-full mt-2 bg-white hover:bg-gray-50 border border-indigo-300 text-indigo-700 text-xs py-1.5 rounded-lg font-semibold transition">▶ Тест голоса</button>
                 </div>
                 
-                <!-- СТАТИСТИКА ГЛОБАЛЬНОГО РЕЕСТРА -->
                 <div class="mb-6 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                     <div class="text-xs font-bold text-green-900 mb-1">🛡️ Глобальный реестр КИЗ</div>
                     <div class="text-2xl font-bold text-green-700" id="globalKizCount">0</div>
@@ -112,6 +111,16 @@
                     <button onclick="showTab('tab-kiz')" id="nav-kiz" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-indigo-50 font-medium transition">🔲 2. Привязка КИЗ (PDF)</button>
                     <button onclick="showTab('tab-packing')" id="nav-packing" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-indigo-50 font-medium transition">📡 3. Сборка и Печать <span id="nav-box-count" class="ml-auto bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-full">0</span></button>
                 </nav>
+                
+                <!-- 🆕 КНОПКИ СБРОСА -->
+                <div class="mt-6 pt-6 border-t border-gray-200 space-y-2">
+                    <button onclick="resetProductsAndBoxes()" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2">
+                        🗑️ Сбросить товары и короба
+                    </button>
+                    <button onclick="fullSystemReset()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2">
+                        ⚠️ Полный сброс системы
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -253,14 +262,7 @@
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
         let currentExcelData = null;
 
-        // ==========================================
-        // 🛡️ ГЛОБАЛЬНЫЙ РЕЕСТР КИЗ (ЗАЩИТА ОТ ДУБЛЕЙ)
-        // ==========================================
-        // Реестр привязки КИЗ к товарам: { "кодКИЗ": "SKU_товара" }
         let kizRegistry = JSON.parse(localStorage.getItem('wms_kiz_registry')) || {};
-        
-        // 🆕 ГЛОБАЛЬНЫЙ РЕЕСТР ОТСКАНИРОВАННЫХ КИЗ (защита от повторного сканирования)
-        // Структура: { "кодКИЗ": { "boxId": "BOX-XXX", "date": "2024-01-01 12:00:00", "sku": "SKU" } }
         let allScannedKiz = JSON.parse(localStorage.getItem('wms_all_scanned_kiz')) || {};
 
         function checkKizDuplicate(kizCode, targetSku = null) {
@@ -302,7 +304,6 @@
             }
         }
 
-        // 🆕 ФУНКЦИИ ДЛЯ ГЛОБАЛЬНОГО РЕЕСТРА ОТСКАНИРОВАННЫХ
         function markKizAsScanned(kizCode, boxId, sku) {
             allScannedKiz[kizCode] = {
                 boxId: boxId,
@@ -336,9 +337,52 @@
             if (el) el.innerText = count;
         }
 
-        // ==========================================
-        // 🎤 ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ
-        // ==========================================
+        // 🆕 ФУНКЦИИ СБРОСА
+        function resetProductsAndBoxes() {
+            if (!confirm('⚠️ Сбросить все товары, короба и реестры КИЗ?\n\nЭто действие удалит:\n- Все товары\n- Все короба (текущие и закрытые)\n- Реестр привязки КИЗ к товарам\n- Глобальный реестр отсканированных КИЗ\n\nНастройки голоса будут сохранены.')) {
+                return;
+            }
+            
+            if (!confirm('Вы ТОЧНО уверены? Это действие нельзя отменить!')) {
+                return;
+            }
+            
+            localStorage.removeItem('wms_products_v22');
+            localStorage.removeItem('wms_current_box');
+            localStorage.removeItem('wms_current_box_items');
+            localStorage.removeItem('wms_closed_boxes');
+            localStorage.removeItem('wms_kiz_registry');
+            localStorage.removeItem('wms_all_scanned_kiz');
+            
+            products = {};
+            currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            currentBoxItems = [];
+            closedBoxes = [];
+            kizRegistry = {};
+            allScannedKiz = {};
+            
+            updateAllUI();
+            showToast('Все товары и короба сброшены', 'success');
+            speak('Все данные сброшены');
+        }
+
+        function fullSystemReset() {
+            if (!confirm('⚠️ ПОЛНЫЙ СБРОС СИСТЕМЫ?\n\nЭто действие удалит ВСЁ:\n- Все товары\n- Все короба\n- Все реестры КИЗ\n- Настройки голоса\n\nСистема вернётся в начальное состояние.')) {
+                return;
+            }
+            
+            if (!confirm('Вы ТОЧНО уверены? Это действие нельзя отменить!')) {
+                return;
+            }
+            
+            if (!confirm('Последнее предупреждение: все данные будут безвозвратно удалены!')) {
+                return;
+            }
+            
+            localStorage.clear();
+            location.reload();
+        }
+
         let voiceEnabled = localStorage.getItem('wms_voice_enabled') !== 'false';
         let voiceVolume = parseFloat(localStorage.getItem('wms_voice_volume') || '0.8');
         let voiceRate = parseFloat(localStorage.getItem('wms_voice_rate') || '1.0');
@@ -438,9 +482,6 @@
             setTimeout(() => voiceWelcome(), 500);
         });
 
-        // ==========================================
-        // ОСНОВНАЯ ЛОГИКА
-        // ==========================================
         updateAllUI();
 
         function showToast(message, type = 'success') {
@@ -826,7 +867,6 @@
             
             const fb = document.getElementById('scanFeedback');
             
-            // 🆕 ПРОВЕРКА 1: КИЗ уже был отсканирован в ЛЮБОМ предыдущем коробе
             if (isKizAlreadyScanned(code)) {
                 const scanInfo = getKizScanInfo(code);
                 fb.innerHTML = `🚫 КИЗ УЖЕ БЫЛ ОТСКАНИРОВАН<br><span class="text-sm font-normal">Короб: ${scanInfo.boxId}<br>Дата: ${scanInfo.date}</span>`;
@@ -837,26 +877,20 @@
                 return;
             }
             
-            // ПРОВЕРКА 2: КИЗ не найден в системе
             if (!foundSku) { 
                 fb.innerHTML = '❌ Неизвестный КИЗ'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 block'; 
                 voiceError();
             } 
-            // ПРОВЕРКА 3: КИЗ уже в ТЕКУЩЕМ коробе
             else if (currentBoxItems.includes(code)) { 
                 fb.innerHTML = '⚠️ Уже в этом коробе'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-yellow-100 text-yellow-700 block'; 
                 voiceDuplicate();
             } 
-            // ✅ УСПЕХ: КИЗ уникальный и валидный
             else { 
                 currentBoxItems.push(code); 
                 products[foundSku].packed_count++; 
-                
-                // 🆕 Регистрируем КИЗ как отсканированный в глобальном реестре
                 markKizAsScanned(code, currentBoxId, foundSku);
-                
                 saveData(); 
                 fb.innerHTML = `✅ ${products[foundSku].name}`; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 block'; 
@@ -898,8 +932,6 @@
         function closeBoxAndPrint() {
             if (currentBoxItems.length === 0 && !confirm('Короб пуст. Закрыть?')) return;
             const boxId = currentBoxId, itemCount = currentBoxItems.length;
-            
-            // 🆕 При закрытии короба все его КИЗы уже в глобальном реестре (добавляются при сканировании)
             closedBoxes.push({ id: boxId, itemsCount: itemCount, date: new Date().toLocaleString(), items: [...currentBoxItems] });
             
             const printArea = document.getElementById('printArea'); printArea.innerHTML = '';
