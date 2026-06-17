@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v21 - Запрет дублей КИЗ</title>
+    <title>WMS Pro v22 - Глобальный запрет дублей КИЗ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -78,8 +78,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v21</h1>
-                        <p class="text-xs text-gray-500">Запрет дублей КИЗ</p>
+                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v22</h1>
+                        <p class="text-xs text-gray-500">Глобальный запрет дублей</p>
                     </div>
                 </div>
                 
@@ -98,6 +98,13 @@
                         <input type="range" id="voiceRate" min="50" max="150" value="100" class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateVoiceSettings()">
                     </div>
                     <button onclick="testVoice()" class="w-full mt-2 bg-white hover:bg-gray-50 border border-indigo-300 text-indigo-700 text-xs py-1.5 rounded-lg font-semibold transition">▶ Тест голоса</button>
+                </div>
+                
+                <!-- СТАТИСТИКА ГЛОБАЛЬНОГО РЕЕСТРА -->
+                <div class="mb-6 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                    <div class="text-xs font-bold text-green-900 mb-1">🛡️ Глобальный реестр КИЗ</div>
+                    <div class="text-2xl font-bold text-green-700" id="globalKizCount">0</div>
+                    <div class="text-[10px] text-green-600">уникальных кодов в системе</div>
                 </div>
                 
                 <nav class="space-y-2">
@@ -201,6 +208,10 @@
                     <div class="lg:col-span-2 glass-card rounded-2xl p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-4">📡 Сканирование и Печать</h2>
                         
+                        <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-xl mb-4">
+                            <p class="text-xs text-red-800"><strong>🛡️ Глобальная защита:</strong> Каждый КИЗ можно отсканировать <b>только один раз за всю историю работы системы</b>. Повторное сканирование (даже в новом коробе) будет заблокировано.</p>
+                        </div>
+                        
                         <div class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-200">
                             <input type="checkbox" id="autoPrintScan" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
                             <label for="autoPrintScan" class="text-sm font-semibold text-indigo-800 cursor-pointer select-none">🖨️ Печатать этикетку 58x40 мм сразу после сканирования</label>
@@ -236,7 +247,7 @@
             document.getElementById('libErrorBanner').classList.remove('hidden');
         }
 
-        let products = JSON.parse(localStorage.getItem('wms_products_v21')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v22')) || {};
         let currentBoxId = localStorage.getItem('wms_current_box') || 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = JSON.parse(localStorage.getItem('wms_current_box_items')) || [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -245,38 +256,35 @@
         // ==========================================
         // 🛡️ ГЛОБАЛЬНЫЙ РЕЕСТР КИЗ (ЗАЩИТА ОТ ДУБЛЕЙ)
         // ==========================================
-        // Структура: { "кодКИЗ": "SKU_товара" }
+        // Реестр привязки КИЗ к товарам: { "кодКИЗ": "SKU_товара" }
         let kizRegistry = JSON.parse(localStorage.getItem('wms_kiz_registry')) || {};
+        
+        // 🆕 ГЛОБАЛЬНЫЙ РЕЕСТР ОТСКАНИРОВАННЫХ КИЗ (защита от повторного сканирования)
+        // Структура: { "кодКИЗ": { "boxId": "BOX-XXX", "date": "2024-01-01 12:00:00", "sku": "SKU" } }
+        let allScannedKiz = JSON.parse(localStorage.getItem('wms_all_scanned_kiz')) || {};
 
-        // Функция проверки дубля
         function checkKizDuplicate(kizCode, targetSku = null) {
             if (kizRegistry[kizCode]) {
-                // КИЗ уже существует в реестре
                 const ownerSku = kizRegistry[kizCode];
                 if (targetSku && ownerSku === targetSku) {
-                    // Этот же товар пытается добавить свой же КИЗ повторно
                     return { isDuplicate: true, ownerSku: ownerSku, reason: 'already_in_product' };
                 } else {
-                    // КИЗ привязан к другому товару
                     return { isDuplicate: true, ownerSku: ownerSku, reason: 'different_product' };
                 }
             }
             return { isDuplicate: false };
         }
 
-        // Функция регистрации КИЗ
         function registerKiz(kizCode, sku) {
             kizRegistry[kizCode] = sku;
             saveKizRegistry();
         }
 
-        // Функция удаления КИЗ из реестра
         function unregisterKiz(kizCode) {
             delete kizRegistry[kizCode];
             saveKizRegistry();
         }
 
-        // Функция массового удаления КИЗ товара из реестра
         function unregisterProductKiz(sku) {
             if (products[sku]) {
                 products[sku].kiz_list.forEach(kiz => {
@@ -292,6 +300,40 @@
             } catch (e) {
                 console.error('Ошибка сохранения реестра КИЗ:', e);
             }
+        }
+
+        // 🆕 ФУНКЦИИ ДЛЯ ГЛОБАЛЬНОГО РЕЕСТРА ОТСКАНИРОВАННЫХ
+        function markKizAsScanned(kizCode, boxId, sku) {
+            allScannedKiz[kizCode] = {
+                boxId: boxId,
+                date: new Date().toLocaleString(),
+                sku: sku
+            };
+            saveAllScannedKiz();
+        }
+
+        function isKizAlreadyScanned(kizCode) {
+            return allScannedKiz[kizCode] !== undefined;
+        }
+
+        function getKizScanInfo(kizCode) {
+            return allScannedKiz[kizCode];
+        }
+
+        function saveAllScannedKiz() {
+            try {
+                localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
+                updateGlobalKizCount();
+            } catch (e) {
+                console.error('Ошибка сохранения глобального реестра:', e);
+                showToast('Ошибка сохранения: переполнена память', 'error');
+            }
+        }
+
+        function updateGlobalKizCount() {
+            const count = Object.keys(allScannedKiz).length;
+            const el = document.getElementById('globalKizCount');
+            if (el) el.innerText = count;
         }
 
         // ==========================================
@@ -337,6 +379,9 @@
         function voiceSuccess(productName) { speak(`Принято. ${productName}`, true); }
         function voiceError() { speak('Ошибка. Код не найден', true); }
         function voiceDuplicate() { speak('Внимание. Уже в коробе', true); }
+        function voiceAlreadyScanned(boxId) { 
+            speak(`Ошибка. Этот код уже был отсканирован в коробе ${boxId}`, true); 
+        }
         function voiceKizDuplicate() { speak('Ошибка. Этот код уже используется', true); }
         function voiceBoxClosed(itemCount, boxId) { speak(`Короб ${boxId} закрыт. Товаров: ${itemCount} штук`, true); }
         function voiceKizAdded(count, duplicates = 0) {
@@ -389,6 +434,7 @@
             document.getElementById('voiceRate').value = voiceRate * 100;
             document.getElementById('volumeValue').innerText = Math.round(voiceVolume * 100) + '%';
             document.getElementById('rateValue').innerText = voiceRate.toFixed(1) + 'x';
+            updateGlobalKizCount();
             setTimeout(() => voiceWelcome(), 500);
         });
 
@@ -570,38 +616,23 @@
             return [...new Set(matches)];
         }
 
-        // ==========================================
-        // 🛡️ ДОБАВЛЕНИЕ КИЗ С ПРОВЕРКОЙ НА ДУБЛИ
-        // ==========================================
         function addKizToProduct(sku, newCodes) {
             if (!products[sku]) return { added: 0, duplicates: 0, total: 0 };
             
             const existingInProduct = new Set(products[sku].kiz_list);
             let added = 0;
             let duplicates = 0;
-            let duplicateDetails = [];
 
             newCodes.forEach(code => {
-                // Проверка 1: Дубль внутри самого товара
                 if (existingInProduct.has(code)) {
                     duplicates++;
-                    duplicateDetails.push({ code, reason: 'already_in_product' });
                     return;
                 }
-
-                // Проверка 2: Глобальная проверка — не привязан ли КИЗ к другому товару
                 const duplicateCheck = checkKizDuplicate(code, sku);
                 if (duplicateCheck.isDuplicate) {
                     duplicates++;
-                    duplicateDetails.push({ 
-                        code, 
-                        reason: duplicateCheck.reason,
-                        ownerSku: duplicateCheck.ownerSku 
-                    });
                     return;
                 }
-
-                // КИЗ уникален — добавляем
                 products[sku].kiz_list.push(code);
                 existingInProduct.add(code);
                 registerKiz(code, sku);
@@ -610,7 +641,7 @@
 
             saveData();
             updateAllUI();
-            return { added, duplicates, total: newCodes.length, duplicateDetails };
+            return { added, duplicates, total: newCodes.length };
         }
 
         function processPastedKiz() {
@@ -720,7 +751,7 @@
 
         function deleteProduct(sku) {
             if (confirm(`Удалить товар "${sku}" и все его КИЗ?\n\nКИЗы будут удалены из глобального реестра и станут доступны для повторного использования.`)) {
-                unregisterProductKiz(sku); // Удаляем все КИЗы товара из глобального реестра
+                unregisterProductKiz(sku);
                 delete products[sku];
                 saveData(); updateAllUI();
                 speak('Товар удален');
@@ -794,17 +825,38 @@
             }
             
             const fb = document.getElementById('scanFeedback');
+            
+            // 🆕 ПРОВЕРКА 1: КИЗ уже был отсканирован в ЛЮБОМ предыдущем коробе
+            if (isKizAlreadyScanned(code)) {
+                const scanInfo = getKizScanInfo(code);
+                fb.innerHTML = `🚫 КИЗ УЖЕ БЫЛ ОТСКАНИРОВАН<br><span class="text-sm font-normal">Короб: ${scanInfo.boxId}<br>Дата: ${scanInfo.date}</span>`;
+                fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 border-2 border-red-300 block';
+                voiceAlreadyScanned(scanInfo.boxId);
+                document.getElementById('scanInput').value = '';
+                document.getElementById('scanInput').focus();
+                return;
+            }
+            
+            // ПРОВЕРКА 2: КИЗ не найден в системе
             if (!foundSku) { 
                 fb.innerHTML = '❌ Неизвестный КИЗ'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-red-100 text-red-700 block'; 
                 voiceError();
-            } else if (currentBoxItems.includes(code)) { 
-                fb.innerHTML = '⚠️ Уже в коробе'; 
+            } 
+            // ПРОВЕРКА 3: КИЗ уже в ТЕКУЩЕМ коробе
+            else if (currentBoxItems.includes(code)) { 
+                fb.innerHTML = '⚠️ Уже в этом коробе'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-yellow-100 text-yellow-700 block'; 
                 voiceDuplicate();
-            } else { 
+            } 
+            // ✅ УСПЕХ: КИЗ уникальный и валидный
+            else { 
                 currentBoxItems.push(code); 
                 products[foundSku].packed_count++; 
+                
+                // 🆕 Регистрируем КИЗ как отсканированный в глобальном реестре
+                markKizAsScanned(code, currentBoxId, foundSku);
+                
                 saveData(); 
                 fb.innerHTML = `✅ ${products[foundSku].name}`; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold text-lg bg-green-100 text-green-700 block'; 
@@ -823,6 +875,7 @@
         function updatePackingUI() {
             document.getElementById('totalScannedCount').innerText = currentBoxItems.length;
             document.getElementById('nav-box-count').innerText = currentBoxItems.length;
+            updateGlobalKizCount();
             
             const list = document.getElementById('boxItemsList'); list.innerHTML = '';
             if (currentBoxItems.length === 0) {
@@ -845,6 +898,8 @@
         function closeBoxAndPrint() {
             if (currentBoxItems.length === 0 && !confirm('Короб пуст. Закрыть?')) return;
             const boxId = currentBoxId, itemCount = currentBoxItems.length;
+            
+            // 🆕 При закрытии короба все его КИЗы уже в глобальном реестре (добавляются при сканировании)
             closedBoxes.push({ id: boxId, itemsCount: itemCount, date: new Date().toLocaleString(), items: [...currentBoxItems] });
             
             const printArea = document.getElementById('printArea'); printArea.innerHTML = '';
@@ -853,7 +908,10 @@
             const canvas = document.createElement('canvas'); div.insertBefore(canvas, div.lastElementChild); printArea.appendChild(div);
             try { bwipjs.toCanvas(canvas, { bcid: 'code128', text: boxId, scale: 3, height: 10, includetext: true }); } catch(e) {}
             
-            currentBoxItems = []; currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase(); saveData(); updatePackingUI();
+            currentBoxItems = []; 
+            currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase(); 
+            saveData(); 
+            updatePackingUI();
             showToast('Короб закрыт', 'success');
             voiceBoxClosed(itemCount, boxId);
             setTimeout(() => window.print(), 400);
@@ -870,7 +928,7 @@
 
         function saveData() {
             try {
-                localStorage.setItem('wms_products_v21', JSON.stringify(products));
+                localStorage.setItem('wms_products_v22', JSON.stringify(products));
                 localStorage.setItem('wms_current_box', currentBoxId);
                 localStorage.setItem('wms_current_box_items', JSON.stringify(currentBoxItems));
                 localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
