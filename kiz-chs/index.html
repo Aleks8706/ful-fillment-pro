@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v28 - Исправленная логика PDF</title>
+    <title>WMS Pro v29 - Все 120 кодов</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -102,8 +102,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v28</h1>
-                        <p class="text-xs text-gray-500">Исправленная логика PDF</p>
+                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v29</h1>
+                        <p class="text-xs text-gray-500">Все 120 кодов</p>
                     </div>
                 </div>
                 
@@ -179,10 +179,7 @@
                     
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
                         <p class="text-xs text-blue-800">
-                            <strong>🔧 Умная сборка PDF:</strong> Программа определяет начало кода по префиксу <code>01</code>:<br>
-                            • Строка начинается с <code>01</code> → новый код<br>
-                            • Строка НЕ начинается с <code>01</code> → продолжение предыдущего кода<br>
-                            • Все спецсимволы удаляются
+                            <strong>🔧 Умная сборка PDF:</strong> Программа определяет начало кода по префиксу <code>01</code> и очищает все спецсимволы.
                         </p>
                     </div>
                     
@@ -241,7 +238,7 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v28')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v29')) || {};
         let currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -251,7 +248,7 @@
         let currentModalSku = null;
 
         // ==========================================
-        // 🔧 ИСПРАВЛЕННАЯ СБОРКА PDF-КОДОВ
+        // 🔧 СБОРКА PDF-КОДОВ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
         // ==========================================
         function extractKizFromPDF(text) {
             // Шаг 1: Разбиваем на строки и убираем пустые
@@ -261,30 +258,32 @@
             
             // Шаг 2: УМНАЯ СБОРКА
             // Если строка начинается с "01" — это НОВЫЙ код
-            // Иначе — это продолжение предыдущего кода (разорванная строка)
+            // Иначе — это продолжение предыдущего кода
             const assembled = [];
             let current = '';
             
             for (const line of lines) {
                 if (line.startsWith('01')) {
-                    // Нашли начало нового кода
-                    if (current) assembled.push(current);  // Сохраняем предыдущий
-                    current = line;  // Начинаем новый
+                    if (current) assembled.push(current);
+                    current = line;
                 } else {
-                    // Это продолжение предыдущего кода
                     current += line;
                 }
             }
-            if (current) assembled.push(current);  // Не забываем последний
+            if (current) assembled.push(current);
             
-            // Шаг 3: Очищаем от всех спецсимволов (оставляем только буквы и цифры)
+            // Шаг 3: Очищаем от всех спецсимволов
             const cleaned = assembled.map(code => code.replace(/[^0-9A-Za-z]/g, ''));
             
-            // Шаг 4: Фильтруем по валидности (01 + 14 цифр + 21 + минимум 4 символа)
+            // Шаг 4: Фильтруем по валидности
+            // 🔧 ИСПРАВЛЕНО: минимум 1 символ после "21" вместо 4
             const valid = [];
+            const invalid = [];
             for (const code of cleaned) {
-                if (code.match(/^01\d{14}21[A-Za-z0-9]{4,}$/)) {
+                if (code.match(/^01\d{14}21[A-Za-z0-9]+$/)) {
                     valid.push(code);
+                } else if (code.length > 0) {
+                    invalid.push(code);
                 }
             }
             
@@ -303,6 +302,7 @@
                 totalLines: lines.length,
                 assembled: assembled.length,
                 valid: valid.length,
+                invalid: invalid,
                 samples: unique.slice(0, 3)
             };
         }
@@ -371,8 +371,8 @@
                     statusDiv.innerHTML = `<span class="text-red-600">
                         ❌ Коды не найдены<br>
                         <span class="text-xs">
-                            Строк в файле: ${result.totalLines}<br>
-                            Собрано кодов: ${result.assembled}<br>
+                            Строк: ${result.totalLines}<br>
+                            Собрано: ${result.assembled}<br>
                             Валидных: ${result.valid}
                         </span>
                     </span>`;
@@ -382,11 +382,20 @@
 
                 const addResult = addKizToProduct(sku, result.codes);
                 
+                let invalidInfo = '';
+                if (result.invalid.length > 0) {
+                    invalidInfo = `<br><span class="text-xs text-red-500">
+                        Отброшено невалидных: ${result.invalid.length}<br>
+                        Примеры: ${result.invalid.slice(0, 3).join(', ')}
+                    </span>`;
+                }
+                
                 statusDiv.innerHTML = `<span class="text-green-600">
                     ✅ Загружено: <b>${addResult.added}</b> кодов<br>
                     <span class="text-xs text-gray-600">
                         Строк: ${result.totalLines} → Собрано: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
-                    </span><br>
+                    </span>
+                    ${invalidInfo}<br>
                     <span class="text-xs text-blue-600">
                         Примеры: ${result.samples.join(', ')}
                     </span><br>
@@ -832,7 +841,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('wms_products_v28', JSON.stringify(products));
+            localStorage.setItem('wms_products_v29', JSON.stringify(products));
             localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
             localStorage.setItem('wms_kiz_registry', JSON.stringify(kizRegistry));
             localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
