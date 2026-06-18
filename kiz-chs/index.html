@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v27 - Правильная сборка PDF</title>
+    <title>WMS Pro v28 - Исправленная логика PDF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -102,8 +102,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v27</h1>
-                        <p class="text-xs text-gray-500">Правильная сборка PDF</p>
+                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v28</h1>
+                        <p class="text-xs text-gray-500">Исправленная логика PDF</p>
                     </div>
                 </div>
                 
@@ -179,10 +179,10 @@
                     
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
                         <p class="text-xs text-blue-800">
-                            <strong>🔧 Правильная сборка PDF:</strong> Программа автоматически:<br>
-                            • Собирает каждые 2 строки в один код<br>
-                            • Удаляет все спецсимволы (пробелы, <code>_</code>, <code>"</code>, <code>'</code>, <code>?</code>, <code>%</code> и т.д.)<br>
-                            • Проверяет, что код соответствует формату КИЗ
+                            <strong>🔧 Умная сборка PDF:</strong> Программа определяет начало кода по префиксу <code>01</code>:<br>
+                            • Строка начинается с <code>01</code> → новый код<br>
+                            • Строка НЕ начинается с <code>01</code> → продолжение предыдущего кода<br>
+                            • Все спецсимволы удаляются
                         </p>
                     </div>
                     
@@ -241,7 +241,7 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v27')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v28')) || {};
         let currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -251,7 +251,7 @@
         let currentModalSku = null;
 
         // ==========================================
-        // 🔧 ПРАВИЛЬНАЯ СБОРКА PDF-КОДОВ
+        // 🔧 ИСПРАВЛЕННАЯ СБОРКА PDF-КОДОВ
         // ==========================================
         function extractKizFromPDF(text) {
             // Шаг 1: Разбиваем на строки и убираем пустые
@@ -259,13 +259,23 @@
                 .map(l => l.trim())
                 .filter(l => l.length > 0);
             
-            // Шаг 2: Собираем каждые 2 строки в один код
+            // Шаг 2: УМНАЯ СБОРКА
+            // Если строка начинается с "01" — это НОВЫЙ код
+            // Иначе — это продолжение предыдущего кода (разорванная строка)
             const assembled = [];
-            for (let i = 0; i < lines.length; i += 2) {
-                const line1 = lines[i] || '';
-                const line2 = lines[i + 1] || '';
-                assembled.push(line1 + line2);
+            let current = '';
+            
+            for (const line of lines) {
+                if (line.startsWith('01')) {
+                    // Нашли начало нового кода
+                    if (current) assembled.push(current);  // Сохраняем предыдущий
+                    current = line;  // Начинаем новый
+                } else {
+                    // Это продолжение предыдущего кода
+                    current += line;
+                }
             }
+            if (current) assembled.push(current);  // Не забываем последний
             
             // Шаг 3: Очищаем от всех спецсимволов (оставляем только буквы и цифры)
             const cleaned = assembled.map(code => code.replace(/[^0-9A-Za-z]/g, ''));
@@ -293,7 +303,7 @@
                 totalLines: lines.length,
                 assembled: assembled.length,
                 valid: valid.length,
-                samples: unique.slice(0, 3) // Первые 3 для проверки
+                samples: unique.slice(0, 3)
             };
         }
 
@@ -362,7 +372,7 @@
                         ❌ Коды не найдены<br>
                         <span class="text-xs">
                             Строк в файле: ${result.totalLines}<br>
-                            Собрано пар: ${result.assembled}<br>
+                            Собрано кодов: ${result.assembled}<br>
                             Валидных: ${result.valid}
                         </span>
                     </span>`;
@@ -375,7 +385,7 @@
                 statusDiv.innerHTML = `<span class="text-green-600">
                     ✅ Загружено: <b>${addResult.added}</b> кодов<br>
                     <span class="text-xs text-gray-600">
-                        Строк: ${result.totalLines} → Пар: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
+                        Строк: ${result.totalLines} → Собрано: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
                     </span><br>
                     <span class="text-xs text-blue-600">
                         Примеры: ${result.samples.join(', ')}
@@ -822,7 +832,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('wms_products_v27', JSON.stringify(products));
+            localStorage.setItem('wms_products_v28', JSON.stringify(products));
             localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
             localStorage.setItem('wms_kiz_registry', JSON.stringify(kizRegistry));
             localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
