@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v25 - Просмотр КИЗ</title>
+    <title>WMS Pro v26 - Полная очистка PDF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -28,8 +28,6 @@
         .voice-wave:nth-child(2) { animation-delay: 0.1s; }
         .voice-wave:nth-child(3) { animation-delay: 0.2s; }
         @keyframes wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
-        
-        /* Модальное окно */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
         .modal-content { background: white; border-radius: 16px; max-width: 90%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
@@ -69,33 +67,21 @@
                         <h2 class="text-xl font-bold">🔲 Загруженные КИЗ</h2>
                         <p class="text-sm opacity-80" id="modalProductName">Товар</p>
                     </div>
-                    <button onclick="closeKizModal()" class="text-white hover:bg-white/20 p-2 rounded-lg transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
+                    <button onclick="closeKizModal()" class="text-white hover:bg-white/20 p-2 rounded-lg">✕</button>
                 </div>
             </div>
-            
             <div class="p-4 border-b bg-gray-50">
                 <div class="flex gap-4 items-center">
-                    <div class="flex-1">
-                        <input type="text" id="kizSearchInput" placeholder="🔍 Поиск по коду..." class="w-full input-modern rounded-lg px-4 py-2" oninput="filterKizList()">
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="copyAllKiz()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
-                            📋 Копировать все
-                        </button>
-                        <button onclick="exportKizToCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
-                            📥 Экспорт CSV
-                        </button>
-                    </div>
+                    <input type="text" id="kizSearchInput" placeholder="🔍 Поиск..." class="flex-1 input-modern rounded-lg px-4 py-2" oninput="filterKizList()">
+                    <button onclick="copyAllKiz()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">📋 Копировать все</button>
+                    <button onclick="exportKizToCSV()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">📥 CSV</button>
                 </div>
                 <div class="flex gap-4 mt-3 text-sm">
-                    <span class="text-gray-600">Всего: <b id="kizTotalCount">0</b></span>
+                    <span>Всего: <b id="kizTotalCount">0</b></span>
                     <span class="text-green-600">Свободных: <b id="kizFreeCount">0</b></span>
                     <span class="text-orange-600">Использованных: <b id="kizUsedCount">0</b></span>
                 </div>
             </div>
-            
             <div class="flex-1 overflow-y-auto p-4" style="max-height: 60vh;">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-100 sticky top-0">
@@ -103,11 +89,25 @@
                             <th class="p-3 text-left w-16">№</th>
                             <th class="p-3 text-left">Код КИЗ</th>
                             <th class="p-3 text-center w-32">Статус</th>
-                            <th class="p-3 text-center w-24">Действия</th>
                         </tr>
                     </thead>
                     <tbody id="kizListBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ОТЛАДКИ PDF -->
+    <div id="debugModal" class="modal">
+        <div class="modal-content w-full max-w-4xl">
+            <div class="p-6 border-b bg-gradient-to-r from-orange-500 to-red-600 text-white">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">🔍 Отладка: сырой текст из PDF</h2>
+                    <button onclick="closeDebugModal()" class="text-white hover:bg-white/20 p-2 rounded-lg">✕</button>
+                </div>
+            </div>
+            <div class="p-4 overflow-y-auto" style="max-height: 70vh;">
+                <pre id="debugText" class="text-xs font-mono bg-gray-100 p-4 rounded-lg whitespace-pre-wrap break-all"></pre>
             </div>
         </div>
     </div>
@@ -118,8 +118,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v25</h1>
-                        <p class="text-xs text-gray-500">Просмотр КИЗ</p>
+                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v26</h1>
+                        <p class="text-xs text-gray-500">Полная очистка PDF</p>
                     </div>
                 </div>
                 
@@ -195,7 +195,10 @@
                     
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
                         <p class="text-xs text-blue-800">
-                            <strong>🔧 Умная сборка PDF:</strong> Для PDF-файлов программа автоматически собирает разорванные строки и удаляет пробелы.
+                            <strong>🔧 Полная очистка PDF:</strong> Программа удаляет из кодов:<br>
+                            • Пробелы, символы <code>_</code>, <code>-</code><br>
+                            • Артефакты PDF: <code>?</code>, <code>%</code>, <code>.</code>, <code>!</code>, <code>*</code>, <code>"</code>, <code>'</code>, <code>(</code>, <code>)</code>, <code>=</code>, <code>+</code>, <code>:</code>, <code>;</code>, <code>&</code>, <code>#</code>, <code>$</code>, <code>@</code>, <code>^</code>, <code>~</code>, <code>[</code>, <code>]</code>, <code>{</code>, <code>}</code>, <code>&lt;</code>, <code>&gt;</code>, <code>/</code>, <code>\</code>, <code>|</code><br>
+                            • Собирает разорванные строки в единый код
                         </p>
                     </div>
                     
@@ -211,7 +214,7 @@
                             <h3 class="font-bold text-sm mb-2">📄 Загрузка PDF</h3>
                             <input type="file" id="pdfKizInput" accept=".pdf" class="block w-full text-xs mb-3"/>
                             <button onclick="processFileKiz('pdf')" class="w-full bg-purple-600 text-white py-2 rounded-lg font-semibold text-sm">Загрузить PDF</button>
-                            <div id="pdfKizStatus" class="mt-2 text-xs font-medium min-h-[30px]"></div>
+                            <div id="pdfKizStatus" class="mt-2 text-xs font-medium min-h-[60px]"></div>
                         </div>
 
                         <div class="bg-white p-4 rounded-xl border">
@@ -254,7 +257,7 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v25')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v26')) || {};
         let currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -262,6 +265,208 @@
         let allScannedKiz = JSON.parse(localStorage.getItem('wms_all_scanned_kiz')) || {};
         let currentExcelData = null;
         let currentModalSku = null;
+        let lastRawPdfText = '';
+
+        // ==========================================
+        // 🔧 ПОЛНАЯ ОЧИСТКА КОДОВ ОТ ВСЕХ АРТЕФАКТОВ
+        // ==========================================
+        function extractKizFromPDF(text) {
+            lastRawPdfText = text; // Сохраняем для отладки
+            
+            // Шаг 1: Разбиваем на строки
+            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
+            
+            // Шаг 2: Собираем разорванные строки
+            // Если строка НЕ начинается с "01", она является продолжением предыдущей
+            const assembled = [];
+            let current = '';
+            
+            for (const line of lines) {
+                if (line.startsWith('01')) {
+                    if (current) assembled.push(current);
+                    current = line;
+                } else {
+                    current += line;
+                }
+            }
+            if (current) assembled.push(current);
+            
+            // Шаг 3: ПОЛНАЯ очистка - оставляем ТОЛЬКО буквы и цифры
+            // Удаляем ВСЕ специальные символы: пробелы, _, -, ?, %, ., !, *, ", ', (, ), =, +, :, ;, &, #, $, @, ^, ~, [, ], {, }, <, >, /, \, |
+            const cleaned = assembled.map(code => code.replace(/[^0-9A-Za-z]/g, ''));
+            
+            // Шаг 4: Фильтруем по валидности кода КИЗ
+            // Код должен соответствовать паттерну: 01 + 14 цифр + 21 + хотя бы 4 символа
+            const valid = [];
+            const invalid = [];
+            
+            for (const code of cleaned) {
+                // Проверяем паттерн: 01 + 14 цифр + 21 + серийный номер
+                const match = code.match(/^01(\d{14})21(.+)$/);
+                if (match && match[2].length >= 4) {
+                    valid.push(code);
+                } else if (code.length > 0) {
+                    invalid.push(code);
+                }
+            }
+            
+            // Шаг 5: Удаляем дубликаты
+            const seen = new Set();
+            const unique = [];
+            let dupesCount = 0;
+            
+            for (const code of valid) {
+                if (seen.has(code)) {
+                    dupesCount++;
+                } else {
+                    seen.add(code);
+                    unique.push(code);
+                }
+            }
+            
+            return { 
+                codes: unique, 
+                totalRaw: lines.length,
+                assembled: assembled.length,
+                cleaned: cleaned.length,
+                valid: valid.length,
+                invalid: invalid.length,
+                dupesRemoved: dupesCount,
+                invalidSamples: invalid.slice(0, 5) // Первые 5 невалидных для отладки
+            };
+        }
+
+        // Жесткая загрузка для CSV/буфера (только удаление дублей)
+        function extractKizStrict(text) {
+            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
+            const seen = new Set();
+            const unique = [];
+            for (const line of lines) {
+                if (!seen.has(line)) {
+                    seen.add(line);
+                    unique.push(line);
+                }
+            }
+            return { codes: unique, totalRaw: lines.length };
+        }
+
+        function addKizToProduct(sku, newCodes) {
+            if (!products[sku]) return { added: 0, duplicates: 0 };
+            
+            const existing = new Set(products[sku].kiz_list);
+            let added = 0, duplicates = 0;
+
+            for (const code of newCodes) {
+                if (existing.has(code) || kizRegistry[code]) {
+                    duplicates++;
+                    continue;
+                }
+                products[sku].kiz_list.push(code);
+                existing.add(code);
+                kizRegistry[code] = sku;
+                added++;
+            }
+
+            saveData();
+            updateAllUI();
+            return { added, duplicates };
+        }
+
+        async function processFileKiz(type) {
+            const sku = document.getElementById('kizTargetProduct').value;
+            if (!sku) return showToast('Выберите товар', 'error');
+
+            const fileInput = document.getElementById('pdfKizInput');
+            const statusDiv = document.getElementById('pdfKizStatus');
+
+            if (!fileInput.files.length) return showToast('Выберите файл', 'error');
+            const file = fileInput.files[0];
+
+            statusDiv.innerHTML = '<span class="text-purple-600">⏳ Обработка PDF...</span>';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                let rawText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    rawText += textContent.items.map(item => item.str).join('\n') + '\n';
+                }
+
+                const result = extractKizFromPDF(rawText);
+                
+                if (result.codes.length === 0) {
+                    statusDiv.innerHTML = `<span class="text-red-600">
+                        ❌ Коды не найдены<br>
+                        <span class="text-xs">
+                            Строк в файле: ${result.totalRaw}<br>
+                            Собрано: ${result.assembled}<br>
+                            После очистки: ${result.cleaned}<br>
+                            Валидных: ${result.valid}<br>
+                            <button onclick="showDebugModal()" class="mt-2 bg-orange-600 text-white px-3 py-1 rounded text-xs">🔍 Показать сырой текст PDF</button>
+                        </span>
+                    </span>`;
+                    speak('Коды не найдены');
+                    return;
+                }
+
+                const addResult = addKizToProduct(sku, result.codes);
+                
+                statusDiv.innerHTML = `<span class="text-green-600">
+                    ✅ Загружено: <b>${addResult.added}</b> кодов<br>
+                    <span class="text-xs text-gray-600">
+                        Строк: ${result.totalRaw} → Собрано: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
+                        ${result.dupesRemoved > 0 ? ` (дублей: ${result.dupesRemoved})` : ''}
+                        ${result.invalid > 0 ? ` | Невалидных: ${result.invalid}` : ''}
+                    </span><br>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="openKizModal('${sku}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold">
+                            👁️ Просмотр КИЗ
+                        </button>
+                        <button onclick="showDebugModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs font-semibold">
+                            🔍 Отладка PDF
+                        </button>
+                    </div>
+                </span>`;
+                
+                showToast(`Загружено ${addResult.added} кодов`, 'success');
+                speak(`Загружено ${addResult.added} кодов`);
+                fileInput.value = '';
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerHTML = `<span class="text-red-600">❌ Ошибка: ${err.message}</span>`;
+            }
+        }
+
+        function processPastedKiz() {
+            const sku = document.getElementById('kizTargetProduct').value;
+            const text = document.getElementById('pasteKizArea').value;
+            if (!sku) return showToast('Выберите товар', 'error');
+            if (!text.trim()) return showToast('Вставьте коды', 'error');
+
+            const result = extractKizStrict(text);
+            const addResult = addKizToProduct(sku, result.codes);
+            
+            showToast(`Загружено: ${addResult.added}`, 'success');
+            speak(`Загружено ${addResult.added} кодов`);
+            document.getElementById('pasteKizArea').value = '';
+            setTimeout(() => openKizModal(sku), 500);
+        }
+
+        // ==========================================
+        // ОТЛАДКА PDF
+        // ==========================================
+        function showDebugModal() {
+            document.getElementById('debugText').innerText = lastRawPdfText || 'Текст PDF не доступен. Сначала загрузите PDF.';
+            document.getElementById('debugModal').classList.add('active');
+        }
+
+        function closeDebugModal() {
+            document.getElementById('debugModal').classList.remove('active');
+        }
 
         // ==========================================
         // МОДАЛЬНОЕ ОКНО ПРОСМОТРА КИЗ
@@ -320,16 +525,9 @@
                             : `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">Свободен</span>`
                         }
                     </td>
-                    <td class="p-3 text-center">
-                        <button onclick="copySingleKiz('${kiz}')" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">📋</button>
-                    </td>
                 `;
                 tbody.appendChild(tr);
             });
-            
-            if (filteredList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400">Коды не найдены</td></tr>';
-            }
         }
 
         function filterKizList() {
@@ -339,17 +537,10 @@
             }
         }
 
-        function copySingleKiz(kiz) {
-            navigator.clipboard.writeText(kiz).then(() => {
-                showToast('Код скопирован', 'success');
-            });
-        }
-
         function copyAllKiz() {
             if (!currentModalSku || !products[currentModalSku]) return;
             const kizList = products[currentModalSku].kiz_list;
-            const text = kizList.join('\n');
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(kizList.join('\n')).then(() => {
                 showToast(`Скопировано ${kizList.length} кодов`, 'success');
             });
         }
@@ -370,133 +561,6 @@
             link.download = `КИЗ_${currentModalSku}_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
             showToast('Экспорт завершён', 'success');
-        }
-
-        // ==========================================
-        // ЗАГРУЗКА КИЗ
-        // ==========================================
-        function extractKizFromPDF(text) {
-            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
-            const assembled = [];
-            let current = '';
-            
-            for (const line of lines) {
-                if (line.startsWith('01')) {
-                    if (current) assembled.push(current);
-                    current = line;
-                } else {
-                    current += line;
-                }
-            }
-            if (current) assembled.push(current);
-            
-            const cleaned = assembled.map(code => code.replace(/\s+/g, ''));
-            
-            const seen = new Set();
-            const unique = [];
-            for (const code of cleaned) {
-                if (!seen.has(code)) {
-                    seen.add(code);
-                    unique.push(code);
-                }
-            }
-            
-            return { codes: unique, totalRaw: lines.length };
-        }
-
-        function extractKizStrict(text) {
-            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
-            const seen = new Set();
-            const unique = [];
-            for (const line of lines) {
-                if (!seen.has(line)) {
-                    seen.add(line);
-                    unique.push(line);
-                }
-            }
-            return { codes: unique, totalRaw: lines.length };
-        }
-
-        function addKizToProduct(sku, newCodes) {
-            if (!products[sku]) return { added: 0, duplicates: 0 };
-            
-            const existing = new Set(products[sku].kiz_list);
-            let added = 0, duplicates = 0;
-
-            for (const code of newCodes) {
-                if (existing.has(code) || kizRegistry[code]) {
-                    duplicates++;
-                    continue;
-                }
-                products[sku].kiz_list.push(code);
-                existing.add(code);
-                kizRegistry[code] = sku;
-                added++;
-            }
-
-            saveData();
-            updateAllUI();
-            return { added, duplicates };
-        }
-
-        async function processFileKiz(type) {
-            const sku = document.getElementById('kizTargetProduct').value;
-            if (!sku) return showToast('Выберите товар', 'error');
-
-            const fileInput = document.getElementById('pdfKizInput');
-            const statusDiv = document.getElementById('pdfKizStatus');
-
-            if (!fileInput.files.length) return showToast('Выберите файл', 'error');
-            const file = fileInput.files[0];
-
-            statusDiv.innerHTML = '<span class="text-purple-600">⏳ Обработка...</span>';
-
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                let rawText = '';
-                
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    rawText += textContent.items.map(item => item.str).join('\n') + '\n';
-                }
-
-                const result = extractKizFromPDF(rawText);
-                const addResult = addKizToProduct(sku, result.codes);
-                
-                statusDiv.innerHTML = `<span class="text-green-600">
-                    ✅ Загружено: <b>${addResult.added}</b> кодов<br>
-                    <button onclick="openKizModal('${sku}')" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition">
-                        👁️ Просмотреть загруженные КИЗ
-                    </button>
-                </span>`;
-                
-                showToast(`Загружено ${addResult.added} кодов`, 'success');
-                speak(`Загружено ${addResult.added} кодов`);
-                fileInput.value = '';
-
-            } catch (err) {
-                console.error(err);
-                statusDiv.innerHTML = `<span class="text-red-600">❌ Ошибка: ${err.message}</span>`;
-            }
-        }
-
-        function processPastedKiz() {
-            const sku = document.getElementById('kizTargetProduct').value;
-            const text = document.getElementById('pasteKizArea').value;
-            if (!sku) return showToast('Выберите товар', 'error');
-            if (!text.trim()) return showToast('Вставьте коды', 'error');
-
-            const result = extractKizStrict(text);
-            const addResult = addKizToProduct(sku, result.codes);
-            
-            showToast(`Загружено: ${addResult.added}`, 'success');
-            speak(`Загружено ${addResult.added} кодов`);
-            document.getElementById('pasteKizArea').value = '';
-            
-            // Автоматически открываем просмотр после загрузки
-            setTimeout(() => openKizModal(sku), 500);
         }
 
         // ==========================================
@@ -816,7 +880,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('wms_products_v25', JSON.stringify(products));
+            localStorage.setItem('wms_products_v26', JSON.stringify(products));
             localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
             localStorage.setItem('wms_kiz_registry', JSON.stringify(kizRegistry));
             localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
