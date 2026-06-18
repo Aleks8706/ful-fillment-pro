@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v23 - Жесткая загрузка КИЗ</title>
+    <title>WMS Pro v23.1 - Исправлено удвоение</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -78,8 +78,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v23</h1>
-                        <p class="text-xs text-gray-500">Жесткая загрузка КИЗ</p>
+                        <h1 class="font-bold text-gray-800 text-lg leading-tight">WMS Pro v23.1</h1>
+                        <p class="text-xs text-gray-500">Исправлено удвоение</p>
                     </div>
                 </div>
                 
@@ -176,7 +176,7 @@
                 <div class="glass-card rounded-2xl p-6 border-2 border-green-200 bg-green-50/30">
                     <h2 class="text-lg font-bold text-green-800 mb-2 flex items-center gap-2">🔲 Шаг 2: Привязка КИЗ к товару</h2>
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
-                        <p class="text-xs text-blue-800"><strong>🔒 Жесткая загрузка:</strong> Коды загружаются <b>ровно такими, как в файле</b>, без изменений. Никаких преобразований, очисток или фильтраций.</p>
+                        <p class="text-xs text-blue-800"><strong>🔒 Жесткая загрузка:</strong> Коды загружаются <b>ровно такими, как в файле</b>. Автоматически удаляются только <b>полные дубликаты строк</b> (если PDF содержит каждый код дважды).</p>
                     </div>
                     
                     <div class="mb-6">
@@ -189,7 +189,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 rounded-xl border border-gray-200">
                             <h3 class="font-bold text-sm text-gray-700 mb-2">⭐ А. Вставка из буфера</h3>
-                            <textarea id="pasteKizArea" rows="5" placeholder="Ctrl+V (коды будут загружены как есть)" class="w-full input-modern rounded-lg p-2 text-xs font-mono resize-none mb-2"></textarea>
+                            <textarea id="pasteKizArea" rows="5" placeholder="Ctrl+V" class="w-full input-modern rounded-lg p-2 text-xs font-mono resize-none mb-2"></textarea>
                             <button onclick="processPastedKiz()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold text-sm transition">Загрузить как есть</button>
                         </div>
 
@@ -202,7 +202,7 @@
 
                         <div class="bg-white p-4 rounded-xl border border-gray-200">
                             <h3 class="font-bold text-sm text-gray-700 mb-2">В. Загрузка PDF</h3>
-                            <p class="text-xs text-purple-600 mb-2 font-semibold">🔒 Коды из PDF загружаются без изменений</p>
+                            <p class="text-xs text-purple-600 mb-2 font-semibold">🔒 Коды без изменений + автоудаление дублей</p>
                             <input type="file" id="pdfKizInput" accept=".pdf" class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 mb-3"/>
                             <button onclick="processFileKiz('pdf')" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-semibold text-sm transition">Загрузить как есть</button>
                             <div id="pdfKizStatus" class="mt-2 text-xs font-medium min-h-[30px]"></div>
@@ -409,7 +409,7 @@
         function voiceBoxClosed(itemCount, boxId) { speak(`Короб ${boxId} закрыт. Товаров: ${itemCount} штук`, true); }
         function voiceKizAdded(count, duplicates = 0) {
             if (duplicates > 0) {
-                speak(`Добавлено ${count} кодов. Отфильтровано ${duplicates} дублей`, false);
+                speak(`Добавлено ${count} кодов. Удалено ${duplicates} дублей`, false);
             } else {
                 speak(`Добавлено ${count} кодов`, false);
             }
@@ -629,15 +629,29 @@
             });
         }
 
-        // 🔒 ЖЕСТКАЯ ЗАГРУЗКА - БЕЗ ИЗМЕНЕНИЙ
+        // 🔒 ЖЕСТКАЯ ЗАГРУЗКА + АВТОУДАЛЕНИЕ ДУБЛЕЙ СТРОК
         function extractKizStrict(text) {
-            // Разбиваем по строкам, убираем только пустые строки
-            return text.split(/[\r\n]+/)
+            const lines = text.split(/[\r\n]+/)
                 .map(line => line.trim())
                 .filter(line => line.length > 0);
+            
+            // 🔒 Удаляем полные дубликаты строк (сохраняем порядок)
+            const seen = new Set();
+            const unique = [];
+            let dupesCount = 0;
+            
+            for (const line of lines) {
+                if (seen.has(line)) {
+                    dupesCount++;
+                } else {
+                    seen.add(line);
+                    unique.push(line);
+                }
+            }
+            
+            return { codes: unique, totalRaw: lines.length, dupesRemoved: dupesCount };
         }
 
-        // 🔒 ЖЕСТКОЕ ДОБАВЛЕНИЕ КИЗ - БЕЗ ПРЕОБРАЗОВАНИЙ
         function addKizToProduct(sku, newCodes) {
             if (!products[sku]) return { added: 0, duplicates: 0, total: 0 };
             
@@ -646,22 +660,17 @@
             let duplicates = 0;
 
             newCodes.forEach(code => {
-                // 🔒 Код используется КАК ЕСТЬ, без изменений
-                
-                // Проверка 1: Дубль внутри товара
                 if (existingInProduct.has(code)) {
                     duplicates++;
                     return;
                 }
 
-                // Проверка 2: Глобальная проверка
                 const duplicateCheck = checkKizDuplicate(code, sku);
                 if (duplicateCheck.isDuplicate) {
                     duplicates++;
                     return;
                 }
 
-                // 🔒 Добавляем код как есть
                 products[sku].kiz_list.push(code);
                 existingInProduct.add(code);
                 registerKiz(code, sku);
@@ -679,18 +688,15 @@
             if (!sku) return showToast('Выберите товар', 'error');
             if (!text.trim()) return showToast('Вставьте коды', 'error');
 
-            // 🔒 Жесткая загрузка - без изменений
-            const codes = extractKizStrict(text);
-            const result = addKizToProduct(sku, codes);
+            const result = extractKizStrict(text);
+            const addResult = addKizToProduct(sku, result.codes);
             
-            if (result.duplicates > 0) {
-                showToast(`Загружено: ${result.added}. Дублей: ${result.duplicates}`, result.added > 0 ? 'success' : 'error');
-                voiceKizAdded(result.added, result.duplicates);
-            } else {
-                showToast(`Загружено: ${result.added} кодов`, 'success');
-                voiceKizAdded(result.added);
-            }
+            let msg = `Загружено: ${addResult.added}`;
+            if (result.dupesRemoved > 0) msg += ` (убрано ${result.dupesRemoved} дублей строк)`;
+            if (addResult.duplicates > 0) msg += `. Системных дублей: ${addResult.duplicates}`;
             
+            showToast(msg, addResult.added > 0 ? 'success' : 'error');
+            voiceKizAdded(addResult.added, result.dupesRemoved + addResult.duplicates);
             document.getElementById('pasteKizArea').value = '';
         }
 
@@ -705,7 +711,7 @@
             if (!fileInput.files.length) return showToast('Выберите файл', 'error');
             const file = fileInput.files[0];
 
-            statusDiv.innerHTML = '<span class="text-purple-600">⏳ Загрузка без изменений...</span>';
+            statusDiv.innerHTML = '<span class="text-purple-600">⏳ Загрузка...</span>';
 
             try {
                 let rawText = "";
@@ -721,26 +727,28 @@
                     rawText = await file.text();
                 }
 
-                // 🔒 Жесткая загрузка - без изменений
-                const codes = extractKizStrict(rawText);
+                const result = extractKizStrict(rawText);
                 
-                if (codes.length === 0) {
+                if (result.codes.length === 0) {
                     statusDiv.innerHTML = '<span class="text-red-600">❌ Файл пуст</span>';
                     speak('Файл пуст');
                     return;
                 }
 
-                const result = addKizToProduct(sku, codes);
+                const addResult = addKizToProduct(sku, result.codes);
                 
-                let statusMsg = `<span class="text-green-600">✅ Загружено: ${result.added}`;
-                if (result.duplicates > 0) {
-                    statusMsg += `. <span class="text-orange-600">Дублей: ${result.duplicates}</span>`;
+                let statusMsg = `<span class="text-green-600">✅ Загружено: ${addResult.added}`;
+                if (result.dupesRemoved > 0) {
+                    statusMsg += ` <span class="text-blue-600">(в файле ${result.totalRaw} строк, убрано ${result.dupesRemoved} дублей)</span>`;
+                }
+                if (addResult.duplicates > 0) {
+                    statusMsg += `. <span class="text-orange-600">Системных дублей: ${addResult.duplicates}</span>`;
                 }
                 statusMsg += `</span>`;
                 
                 statusDiv.innerHTML = statusMsg;
-                voiceKizAdded(result.added, result.duplicates);
-                showToast(`Загружено: ${result.added}, Дублей: ${result.duplicates}`, 'success');
+                voiceKizAdded(addResult.added, result.dupesRemoved + addResult.duplicates);
+                showToast(`Загружено: ${addResult.added}`, 'success');
                 fileInput.value = '';
 
             } catch (err) {
