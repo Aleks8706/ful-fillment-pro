@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v29 - Все 120 кодов</title>
+    <title>WMS Pro v30 - Префиксное сопоставление</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -102,8 +102,8 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v29</h1>
-                        <p class="text-xs text-gray-500">Все 120 кодов</p>
+                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v30</h1>
+                        <p class="text-xs text-gray-500">Префиксное сопоставление</p>
                     </div>
                 </div>
                 
@@ -177,12 +177,6 @@
                 <div class="glass-card rounded-2xl p-6 border-2 border-green-200">
                     <h2 class="text-lg font-bold mb-2">🔲 Привязка КИЗ к товару</h2>
                     
-                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
-                        <p class="text-xs text-blue-800">
-                            <strong>🔧 Умная сборка PDF:</strong> Программа определяет начало кода по префиксу <code>01</code> и очищает все спецсимволы.
-                        </p>
-                    </div>
-                    
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-2">Выберите товар:</label>
                         <select id="kizTargetProduct" class="w-full input-modern rounded-xl p-3">
@@ -211,6 +205,13 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass-card rounded-2xl p-6">
                         <h2 class="text-lg font-bold mb-4">📡 Сканирование</h2>
+                        
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
+                            <p class="text-xs text-blue-800">
+                                <strong>🔧 Умное сопоставление:</strong> Если сканер считывает код с лишними символами, программа автоматически найдёт совпадение по началу кода.
+                            </p>
+                        </div>
+                        
                         <div class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 rounded-xl">
                             <input type="checkbox" id="autoPrintScan" checked class="w-5 h-5">
                             <label for="autoPrintScan" class="text-sm font-semibold">🖨️ Печать 58x40 мм после сканирования</label>
@@ -238,7 +239,7 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v29')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v30')) || {};
         let currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -247,18 +248,8 @@
         let currentExcelData = null;
         let currentModalSku = null;
 
-        // ==========================================
-        // 🔧 СБОРКА PDF-КОДОВ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
-        // ==========================================
         function extractKizFromPDF(text) {
-            // Шаг 1: Разбиваем на строки и убираем пустые
-            const lines = text.split(/[\r\n]+/)
-                .map(l => l.trim())
-                .filter(l => l.length > 0);
-            
-            // Шаг 2: УМНАЯ СБОРКА
-            // Если строка начинается с "01" — это НОВЫЙ код
-            // Иначе — это продолжение предыдущего кода
+            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
             const assembled = [];
             let current = '';
             
@@ -272,22 +263,15 @@
             }
             if (current) assembled.push(current);
             
-            // Шаг 3: Очищаем от всех спецсимволов
             const cleaned = assembled.map(code => code.replace(/[^0-9A-Za-z]/g, ''));
             
-            // Шаг 4: Фильтруем по валидности
-            // 🔧 ИСПРАВЛЕНО: минимум 1 символ после "21" вместо 4
             const valid = [];
-            const invalid = [];
             for (const code of cleaned) {
                 if (code.match(/^01\d{14}21[A-Za-z0-9]+$/)) {
                     valid.push(code);
-                } else if (code.length > 0) {
-                    invalid.push(code);
                 }
             }
             
-            // Шаг 5: Удаляем дубликаты
             const seen = new Set();
             const unique = [];
             for (const code of valid) {
@@ -297,14 +281,7 @@
                 }
             }
             
-            return { 
-                codes: unique, 
-                totalLines: lines.length,
-                assembled: assembled.length,
-                valid: valid.length,
-                invalid: invalid,
-                samples: unique.slice(0, 3)
-            };
+            return { codes: unique, totalLines: lines.length, assembled: assembled.length, valid: valid.length, samples: unique.slice(0, 3) };
         }
 
         function extractKizStrict(text) {
@@ -368,37 +345,15 @@
                 const result = extractKizFromPDF(rawText);
                 
                 if (result.codes.length === 0) {
-                    statusDiv.innerHTML = `<span class="text-red-600">
-                        ❌ Коды не найдены<br>
-                        <span class="text-xs">
-                            Строк: ${result.totalLines}<br>
-                            Собрано: ${result.assembled}<br>
-                            Валидных: ${result.valid}
-                        </span>
-                    </span>`;
+                    statusDiv.innerHTML = `<span class="text-red-600">❌ Коды не найдены</span>`;
                     speak('Коды не найдены');
                     return;
                 }
 
                 const addResult = addKizToProduct(sku, result.codes);
                 
-                let invalidInfo = '';
-                if (result.invalid.length > 0) {
-                    invalidInfo = `<br><span class="text-xs text-red-500">
-                        Отброшено невалидных: ${result.invalid.length}<br>
-                        Примеры: ${result.invalid.slice(0, 3).join(', ')}
-                    </span>`;
-                }
-                
                 statusDiv.innerHTML = `<span class="text-green-600">
                     ✅ Загружено: <b>${addResult.added}</b> кодов<br>
-                    <span class="text-xs text-gray-600">
-                        Строк: ${result.totalLines} → Собрано: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
-                    </span>
-                    ${invalidInfo}<br>
-                    <span class="text-xs text-blue-600">
-                        Примеры: ${result.samples.join(', ')}
-                    </span><br>
                     <button onclick="openKizModal('${sku}')" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold">
                         👁️ Просмотр КИЗ
                     </button>
@@ -429,9 +384,6 @@
             setTimeout(() => openKizModal(sku), 500);
         }
 
-        // ==========================================
-        // МОДАЛЬНОЕ ОКНО ПРОСМОТРА КИЗ
-        // ==========================================
         function openKizModal(sku) {
             currentModalSku = sku;
             const product = products[sku];
@@ -524,9 +476,6 @@
             showToast('Экспорт завершён', 'success');
         }
 
-        // ==========================================
-        // ОСНОВНЫЕ ФУНКЦИИ
-        // ==========================================
         function handleExcelUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -736,40 +685,69 @@
             if (e.key === 'Enter') { e.preventDefault(); processScan(); } 
         });
         
+        // 🔧 ИСПРАВЛЕННАЯ ФУНКЦИЯ С ПРЕФИКСНЫМ СОПОСТАВЛЕНИЕМ
         function processScan() {
-            const code = document.getElementById('scanInput').value.trim(); 
+            let code = document.getElementById('scanInput').value.trim(); 
             if (!code) return;
             
             let foundSku = null;
+            let matchedKiz = null;
+            
+            // Шаг 1: Ищем точное совпадение
             for (const [sku, data] of Object.entries(products)) { 
-                if (data.kiz_list.includes(code)) { foundSku = sku; break; } 
+                if (data.kiz_list.includes(code)) { 
+                    foundSku = sku;
+                    matchedKiz = code;
+                    break; 
+                } 
+            }
+            
+            // 🔧 Шаг 2: Если точного совпадения нет, ищем префиксное
+            if (!foundSku) {
+                for (const [sku, data] of Object.entries(products)) {
+                    for (const kiz of data.kiz_list) {
+                        // Если сканируемый код начинается с кода из базы
+                        if (code.startsWith(kiz)) {
+                            foundSku = sku;
+                            matchedKiz = kiz; // Используем код из базы, а не считанный
+                            break;
+                        }
+                        // Или если код из базы начинается со сканируемого
+                        if (kiz.startsWith(code) && code.length >= 20) {
+                            foundSku = sku;
+                            matchedKiz = kiz;
+                            break;
+                        }
+                    }
+                    if (foundSku) break;
+                }
             }
             
             const fb = document.getElementById('scanFeedback');
             
-            if (allScannedKiz[code]) {
-                fb.innerHTML = `🚫 УЖЕ ОТСКАНИРОВАН<br><span class="text-sm">Короб: ${allScannedKiz[code].boxId}</span>`;
+            if (allScannedKiz[matchedKiz || code]) {
+                fb.innerHTML = `🚫 УЖЕ ОТСКАНИРОВАН<br><span class="text-sm">Короб: ${allScannedKiz[matchedKiz || code].boxId}</span>`;
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold bg-red-100 text-red-700 border-2 border-red-300 block';
                 speak(`Ошибка. Код уже отсканирован`);
             } else if (!foundSku) { 
                 fb.innerHTML = '❌ Неизвестный КИЗ'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold bg-red-100 text-red-700 block'; 
                 speak('Ошибка. Код не найден');
-            } else if (currentBoxItems.includes(code)) { 
+            } else if (currentBoxItems.includes(matchedKiz)) { 
                 fb.innerHTML = '⚠️ Уже в коробе'; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold bg-yellow-100 text-yellow-700 block'; 
                 speak('Внимание. Уже в коробе');
             } else { 
-                currentBoxItems.push(code); 
+                currentBoxItems.push(matchedKiz); 
                 products[foundSku].packed_count++; 
-                allScannedKiz[code] = { boxId: currentBoxId, date: new Date().toLocaleString(), sku: foundSku };
+                allScannedKiz[matchedKiz] = { boxId: currentBoxId, date: new Date().toLocaleString(), sku: foundSku };
                 saveData(); 
                 fb.innerHTML = `✅ ${products[foundSku].name}`; 
                 fb.className = 'p-4 rounded-xl mb-4 text-center font-semibold bg-green-100 text-green-700 block'; 
                 speak(`Принято. ${products[foundSku].name}`);
                 
                 if (document.getElementById('autoPrintScan').checked) {
-                    printCombinedLabel(code, foundSku);
+                    printCombinedLabel(matchedKiz, foundSku);
                 }
             }
             
@@ -841,7 +819,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('wms_products_v29', JSON.stringify(products));
+            localStorage.setItem('wms_products_v30', JSON.stringify(products));
             localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
             localStorage.setItem('wms_kiz_registry', JSON.stringify(kizRegistry));
             localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
