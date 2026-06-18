@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Pro v26 - Полная очистка PDF</title>
+    <title>WMS Pro v27 - Правильная сборка PDF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.4.3/dist/bwip-js-min.js"></script>
@@ -58,7 +58,6 @@
 
     <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КИЗ -->
     <div id="kizModal" class="modal">
         <div class="modal-content w-full max-w-4xl">
             <div class="p-6 border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
@@ -97,29 +96,14 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ОТЛАДКИ PDF -->
-    <div id="debugModal" class="modal">
-        <div class="modal-content w-full max-w-4xl">
-            <div class="p-6 border-b bg-gradient-to-r from-orange-500 to-red-600 text-white">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">🔍 Отладка: сырой текст из PDF</h2>
-                    <button onclick="closeDebugModal()" class="text-white hover:bg-white/20 p-2 rounded-lg">✕</button>
-                </div>
-            </div>
-            <div class="p-4 overflow-y-auto" style="max-height: 70vh;">
-                <pre id="debugText" class="text-xs font-mono bg-gray-100 p-4 rounded-lg whitespace-pre-wrap break-all"></pre>
-            </div>
-        </div>
-    </div>
-
     <div class="min-h-screen flex flex-col lg:flex-row">
         <aside class="no-print w-full lg:w-64 glass lg:min-h-screen lg:sticky lg:top-0 z-40 border-r border-gray-200">
             <div class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">W</div>
                     <div>
-                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v26</h1>
-                        <p class="text-xs text-gray-500">Полная очистка PDF</p>
+                        <h1 class="font-bold text-gray-800 text-lg">WMS Pro v27</h1>
+                        <p class="text-xs text-gray-500">Правильная сборка PDF</p>
                     </div>
                 </div>
                 
@@ -195,10 +179,10 @@
                     
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-xl mb-4">
                         <p class="text-xs text-blue-800">
-                            <strong>🔧 Полная очистка PDF:</strong> Программа удаляет из кодов:<br>
-                            • Пробелы, символы <code>_</code>, <code>-</code><br>
-                            • Артефакты PDF: <code>?</code>, <code>%</code>, <code>.</code>, <code>!</code>, <code>*</code>, <code>"</code>, <code>'</code>, <code>(</code>, <code>)</code>, <code>=</code>, <code>+</code>, <code>:</code>, <code>;</code>, <code>&</code>, <code>#</code>, <code>$</code>, <code>@</code>, <code>^</code>, <code>~</code>, <code>[</code>, <code>]</code>, <code>{</code>, <code>}</code>, <code>&lt;</code>, <code>&gt;</code>, <code>/</code>, <code>\</code>, <code>|</code><br>
-                            • Собирает разорванные строки в единый код
+                            <strong>🔧 Правильная сборка PDF:</strong> Программа автоматически:<br>
+                            • Собирает каждые 2 строки в один код<br>
+                            • Удаляет все спецсимволы (пробелы, <code>_</code>, <code>"</code>, <code>'</code>, <code>?</code>, <code>%</code> и т.д.)<br>
+                            • Проверяет, что код соответствует формату КИЗ
                         </p>
                     </div>
                     
@@ -257,7 +241,7 @@
     <div id="printArea"></div>
 
     <script>
-        let products = JSON.parse(localStorage.getItem('wms_products_v26')) || {};
+        let products = JSON.parse(localStorage.getItem('wms_products_v27')) || {};
         let currentBoxId = 'BOX-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         let currentBoxItems = [];
         let closedBoxes = JSON.parse(localStorage.getItem('wms_closed_boxes')) || [];
@@ -265,60 +249,40 @@
         let allScannedKiz = JSON.parse(localStorage.getItem('wms_all_scanned_kiz')) || {};
         let currentExcelData = null;
         let currentModalSku = null;
-        let lastRawPdfText = '';
 
         // ==========================================
-        // 🔧 ПОЛНАЯ ОЧИСТКА КОДОВ ОТ ВСЕХ АРТЕФАКТОВ
+        // 🔧 ПРАВИЛЬНАЯ СБОРКА PDF-КОДОВ
         // ==========================================
         function extractKizFromPDF(text) {
-            lastRawPdfText = text; // Сохраняем для отладки
+            // Шаг 1: Разбиваем на строки и убираем пустые
+            const lines = text.split(/[\r\n]+/)
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
             
-            // Шаг 1: Разбиваем на строки
-            const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
-            
-            // Шаг 2: Собираем разорванные строки
-            // Если строка НЕ начинается с "01", она является продолжением предыдущей
+            // Шаг 2: Собираем каждые 2 строки в один код
             const assembled = [];
-            let current = '';
-            
-            for (const line of lines) {
-                if (line.startsWith('01')) {
-                    if (current) assembled.push(current);
-                    current = line;
-                } else {
-                    current += line;
-                }
+            for (let i = 0; i < lines.length; i += 2) {
+                const line1 = lines[i] || '';
+                const line2 = lines[i + 1] || '';
+                assembled.push(line1 + line2);
             }
-            if (current) assembled.push(current);
             
-            // Шаг 3: ПОЛНАЯ очистка - оставляем ТОЛЬКО буквы и цифры
-            // Удаляем ВСЕ специальные символы: пробелы, _, -, ?, %, ., !, *, ", ', (, ), =, +, :, ;, &, #, $, @, ^, ~, [, ], {, }, <, >, /, \, |
+            // Шаг 3: Очищаем от всех спецсимволов (оставляем только буквы и цифры)
             const cleaned = assembled.map(code => code.replace(/[^0-9A-Za-z]/g, ''));
             
-            // Шаг 4: Фильтруем по валидности кода КИЗ
-            // Код должен соответствовать паттерну: 01 + 14 цифр + 21 + хотя бы 4 символа
+            // Шаг 4: Фильтруем по валидности (01 + 14 цифр + 21 + минимум 4 символа)
             const valid = [];
-            const invalid = [];
-            
             for (const code of cleaned) {
-                // Проверяем паттерн: 01 + 14 цифр + 21 + серийный номер
-                const match = code.match(/^01(\d{14})21(.+)$/);
-                if (match && match[2].length >= 4) {
+                if (code.match(/^01\d{14}21[A-Za-z0-9]{4,}$/)) {
                     valid.push(code);
-                } else if (code.length > 0) {
-                    invalid.push(code);
                 }
             }
             
             // Шаг 5: Удаляем дубликаты
             const seen = new Set();
             const unique = [];
-            let dupesCount = 0;
-            
             for (const code of valid) {
-                if (seen.has(code)) {
-                    dupesCount++;
-                } else {
+                if (!seen.has(code)) {
                     seen.add(code);
                     unique.push(code);
                 }
@@ -326,17 +290,13 @@
             
             return { 
                 codes: unique, 
-                totalRaw: lines.length,
+                totalLines: lines.length,
                 assembled: assembled.length,
-                cleaned: cleaned.length,
                 valid: valid.length,
-                invalid: invalid.length,
-                dupesRemoved: dupesCount,
-                invalidSamples: invalid.slice(0, 5) // Первые 5 невалидных для отладки
+                samples: unique.slice(0, 3) // Первые 3 для проверки
             };
         }
 
-        // Жесткая загрузка для CSV/буфера (только удаление дублей)
         function extractKizStrict(text) {
             const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
             const seen = new Set();
@@ -401,11 +361,9 @@
                     statusDiv.innerHTML = `<span class="text-red-600">
                         ❌ Коды не найдены<br>
                         <span class="text-xs">
-                            Строк в файле: ${result.totalRaw}<br>
-                            Собрано: ${result.assembled}<br>
-                            После очистки: ${result.cleaned}<br>
-                            Валидных: ${result.valid}<br>
-                            <button onclick="showDebugModal()" class="mt-2 bg-orange-600 text-white px-3 py-1 rounded text-xs">🔍 Показать сырой текст PDF</button>
+                            Строк в файле: ${result.totalLines}<br>
+                            Собрано пар: ${result.assembled}<br>
+                            Валидных: ${result.valid}
                         </span>
                     </span>`;
                     speak('Коды не найдены');
@@ -417,18 +375,14 @@
                 statusDiv.innerHTML = `<span class="text-green-600">
                     ✅ Загружено: <b>${addResult.added}</b> кодов<br>
                     <span class="text-xs text-gray-600">
-                        Строк: ${result.totalRaw} → Собрано: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
-                        ${result.dupesRemoved > 0 ? ` (дублей: ${result.dupesRemoved})` : ''}
-                        ${result.invalid > 0 ? ` | Невалидных: ${result.invalid}` : ''}
+                        Строк: ${result.totalLines} → Пар: ${result.assembled} → Валидных: ${result.valid} → Уникальных: ${addResult.added}
                     </span><br>
-                    <div class="flex gap-2 mt-2">
-                        <button onclick="openKizModal('${sku}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold">
-                            👁️ Просмотр КИЗ
-                        </button>
-                        <button onclick="showDebugModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs font-semibold">
-                            🔍 Отладка PDF
-                        </button>
-                    </div>
+                    <span class="text-xs text-blue-600">
+                        Примеры: ${result.samples.join(', ')}
+                    </span><br>
+                    <button onclick="openKizModal('${sku}')" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold">
+                        👁️ Просмотр КИЗ
+                    </button>
                 </span>`;
                 
                 showToast(`Загружено ${addResult.added} кодов`, 'success');
@@ -454,18 +408,6 @@
             speak(`Загружено ${addResult.added} кодов`);
             document.getElementById('pasteKizArea').value = '';
             setTimeout(() => openKizModal(sku), 500);
-        }
-
-        // ==========================================
-        // ОТЛАДКА PDF
-        // ==========================================
-        function showDebugModal() {
-            document.getElementById('debugText').innerText = lastRawPdfText || 'Текст PDF не доступен. Сначала загрузите PDF.';
-            document.getElementById('debugModal').classList.add('active');
-        }
-
-        function closeDebugModal() {
-            document.getElementById('debugModal').classList.remove('active');
         }
 
         // ==========================================
@@ -880,7 +822,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('wms_products_v26', JSON.stringify(products));
+            localStorage.setItem('wms_products_v27', JSON.stringify(products));
             localStorage.setItem('wms_closed_boxes', JSON.stringify(closedBoxes));
             localStorage.setItem('wms_kiz_registry', JSON.stringify(kizRegistry));
             localStorage.setItem('wms_all_scanned_kiz', JSON.stringify(allScannedKiz));
