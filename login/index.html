@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#667eea">
+<title>Зарплата • Мобильное приложение</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow-x: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+  input, button, select, textarea { font-family: inherit; font-size: inherit; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* ===== ЭКРАНЫ АВТОРИЗАЦИИ ===== */
+  .auth-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  .auth-box {
+    background: white;
+    padding: 30px 25px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 420px;
+    animation: slideUp 0.4s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .auth-logo {
+    text-align: center;
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+  .auth-box h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 6px;
+    font-size: 22px;
+  }
+  .auth-box .hint {
+    text-align: center;
+    color: #95a5a6;
+    margin-bottom: 22px;
+    font-size: 13px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: border-color 0.2s;
+    background: #fafafa;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: transform 0.1s, box-shadow 0.2s;
+    min-height: 48px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .auth-switch {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: #666;
+  }
+  .auth-switch a {
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .auth-error {
+    background: #fee;
+    color: #c0392b;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    text-align: center;
+    font-size: 13px;
+    display: none;
+  }
+
+  /* Код подтверждения — большой дисплей */
+  .code-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 20px;
+    border-radius: 16px;
+    text-align: center;
+    margin: 20px 0;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  }
+  .code-display .label {
+    font-size: 13px;
+    opacity: 0.9;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .code-display .code {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .code-display .email {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 12px;
+    word-break: break-all;
+  }
+  .code-note {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #856404;
+    margin-bottom: 15px;
+  }
+
+  /* Код ввода */
+  .code-inputs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .code-inputs input {
+    width: 44px;
+    height: 54px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .code-inputs input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  /* ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== */
+  .app { display: none; padding-bottom: 80px; min-height: 100vh; }
+  .app.active { display: block; }
+
+  .topbar {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .user-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px;
+  }
+  .user-name { font-weight: 600; font-size: 14px; }
+  .user-email { font-size: 11px; opacity: 0.85; }
+  .btn-logout {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .container { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+  .page-title {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    font-size: 20px;
+  }
+  .page-subtitle {
+    text-align: center;
+    color: #7f8c8d;
+    margin-bottom: 18px;
+    font-size: 13px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .controls .field { margin-bottom: 0; }
+  .controls input {
+    padding: 10px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+    width: 100%;
+  }
+  .controls input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 900px;
+  }
+  th {
+    background: #34495e;
+    color: white;
+    padding: 10px 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  td {
+    padding: 4px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+  }
+  td input {
+    width: 100%;
+    border: none;
+    text-align: center;
+    padding: 8px 4px;
+    background: transparent;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  td input:focus {
+    background: #fff9c4;
+    outline: 2px solid #3498db;
+  }
+  td input[readonly] { background: #f8f9fa; font-weight: 600; }
+  .col-name input { text-align: left; padding-left: 8px; min-width: 140px; }
+  .negative { color: #e74c3c; font-weight: 700; }
+  .positive { color: #27ae60; font-weight: 700; }
+  .total-row { background: #fff3cd !important; font-weight: 700; }
+  .total-row td { background: #fff3cd; font-size: 13px; }
+  .empty-row td {
+    padding: 40px 20px;
+    color: #95a5a6;
+    font-style: italic;
+    background: #fafafa;
+    text-align: center;
+  }
+
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .summary-card {
+    padding: 14px;
+    border-radius: 12px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .summary-card h3 { font-size: 12px; margin-bottom: 4px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-card .value { font-size: 20px; font-weight: 700; }
+  .card-accrued { background: linear-gradient(135deg, #3498db, #2980b9); }
+  .card-pay { background: linear-gradient(135deg, #27ae60, #229954); }
+  .card-balance { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .btn {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-save { background: #9b59b6; color: white; }
+  .btn-export { background: #f39c12; color: white; }
+  .btn-print { background: #3498db; color: white; }
+  .btn-del {
+    background: #e74c3c;
+    color: white;
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
+    border-radius: 6px;
+  }
+
+  .mobile-employees { display: none; }
+  .emp-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 4px solid #667eea;
+  }
+  .emp-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .emp-name {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 15px;
+    flex: 1;
+  }
+  .emp-name input {
+    width: 100%;
+    border: none;
+    font-weight: 700;
+    font-size: 15px;
+    color: #2c3e50;
+    padding: 4px 0;
+    border-bottom: 1px dashed #ddd;
+  }
+  .emp-name input:focus { outline: none; border-bottom-color: #667eea; }
+  .emp-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .emp-field label {
+    display: block;
+    font-size: 11px;
+    color: #7f8c8d;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .emp-field input {
+    width: 100%;
+    padding: 8px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+    font-size: 14px;
+  }
+  .emp-field input:focus { outline: none; border-color: #667eea; background: white; }
+  .emp-totals {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .emp-totals .row {
+    display: flex;
+    justify-content: space-between;
+  }
+  .emp-totals .row b { color: #2c3e50; }
+
+  .fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #27ae60, #229954);
+    color: white;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+    z-index: 50;
+    display: none;
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+  }
+  .modal.active { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    animation: slideUp 0.3s ease;
+  }
+  .modal-box h3 { margin-bottom: 12px; color: #2c3e50; }
+  .modal-box p { margin-bottom: 16px; color: #555; font-size: 14px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button { flex: 1; }
+  .btn-secondary {
+    background: #ecf0f1;
+    color: #2c3e50;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 46px;
+  }
+  .btn-danger {
+    background: #e74c3c;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 46px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #2c3e50;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    z-index: 3000;
+    opacity: 0;
+    transition: all 0.3s;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #27ae60; }
+  .toast.error { background: #e74c3c; }
+
+  @media (min-width: 768px) {
+    .summary { grid-template-columns: repeat(3, 1fr); }
+    .actions { grid-template-columns: repeat(3, 1fr); }
+    .controls { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 767px) {
+    .table-wrap { display: none; }
+    .mobile-employees { display: block; }
+    .fab { display: block; }
+    .btn-add-desktop { display: none; }
+  }
+  @media (min-width: 768px) {
+    .fab { display: none; }
+  }
+  @media print {
+    .topbar, .controls, .actions, .fab, .summary { display: none !important; }
+    .app { padding-bottom: 0; }
+    .table-wrap { display: block; }
+    .mobile-employees { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ЭКРАН ВХОДА ===== -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box" id="loginBox">
+    <div class="auth-logo">💼</div>
+    <h2>Вход в систему</h2>
+    <p class="hint">Ведомость заработной платы</p>
+    <div class="auth-error" id="loginError"></div>
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary">Войти →</button>
+    </form>
+    <div class="auth-switch">
+      Нет аккаунта? <a onclick="showRegister()">Зарегистрироваться</a>
+    </div>
+  </div>
+
+  <div class="auth-box" id="registerBox" style="display:none;">
+    <div class="auth-logo">📝</div>
+    <h2>Регистрация</h2>
+    <p class="hint">Создайте аккаунт для работы с ведомостью</p>
+    <div class="auth-error" id="registerError"></div>
+    <form id="registerForm" autocomplete="off">
+      <div class="field">
+        <label>Имя</label>
+        <input type="text" id="regName" required>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="regEmail" required>
+      </div>
+      <div class="field">
+        <label>Пароль (мин. 6 символов)</label>
+        <input type="password" id="regPassword" required minlength="6">
+      </div>
+      <div class="field">
+        <label>Повторите пароль</label>
+        <input type="password" id="regPassword2" required minlength="6">
+      </div>
+      <button type="submit" class="btn-primary">Зарегистрироваться →</button>
+    </form>
+    <div class="auth-switch">
+      Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
+    </div>
+  </div>
+
+  <div class="auth-box" id="verifyBox" style="display:none;">
+    <div class="auth-logo">✉️</div>
+    <h2>Подтверждение регистрации</h2>
+    <p class="hint" id="verifyHint">Введите код для подтверждения</p>
+    
+    <div class="code-display">
+      <div class="label">Ваш код подтверждения</div>
+      <div class="code" id="displayCode">000000</div>
+      <div class="email" id="displayEmail">email@example.com</div>
+    </div>
+
+    <div class="code-note">
+      💡 <b>Сохраните этот код</b> — он нужен для подтверждения регистрации. В реальном приложении код отправляется на email.
+    </div>
+
+    <div class="auth-error" id="verifyError"></div>
+    <form id="verifyForm">
+      <div class="code-inputs" id="codeInputs">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      </div>
+      <button type="submit" class="btn-primary">Подтвердить и войти</button>
+    </form>
+    <div class="auth-switch">
+      <a onclick="showLogin()">← Вернуться ко входу</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="user-avatar" id="userAvatar">U</div>
+      <div>
+        <div class="user-name" id="userName">Пользователь</div>
+        <div class="user-email" id="userEmail">email@example.com</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="confirmLogout()">Выйти</button>
+  </div>
+
+  <div class="container">
+    <h1 class="page-title">📊 Ведомость зарплаты</h1>
+    <p class="page-subtitle">Почасовая оплата • переходящее сальдо</p>
+
+    <div class="card">
+      <div class="card-title">⚙️ Параметры</div>
+      <div class="controls">
+        <div class="field">
+          <label>Месяц</label>
+          <input type="month" id="month" value="2026-06">
+        </div>
+        <div class="field">
+          <label>Норма часов</label>
+          <input type="number" id="normHours" value="160" min="0">
+        </div>
+        <div class="field">
+          <label>Коэф. до 2ч</label>
+          <input type="number" id="ot1" value="1.5" step="0.1" min="1">
+        </div>
+        <div class="field">
+          <label>Коэф. свыше 2ч</label>
+          <input type="number" id="ot2" value="2.0" step="0.1" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-card card-accrued">
+        <div><h3>Начислено</h3><div class="value" id="sumAccrued">0 ₽</div></div>
+        <div style="font-size:32px;opacity:0.5;">💰</div>
+      </div>
+      <div class="summary-card card-pay">
+        <div><h3>Выплачено</h3><div class="value" id="sumPay">0 ₽</div></div>
+        <div style="font-size:32px;opacity:0.5;">💵</div>
+      </div>
+      <div class="summary-card card-balance">
+        <div><h3>Сальдо</h3><div class="value" id="sumBalance">0 ₽</div></div>
+        <div style="font-size:32px;opacity:0.5;">📊</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👥 Сотрудники</div>
+      <div class="table-wrap">
+        <table id="salaryTable">
+          <thead>
+            <tr>
+              <th>№</th>
+              <th class="col-name">ФИО</th>
+              <th>Ставка ₽/ч</th>
+              <th>Часы</th>
+              <th>Сверх. до 2ч</th>
+              <th>Сверх. &gt;2ч</th>
+              <th>Начислено</th>
+              <th>Сальдо нач.</th>
+              <th>Удержано</th>
+              <th>Выплачено</th>
+              <th>Сальдо кон.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr class="total-row" id="totalRow"></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="mobile-employees" id="mobileEmployees"></div>
+      <button class="btn btn-save btn-add-desktop" style="width:100%;margin-top:12px;background:#27ae60;color:white;" onclick="addRow()">➕ Добавить сотрудника</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-save" onclick="saveData()">💾 Сохранить</button>
+      <button class="btn btn-export" onclick="exportCSV()">📥 CSV</button>
+      <button class="btn btn-print" onclick="window.print()">🖨️ Печать</button>
+    </div>
+  </div>
+
+  <button class="fab" onclick="addRow()" title="Добавить">+</button>
+</div>
+
+<div class="modal" id="logoutModal">
+  <div class="modal-box">
+    <h3>🚪 Выход</h3>
+    <p>Вы уверены, что хотите выйти из аккаунта?</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('logoutModal')">Отмена</button>
+      <button class="btn-danger" onclick="logout()">Выйти</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const USERS_KEY = 'salary_users_v3';
+const SESSION_KEY = 'salary_session_v3';
+const PENDING_KEY = 'salary_pending_users_v3';
+
+function hash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return 'h_' + Math.abs(h).toString(36) + '_' + str.length;
+}
+
+function getUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); }
+function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+function getPending() { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); }
+function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function showLogin() {
+  document.getElementById('loginBox').style.display = 'block';
+  document.getElementById('registerBox').style.display = 'none';
+  document.getElementById('verifyBox').style.display = 'none';
+  clearAuthMessages();
+}
+function showRegister() {
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('registerBox').style.display = 'block';
+  document.getElementById('verifyBox').style.display = 'none';
+  clearAuthMessages();
+}
+function showVerify(email, code) {
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('registerBox').style.display = 'none';
+  document.getElementById('verifyBox').style.display = 'block';
+  document.getElementById('verifyHint').textContent = `Регистрация для ${email}`;
+  document.getElementById('displayCode').textContent = code;
+  document.getElementById('displayEmail').textContent = email;
+  clearAuthMessages();
+  setTimeout(() => document.querySelector('#codeInputs input').focus(), 100);
+}
+
+function clearAuthMessages() {
+  ['loginError','registerError','verifyError'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none';
+    el.textContent = '';
+  });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.getElementById('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+
+  const user = getUsers().find(u => u.email === email && u.passwordHash === hash(password));
+  if (!user) {
+    showError('loginError', 'Неверный email или пароль');
+    return;
+  }
+  if (!user.verified) {
+    showError('loginError', 'Регистрация не завершена');
+    return;
+  }
+  startSession(user);
+});
+
+document.getElementById('registerForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim().toLowerCase();
+  const pass1 = document.getElementById('regPassword').value;
+  const pass2 = document.getElementById('regPassword2').value;
+
+  if (pass1 !== pass2) {
+    showError('registerError', 'Пароли не совпадают');
+    return;
+  }
+  if (pass1.length < 6) {
+    showError('registerError', 'Пароль должен быть не менее 6 символов');
+    return;
+  }
+  if (getUsers().some(u => u.email === email)) {
+    showError('registerError', 'Пользователь с таким email уже существует');
+    return;
+  }
+
+  const code = generateCode();
+  const pending = getPending().filter(p => p.email !== email);
+  pending.push({
+    name, email,
+    passwordHash: hash(pass1),
+    code,
+    createdAt: Date.now()
+  });
+  savePending(pending);
+
+  showVerify(email, code);
+});
+
+const codeInputs = document.querySelectorAll('#codeInputs input');
+codeInputs.forEach((inp, i) => {
+  inp.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+    if (e.target.value && i < codeInputs.length - 1) {
+      codeInputs[i + 1].focus();
+    }
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !e.target.value && i > 0) {
+      codeInputs[i - 1].focus();
+    }
+  });
+  inp.addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+    text.split('').forEach((ch, i) => { if (codeInputs[i]) codeInputs[i].value = ch; });
+    if (text.length > 0) codeInputs[Math.min(text.length, 5)].focus();
+  });
+});
+
+document.getElementById('verifyForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = Array.from(codeInputs).map(i => i.value).join('');
+  if (code.length !== 6) {
+    showError('verifyError', 'Введите все 6 цифр кода');
+    return;
+  }
+  const pending = getPending();
+  const last = pending[pending.length - 1];
+  if (!last) {
+    showError('verifyError', 'Сессия истекла. Зарегистрируйтесь снова.');
+    return;
+  }
+  if (last.code !== code) {
+    showError('verifyError', 'Неверный код подтверждения');
+    return;
+  }
+  const users = getUsers();
+  users.push({
+    name: last.name,
+    email: last.email,
+    passwordHash: last.passwordHash,
+    verified: true,
+    createdAt: Date.now()
+  });
+  saveUsers(users);
+  savePending(pending.slice(0, -1));
+
+  toast('✅ Регистрация завершена! Вход...', 'success');
+  setTimeout(() => {
+    const user = users.find(u => u.email === last.email);
+    startSession(user);
+  }, 800);
+});
+
+function startSession(user) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    email: user.email,
+    name: user.name,
+    loginAt: Date.now()
+  }));
+  showApp(user);
+}
+
+function showApp(user) {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('userAvatar').textContent = user.name.charAt(0).toUpperCase();
+
+  if (!loadData(document.getElementById('month').value)) {
+    renderEmpty();
+  }
+}
+
+function confirmLogout() {
+  document.getElementById('logoutModal').classList.add('active');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  closeModal('logoutModal');
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('loginForm').reset();
+  showLogin();
+}
+
+const savedSession = sessionStorage.getItem(SESSION_KEY);
+if (savedSession) {
+  const s = JSON.parse(savedSession);
+  const user = getUsers().find(u => u.email === s.email && u.verified);
+  if (user) showApp(user);
+}
+
+setInterval(() => {
+  const day = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  savePending(getPending().filter(p => now - p.createdAt < day));
+}, 60000);
+
+let rowId = 0;
+
+function getCurrentUser() {
+  const s = sessionStorage.getItem(SESSION_KEY);
+  return s ? JSON.parse(s).email : 'anon';
+}
+
+function renderEmpty() {
+  document.getElementById('tbody').innerHTML = `
+    <tr class="empty-row"><td colspan="12">Нет сотрудников. Нажмите «➕» для добавления.</td></tr>
+  `;
+  document.getElementById('mobileEmployees').innerHTML = `
+    <div class="empty-row" style="padding:40px 20px;text-align:center;color:#95a5a6;font-style:italic;">
+      Нет сотрудников. Нажмите «+» для добавления.
+    </div>
+  `;
+  recalc();
+}
+
+function addRow(data = {}) {
+  const empty = document.querySelector('#tbody .empty-row');
+  if (empty) empty.remove();
+  const mobEmpty = document.querySelector('#mobileEmployees .empty-row');
+  if (mobEmpty) mobEmpty.remove();
+
+  rowId++;
+  const id = 'r' + rowId;
+  const tbody = document.getElementById('tbody');
+  const idx = tbody.children.length + 1;
+
+  const tr = document.createElement('tr');
+  tr.dataset.id = id;
+  tr.innerHTML = `
+    <td>${idx}</td>
+    <td class="col-name"><input type="text" data-f="name" data-id="${id}" value="${data.name || ''}"></td>
+    <td><input type="number" data-f="rate" data-id="${id}" value="${data.rate || 0}" min="0" step="0.01"></td>
+    <td><input type="number" data-f="hours" data-id="${id}" value="${data.hours || 0}" min="0"></td>
+    <td><input type="number" data-f="ot1" data-id="${id}" value="${data.ot1 || 0}" min="0"></td>
+    <td><input type="number" data-f="ot2" data-id="${id}" value="${data.ot2 || 0}" min="0"></td>
+    <td><input type="number" data-f="accrued" data-id="${id}" readonly value="0"></td>
+    <td><input type="number" data-f="balanceStart" data-id="${id}" value="${data.balanceStart || 0}" step="0.01"></td>
+    <td><input type="number" data-f="deductions" data-id="${id}" value="${data.deductions || 0}" min="0" step="0.01"></td>
+    <td><input type="number" data-f="paid" data-id="${id}" value="${data.paid || 0}" min="0" step="0.01"></td>
+    <td><input type="number" data-f="balanceEnd" data-id="${id}" readonly value="0"></td>
+    <td><button class="btn-del" onclick="delRow('${id}')">✖</button></td>
+  `;
+  tbody.appendChild(tr);
+
+  const mob = document.getElementById('mobileEmployees');
+  const card = document.createElement('div');
+  card.className = 'emp-card';
+  card.dataset.id = id;
+  card.innerHTML = `
+    <div class="emp-card-header">
+      <div class="emp-name"><input type="text" data-f="name" data-id="${id}" value="${data.name || ''}" placeholder="ФИО сотрудника"></div>
+      <button class="btn-del" onclick="delRow('${id}')">✖</button>
+    </div>
+    <div class="emp-fields">
+      <div class="emp-field"><label>Ставка ₽/ч</label><input type="number" data-f="rate" data-id="${id}" value="${data.rate || 0}" min="0" step="0.01"></div>
+      <div class="emp-field"><label>Часы</label><input type="number" data-f="hours" data-id="${id}" value="${data.hours || 0}" min="0"></div>
+      <div class="emp-field"><label>Сверх. до 2ч</label><input type="number" data-f="ot1" data-id="${id}" value="${data.ot1 || 0}" min="0"></div>
+      <div class="emp-field"><label>Сверх. &gt;2ч</label><input type="number" data-f="ot2" data-id="${id}" value="${data.ot2 || 0}" min="0"></div>
+      <div class="emp-field"><label>Сальдо на начало</label><input type="number" data-f="balanceStart" data-id="${id}" value="${data.balanceStart || 0}" step="0.01"></div>
+      <div class="emp-field"><label>Удержано</label><input type="number" data-f="deductions" data-id="${id}" value="${data.deductions || 0}" min="0" step="0.01"></div>
+      <div class="emp-field" style="grid-column:span 2;"><label>Выплачено</label><input type="number" data-f="paid" data-id="${id}" value="${data.paid || 0}" min="0" step="0.01"></div>
+    </div>
+    <div class="emp-totals">
+      <div class="row"><span>Начислено:</span><b data-out="accrued" data-id="${id}">0 ₽</b></div>
+      <div class="row"><span>Сальдо:</span><b data-out="balanceEnd" data-id="${id}">0 ₽</b></div>
+    </div>
+  `;
+  mob.appendChild(card);
+
+  document.querySelectorAll(`[data-id="${id}"]`).forEach(inp => {
+    if (inp.tagName === 'BUTTON') return;
+    inp.addEventListener('input', e => syncField(id, e.target.dataset.f, e.target.value));
+  });
+
+  recalc();
+}
+
+function syncField(id, field, value) {
+  document.querySelectorAll(`[data-id="${id}"][data-f="${field}"]`).forEach(inp => {
+    if (inp !== event.target) inp.value = value;
+  });
+  recalc();
+}
+
+function delRow(id) {
+  document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+    const row = el.closest('tr, .emp-card');
+    if (row) row.remove();
+  });
+  const rows = document.querySelectorAll('#tbody tr:not(.empty-row)');
+  if (rows.length === 0) {
+    renderEmpty();
+    return;
+  }
+  rows.forEach((tr, i) => tr.children[0].textContent = i + 1);
+  recalc();
+}
+
+function num(v) { return parseFloat(v) || 0; }
+function fmt(v) { return v.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+function recalc() {
+  const ot1k = num(document.getElementById('ot1').value);
+  const ot2k = num(document.getElementById('ot2').value);
+
+  let totAccrued = 0, totPaid = 0, totBalanceStart = 0, totBalanceEnd = 0, totDed = 0;
+
+  const rows = document.querySelectorAll('#tbody tr:not(.empty-row)');
+  rows.forEach(tr => {
+    const id = tr.dataset.id;
+    const get = f => num(tr.querySelector(`[data-f="${f}"]`).value);
+    const rate = get('rate');
+    const hours = get('hours');
+    const o1 = get('ot1');
+    const o2 = get('ot2');
+    const balStart = get('balanceStart');
+    const ded = get('deductions');
+    const paid = get('paid');
+
+    const accrued = rate * hours + rate * o1 * ot1k + rate * o2 * ot2k;
+    const balanceEnd = balStart + accrued - ded - paid;
+
+    document.querySelectorAll(`[data-id="${id}"][data-f="accrued"]`).forEach(i => i.value = accrued.toFixed(2));
+    document.querySelectorAll(`[data-id="${id}"][data-f="balanceEnd"]`).forEach(i => {
+      if (i.tagName === 'INPUT') {
+        i.value = balanceEnd.toFixed(2);
+        i.className = balanceEnd < 0 ? 'negative' : (balanceEnd > 0 ? 'positive' : '');
+      } else {
+        i.textContent = fmt(balanceEnd) + ' ₽';
+        i.style.color = balanceEnd < 0 ? '#e74c3c' : (balanceEnd > 0 ? '#27ae60' : '#2c3e50');
+      }
+    });
+    const mobAccrued = document.querySelector(`[data-id="${id}"][data-out="accrued"]`);
+    if (mobAccrued) mobAccrued.textContent = fmt(accrued) + ' ₽';
+
+    totAccrued += accrued;
+    totPaid += paid;
+    totBalanceStart += balStart;
+    totBalanceEnd += balanceEnd;
+    totDed += ded;
+  });
+
+  document.getElementById('totalRow').innerHTML = `
+    <td colspan="6" style="text-align:right;padding-right:10px;">ИТОГО:</td>
+    <td>${fmt(totAccrued)}</td>
+    <td>${fmt(totBalanceStart)}</td>
+    <td>${fmt(totDed)}</td>
+    <td>${fmt(totPaid)}</td>
+    <td>${fmt(totBalanceEnd)}</td>
+    <td></td>
+  `;
+
+  document.getElementById('sumAccrued').textContent = fmt(totAccrued) + ' ₽';
+  document.getElementById('sumPay').textContent = fmt(totPaid) + ' ₽';
+  const balEl = document.getElementById('sumBalance');
+  balEl.textContent = fmt(totBalanceEnd) + ' ₽';
+  balEl.parentElement.parentElement.style.background = totBalanceEnd < 0
+    ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+    : 'linear-gradient(135deg, #9b59b6, #8e44ad)';
+}
+
+function collectData() {
+  const rows = [];
+  document.querySelectorAll('#tbody tr:not(.empty-row)').forEach(tr => {
+    const obj = {};
+    tr.querySelectorAll('input[data-f]').forEach(inp => obj[inp.dataset.f] = inp.value);
+    rows.push(obj);
+  });
+  return {
+    month: document.getElementById('month').value,
+    normHours: document.getElementById('normHours').value,
+    ot1: document.getElementById('ot1').value,
+    ot2: document.getElementById('ot2').value,
+    rows
+  };
+}
+
+function saveData() {
+  const data = collectData();
+  const user = getCurrentUser();
+  localStorage.setItem(`salaryReport_${user}_${data.month}`, JSON.stringify(data));
+  toast('✅ Сохранено для ' + data.month, 'success');
+}
+
+function loadData(month) {
+  const user = getCurrentUser();
+  const raw = localStorage.getItem(`salaryReport_${user}_${month}`);
+  if (!raw) return false;
+  const data = JSON.parse(raw);
+  document.getElementById('normHours').value = data.normHours;
+  document.getElementById('ot1').value = data.ot1;
+  document.getElementById('ot2').value = data.ot2;
+  document.getElementById('tbody').innerHTML = '';
+  document.getElementById('mobileEmployees').innerHTML = '';
+  if (data.rows.length === 0) {
+    renderEmpty();
+  } else {
+    data.rows.forEach(r => addRow(r));
+  }
+  return true;
+}
+
+function exportCSV() {
+  const data = collectData();
+  const headers = ['ФИО','Ставка','Часы','Сверх.1','Сверх.2','Начислено','Сальдо нач.','Удержания','Выплачено','Сальдо кон.'];
+  const lines = [headers.join(';')];
+  data.rows.forEach(r => {
+    lines.push([r.name,r.rate,r.hours,r.ot1,r.ot2,r.accrued,r.balanceStart,r.deductions,r.paid,r.balanceEnd].join(';'));
+  });
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Зарплата_' + data.month + '.csv';
+  a.click();
+  toast('📥 CSV скачан', 'success');
+}
+
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.querySelectorAll('.controls input').forEach(inp => inp.addEventListener('input', recalc));
+document.getElementById('month').addEventListener('change', e => {
+  if (!loadData(e.target.value)) renderEmpty();
+});
+</script>
+</body>
+</html>
